@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">MediSmart</title>
+  <rect width="512" height="512" rx="116" fill="#147d82"/>
+  <path d="M118 354V166c0-22 13-35 35-35h20c15 0 26 7 34 21l49 86 49-86c8-14 19-21 34-21h20c22 0 35 13 35 35v188h-62V231l-47 78c-7 12-16 18-29 18s-22-6-29-18l-47-78v123z" fill="#fff"/>
+  <path d="M374 70h38v42h42v38h-42v42h-38v-42h-42v-38h42z" fill="#bce8e5"/>
+</svg>

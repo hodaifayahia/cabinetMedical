@@ -1,0 +1,92 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: PHP and frontend quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      CACHE_STORE: array
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      TELESCOPE_ENABLED: 'false'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+          extensions: ctype, curl, dom, fileinfo, gd, intl, mbstring, openssl, pdo_sqlite, sodium, sqlite3, xml, xmlreader, xmlwriter, zip
+          tools: composer:2.8.9
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.15.1'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Validate the locked PHP dependency graph
+        run: composer validate --strict --no-check-publish --no-interaction --no-ansi
+
+      - name: Install locked PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --no-ansi
+
+      - name: Audit locked PHP dependencies
+        run: composer audit --locked --no-interaction --no-ansi
+
+      - name: Install locked JavaScript dependencies
+        run: npm ci
+
+      - name: Test release-resource fail-closed cases
+        run: npm run desktop:resources:test
+
+      - name: Validate the safe synthetic release-resource fixture
+        run: npm run desktop:resources:fixture
+
+      - name: Check ESLint
+        run: npm run lint:check
+
+      - name: Check Prettier
+        run: npm run format:check
+
+      - name: Check TypeScript
+        run: npm run types:check
+
+      - name: Run Vitest
+        run: npm run test:unit
+
+      - name: Build production frontend assets
+        run: npm run build
+
+      - name: Check PHP formatting
+        run: ./vendor/bin/pint --test
+
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyse --no-progress
+
+      - name: Run Laravel tests
+        run: php artisan test

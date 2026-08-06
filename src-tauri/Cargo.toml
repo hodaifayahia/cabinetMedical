@@ -1,0 +1,38 @@
+[package]
+name = "medismart-desktop"
+version = "0.1.0"
+description = "MediSmart local-first desktop process supervisor"
+authors = ["MediSmart"]
+edition = "2021"
+rust-version = "1.84"
+
+[lib]
+name = "medismart_desktop"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tauri-build = { version = "2.6.3", features = [] }
+url = "2.5"
+
+[dependencies]
+hmac = "0.12"
+medismart-runtime = { path = "runtime-core" }
+semver = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tauri = { version = "2.11.5", features = ["tray-icon"] }
+tauri-plugin-opener = "2.5.4"
+tauri-plugin-single-instance = "2.4.3"
+tauri-plugin-updater = "2.10.1"
+url = "2.5"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

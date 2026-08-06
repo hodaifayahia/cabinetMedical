@@ -1,0 +1,47 @@
+{
+    "$schema": "https://schema.tauri.app/config/2",
+    "productName": "MediSmart",
+    "version": "0.1.0",
+    "identifier": "dz.click.medismart",
+    "build": {
+        "frontendDist": "frontend"
+    },
+    "app": {
+        "windows": [],
+        "security": {
+            "csp": "default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
+            "capabilities": ["desktop-windows"]
+        },
+        "withGlobalTauri": false
+    },
+    "bundle": {
+        "active": true,
+        "targets": ["msi", "nsis"],
+        "createUpdaterArtifacts": true,
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ],
+        "resources": {
+            "resources/laravel/": "laravel/",
+            "resources/php/": "php/",
+            "resources/initial/": "initial/",
+            "resources/cloudflared/": "cloudflared/"
+        },
+        "windows": {
+            "webviewInstallMode": {
+                "type": "embedBootstrapper",
+                "silent": true
+            },
+            "wix": {
+                "language": "fr-FR"
+            },
+            "nsis": {
+                "languages": ["French"]
+            }
+        }
+    }
+}

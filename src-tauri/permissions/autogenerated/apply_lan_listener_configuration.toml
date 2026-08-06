@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-apply-lan-listener-configuration"
+description = "Enables the apply_lan_listener_configuration command without any pre-configured scope."
+commands.allow = ["apply_lan_listener_configuration"]
+
+[[permission]]
+identifier = "deny-apply-lan-listener-configuration"
+description = "Denies the apply_lan_listener_configuration command without any pre-configured scope."
+commands.deny = ["apply_lan_listener_configuration"]

@@ -1,0 +1,290 @@
+[
+  {
+    "name": "TSH us",
+    "category": "Biologie"
+  },
+  {
+    "name": "HbA1c",
+    "category": "Biologie"
+  },
+  {
+    "name": "Glycémie à jeun",
+    "category": "Biologie"
+  },
+  {
+    "name": "Glycémie post-prandiale",
+    "category": "Biologie"
+  },
+  {
+    "name": "Créatininémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "Clairance créatinine (MDRD)",
+    "category": "Biologie"
+  },
+  {
+    "name": "DFG CKD-EPI / MDRD",
+    "category": "Biologie"
+  },
+  {
+    "name": "Uree - Créatininémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "FNS (NFS complète)",
+    "category": "Biologie"
+  },
+  {
+    "name": "FNS avec taux de plaquettes",
+    "category": "Biologie"
+  },
+  {
+    "name": "Taux de réticulocytes",
+    "category": "Biologie"
+  },
+  {
+    "name": "Frottis sanguin",
+    "category": "Biologie"
+  },
+  {
+    "name": "VS - CRP",
+    "category": "Biologie"
+  },
+  {
+    "name": "CRP",
+    "category": "Biologie"
+  },
+  {
+    "name": "Facteur rhumatoïde",
+    "category": "Biologie"
+  },
+  {
+    "name": "ASLO",
+    "category": "Biologie"
+  },
+  {
+    "name": "Ferritinémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "Fer sérique",
+    "category": "Biologie"
+  },
+  {
+    "name": "Taux de saturation de la transferrine",
+    "category": "Biologie"
+  },
+  {
+    "name": "Cholestérol total - HDL - LDL - Triglycérides",
+    "category": "Biologie"
+  },
+  {
+    "name": "HDL-Cholestérol",
+    "category": "Biologie"
+  },
+  {
+    "name": "LDL-Cholestérol",
+    "category": "Biologie"
+  },
+  {
+    "name": "Triglycérides",
+    "category": "Biologie"
+  },
+  {
+    "name": "Lipoproteines Lp(a)",
+    "category": "Biologie"
+  },
+  {
+    "name": "Troponine",
+    "category": "Biologie"
+  },
+  {
+    "name": "Troponine hs-Tc",
+    "category": "Biologie"
+  },
+  {
+    "name": "CPK",
+    "category": "Biologie"
+  },
+  {
+    "name": "NT-proBNP",
+    "category": "Biologie"
+  },
+  {
+    "name": "TP / INR",
+    "category": "Biologie"
+  },
+  {
+    "name": "TP / INR URGENT",
+    "category": "Biologie"
+  },
+  {
+    "name": "TCK",
+    "category": "Biologie"
+  },
+  {
+    "name": "Fibrinogène",
+    "category": "Biologie"
+  },
+  {
+    "name": "D-Dimères",
+    "category": "Biologie"
+  },
+  {
+    "name": "Microalbuminurie 24h",
+    "category": "Biologie"
+  },
+  {
+    "name": "Protéinurie 24h",
+    "category": "Biologie"
+  },
+  {
+    "name": "Microalbuminurie sur spot urinaire",
+    "category": "Biologie"
+  },
+  {
+    "name": "RAC (Albuminurie/Créatininurie)",
+    "category": "Biologie"
+  },
+  {
+    "name": "ECBU + Antibiogramme",
+    "category": "Biologie"
+  },
+  {
+    "name": "Ionogramme sanguin",
+    "category": "Biologie"
+  },
+  {
+    "name": "Magnésémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "Calcémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "Phosphorémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "Vitamine D (25-OH-D3)",
+    "category": "Biologie"
+  },
+  {
+    "name": "Vitamine B12 - Folate B9",
+    "category": "Biologie"
+  },
+  {
+    "name": "Acide urique",
+    "category": "Biologie"
+  },
+  {
+    "name": "Albuminémie / Protidémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "ALAT / ASAT (bilan hépatique)",
+    "category": "Biologie"
+  },
+  {
+    "name": "Bilirubine totale/directe/indirecte",
+    "category": "Biologie"
+  },
+  {
+    "name": "Phosphatase alcaline",
+    "category": "Biologie"
+  },
+  {
+    "name": "PSA totale",
+    "category": "Biologie"
+  },
+  {
+    "name": "Cortisolémie 08h matin",
+    "category": "Biologie"
+  },
+  {
+    "name": "Cortisol libre urinaire 24h",
+    "category": "Biologie"
+  },
+  {
+    "name": "Insulinémie à jeun",
+    "category": "Biologie"
+  },
+  {
+    "name": "Indice HOMA-IR",
+    "category": "Biologie"
+  },
+  {
+    "name": "IGF-1 sérique",
+    "category": "Biologie"
+  },
+  {
+    "name": "Testostérone totale/biodisponible",
+    "category": "Biologie"
+  },
+  {
+    "name": "AC anti-TPO",
+    "category": "Biologie"
+  },
+  {
+    "name": "Sérologie HBs - HCV - HIV - TPHA",
+    "category": "Biologie"
+  },
+  {
+    "name": "Sérologie hépatite A - HBs - HCV",
+    "category": "Biologie"
+  },
+  {
+    "name": "Sérologie de Wright",
+    "category": "Biologie"
+  },
+  {
+    "name": "Sérologie hydatique",
+    "category": "Biologie"
+  },
+  {
+    "name": "IDR à la tuberculine",
+    "category": "Biologie"
+  },
+  {
+    "name": "PCR SARS-CoV-2",
+    "category": "Biologie"
+  },
+  {
+    "name": "Hémocult des selles",
+    "category": "Biologie"
+  },
+  {
+    "name": "Parasitologie des selles",
+    "category": "Biologie"
+  },
+  {
+    "name": "Électrophorèse des protéines sériques",
+    "category": "Biologie"
+  },
+  {
+    "name": "Électrophorèse protéines urinaires (Bence-Jones)",
+    "category": "Biologie"
+  },
+  {
+    "name": "Evaluation lymphocytes T et B",
+    "category": "Biologie"
+  },
+  {
+    "name": "Amylasémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "Cétoneémie",
+    "category": "Biologie"
+  },
+  {
+    "name": "Anti-CCP",
+    "category": "Biologie"
+  },
+  {
+    "name": "ACE - alpha-foetoprotéine - CA125",
+    "category": "Biologie"
+  }
+]

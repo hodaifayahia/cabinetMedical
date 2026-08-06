@@ -1,0 +1,38 @@
+[package]
+name = "medismart-runtime"
+version = "0.1.0"
+description = "Process supervision core for MediSmart Desktop"
+edition = "2021"
+rust-version = "1.84"
+
+[features]
+default = ["supervisor"]
+supervisor = ["dep:reqwest"]
+
+[dependencies]
+base64 = "0.22"
+fs2 = "0.4"
+httparse = "1.10"
+network-interface = "2.0.5"
+rand = "0.9"
+regex = "1.12"
+reqwest = { version = "0.12", optional = true, default-features = false, features = ["blocking", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["raw_value"] }
+sha2 = "0.10"
+url = "2.5"
+uuid = { version = "1.18", features = ["serde", "v4"] }
+zeroize = "1.8"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Security_Cryptography",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Console",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+] }

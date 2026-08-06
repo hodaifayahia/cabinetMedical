@@ -1,0 +1,10 @@
+--- resources/js/types/appointment.ts
++++ resources/js/types/appointment.ts
+@@ -84,4 +84,7 @@
+ export type AppointmentPrestationOption = {
++    id: number;
+     label: string;
+     amount: number | null;
++    category: string | null;
++    source: 'consultation_fee' | 'act';
+ };

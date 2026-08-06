@@ -1,0 +1,3383 @@
+[
+  {
+    "name": "ACCUZOLE",
+    "dci": "Benzoyl peroxide",
+    "form": "comprime",
+    "dosage": "1-2 applications/j",
+    "notes": "Classe: Keratolytique antiseptique\nIndications: Acne\nVoie: orale\nContre-indications: hypersensibilite, eczema\nInteractions: retinoides topiques"
+  },
+  {
+    "name": "ACICLOVIR 200",
+    "dci": "Aciclovir",
+    "form": "comprime",
+    "dosage": "5 cp/j pendant 5-10 jours",
+    "notes": "Classe: Antiviral\nIndications: Herpes simplex, zona\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: probenecide, nephrotoxique associe"
+  },
+  {
+    "name": "ACTIFED",
+    "dci": "Pseudoephedrine / Triprolidine",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j",
+    "notes": "Classe: Decongestionnant + antihistaminique\nIndications: Rhinite congestive, rhume\nVoie: orale\nContre-indications: HTA non controlee, glaucome a angle ferme, prostatisme, hyperthyroidie\nInteractions: IMAO, antidepresseur, beta-bloquant"
+  },
+  {
+    "name": "ACTIFERRINE",
+    "dci": "Fer bisglycinate",
+    "form": "comprime",
+    "dosage": "Selon age et deficit",
+    "notes": "Classe: Fer\nIndications: Anemie ferriprive pediatrique et adulte\nVoie: orale\nContre-indications: hemochromatose, anemie non ferriprive\nInteractions: antiacide, tetracycline, fluoroquinolone"
+  },
+  {
+    "name": "ADALATE LP 30mg",
+    "dci": "Nifedipine",
+    "form": "comprime LP",
+    "dosage": "30 mg",
+    "notes": "Classe: Inhibiteur calcique, HTA\nVoie: orale"
+  },
+  {
+    "name": "ADVIL 200",
+    "dci": "Ibuprofene",
+    "form": "comprime",
+    "dosage": "1 a 2 cp x 3/j",
+    "notes": "Classe: AINS\nIndications: Douleur, fievre\nVoie: orale\nContre-indications: allergie AINS, ulcere, insuffisance renale severe, grossesse 3e trimestre\nInteractions: anticoagulant, aspirine, iec, methotrexate"
+  },
+  {
+    "name": "ADVIL PEDIATRIQUE",
+    "dci": "Ibuprofene",
+    "form": "comprime",
+    "dosage": "5-10 mg/kg/dose toutes les 6-8h",
+    "notes": "Classe: AINS pediatrique\nIndications: Fievre, douleur inflammatoire enfant > 3 mois\nVoie: orale\nContre-indications: deshydratation, allergie AINS, gastroenterite, varicelle\nInteractions: aspirine, anticoagulant, iec"
+  },
+  {
+    "name": "AERIUS",
+    "dci": "Desloratadine",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Antihistaminique H1 non sedatif\nIndications: Rhinite allergique, urticaire\nVoie: orale\nContre-indications: hypersensibilite, grossesse et allaitement sans avis medical\nInteractions: aucune majeure"
+  },
+  {
+    "name": "AERIUS 5mg",
+    "dci": "Desloratadine",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Antihistaminique H1\nVoie: orale"
+  },
+  {
+    "name": "ALBENDAZOLE 400mg",
+    "dci": "Albendazole",
+    "form": "comprime",
+    "dosage": "400 mg",
+    "notes": "Classe: Antiparasitaire\nVoie: orale"
+  },
+  {
+    "name": "ALDACTONE",
+    "dci": "Spironolactone",
+    "form": "comprime",
+    "dosage": "12.5 a 50 mg/j",
+    "notes": "Classe: Antagoniste mineralocorticoide\nIndications: IC, HTA resistante\nVoie: orale\nContre-indications: hyperkaliemie, insuffisance renale severe, grossesse\nInteractions: iec, ara2, potassium, ains"
+  },
+  {
+    "name": "ALDACTONE 25mg",
+    "dci": "Spironolactone",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: Epargneur de potassium, IC, HTA\nVoie: orale\nContre-indications: Hyperkaliemie"
+  },
+  {
+    "name": "ALDACTONE 50mg",
+    "dci": "Spironolactone",
+    "form": "comprime",
+    "dosage": "50 mg",
+    "notes": "Classe: Epargneur de potassium, IC\nVoie: orale"
+  },
+  {
+    "name": "ALLOPURINOL 100mg",
+    "dci": "Allopurinol",
+    "form": "comprime",
+    "dosage": "100 mg",
+    "notes": "Classe: Hypo-uricemiant, goutte\nVoie: orale"
+  },
+  {
+    "name": "ALLOPURINOL 300mg",
+    "dci": "Allopurinol",
+    "form": "comprime",
+    "dosage": "300 mg",
+    "notes": "Classe: Hypo-uricemiant, goutte\nVoie: orale"
+  },
+  {
+    "name": "ALPHAGAN",
+    "dci": "Brimonidine",
+    "form": "comprime",
+    "dosage": "1 goutte x 2-3/j",
+    "notes": "Classe: Agoniste alpha-2 ophtalmique\nIndications: Glaucome\nVoie: orale\nContre-indications: allergie, MAOI\nInteractions: antidepresseur tricyclique, MAOI, beta-bloquant"
+  },
+  {
+    "name": "AMARYL 2",
+    "dci": "Glimepiride",
+    "form": "comprime",
+    "dosage": "1 cp/j avant petit-dejeuner",
+    "notes": "Classe: Sulfamide hypoglycemiant\nIndications: Diabete type 2\nVoie: orale\nContre-indications: insuffisance hepatique severe, insuffisance renale severe, grossesse, cetonurie\nInteractions: sulfamide, anticoagulant, beta-bloquant, alcool"
+  },
+  {
+    "name": "AMARYL 2mg",
+    "dci": "Glimepiride",
+    "form": "comprime",
+    "dosage": "2 mg",
+    "notes": "Classe: Sulfamide hypoglycemiant\nVoie: orale"
+  },
+  {
+    "name": "AMARYL 4mg",
+    "dci": "Glimepiride",
+    "form": "comprime",
+    "dosage": "4 mg",
+    "notes": "Classe: Sulfamide hypoglycemiant\nVoie: orale"
+  },
+  {
+    "name": "AMIKACINE 500mg",
+    "dci": "Amikacine",
+    "form": "injectable",
+    "dosage": "500 mg",
+    "notes": "Classe: Aminoside\nVoie: IM/IV"
+  },
+  {
+    "name": "AMLODIPINE 10mg",
+    "dci": "Amlodipine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Inhibiteur calcique\nIndications: Inhibiteur calcique: HTA, angor\nVoie: orale"
+  },
+  {
+    "name": "AMLODIPINE 5mg",
+    "dci": "Amlodipine",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Inhibiteur calcique\nIndications: Inhibiteur calcique: HTA, angor\nVoie: orale"
+  },
+  {
+    "name": "AMLOR",
+    "dci": "Amlodipine",
+    "form": "comprime",
+    "dosage": "5 a 10 mg/j",
+    "notes": "Classe: Inhibiteur calcique\nIndications: HTA, angor\nVoie: orale\nContre-indications: hypotension severe, choc, stenose aortique severe\nInteractions: simvastatine, diltiazem, macrolide, azole"
+  },
+  {
+    "name": "AMLOR 10mg",
+    "dci": "Amlodipine",
+    "form": "gelule",
+    "dosage": "10 mg",
+    "notes": "Classe: Inhibiteur calcique, HTA\nVoie: orale"
+  },
+  {
+    "name": "AMLOR 5mg",
+    "dci": "Amlodipine",
+    "form": "gelule",
+    "dosage": "5 mg",
+    "notes": "Classe: Inhibiteur calcique, HTA\nVoie: orale"
+  },
+  {
+    "name": "AMOXICILLINE 1g",
+    "dci": "Amoxicilline",
+    "form": "comprime dispersible",
+    "dosage": "1 g",
+    "notes": "Classe: Antibiotique penicilline\nVoie: orale\nContre-indications: Allergie penicilline"
+  },
+  {
+    "name": "AMOXICILLINE 500mg",
+    "dci": "Amoxicilline",
+    "form": "gelule",
+    "dosage": "500 mg",
+    "notes": "Classe: Antibiotique penicilline\nVoie: orale\nContre-indications: Allergie penicilline"
+  },
+  {
+    "name": "AMOXICILLINE sirop",
+    "dci": "Amoxicilline",
+    "form": "sirop",
+    "dosage": "250 mg/5ml",
+    "notes": "Classe: Antibiotique penicilline pediatrique\nVoie: orale"
+  },
+  {
+    "name": "AMPICILLINE 500mg",
+    "dci": "Ampicilline",
+    "form": "gelule",
+    "dosage": "500 mg",
+    "notes": "Classe: Antibiotique penicilline\nVoie: orale"
+  },
+  {
+    "name": "ANAFRANIL 25mg",
+    "dci": "Clomipramine",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: Antidepresseur tricyclique\nVoie: orale"
+  },
+  {
+    "name": "ANDROCUR 50",
+    "dci": "Cyproterone acetate",
+    "form": "comprime",
+    "dosage": "1 cp/j ou 2 cp/j selon indication",
+    "notes": "Classe: Anti-androgene + progestatif\nIndications: Hirsutisme severe, acnee hormonale, hypersexualite\nVoie: orale\nContre-indications: insuffisance hepatique severe, meningiome, trombose, grossesse, cancer hepatique\nInteractions: contraceptif oral, statine, grapefruit"
+  },
+  {
+    "name": "APROVEL",
+    "dci": "Irbesartan",
+    "form": "comprime",
+    "dosage": "150 a 300 mg/j",
+    "notes": "Classe: ARA2\nIndications: HTA, atteinte renale diabetique\nVoie: orale\nContre-indications: grossesse, hyperkaliemie severe, stenose arteres renales\nInteractions: spironolactone, potassium, ains, lithium"
+  },
+  {
+    "name": "APROVEL 150mg",
+    "dci": "Irbesartan",
+    "form": "comprime",
+    "dosage": "150 mg",
+    "notes": "Classe: ARA2, HTA, nephropathie diabetique\nVoie: orale"
+  },
+  {
+    "name": "APROVEL 300mg",
+    "dci": "Irbesartan",
+    "form": "comprime",
+    "dosage": "300 mg",
+    "notes": "Classe: ARA2, HTA, nephropathie diabetique\nVoie: orale"
+  },
+  {
+    "name": "ARCOXIA 60mg",
+    "dci": "Etoricoxib",
+    "form": "comprime",
+    "dosage": "60 mg",
+    "notes": "Classe: Anti-inflammatoire COX-2 selectif\nVoie: orale"
+  },
+  {
+    "name": "ARTELAC",
+    "dci": "Carboxymethylcellulose",
+    "form": "comprime",
+    "dosage": "1 goutte x 4-6/j",
+    "notes": "Classe: Larme artificielle\nIndications: Secheresse oculaire, irritation\nVoie: orale\nContre-indications: aucune\nInteractions: espace 10 min avec autres collyres"
+  },
+  {
+    "name": "ASPEGIC 100",
+    "dci": "Acide acetylsalicylique",
+    "form": "comprime",
+    "dosage": "1 sachet par jour",
+    "notes": "Classe: Antiagregant plaquettaire\nIndications: Prevention secondaire cardiovasculaire\nVoie: orale\nContre-indications: allergie aspirine, ulcere actif, hemorragie\nInteractions: rivaroxaban, apixaban, warfarine, sintrom"
+  },
+  {
+    "name": "ASPEGIC 1000mg",
+    "dci": "Acide acetylsalicylique",
+    "form": "sachet",
+    "dosage": "1000 mg",
+    "notes": "Classe: Antalgique, anti-inflammatoire\nVoie: orale"
+  },
+  {
+    "name": "ASPEGIC 100mg",
+    "dci": "Acide acetylsalicylique",
+    "form": "sachet",
+    "dosage": "100 mg",
+    "notes": "Classe: Antiagregant plaquettaire faible dose\nVoie: orale"
+  },
+  {
+    "name": "ASPEGIC 250mg",
+    "dci": "Acide acetylsalicylique",
+    "form": "sachet",
+    "dosage": "250 mg",
+    "notes": "Classe: Antalgique, antipyretique\nVoie: orale"
+  },
+  {
+    "name": "ASPIRINE UPSA 500mg",
+    "dci": "Acide acetylsalicylique",
+    "form": "comprime effervescent",
+    "dosage": "500 mg",
+    "notes": "Classe: Antalgique, antipyretique\nVoie: orale"
+  },
+  {
+    "name": "ATACAND 16mg",
+    "dci": "Candesartan",
+    "form": "comprime",
+    "dosage": "16 mg",
+    "notes": "Classe: ARA2, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "ATACAND 8mg",
+    "dci": "Candesartan",
+    "form": "comprime",
+    "dosage": "8 mg",
+    "notes": "Classe: ARA2, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "ATORVASTATINE ARROW 10mg",
+    "dci": "Atorvastatine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Statine\nIndications: Statine: Dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "ATORVASTATINE EG 20mg",
+    "dci": "Atorvastatine",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Statine\nIndications: Statine: Dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "ATORVASTATINE EG 40mg",
+    "dci": "Atorvastatine",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: Statine\nIndications: Statine: Dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "ATROPINE 1%",
+    "dci": "Atropine sulfate",
+    "form": "comprime",
+    "dosage": "1 goutte x 1-2/j",
+    "notes": "Classe: Mydriatique cycloplegique\nIndications: Refraction, uveite, strabisme\nVoie: orale\nContre-indications: glaucome a angle ferme, allergie atropine\nInteractions: anticholinergique, amantadine"
+  },
+  {
+    "name": "ATROVENT 20",
+    "dci": "Ipratropium",
+    "form": "comprime",
+    "dosage": "2 inhalations x 4/j",
+    "notes": "Classe: Anticholinergique inhale de courte duree\nIndications: BPCO, bronchospasme\nVoie: orale\nContre-indications: hypersensibilite, glaucome a angle ferme\nInteractions: anticholinergique"
+  },
+  {
+    "name": "ATROVENT spray",
+    "dci": "Ipratropium",
+    "form": "aerosol",
+    "dosage": "20 ug/dose",
+    "notes": "Classe: Anticholinergique, BPCO\nVoie: inhalee"
+  },
+  {
+    "name": "AUGMENTIN 1g",
+    "dci": "Amoxicilline / Acide clavulanique",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j pendant 5-10 jours",
+    "notes": "Classe: Antibiotique beta-lactamine\nIndications: Infections bacteriennes sensibles\nVoie: orale\nContre-indications: allergie penicilline, mononucleose infectieuse\nInteractions: allopurinol, methotrexate, anticoagulant"
+  },
+  {
+    "name": "AUGMENTIN 1g/125mg",
+    "dci": "Amoxicilline/Ac. clavulanique",
+    "form": "comprime",
+    "dosage": "1g/125mg",
+    "notes": "Classe: Antibiotique penicilline + inhibiteur\nVoie: orale\nContre-indications: Allergie penicilline"
+  },
+  {
+    "name": "AUGMENTIN 500 mg/62.5 mg",
+    "dci": "Amoxicilline / Acide clavulanique",
+    "form": "comprime",
+    "dosage": "25-45 mg/kg/j d amoxicilline en 2-3 prises",
+    "notes": "Classe: Antibiotique pediatrique\nIndications: Infections bacteriennes ORL, pulmonaires\nVoie: orale\nContre-indications: allergie penicilline, mononucleose\nInteractions: allopurinol, methotrexate"
+  },
+  {
+    "name": "AUGMENTIN sirop enfant",
+    "dci": "Amoxicilline/Ac. clavulanique",
+    "form": "sirop",
+    "dosage": "100mg/12.5mg/ml",
+    "notes": "Classe: Antibiotique pediatrique\nVoie: orale"
+  },
+  {
+    "name": "AVLOCARDYL 40mg",
+    "dci": "Propranolol",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: Beta-bloquant, HTA, tremblements, migraine\nVoie: orale"
+  },
+  {
+    "name": "AVODART 0.5mg",
+    "dci": "Dutasteride",
+    "form": "capsule",
+    "dosage": "0.5 mg",
+    "notes": "Classe: Inhibiteur 5-alpha reductase, HBP\nVoie: orale"
+  },
+  {
+    "name": "AZITHROMYCINE 250mg",
+    "dci": "Azithromycine",
+    "form": "gelule",
+    "dosage": "250 mg",
+    "notes": "Classe: Macrolide\nVoie: orale"
+  },
+  {
+    "name": "AZITHROMYCINE 500mg",
+    "dci": "Azithromycine",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Macrolide\nVoie: orale"
+  },
+  {
+    "name": "BACTRIM",
+    "dci": "Sulfamethoxazole / Trimethoprime",
+    "form": "comprime",
+    "dosage": "1 cp x 2/j pendant 5-14 jours",
+    "notes": "Classe: Antibiotique sulfamide\nIndications: Infections urinaires, bronchiques, toxoplasmosis\nVoie: orale\nContre-indications: allergie sulfamide, insuffisance hepatique severe, grossesse 3e trimestre\nInteractions: methotrexate, warfarine, phenytoine, diuretique"
+  },
+  {
+    "name": "BACTRIM forte",
+    "dci": "Sulfamethoxazole/Trimethoprime",
+    "form": "comprime",
+    "dosage": "800/160 mg",
+    "notes": "Classe: Antibacterien\nVoie: orale"
+  },
+  {
+    "name": "BETADINE DERMIQUE",
+    "dci": "Povidone-iode",
+    "form": "comprime",
+    "dosage": "Application locale x 2-3/j",
+    "notes": "Classe: Antiseptique cutane\nIndications: Desinfection cutanee, plaies\nVoie: orale\nContre-indications: hyperthyroidie, drepanocytose, grossesse 2e-3e trimestre, allaitement, hypersensibilite iode\nInteractions: mercure, argent"
+  },
+  {
+    "name": "BETADINE GARGARISME",
+    "dci": "Povidone-iode",
+    "form": "comprime",
+    "dosage": "Gargarisme x 3-4/j",
+    "notes": "Classe: Antiseptique\nIndications: Infection buccale, pharyngite\nVoie: orale\nContre-indications: hyperthyroidie, grossesse 2e-3e trimestre, allaitement, drepanocytose\nInteractions: Lugol, lithium"
+  },
+  {
+    "name": "BIAFINE",
+    "dci": "Trolamine",
+    "form": "comprime",
+    "dosage": "2-3 applications/j en couche epaisse",
+    "notes": "Classe: Emollient reparateur\nIndications: Brulures superficielles, radiodermite, plaies\nVoie: orale\nContre-indications: hypersensibilite, infection cutanee non traitee\nInteractions: aucune"
+  },
+  {
+    "name": "BIOSOLVON",
+    "dci": "Bromhexine",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j",
+    "notes": "Classe: Mucolytique\nIndications: Toux productive\nVoie: orale\nContre-indications: aucune majeure\nInteractions: antitussif"
+  },
+  {
+    "name": "BISOPROLOL",
+    "dci": "Bisoprolol",
+    "form": "comprime",
+    "dosage": "1.25 a 10 mg/j",
+    "notes": "Classe: Beta-bloquant\nIndications: HTA, coronaropathie, IC stable\nVoie: orale\nContre-indications: bradycardie severe, bloc AV, asthme severe, choc cardiogenique\nInteractions: verapamil, diltiazem, digoxine, amiodarone"
+  },
+  {
+    "name": "BISOPROLOL ARROW 2.5mg",
+    "dci": "Bisoprolol",
+    "form": "comprime",
+    "dosage": "2.5 mg",
+    "notes": "Classe: Beta-bloquant\nIndications: Beta-bloquant: HTA, coronaropathie, IC\nVoie: orale"
+  },
+  {
+    "name": "BISOPROLOL EG 5mg",
+    "dci": "Bisoprolol",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Beta-bloquant\nIndications: Beta-bloquant: HTA, coronaropathie, IC\nVoie: orale"
+  },
+  {
+    "name": "BISOPROLOL SANDOZ 10mg",
+    "dci": "Bisoprolol",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Beta-bloquant\nIndications: Beta-bloquant: HTA, coronaropathie, IC\nVoie: orale"
+  },
+  {
+    "name": "BRICANYL 5mg",
+    "dci": "Terbutaline",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Bronchodilatateur B2\nVoie: orale"
+  },
+  {
+    "name": "BRILIQUE",
+    "dci": "Ticagrelor",
+    "form": "comprime",
+    "dosage": "Selon protocole",
+    "notes": "Classe: Antiagregant P2Y12\nIndications: SCA et post-stent\nVoie: orale\nContre-indications: hemorragie active, hemorragie intracranienne, insuffisance hepatique severe\nInteractions: anticoagulant, aspirine forte dose, macrolide, azole"
+  },
+  {
+    "name": "BRILIQUE 90mg",
+    "dci": "Ticagrelor",
+    "form": "comprime",
+    "dosage": "90 mg",
+    "notes": "Classe: Antiagregant, SCA\nVoie: orale"
+  },
+  {
+    "name": "BRUFEN 100 mg/5ml",
+    "dci": "Ibuprofene",
+    "form": "comprime",
+    "dosage": "5-10 mg/kg/dose",
+    "notes": "Classe: AINS pediatrique\nIndications: Fievre, douleur enfant\nVoie: orale\nContre-indications: deshydratation, allergie AINS, varicelle\nInteractions: aspirine, anticoagulant"
+  },
+  {
+    "name": "BRUFEN 400mg",
+    "dci": "Ibuprofene",
+    "form": "comprime",
+    "dosage": "400 mg",
+    "notes": "Classe: Anti-inflammatoire, antalgique\nVoie: orale"
+  },
+  {
+    "name": "BUSCOPAN 10",
+    "dci": "Butylscopolamine",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j",
+    "notes": "Classe: Antispasmodique\nIndications: Spasmes gastro-intestinaux, coliques\nVoie: orale\nContre-indications: glaucome a angle ferme, retention urinaire, megacolon toxique\nInteractions: anticholinergique, amantadine, antidepresseur tricyclique"
+  },
+  {
+    "name": "CALCIUM SANDOZ",
+    "dci": "Calcium carbonate / Vitamine D3",
+    "form": "comprime",
+    "dosage": "1 cp x 2/j",
+    "notes": "Classe: Calcium vitamine D\nIndications: Croissance osseuse, prevention osteoporose\nVoie: orale\nContre-indications: hypercalcemie, lithiase renale\nInteractions: digitalique, thiazidique, tetracycline, fluoroquinolone"
+  },
+  {
+    "name": "CALCIUM VITAMINE D3",
+    "dci": "Calcium/Cholecalciferol",
+    "form": "comprime",
+    "dosage": "500mg/400UI",
+    "notes": "Classe: Supplement calcium et vitamine D\nVoie: orale"
+  },
+  {
+    "name": "CANDESARTAN 8mg",
+    "dci": "Candesartan",
+    "form": "comprime",
+    "dosage": "8 mg",
+    "notes": "Classe: ARA2\nIndications: ARA2: HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "CANESTENE",
+    "dci": "Clotrimazole",
+    "form": "comprime",
+    "dosage": "2-3 applications/j",
+    "notes": "Classe: Antifongique topique\nIndications: Mycoses cutanees, mycoses genitales\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune majeure"
+  },
+  {
+    "name": "CATAPRESSAN 150ug",
+    "dci": "Clonidine",
+    "form": "comprime",
+    "dosage": "0.15 mg",
+    "notes": "Classe: Antihypertenseur central\nVoie: orale"
+  },
+  {
+    "name": "CEFIXIME 200mg",
+    "dci": "Cefixime",
+    "form": "comprime",
+    "dosage": "200 mg",
+    "notes": "Classe: Cephalosporine 3e generation orale\nVoie: orale"
+  },
+  {
+    "name": "CEFTRIAXONE 1g IM/IV",
+    "dci": "Ceftriaxone",
+    "form": "injectable",
+    "dosage": "1 g",
+    "notes": "Classe: Cephalosporine 3e generation\nVoie: IM/IV"
+  },
+  {
+    "name": "CEFTRIAXONE 2g IV",
+    "dci": "Ceftriaxone",
+    "form": "injectable",
+    "dosage": "2 g",
+    "notes": "Classe: Cephalosporine 3e generation\nVoie: IV"
+  },
+  {
+    "name": "CELEBREX 200mg",
+    "dci": "Celecoxib",
+    "form": "gelule",
+    "dosage": "200 mg",
+    "notes": "Classe: Anti-inflammatoire COX-2 selectif\nVoie: orale"
+  },
+  {
+    "name": "CELESTENE 2mg",
+    "dci": "Betamethasone",
+    "form": "injectable",
+    "dosage": "8 mg/2ml",
+    "notes": "Classe: Corticoide retard\nVoie: IM"
+  },
+  {
+    "name": "CERAZETTE",
+    "dci": "Desogestrel",
+    "form": "comprime",
+    "dosage": "1 cp/j a heure fixe sans interruption",
+    "notes": "Classe: Contraception progestative\nIndications: Contraception sans estrogenes\nVoie: orale\nContre-indications: cancer sein, hepatite severe, trombose, grossesse non diagnostiquee\nInteractions: rifampicine, anticonvulsivant, antiretroviral"
+  },
+  {
+    "name": "CERUMOL",
+    "dci": "Huile d amande douce / Dichlorobenzene",
+    "form": "comprime",
+    "dosage": "5 gouttes x 2/j pendant 3-4 jours",
+    "notes": "Classe: Cerumenolytique\nIndications: Bouchon de cerumen\nVoie: orale\nContre-indications: perforation tympanique, otite externe, hypersensibilite\nInteractions: aucune"
+  },
+  {
+    "name": "CETAPHIL",
+    "dci": "Emollient",
+    "form": "comprime",
+    "dosage": "2-3 applications/j",
+    "notes": "Classe: Emollient\nIndications: Secheresse cutanee, dermatite atopique\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune"
+  },
+  {
+    "name": "CICALFATE",
+    "dci": "Sulfate de cuivre / Sulfate de zinc",
+    "form": "comprime",
+    "dosage": "2-3 applications/j",
+    "notes": "Classe: Reparateur cutane\nIndications: Irritations, erytheme fessier, dermatite du siege\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune"
+  },
+  {
+    "name": "CILOXAN",
+    "dci": "Ciprofloxacine",
+    "form": "comprime",
+    "dosage": "1 goutte x 4-6/j",
+    "notes": "Classe: Antibiotique ophtalmique fluoroquinolone\nIndications: Conjonctivite, kأ©ratite bacterienne, ulcere cornأ©en\nVoie: orale\nContre-indications: allergie quinolone\nInteractions: aucune majeure topique"
+  },
+  {
+    "name": "CIPROFLOX 500",
+    "dci": "Ciprofloxacine",
+    "form": "comprime",
+    "dosage": "500 mg x 2/j pendant 5-10 jours",
+    "notes": "Classe: Antibiotique fluoroquinolone\nIndications: Infections urinaires, digestives, ORL\nVoie: orale\nContre-indications: allergie quinolone, grossesse, allaitement, enfant < 18 ans\nInteractions: antiacide, fer, cafeine, theophylline, warfarine"
+  },
+  {
+    "name": "CIPROFLOXACINE 200mg IV",
+    "dci": "Ciprofloxacine",
+    "form": "injectable",
+    "dosage": "200 mg/100ml",
+    "notes": "Classe: Fluoroquinolone injectable\nVoie: IV"
+  },
+  {
+    "name": "CIPROFLOXACINE 500mg",
+    "dci": "Ciprofloxacine",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Fluoroquinolone\nVoie: orale\nContre-indications: Grossesse, enfant"
+  },
+  {
+    "name": "CLAMOXYL 125 mg/5ml",
+    "dci": "Amoxicilline",
+    "form": "comprime",
+    "dosage": "25-50 mg/kg/j en 2-3 prises",
+    "notes": "Classe: Antibiotique pediatrique\nIndications: Infections bacteriennes chez l enfant\nVoie: orale\nContre-indications: allergie penicilline\nInteractions: allopurinol"
+  },
+  {
+    "name": "CLAMOXYL 500",
+    "dci": "Amoxicilline",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j pendant 5-7 jours",
+    "notes": "Classe: Antibiotique beta-lactamine\nIndications: Infections ORL, pulmonaires, urinaires\nVoie: orale\nContre-indications: allergie penicilline, mononucleose infectieuse\nInteractions: allopurinol, methotrexate"
+  },
+  {
+    "name": "CLAMOXYL 500mg",
+    "dci": "Amoxicilline",
+    "form": "gelule",
+    "dosage": "500 mg",
+    "notes": "Classe: Antibiotique penicilline\nVoie: orale"
+  },
+  {
+    "name": "CLARITINE",
+    "dci": "Loratadine",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Antihistaminique H1 non sedatif\nIndications: Rhinite allergique, urticaire\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: ketoconazole, erythromycine, grapefruit"
+  },
+  {
+    "name": "CLARITYNE 10mg",
+    "dci": "Loratadine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Antihistaminique H1\nVoie: orale"
+  },
+  {
+    "name": "CLINDAMYCINE 300mg",
+    "dci": "Clindamycine",
+    "form": "gelule",
+    "dosage": "300 mg",
+    "notes": "Classe: Lincosamide\nVoie: orale"
+  },
+  {
+    "name": "CLOBEX",
+    "dci": "Clobetasol propionate",
+    "form": "comprime",
+    "dosage": "1-2 applications/j pendant max 2 semaines",
+    "notes": "Classe: Corticoide topique tres fort\nIndications: Psoriasis, eczema rebelle, lichen\nVoie: orale\nContre-indications: infection cutanee non traitee, acne, rosacee, ulcere cutane\nInteractions: aucune majeure topique"
+  },
+  {
+    "name": "CLOMID 50",
+    "dci": "Clomifene",
+    "form": "comprime",
+    "dosage": "1 cp/j du 2e au 6e jour du cycle pendant 5 jours",
+    "notes": "Classe: Inducteur de l ovulation\nIndications: Infertilite par anovulation\nVoie: orale\nContre-indications: grossesse, insuffisance hepatique severe, kyste ovarien, metrorragies non diagnostiquees\nInteractions: aucune majeure connue"
+  },
+  {
+    "name": "CLOPIDOGREL 75mg",
+    "dci": "Clopidogrel",
+    "form": "comprime",
+    "dosage": "75 mg",
+    "notes": "Classe: Antiagregant\nIndications: Antiagregant: Prevention atherothrombose\nVoie: orale"
+  },
+  {
+    "name": "CODEINE 30",
+    "dci": "Codeine",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j",
+    "notes": "Classe: Antitussif antalgique\nIndications: Toux seche, douleur moderee\nVoie: orale\nContre-indications: insuffisance respiratoire, depression du SNC, grossesse 3e trimestre, allaitement\nInteractions: antidepresseur, antihistaminique sedatif, alcool"
+  },
+  {
+    "name": "CODOLIPRANE",
+    "dci": "Paracetamol/Codeine",
+    "form": "comprime",
+    "dosage": "400/20 mg",
+    "notes": "Classe: Antalgique palier 2\nVoie: orale"
+  },
+  {
+    "name": "COLCHICINE 1mg",
+    "dci": "Colchicine",
+    "form": "comprime",
+    "dosage": "1 mg",
+    "notes": "Classe: Crise de goutte\nVoie: orale\nContre-indications: Diarrhee, insuffisance renale"
+  },
+  {
+    "name": "CONCOR",
+    "dci": "Bisoprolol",
+    "form": "comprime",
+    "dosage": "1.25 a 10 mg/j",
+    "notes": "Classe: Beta-bloquant\nIndications: HTA, coronaropathie, IC stable\nVoie: orale\nContre-indications: bradycardie severe, bloc AV, asthme severe\nInteractions: verapamil, diltiazem, digoxine, amiodarone"
+  },
+  {
+    "name": "CONCOR 10mg",
+    "dci": "Bisoprolol",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Beta-bloquant, HTA, IC, coronaropathie\nVoie: orale"
+  },
+  {
+    "name": "CONCOR 5mg",
+    "dci": "Bisoprolol",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Beta-bloquant, HTA, IC, coronaropathie\nVoie: orale"
+  },
+  {
+    "name": "CORALAN",
+    "dci": "Ivabradine",
+    "form": "comprime",
+    "dosage": "Selon FC et indication",
+    "notes": "Classe: Inhibiteur If\nIndications: IC ou angor selectionne en rythme sinusal\nVoie: orale\nContre-indications: bradycardie, fibrillation auriculaire, choc cardiogenique, grossesse\nInteractions: verapamil, diltiazem, macrolide, azole"
+  },
+  {
+    "name": "CORDARONE",
+    "dci": "Amiodarone",
+    "form": "comprime",
+    "dosage": "Selon protocole",
+    "notes": "Classe: Antiarythmique\nIndications: Troubles du rythme selectionnes\nVoie: orale\nContre-indications: bradycardie severe, bloc AV, dysthyroidie\nInteractions: sintrom, digoxine, statine"
+  },
+  {
+    "name": "CORDARONE 200mg",
+    "dci": "Amiodarone",
+    "form": "comprime",
+    "dosage": "200 mg",
+    "notes": "Classe: Anti-arythmique classe III\nVoie: orale\nContre-indications: Thyroide, foie, poumon"
+  },
+  {
+    "name": "CORDARONE IV",
+    "dci": "Amiodarone",
+    "form": "injectable",
+    "dosage": "150 mg/3ml",
+    "notes": "Classe: Anti-arythmique injectable\nVoie: IV"
+  },
+  {
+    "name": "CORTANCYL 20mg",
+    "dci": "Prednisone",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Corticoide\nVoie: orale"
+  },
+  {
+    "name": "CORTANCYL 5 mg",
+    "dci": "Prednisone",
+    "form": "comprime",
+    "dosage": "Selon indication et poids",
+    "notes": "Classe: Corticoide systemique\nIndications: Dermatoses severes, allergies, collagenoses\nVoie: orale\nContre-indications: infection non controlee, herpes simplex dissemine, gastrite active\nInteractions: anticoagulant, antidiabetique, AINS, vaccin vivant"
+  },
+  {
+    "name": "CORTANCYL 5mg",
+    "dci": "Prednisone",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Corticoide\nVoie: orale\nContre-indications: Diabete, infection"
+  },
+  {
+    "name": "COSOPT",
+    "dci": "Dorzolamide / Timolol",
+    "form": "comprime",
+    "dosage": "1 goutte x 2/j",
+    "notes": "Classe: Inhibiteur anhydrase carbonique + beta-bloquant\nIndications: Glaucome resistant\nVoie: orale\nContre-indications: asthme, BPCO severe, bradycardie, insuffisance cardiaque, hypersensibilite sulfamide\nInteractions: beta-bloquant oral, salicylate haute dose"
+  },
+  {
+    "name": "COTRIMOXAZOLE 480mg",
+    "dci": "Sulfamethoxazole/Trimethoprime",
+    "form": "comprime",
+    "dosage": "400/80 mg",
+    "notes": "Classe: Antibacterien\nVoie: orale"
+  },
+  {
+    "name": "COUMADINE 5mg",
+    "dci": "Warfarine",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: AVK, anticoagulant oral\nVoie: orale"
+  },
+  {
+    "name": "COVERSYL",
+    "dci": "Perindopril",
+    "form": "comprime",
+    "dosage": "2.5 a 10 mg/j",
+    "notes": "Classe: IEC\nIndications: HTA, coronaropathie, IC\nVoie: orale\nContre-indications: grossesse, angioedeme, hyperkaliemie severe\nInteractions: spironolactone, potassium, ains, lithium"
+  },
+  {
+    "name": "COVERSYL 10mg",
+    "dci": "Perindopril",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: IEC, HTA, coronaropathie\nVoie: orale"
+  },
+  {
+    "name": "COVERSYL 5mg",
+    "dci": "Perindopril",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: IEC, HTA, coronaropathie\nVoie: orale"
+  },
+  {
+    "name": "COZAAR",
+    "dci": "Losartan",
+    "form": "comprime",
+    "dosage": "50 a 100 mg/j",
+    "notes": "Classe: ARA2\nIndications: HTA, nephroprotection\nVoie: orale\nContre-indications: grossesse, hyperkaliemie severe, stenose arteres renales\nInteractions: spironolactone, potassium, ains, lithium"
+  },
+  {
+    "name": "COZAAR 100mg",
+    "dci": "Losartan",
+    "form": "comprime",
+    "dosage": "100 mg",
+    "notes": "Classe: ARA2, HTA\nVoie: orale"
+  },
+  {
+    "name": "COZAAR 50mg",
+    "dci": "Losartan",
+    "form": "comprime",
+    "dosage": "50 mg",
+    "notes": "Classe: ARA2, HTA\nVoie: orale"
+  },
+  {
+    "name": "CRESTOR",
+    "dci": "Rosuvastatine",
+    "form": "comprime",
+    "dosage": "5 a 40 mg/j",
+    "notes": "Classe: Statine\nIndications: Dyslipidemie, prevention CV\nVoie: orale\nContre-indications: maladie hepatique active, grossesse, myopathie active\nInteractions: ciclosporine, macrolide, fibrate"
+  },
+  {
+    "name": "CRESTOR 10mg",
+    "dci": "Rosuvastatine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "CRESTOR 20mg",
+    "dci": "Rosuvastatine",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "CRESTOR 5mg",
+    "dci": "Rosuvastatine",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "CYCLOGYL 1%",
+    "dci": "Cyclopentolate",
+    "form": "comprime",
+    "dosage": "1 goutte x 2",
+    "notes": "Classe: Mydriatique cycloplegique\nIndications: Refraction pediatrique\nVoie: orale\nContre-indications: glaucome a angle ferme\nInteractions: anticholinergique"
+  },
+  {
+    "name": "CYMBALTA 30",
+    "dci": "Duloxetine",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: IRSNA antidepresseur\nIndications: Depression, douleur neuropathique, fibromyalgie\nVoie: orale\nContre-indications: hypersensibilite, IMAO, insuffisance hepatique severe, insuffisance renale severe\nInteractions: IMAO, tramadol, lithium, warfarine, CYP1A2 inhibiteur"
+  },
+  {
+    "name": "DAFALGAN 500mg",
+    "dci": "Paracetamol",
+    "form": "gelule",
+    "dosage": "500 mg",
+    "notes": "Classe: Antalgique, antipyretique\nVoie: orale"
+  },
+  {
+    "name": "DAIVONEX",
+    "dci": "Calcipotriol",
+    "form": "comprime",
+    "dosage": "1-2 applications/j",
+    "notes": "Classe: Vitamine D analog topique\nIndications: Psoriasis en plaques\nVoie: orale\nContre-indications: hypercalcemie, lithiase renale\nInteractions: aucune majeure topique"
+  },
+  {
+    "name": "DAKTARIN",
+    "dci": "Miconazole",
+    "form": "comprime",
+    "dosage": "2 applications/j",
+    "notes": "Classe: Antifongique topique\nIndications: Mycoses cutanees, candidoses intertrigo\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: anticoagulant oral"
+  },
+  {
+    "name": "DAONIL 5",
+    "dci": "Glibenclamide",
+    "form": "comprime",
+    "dosage": "1 cp/j avant petit-dejeuner",
+    "notes": "Classe: Sulfamide hypoglycemiant\nIndications: Diabete type 2\nVoie: orale\nContre-indications: insuffisance hepatique severe, insuffisance renale severe, grossesse, allaitement, cetonurie\nInteractions: sulfamide, anticoagulant, beta-bloquant, cimetidine, alcool"
+  },
+  {
+    "name": "DAONIL 5mg",
+    "dci": "Glibenclamide",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Sulfamide hypoglycemiant\nVoie: orale"
+  },
+  {
+    "name": "DAPAGLIFLOZINE 10mg",
+    "dci": "Dapagliflozine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: iSGLT2\nIndications: iSGLT2: IC, diabete type 2\nVoie: orale"
+  },
+  {
+    "name": "DEBRIDAT",
+    "dci": "Trimebutine",
+    "form": "comprime",
+    "dosage": "100 mg",
+    "notes": "Classe: Regulateur du transit, antispasmodique\nVoie: orale"
+  },
+  {
+    "name": "DEPAKINE 500",
+    "dci": "Valproate de sodium",
+    "form": "comprime",
+    "dosage": "Selon indication et taux sanguin",
+    "notes": "Classe: Anticonvulsivant\nIndications: Epilepsie, migraine, trouble bipolaire\nVoie: orale\nContre-indications: grossesse, insuffisance hepatique severe, pancreatite, porphyrie\nInteractions: aspirine, carbamazepine, lamotrigine, warfarine"
+  },
+  {
+    "name": "DEROXAT 20mg",
+    "dci": "Paroxetine",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: ISRS, antidepresseur\nVoie: orale"
+  },
+  {
+    "name": "DIAMICRON 30",
+    "dci": "Gliclazide",
+    "form": "comprime",
+    "dosage": "1 cp/j avant petit-dejeuner",
+    "notes": "Classe: Sulfamide hypoglycemiant\nIndications: Diabete type 2\nVoie: orale\nContre-indications: insuffisance hepatique severe, insuffisance renale severe, grossesse, cetonurie\nInteractions: sulfamide, anticoagulant, beta-bloquant, alcool"
+  },
+  {
+    "name": "DIAMICRON 30mg MR",
+    "dci": "Gliclazide",
+    "form": "comprime MR",
+    "dosage": "30 mg",
+    "notes": "Classe: Sulfamide hypoglycemiant\nVoie: orale"
+  },
+  {
+    "name": "DIAMICRON 60mg MR",
+    "dci": "Gliclazide",
+    "form": "comprime MR",
+    "dosage": "60 mg",
+    "notes": "Classe: Sulfamide hypoglycemiant\nVoie: orale"
+  },
+  {
+    "name": "DICLOFENAC 50",
+    "dci": "Diclofenac",
+    "form": "comprime",
+    "dosage": "1 cp x 2-3/j",
+    "notes": "Classe: AINS\nIndications: Douleur inflammatoire intense\nVoie: orale\nContre-indications: allergie AINS, ulcere actif, insuffisance cardiaque severe, grossesse 3e trimestre\nInteractions: anticoagulant, aspirine, iec, lithium, methotrexate, digoxine"
+  },
+  {
+    "name": "DIFFERINE",
+    "dci": "Adapalene",
+    "form": "comprime",
+    "dosage": "1 application le soir",
+    "notes": "Classe: Retinoide topique\nIndications: Acne comedonienne et papulo-pustuleuse\nVoie: orale\nContre-indications: grossesse, allaitement, eczema, rosacee\nInteractions: autre retinoide, peroxide benzoyle, acide glycolique"
+  },
+  {
+    "name": "DIFFU-K",
+    "dci": "Potassium chlorure",
+    "form": "gelule",
+    "dosage": "600 mg",
+    "notes": "Classe: Supplement potassium, hypokaliemie\nVoie: orale"
+  },
+  {
+    "name": "DIGOXINE 0.25mg",
+    "dci": "Digoxine",
+    "form": "comprime",
+    "dosage": "0.25 mg",
+    "notes": "Classe: Digitalique\nIndications: Digitalique: IC, ACFA\nVoie: orale"
+  },
+  {
+    "name": "DIPROSALIC",
+    "dci": "Betamethasone / Acide salicylique",
+    "form": "comprime",
+    "dosage": "1-2 applications/j",
+    "notes": "Classe: Corticoide + keratolytique\nIndications: Psoriasis, hyperkeratose\nVoie: orale\nContre-indications: infection cutanee, acne, rosacee\nInteractions: aucune majeure topique"
+  },
+  {
+    "name": "DIPROSONE creme",
+    "dci": "Betamethasone",
+    "form": "creme",
+    "dosage": "0.05%",
+    "notes": "Classe: Dermocorticoide fort\nVoie: cutanee"
+  },
+  {
+    "name": "DOLIPRANE 100 mg",
+    "dci": "Paracetamol",
+    "form": "comprime",
+    "dosage": "15 mg/kg/dose toutes les 6h max 60 mg/kg/j",
+    "notes": "Classe: Analgesique antipyretique\nIndications: Fievre, douleur chez l enfant\nVoie: orale\nContre-indications: insuffisance hepatique severe\nInteractions: warfarine, alcool"
+  },
+  {
+    "name": "DOLIPRANE 1000",
+    "dci": "Paracetamol",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j",
+    "notes": "Classe: Analgesique antipyretique\nIndications: Douleur, fievre\nVoie: orale\nContre-indications: insuffisance hepatique severe, allergie paracetamol\nInteractions: warfarine, isoniazide, alcool"
+  },
+  {
+    "name": "DOLIPRANE 1000mg",
+    "dci": "Paracetamol",
+    "form": "comprime",
+    "dosage": "1000 mg",
+    "notes": "Classe: Antalgique, antipyretique\nVoie: orale"
+  },
+  {
+    "name": "DOLIPRANE 150 mg",
+    "dci": "Paracetamol",
+    "form": "comprime",
+    "dosage": "15 mg/kg/dose toutes les 6h",
+    "notes": "Classe: Analgesique antipyretique\nIndications: Fievre, douleur enfant\nVoie: orale\nContre-indications: insuffisance hepatique severe\nInteractions: warfarine"
+  },
+  {
+    "name": "DOLIPRANE 240 mg",
+    "dci": "Paracetamol",
+    "form": "comprime",
+    "dosage": "15 mg/kg/dose toutes les 6h",
+    "notes": "Classe: Analgesique antipyretique\nIndications: Fievre, douleur enfant\nVoie: orale\nContre-indications: insuffisance hepatique severe\nInteractions: warfarine"
+  },
+  {
+    "name": "DOLIPRANE 500",
+    "dci": "Paracetamol",
+    "form": "comprime",
+    "dosage": "1 a 2 cp x 3/j",
+    "notes": "Classe: Analgesique antipyretique\nIndications: Douleur legere a moderee, fievre\nVoie: orale\nContre-indications: insuffisance hepatique severe, allergie paracetamol\nInteractions: warfarine, isoniazide, alcool"
+  },
+  {
+    "name": "DOLIPRANE 500mg",
+    "dci": "Paracetamol",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Antalgique, antipyretique\nVoie: orale"
+  },
+  {
+    "name": "DOLIPRANE sirop enfant",
+    "dci": "Paracetamol",
+    "form": "sirop",
+    "dosage": "120 mg/5ml",
+    "notes": "Classe: Antalgique, antipyretique pediatrique\nVoie: orale"
+  },
+  {
+    "name": "DORMANAL",
+    "dci": "Lidocaine / Phenol",
+    "form": "comprime",
+    "dosage": "Pulverisation x 3-6/j",
+    "notes": "Classe: Anesthesique local ORL\nIndications: Angine, douleur pharyngee\nVoie: orale\nContre-indications: hypersensibilide lidocaine, enfant < 6 ans\nInteractions: antiarythmique"
+  },
+  {
+    "name": "DOXYCYCLINE 100",
+    "dci": "Doxycycline",
+    "form": "comprime",
+    "dosage": "100 mg x 1-2/j pendant 7-14 jours",
+    "notes": "Classe: Antibiotique tetracycline\nIndications: Acne, infections atypiques, borreliose, paludisme\nVoie: orale\nContre-indications: grossesse, allaitement, enfant < 8 ans, insuffisance hepatique severe\nInteractions: antiacide, fer, warfarine, barbiturique"
+  },
+  {
+    "name": "DOXYCYCLINE 100mg",
+    "dci": "Doxycycline",
+    "form": "gelule",
+    "dosage": "100 mg",
+    "notes": "Classe: Tetracycline\nVoie: orale\nContre-indications: Grossesse, enfant<8ans"
+  },
+  {
+    "name": "DUPHALAC",
+    "dci": "Lactulose",
+    "form": "comprime",
+    "dosage": "15-45 ml/j",
+    "notes": "Classe: Laxatif osmotique\nIndications: Constipation, encephalopathie hepatique\nVoie: orale\nContre-indications: galactosemie, obstruction intestinale, perforation digestive\nInteractions: antibiotique oral, laxatif stimulant"
+  },
+  {
+    "name": "DUPHASTON 10",
+    "dci": "Dydrogesterone",
+    "form": "comprime",
+    "dosage": "1 cp x 2-3/j selon indication",
+    "notes": "Classe: Progestatif\nIndications: Menaces d avortement, insuffisance luteale, dysmenorrhee\nVoie: orale\nContre-indications: cancer sein/endometre, trombose, hemorragie genitale non diagnostiquee\nInteractions: rifampicine, anticonvulsivant"
+  },
+  {
+    "name": "EFFERALGAN 1g",
+    "dci": "Paracetamol",
+    "form": "comprime effervescent",
+    "dosage": "1 g",
+    "notes": "Classe: Antalgique, antipyretique\nVoie: orale"
+  },
+  {
+    "name": "EFFERALGAN 500",
+    "dci": "Paracetamol",
+    "form": "comprime",
+    "dosage": "1 a 2 cp x 3/j",
+    "notes": "Classe: Analgesique antipyretique\nIndications: Douleur, fievre\nVoie: orale\nContre-indications: insuffisance hepatique severe\nInteractions: warfarine, alcool"
+  },
+  {
+    "name": "EFFERALGAN 500mg",
+    "dci": "Paracetamol",
+    "form": "comprime effervescent",
+    "dosage": "500 mg",
+    "notes": "Classe: Antalgique, antipyretique\nVoie: orale"
+  },
+  {
+    "name": "EFFEXOR 75",
+    "dci": "Venlafaxine",
+    "form": "comprime",
+    "dosage": "1 cp/j le matin",
+    "notes": "Classe: IRSNA antidepresseur\nIndications: Depression, anxiete generalisee\nVoie: orale\nContre-indications: hypersensibilite, IMAO, allongement QT, HTA severe\nInteractions: IMAO, tramadol, lithium, warfarine, anticoagulant"
+  },
+  {
+    "name": "EFIENT 10mg",
+    "dci": "Prasugrel",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Antiagregant, SCA avec ICP\nVoie: orale"
+  },
+  {
+    "name": "ELIDEL",
+    "dci": "Pimecrolimus",
+    "form": "comprime",
+    "dosage": "2 applications/j",
+    "notes": "Classe: Inhibiteur calcineurine topique\nIndications: Dermatite atopique\nVoie: orale\nContre-indications: infection cutanee active, lymphome, Netherton\nInteractions: CYP3A4 inhibitueur"
+  },
+  {
+    "name": "ELIQUIS",
+    "dci": "Apixaban",
+    "form": "comprime",
+    "dosage": "Selon indication, age, poids",
+    "notes": "Classe: Anticoagulant oral direct\nIndications: Prevention AVC dans ACFA non valvulaire\nVoie: orale\nContre-indications: hemorragie active, valve mecanique, insuffisance hepatique severe\nInteractions: aspirine, clopidogrel, anti-inflammatoire, azole, macrolide"
+  },
+  {
+    "name": "ELIQUIS 2.5mg",
+    "dci": "Apixaban",
+    "form": "comprime",
+    "dosage": "2.5 mg",
+    "notes": "Classe: AOD, anticoagulant direct\nVoie: orale"
+  },
+  {
+    "name": "ELIQUIS 5mg",
+    "dci": "Apixaban",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: AOD, anticoagulant direct\nVoie: orale"
+  },
+  {
+    "name": "ELISOR 20mg",
+    "dci": "Pravastatine",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "EMPAGLIFLOZINE 10mg",
+    "dci": "Empagliflozine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: iSGLT2\nIndications: iSGLT2: IC, diabete type 2\nVoie: orale"
+  },
+  {
+    "name": "ENOXAPARINE 4000 UI",
+    "dci": "Enoxaparine",
+    "form": "injectable",
+    "dosage": "4000 UI",
+    "notes": "Classe: HBPM\nIndications: HBPM: Prevention TVP, SCA\nVoie: SC"
+  },
+  {
+    "name": "ENTRESTO",
+    "dci": "Sacubitril / Valsartan",
+    "form": "comprime",
+    "dosage": "Titration progressive",
+    "notes": "Classe: ARNI\nIndications: IC a FEV reduite\nVoie: orale\nContre-indications: grossesse, angioedeme, association IEC, hyperkaliemie severe\nInteractions: iec, spironolactone, potassium, ains"
+  },
+  {
+    "name": "ENTRESTO 49/51mg",
+    "dci": "Sacubitril/Valsartan",
+    "form": "comprime",
+    "dosage": "49/51 mg",
+    "notes": "Classe: ARNI, IC a FEVG reduite\nVoie: orale"
+  },
+  {
+    "name": "ENTRESTO 97/103mg",
+    "dci": "Sacubitril/Valsartan",
+    "form": "comprime",
+    "dosage": "97/103 mg",
+    "notes": "Classe: ARNI, IC a FEVG reduite\nVoie: orale"
+  },
+  {
+    "name": "EPLERENONE 25mg",
+    "dci": "Eplerenone",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: ARM\nIndications: ARM: IC post-infarctus\nVoie: orale"
+  },
+  {
+    "name": "ERYTHROMYCINE 500mg",
+    "dci": "Erythromycine",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Macrolide\nVoie: orale"
+  },
+  {
+    "name": "ESIDREX 25mg",
+    "dci": "Hydrochlorothiazide",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: Diuretique thiazidique, HTA\nVoie: orale"
+  },
+  {
+    "name": "ESOMEPRAZOLE 20mg",
+    "dci": "Esomeprazole",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: IPP, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "ESOMEPRAZOLE 40mg",
+    "dci": "Esomeprazole",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: IPP, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "EUPRESSYL",
+    "dci": "Urapidil",
+    "form": "comprime",
+    "dosage": "Selon protocole et TA",
+    "notes": "Classe: Antihypertenseur alpha-1\nIndications: Hypertension\nVoie: orale\nContre-indications: hypotension, stenose aortique severe\nInteractions: antihypertenseur, alcool, alpha-bloquant"
+  },
+  {
+    "name": "EUTHYROX 100",
+    "dci": "Levothyroxine",
+    "form": "comprime",
+    "dosage": "1 cp/j a jeun",
+    "notes": "Classe: Hormone thyroidienne\nIndications: Hypothyroidie\nVoie: orale\nContre-indications: thyrotoxicose, insuffisance surrenale\nInteractions: fer, calcium, antiacide"
+  },
+  {
+    "name": "EXFORGE",
+    "dci": "Amlodipine / Valsartan",
+    "form": "comprime",
+    "dosage": "1 cp par jour",
+    "notes": "Classe: Antihypertenseur\nIndications: Hypertension arterielle\nVoie: orale\nContre-indications: grossesse, hyperkaliemie, stenose arteres renales\nInteractions: spironolactone, potassium, ains"
+  },
+  {
+    "name": "EXLUTION",
+    "dci": "Drospirenone / Ethinylestradiol",
+    "form": "comprime",
+    "dosage": "1 cp/j x 21 jours",
+    "notes": "Classe: Contraception orale combinee\nIndications: Contraception, acnee\nVoie: orale\nContre-indications: thrombose, AVC, insuffisance renale, hyperkaliemie, hepatite severe, migraine avec aura\nInteractions: spironolactone, potassium, IEC, ARA2, rifampicine"
+  },
+  {
+    "name": "EZETROL",
+    "dci": "Ezetimibe",
+    "form": "comprime",
+    "dosage": "10 mg/j",
+    "notes": "Classe: Hypolipemiant\nIndications: Dyslipidemie en association ou intolerance statine\nVoie: orale\nContre-indications: maladie hepatique active si association statine, grossesse si association statine\nInteractions: ciclosporine, fibrate, cholestyramine, statine"
+  },
+  {
+    "name": "EZETROL 10mg",
+    "dci": "Ezetimibe",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Inhibiteur absorption cholesterol\nVoie: orale"
+  },
+  {
+    "name": "FELDENE 20mg",
+    "dci": "Piroxicam",
+    "form": "gelule",
+    "dosage": "20 mg",
+    "notes": "Classe: Anti-inflammatoire\nVoie: orale"
+  },
+  {
+    "name": "FERCIV 100mg IV",
+    "dci": "Fer saccharose",
+    "form": "injectable",
+    "dosage": "100 mg/5ml",
+    "notes": "Classe: Supplement fer injectable\nVoie: IV"
+  },
+  {
+    "name": "FERO-GRADUMET",
+    "dci": "Fer sulfate",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Fer\nIndications: Anemie ferriprive, prevention chez la femme enceinte\nVoie: orale\nContre-indications: hemochromatose, anemie non ferriprive\nInteractions: antiacide, tetracycline, fluoroquinolone, levothyroxine"
+  },
+  {
+    "name": "FERROFOL",
+    "dci": "Fer / Acide folique",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Fer + vitamine B9\nIndications: Anemie ferriprive et prevention grossesse\nVoie: orale\nContre-indications: hemochromatose, anemie non ferriprive\nInteractions: antiacide, tetracycline, levothyroxine"
+  },
+  {
+    "name": "FLAGYL 250",
+    "dci": "Metronidazole",
+    "form": "comprime",
+    "dosage": "250-500 mg x 3/j pendant 7-10 jours",
+    "notes": "Classe: Antibiotique antiparasitaire\nIndications: Infections anaerobies, amibiase, giardiase\nVoie: orale\nContre-indications: allaitement, hypersensibilite, grossesse 1er trimestre\nInteractions: alcool, warfarine, lithium, phenytoine"
+  },
+  {
+    "name": "FLAGYL 250mg",
+    "dci": "Metronidazole",
+    "form": "comprime",
+    "dosage": "250 mg",
+    "notes": "Classe: Antiparasitaire, antibacterien\nVoie: orale"
+  },
+  {
+    "name": "FLAGYL 500mg",
+    "dci": "Metronidazole",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Antiparasitaire, antibacterien\nVoie: orale"
+  },
+  {
+    "name": "FLAGYL 500mg IV",
+    "dci": "Metronidazole",
+    "form": "injectable",
+    "dosage": "500 mg/100ml",
+    "notes": "Classe: Antiparasitaire, antibacterien injectable\nVoie: IV"
+  },
+  {
+    "name": "FLAZOL 500mg",
+    "dci": "Metronidazole",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Antiparasitaire, antibacterien\nVoie: orale"
+  },
+  {
+    "name": "FLECAINE",
+    "dci": "Flecainide",
+    "form": "comprime",
+    "dosage": "Selon protocole",
+    "notes": "Classe: Antiarythmique classe Ic\nIndications: Troubles du rythme supraventriculaires\nVoie: orale\nContre-indications: cardiopathie structurelle, infarctus ancien, bloc de conduction\nInteractions: amiodarone, beta-bloquant, digoxine, antidepresseur tricyclique"
+  },
+  {
+    "name": "FLECAINE 100mg",
+    "dci": "Flecainide",
+    "form": "comprime",
+    "dosage": "100 mg",
+    "notes": "Classe: Anti-arythmique classe Ic\nVoie: orale\nContre-indications: IC, post-infarctus"
+  },
+  {
+    "name": "FLIXONASE",
+    "dci": "Fluticasone",
+    "form": "comprime",
+    "dosage": "2 pulverisations x 1/j",
+    "notes": "Classe: Corticoide nasal\nIndications: Rhinite allergique\nVoie: orale\nContre-indications: infection nasale non traitee\nInteractions: ritonavir, ketoconazole"
+  },
+  {
+    "name": "FLUCONAZOL 150",
+    "dci": "Fluconazole",
+    "form": "comprime",
+    "dosage": "150 mg dose unique ou 50-200 mg/j",
+    "notes": "Classe: Antifongique azole\nIndications: Candidoses, mycoses severes\nVoie: orale\nContre-indications: allergie azole, allongement QT, grossesse\nInteractions: warfarine, phenytoine, ciclosporine, sulfamide, statine, amiodarone"
+  },
+  {
+    "name": "FLUCONAZOLE 150mg",
+    "dci": "Fluconazole",
+    "form": "gelule",
+    "dosage": "150 mg",
+    "notes": "Classe: Antifongique\nVoie: orale"
+  },
+  {
+    "name": "FLUCONAZOLE 200mg",
+    "dci": "Fluconazole",
+    "form": "gelule",
+    "dosage": "200 mg",
+    "notes": "Classe: Antifongique systemique\nVoie: orale"
+  },
+  {
+    "name": "101-200 sur 475 - page 2 / 5",
+    "dci": null,
+    "form": null,
+    "dosage": null,
+    "notes": null
+  },
+  {
+    "name": "Debut",
+    "dci": null,
+    "form": null,
+    "dosage": null,
+    "notes": null
+  },
+  {
+    "name": "Precedent",
+    "dci": null,
+    "form": null,
+    "dosage": null,
+    "notes": null
+  },
+  {
+    "name": "Suivant",
+    "dci": null,
+    "form": null,
+    "dosage": null,
+    "notes": null
+  },
+  {
+    "name": "Fin",
+    "dci": null,
+    "form": null,
+    "dosage": null,
+    "notes": null
+  },
+  {
+    "name": "FLUDEX LP 1.5mg",
+    "dci": "Indapamide",
+    "form": "comprime LP",
+    "dosage": "1.5 mg",
+    "notes": "Classe: Diuretique thiazidique-like, HTA\nVoie: orale"
+  },
+  {
+    "name": "FLUOROMETHOLONE",
+    "dci": "Fluorometholone",
+    "form": "comprime",
+    "dosage": "1 goutte x 4/j",
+    "notes": "Classe: Corticoide ophtalmique faible\nIndications: Allergie oculaire, inflammation moderee\nVoie: orale\nContre-indications: infection oculaire non traitee, herpes simplex\nInteractions: anticoagulant"
+  },
+  {
+    "name": "FOLACIN",
+    "dci": "Acide folique",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Vitamine B9\nIndications: Prevention malformations neuronales, anemie megaloblastique\nVoie: orale\nContre-indications: anemie non ferriprive non diagnostiquee\nInteractions: methotrexate, phenytoine, sulfamide"
+  },
+  {
+    "name": "FORLAX 10",
+    "dci": "Macrogol 4000",
+    "form": "comprime",
+    "dosage": "1 a 2 sachets/j dans un verre d eau",
+    "notes": "Classe: Laxatif osmotique\nIndications: Constipation chronique\nVoie: orale\nContre-indications: perforation digestive, obstruction intestinale, maladie inflammatoire intestinale aigue\nInteractions: espace de 2h avec autres medicaments"
+  },
+  {
+    "name": "FORXIGA",
+    "dci": "Dapagliflozine",
+    "form": "comprime",
+    "dosage": "10 mg/j selon indication et DFG",
+    "notes": "Classe: Inhibiteur SGLT2\nIndications: Diabete type 2, IC, maladie renale\nVoie: orale\nContre-indications: acidocetose, deshydratation severe, infection genitale severe\nInteractions: diuretique, insuline, sulfamide hypoglycemiant"
+  },
+  {
+    "name": "FORXIGA 10mg",
+    "dci": "Dapagliflozine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: iSGLT2, diabete type 2, IC\nVoie: orale"
+  },
+  {
+    "name": "FRAXIPARINE 0.3ml",
+    "dci": "Nadroparine",
+    "form": "injectable",
+    "dosage": "2850 UI/0.3ml",
+    "notes": "Classe: HBPM, prevention TVP\nVoie: SC"
+  },
+  {
+    "name": "FUCIDINE creme 2%",
+    "dci": "Acide fusidique",
+    "form": "creme",
+    "dosage": "2%",
+    "notes": "Classe: Antibiotique local\nVoie: cutanee"
+  },
+  {
+    "name": "GALVUS 50mg",
+    "dci": "Vildagliptine",
+    "form": "comprime",
+    "dosage": "50 mg",
+    "notes": "Classe: Inhibiteur DPP-4, diabete type 2\nVoie: orale"
+  },
+  {
+    "name": "GAVISCON",
+    "dci": "Alginate de sodium / Bicarbonate",
+    "form": "comprime",
+    "dosage": "Apres repas et au coucher",
+    "notes": "Classe: Antiacide protecteur\nIndications: Reflux gastro-oesophagien, brulures d estomac\nVoie: orale\nContre-indications: insuffisance renale severe, hypocalcemie\nInteractions: tetracycline, fluoroquinolone, anticoagulant, digitalique"
+  },
+  {
+    "name": "GAVISCON INFANT",
+    "dci": "Alginate de sodium / Bicarbonate",
+    "form": "comprime",
+    "dosage": "Apres chaque tetee",
+    "notes": "Classe: Antireflux pediatrique\nIndications: Reflux gastro-oesophagien du nourrisson\nVoie: orale\nContre-indications: insuffisance renale severe\nInteractions: espace de 2h avec autres medicaments"
+  },
+  {
+    "name": "GENTAMICINE 80mg",
+    "dci": "Gentamicine",
+    "form": "injectable",
+    "dosage": "80 mg/2ml",
+    "notes": "Classe: Aminoside\nVoie: IM/IV\nContre-indications: Nephrotoxicite, ototoxicite"
+  },
+  {
+    "name": "GESTAFER",
+    "dci": "Fer fumarate / Acide folique",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Fer + vitamine B9\nIndications: Anemie grossesse\nVoie: orale\nContre-indications: hemochromatose, anemie non ferriprive\nInteractions: antiacide, tetracycline"
+  },
+  {
+    "name": "GLUCOPHAGE 1000mg",
+    "dci": "Metformine",
+    "form": "comprime",
+    "dosage": "1000 mg",
+    "notes": "Classe: Antidiabetique, diabete type 2\nVoie: orale"
+  },
+  {
+    "name": "GLUCOPHAGE 500",
+    "dci": "Metformine",
+    "form": "comprime",
+    "dosage": "1 cp x 2-3/j au cours des repas",
+    "notes": "Classe: Biguanide\nIndications: Diabete type 2, syndrome des ovaires polykystiques\nVoie: orale\nContre-indications: insuffisance renale severe (DFG < 30), acidocetose, insuffisance hepatique severe, choc\nInteractions: contrastes iodes, cimetidine, alcool"
+  },
+  {
+    "name": "GLUCOPHAGE 500mg",
+    "dci": "Metformine",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Antidiabetique, diabete type 2\nVoie: orale\nContre-indications: Insuffisance renale"
+  },
+  {
+    "name": "GLUCOPHAGE 850",
+    "dci": "Metformine",
+    "form": "comprime",
+    "dosage": "1 cp x 2-3/j",
+    "notes": "Classe: Biguanide\nIndications: Diabete type 2\nVoie: orale\nContre-indications: insuffisance renale severe, acidocetose, insuffisance hepatique severe\nInteractions: contrastes iodes, cimetidine, alcool"
+  },
+  {
+    "name": "GLUCOPHAGE 850mg",
+    "dci": "Metformine",
+    "form": "comprime",
+    "dosage": "850 mg",
+    "notes": "Classe: Antidiabetique, diabete type 2\nVoie: orale"
+  },
+  {
+    "name": "HEPARINE 25000 UI",
+    "dci": "Heparine sodique",
+    "form": "injectable",
+    "dosage": "25000 UI/5ml",
+    "notes": "Classe: Anticoagulant\nVoie: IV"
+  },
+  {
+    "name": "HEPARINE SODIQUE 5000 UI/ml",
+    "dci": "Heparine sodique",
+    "form": "injectable",
+    "dosage": "5000 UI/ml",
+    "notes": "Classe: Anticoagulant\nIndications: Anticoagulant: Thrombose, embolie\nVoie: IV/SC"
+  },
+  {
+    "name": "HUMALOG",
+    "dci": "Insuline lispro",
+    "form": "comprime",
+    "dosage": "Selon ratio et glycemie",
+    "notes": "Classe: Insuline ultra-rapide\nIndications: Diabete type 1 et 2\nVoie: orale\nContre-indications: hypoglycemie, allergie insuline\nInteractions: beta-bloquant, alcool, AINS"
+  },
+  {
+    "name": "HYDROCHLOROTHIAZIDE 25mg",
+    "dci": "Hydrochlorothiazide",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: Diuretique thiazidique\nIndications: Diuretique thiazidique: HTA\nVoie: orale"
+  },
+  {
+    "name": "IBUPROFENE 200mg",
+    "dci": "Ibuprofene",
+    "form": "comprime",
+    "dosage": "200 mg",
+    "notes": "Classe: Anti-inflammatoire, antalgique\nVoie: orale\nContre-indications: Ulcere, asthme"
+  },
+  {
+    "name": "IBUPROFENE 400mg",
+    "dci": "Ibuprofene",
+    "form": "comprime",
+    "dosage": "400 mg",
+    "notes": "Classe: Anti-inflammatoire, antalgique\nVoie: orale\nContre-indications: Ulcere, asthme"
+  },
+  {
+    "name": "IMODIUM",
+    "dci": "Loperamide",
+    "form": "comprime",
+    "dosage": "2 cp initialement puis 1 cp apres chaque selles liquides",
+    "notes": "Classe: Antidiarrheique\nIndications: Diarrhee aigue non infectieuse\nVoie: orale\nContre-indications: dysenterie, colite pseudomembraneuse, obstruction intestinale, grossesse 1er trimestre\nInteractions: inhibiteur CYP3A4, antifongique, macrolide"
+  },
+  {
+    "name": "IMODIUM 2mg",
+    "dci": "Loperamide",
+    "form": "gelule",
+    "dosage": "2 mg",
+    "notes": "Classe: Anti-diarrheique\nVoie: orale"
+  },
+  {
+    "name": "IMOVANE 7.5mg",
+    "dci": "Zopiclone",
+    "form": "comprime",
+    "dosage": "7.5 mg",
+    "notes": "Classe: Hypnotique\nVoie: orale"
+  },
+  {
+    "name": "INDAPAMIDE 1.5mg LP",
+    "dci": "Indapamide",
+    "form": "comprime LP",
+    "dosage": "1.5 mg",
+    "notes": "Classe: Diuretique thiazidique-like\nIndications: Diuretique thiazidique-like: HTA\nVoie: orale"
+  },
+  {
+    "name": "INDOCOLLYRE",
+    "dci": "Indometacine",
+    "form": "collyre",
+    "dosage": "0.1%",
+    "notes": "Classe: AINS oculaire\nVoie: oculaire"
+  },
+  {
+    "name": "INEXIUM 20",
+    "dci": "Esomeprazole",
+    "form": "comprime",
+    "dosage": "1 cp/j avant petit-dejeuner",
+    "notes": "Classe: Inhibiteur de la pompe a protons\nIndications: RGO, ulcere, eradication H. pylori\nVoie: orale\nContre-indications: allergie omeprazole/esomeprazole\nInteractions: clopidogrel, atazanavir, ketoconazole"
+  },
+  {
+    "name": "INEXIUM 40mg",
+    "dci": "Esomeprazole",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: IPP, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "INH",
+    "dci": "Isoniazide",
+    "form": "comprime",
+    "dosage": "5 mg/kg/j max 300 mg/j",
+    "notes": "Classe: Antibiotique antituberculeux\nIndications: Tuberculose\nVoie: orale\nContre-indications: hepatite aigue, neuropathie peripherique severe\nInteractions: carbamazepine, phenytoine, warfarine"
+  },
+  {
+    "name": "INNOHEP 4500 UI",
+    "dci": "Tinzaparine",
+    "form": "injectable",
+    "dosage": "4500 UI",
+    "notes": "Classe: HBPM, traitement TVP\nVoie: SC"
+  },
+  {
+    "name": "INSULINE LANTUS",
+    "dci": "Insuline glargine",
+    "form": "injectable",
+    "dosage": "100 UI/ml",
+    "notes": "Classe: Insuline basale\nVoie: SC"
+  },
+  {
+    "name": "INSULINE MIXTARD 30/70",
+    "dci": "Insuline mixte",
+    "form": "injectable",
+    "dosage": "100 UI/ml",
+    "notes": "Classe: Insuline premixee\nVoie: SC"
+  },
+  {
+    "name": "INSULINE NOVORAPID",
+    "dci": "Insuline asparte",
+    "form": "injectable",
+    "dosage": "100 UI/ml",
+    "notes": "Classe: Insuline rapide\nVoie: SC"
+  },
+  {
+    "name": "ISOPTINE",
+    "dci": "Verapamil",
+    "form": "comprime",
+    "dosage": "Selon forme et indication",
+    "notes": "Classe: Inhibiteur calcique non DHP\nIndications: Angor, HTA, controle frequence\nVoie: orale\nContre-indications: insuffisance cardiaque systolique, bloc AV, bradycardie severe\nInteractions: beta-bloquant, digoxine, ivabradine, statine"
+  },
+  {
+    "name": "ISOPTINE 120mg",
+    "dci": "Verapamil",
+    "form": "comprime",
+    "dosage": "120 mg",
+    "notes": "Classe: Inhibiteur calcique, HTA, arythmie\nVoie: orale"
+  },
+  {
+    "name": "ISOPTINE LP 240mg",
+    "dci": "Verapamil",
+    "form": "comprime LP",
+    "dosage": "240 mg",
+    "notes": "Classe: Inhibiteur calcique LP, HTA\nVoie: orale"
+  },
+  {
+    "name": "ISOSORBIDE DINITRATE 20mg",
+    "dci": "Isosorbide dinitrate",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Derive nitre\nIndications: Derive nitre: Angor, IC\nVoie: orale"
+  },
+  {
+    "name": "IVABRADINE 5mg",
+    "dci": "Ivabradine",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Inhibiteur If\nIndications: Inhibiteur If: IC, angor stable\nVoie: orale"
+  },
+  {
+    "name": "IXPRIM",
+    "dci": "Tramadol/Paracetamol",
+    "form": "comprime",
+    "dosage": "37.5/325 mg",
+    "notes": "Classe: Antalgique palier 2\nVoie: orale"
+  },
+  {
+    "name": "JANUVIA 100mg",
+    "dci": "Sitagliptine",
+    "form": "comprime",
+    "dosage": "100 mg",
+    "notes": "Classe: Inhibiteur DPP-4, diabete type 2\nVoie: orale"
+  },
+  {
+    "name": "JARDIANCE",
+    "dci": "Empagliflozine",
+    "form": "comprime",
+    "dosage": "10 mg/j",
+    "notes": "Classe: Inhibiteur SGLT2\nIndications: Diabete type 2, IC, risque cardio-renal\nVoie: orale\nContre-indications: acidocetose, deshydratation severe, infection genitale severe\nInteractions: diuretique, insuline, sulfamide hypoglycemiant"
+  },
+  {
+    "name": "JARDIANCE 10mg",
+    "dci": "Empagliflozine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: iSGLT2, diabete type 2, IC\nVoie: orale"
+  },
+  {
+    "name": "KARDEGIC 160mg",
+    "dci": "Acide acetylsalicylique",
+    "form": "sachet",
+    "dosage": "160 mg",
+    "notes": "Classe: Antiagregant plaquettaire\nVoie: orale"
+  },
+  {
+    "name": "KARDEGIC 75",
+    "dci": "Acide acetylsalicylique",
+    "form": "comprime",
+    "dosage": "1 sachet par jour",
+    "notes": "Classe: Antiagregant plaquettaire\nIndications: Prevention CV\nVoie: orale\nContre-indications: allergie aspirine, ulcere actif, hemorragie\nInteractions: anticoagulant, clopidogrel, ains, corticoide"
+  },
+  {
+    "name": "KARDEGIC 75mg",
+    "dci": "Acide acetylsalicylique",
+    "form": "sachet",
+    "dosage": "75 mg",
+    "notes": "Classe: Antiagregant plaquettaire\nVoie: orale"
+  },
+  {
+    "name": "KEPPRA 500",
+    "dci": "Levetiracetam",
+    "form": "comprime",
+    "dosage": "500 mg x 2/j puis titration",
+    "notes": "Classe: Anticonvulsivant\nIndications: Epilepsie partielle et generalisee\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune majeure"
+  },
+  {
+    "name": "KETOPROFENE 100mg",
+    "dci": "Ketoprofene",
+    "form": "gelule",
+    "dosage": "100 mg",
+    "notes": "Classe: Anti-inflammatoire, antalgique\nVoie: orale"
+  },
+  {
+    "name": "KREDEX 25mg",
+    "dci": "Carvedilol",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: Beta-bloquant, IC, HTA\nVoie: orale"
+  },
+  {
+    "name": "KREDEX 6.25mg",
+    "dci": "Carvedilol",
+    "form": "comprime",
+    "dosage": "6.25 mg",
+    "notes": "Classe: Beta-bloquant, IC, HTA\nVoie: orale"
+  },
+  {
+    "name": "LAMICTAL 50",
+    "dci": "Lamotrigine",
+    "form": "comprime",
+    "dosage": "Titration lente selon schema",
+    "notes": "Classe: Anticonvulsivant\nIndications: Epilepsie, trouble bipolaire\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: valproate, carbamazepine, phenytoine, contraceptif oral"
+  },
+  {
+    "name": "LAMISIL 250",
+    "dci": "Terbinafine",
+    "form": "comprime",
+    "dosage": "250 mg/j pendant 6-12 semaines",
+    "notes": "Classe: Antifongique allylamine\nIndications: Onychomycoses, mycoses cutanees\nVoie: orale\nContre-indications: insuffisance hepatique active, grossesse, allaitement\nInteractions: cimetidine, rifampicine, ciclosporine"
+  },
+  {
+    "name": "LAMISIL CREME",
+    "dci": "Terbinafine",
+    "form": "comprime",
+    "dosage": "1-2 applications/j pendant 1-2 semaines",
+    "notes": "Classe: Antifongique topique\nIndications: Mycoses cutanees (pied d athlete, teigne)\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune majeure topique"
+  },
+  {
+    "name": "LANOXIN",
+    "dci": "Digoxine",
+    "form": "comprime",
+    "dosage": "Selon age, poids, DFG",
+    "notes": "Classe: Digitalique\nIndications: Controle frequence ou IC selectionnee\nVoie: orale\nContre-indications: bloc AV, bradycardie severe, troubles du rythme ventriculaire\nInteractions: amiodarone, verapamil, diltiazem, diuretique, macrolide"
+  },
+  {
+    "name": "LANSOPRAZOLE 30mg",
+    "dci": "Lansoprazole",
+    "form": "gelule",
+    "dosage": "30 mg",
+    "notes": "Classe: IPP, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "LANTUS",
+    "dci": "Insuline glargine",
+    "form": "comprime",
+    "dosage": "Selon protocole et glycemies",
+    "notes": "Classe: Insuline basale longue\nIndications: Diabete type 1 et 2\nVoie: orale\nContre-indications: hypoglycemie, allergie insuline\nInteractions: beta-bloquant, alcool, AINS, IEC"
+  },
+  {
+    "name": "LAROXYL 25mg",
+    "dci": "Amitriptyline",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: Antidepresseur tricyclique\nVoie: orale"
+  },
+  {
+    "name": "LASILIX",
+    "dci": "Furosemide",
+    "form": "comprime",
+    "dosage": "Selon congestion, poids, diurese",
+    "notes": "Classe: Diuretique de l anse\nIndications: Congestion, IC, oedemes\nVoie: orale\nContre-indications: deshydratation severe, hypokaliemie severe, anurie\nInteractions: digoxine, ains, iec, ara2"
+  },
+  {
+    "name": "LASILIX 20mg IV",
+    "dci": "Furosemide",
+    "form": "injectable",
+    "dosage": "20 mg/2ml",
+    "notes": "Classe: Diuretique de l'anse injectable\nVoie: IV"
+  },
+  {
+    "name": "LASILIX 40mg",
+    "dci": "Furosemide",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: Diuretique de l'anse, IC, oedemes\nVoie: orale"
+  },
+  {
+    "name": "LASILIX 500mg",
+    "dci": "Furosemide",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Diuretique de l'anse forte dose\nVoie: orale"
+  },
+  {
+    "name": "LERCAN",
+    "dci": "Lercanidipine",
+    "form": "comprime",
+    "dosage": "10 a 20 mg/j",
+    "notes": "Classe: Inhibiteur calcique\nIndications: HTA\nVoie: orale\nContre-indications: insuffisance cardiaque non controlee, angor instable\nInteractions: macrolide, azole, jus de pamplemousse, ciclosporine"
+  },
+  {
+    "name": "LEVOFLOXACINE 500mg",
+    "dci": "Levofloxacine",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Fluoroquinolone\nVoie: orale"
+  },
+  {
+    "name": "LEVOTHYROX 100",
+    "dci": "Levothyroxine",
+    "form": "comprime",
+    "dosage": "1 cp/j a jeun",
+    "notes": "Classe: Hormone thyroidienne\nIndications: Hypothyroidie\nVoie: orale\nContre-indications: thyrotoxicose, insuffisance surrenale non traitee, infarctus recent\nInteractions: fer, calcium, antiacide, anticonvulsivant"
+  },
+  {
+    "name": "LEVOTHYROX 100ug",
+    "dci": "Levothyroxine",
+    "form": "comprime",
+    "dosage": "100 ug",
+    "notes": "Classe: Hypothyroidie\nVoie: orale"
+  },
+  {
+    "name": "LEVOTHYROX 25ug",
+    "dci": "Levothyroxine",
+    "form": "comprime",
+    "dosage": "25 ug",
+    "notes": "Classe: Hypothyroidie\nVoie: orale"
+  },
+  {
+    "name": "LEVOTHYROX 50",
+    "dci": "Levothyroxine",
+    "form": "comprime",
+    "dosage": "1 cp/j a jeun 30 min avant petit-dejeuner",
+    "notes": "Classe: Hormone thyroidienne\nIndications: Hypothyroidie\nVoie: orale\nContre-indications: thyrotoxicose non traitee, insuffisance surrenale non traitee, infarctus recent\nInteractions: fer, calcium, antiacide, anticonvulsivant, sertraline, carbamazepine"
+  },
+  {
+    "name": "LEVOTHYROX 50ug",
+    "dci": "Levothyroxine",
+    "form": "comprime",
+    "dosage": "50 ug",
+    "notes": "Classe: Hypothyroidie\nVoie: orale"
+  },
+  {
+    "name": "LEVOTHYROX 75ug",
+    "dci": "Levothyroxine",
+    "form": "comprime",
+    "dosage": "75 ug",
+    "notes": "Classe: Hypothyroidie\nVoie: orale"
+  },
+  {
+    "name": "LEXOMIL 6",
+    "dci": "Bromazepam",
+    "form": "comprime",
+    "dosage": "1-2 cp x 2-3/j",
+    "notes": "Classe: Benzodiazepine anxiolytique\nIndications: Anxiete, angoisse\nVoie: orale\nContre-indications: insuffisance respiratoire severe, myasthenie\nInteractions: alcool, sedatif, morphine"
+  },
+  {
+    "name": "LEXOMIL 6mg",
+    "dci": "Bromazepam",
+    "form": "comprime quadrisecable",
+    "dosage": "6 mg",
+    "notes": "Classe: Anxiolytique benzodiazepine\nVoie: orale"
+  },
+  {
+    "name": "LINCOMYCINE 500mg",
+    "dci": "Lincomycine",
+    "form": "gelule",
+    "dosage": "500 mg",
+    "notes": "Classe: Lincosamide\nVoie: orale"
+  },
+  {
+    "name": "LIPANTHYL 145mg",
+    "dci": "Fenofibrate",
+    "form": "comprime",
+    "dosage": "145 mg",
+    "notes": "Classe: Fibrate, hypertriglyceridemie\nVoie: orale"
+  },
+  {
+    "name": "LIPANTHYL 200mg",
+    "dci": "Fenofibrate",
+    "form": "gelule",
+    "dosage": "200 mg",
+    "notes": "Classe: Fibrate, hypertriglyceridemie\nVoie: orale"
+  },
+  {
+    "name": "LOPRIL 25mg",
+    "dci": "Captopril",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: IEC, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "LOPRIL 50mg",
+    "dci": "Captopril",
+    "form": "comprime",
+    "dosage": "50 mg",
+    "notes": "Classe: IEC, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "LOSARTAN 50mg",
+    "dci": "Losartan",
+    "form": "comprime",
+    "dosage": "50 mg",
+    "notes": "Classe: ARA2\nIndications: ARA2: HTA, nephropathie diabetique\nVoie: orale"
+  },
+  {
+    "name": "LOVENOX",
+    "dci": "Enoxaparine",
+    "form": "comprime",
+    "dosage": "Selon poids, indication et clairance",
+    "notes": "Classe: HBPM\nIndications: Anticoagulation injectable\nVoie: orale\nContre-indications: hemorragie active, TIH, insuffisance renale severe\nInteractions: aspirine, clopidogrel, ains, anticoagulant oral"
+  },
+  {
+    "name": "LOVENOX 4000 UI",
+    "dci": "Enoxaparine",
+    "form": "injectable",
+    "dosage": "4000 UI/0.4ml",
+    "notes": "Classe: HBPM, prevention/traitement TVP\nVoie: SC"
+  },
+  {
+    "name": "LOVENOX 6000 UI",
+    "dci": "Enoxaparine",
+    "form": "injectable",
+    "dosage": "6000 UI/0.6ml",
+    "notes": "Classe: HBPM, traitement TVP/EP\nVoie: SC"
+  },
+  {
+    "name": "LOVENOX 8000 UI",
+    "dci": "Enoxaparine",
+    "form": "injectable",
+    "dosage": "8000 UI/0.8ml",
+    "notes": "Classe: HBPM, traitement TVP/EP\nVoie: SC"
+  },
+  {
+    "name": "LOXEN",
+    "dci": "Nicardipine",
+    "form": "comprime",
+    "dosage": "Selon forme et TA",
+    "notes": "Classe: Inhibiteur calcique\nIndications: HTA\nVoie: orale\nContre-indications: hypotension severe, choc cardiogenique\nInteractions: beta-bloquant, diltiazem, macrolide"
+  },
+  {
+    "name": "LOXEN 20mg",
+    "dci": "Nicardipine",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Inhibiteur calcique, HTA, angor\nVoie: orale"
+  },
+  {
+    "name": "LOXEN LP 50mg",
+    "dci": "Nicardipine",
+    "form": "gelule LP",
+    "dosage": "50 mg",
+    "notes": "Classe: Inhibiteur calcique LP, HTA\nVoie: orale"
+  },
+  {
+    "name": "LUTERAN 5",
+    "dci": "Lynestrenol",
+    "form": "comprime",
+    "dosage": "1-3 cp/j selon indication",
+    "notes": "Classe: Progestatif\nIndications: Menorragies, endometriose, menopause hormonale\nVoie: orale\nContre-indications: cancer hormone-dependant, trombose, hemorragie non diagnostiquee, hepatite severe\nInteractions: rifampicine, anticonvulsivant"
+  },
+  {
+    "name": "LYRICA 75",
+    "dci": "Pregabaline",
+    "form": "comprime",
+    "dosage": "75 mg x 2/j puis titration",
+    "notes": "Classe: Anticonvulsivant / Analgesique neuropathique\nIndications: Neuropathie douloureuse, fibromyalgie, anxiete generalisee\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: alcool, sedatif, morphine"
+  },
+  {
+    "name": "MAALOX",
+    "dci": "Hydroxyde d aluminium / Hydroxyde de magnesium",
+    "form": "comprime",
+    "dosage": "Apres repas et au coucher",
+    "notes": "Classe: Antiacide\nIndications: Brulures d estomac, hyperacidite\nVoie: orale\nContre-indications: insuffisance renale severe, hypophosphoremie\nInteractions: tetracycline, fluoroquinolone, digoxine, fer"
+  },
+  {
+    "name": "MACROGYNOVIA",
+    "dci": "Macrogol 3350",
+    "form": "comprime",
+    "dosage": "1-2 sachets/j",
+    "notes": "Classe: Laxatif osmotique\nIndications: Constipation grossesse\nVoie: orale\nContre-indications: perforation digestive, obstruction intestinale\nInteractions: espace de 2h avec autres medicaments"
+  },
+  {
+    "name": "MAGNESIUM B6",
+    "dci": "Magnesium/Pyridoxine",
+    "form": "comprime",
+    "dosage": "48/5 mg",
+    "notes": "Classe: Supplement magnesium\nVoie: orale"
+  },
+  {
+    "name": "MAXIDEX",
+    "dci": "Dexamethasone",
+    "form": "comprime",
+    "dosage": "1 goutte x 4-6/j puis reduction progressive",
+    "notes": "Classe: Corticoide ophtalmique\nIndications: Uveite, inflammation severe, allergie oculaire\nVoie: orale\nContre-indications: infection oculaire non traitee, herpes simplex cornأ©en, glaucome\nInteractions: anticoagulant, antidiabetique oral"
+  },
+  {
+    "name": "MEOPROB 500",
+    "dci": "Naproxene",
+    "form": "comprime",
+    "dosage": "1 cp x 2/j",
+    "notes": "Classe: AINS\nIndications: Douleur, dysmenorrhee, arthrose\nVoie: orale\nContre-indications: allergie AINS, ulcere actif, insuffisance cardiaque severe\nInteractions: anticoagulant, aspirine, iec, lithium, methotrexate"
+  },
+  {
+    "name": "MERCILON",
+    "dci": "Desogestrel / Ethinylestradiol",
+    "form": "comprime",
+    "dosage": "1 cp/j x 21 jours",
+    "notes": "Classe: Contraception orale combinee\nIndications: Contraception\nVoie: orale\nContre-indications: thrombose, AVC, cancer hormone-dependant, hepatite severe, migraine avec aura\nInteractions: rifampicine, anticonvulsivant, antiretroviral"
+  },
+  {
+    "name": "METOCLOPRAMIDE 10mg",
+    "dci": "Metoclopramide",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Antiemetique\nVoie: orale"
+  },
+  {
+    "name": "METRONIDAZOLE 250mg",
+    "dci": "Metronidazole",
+    "form": "comprime",
+    "dosage": "250 mg",
+    "notes": "Classe: Antiparasitaire, antibacterien\nVoie: orale\nContre-indications: Alcool"
+  },
+  {
+    "name": "METRONIDAZOLE 500mg",
+    "dci": "Metronidazole",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Antiparasitaire, antibacterien\nVoie: orale"
+  },
+  {
+    "name": "MICARDIS",
+    "dci": "Telmisartan",
+    "form": "comprime",
+    "dosage": "40 a 80 mg/j",
+    "notes": "Classe: ARA2\nIndications: HTA, prevention CV\nVoie: orale\nContre-indications: grossesse, cholestase, hyperkaliemie severe\nInteractions: spironolactone, potassium, ains, digoxine"
+  },
+  {
+    "name": "MICARDIS 40mg",
+    "dci": "Telmisartan",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: ARA2, HTA\nVoie: orale"
+  },
+  {
+    "name": "MICARDIS 80mg",
+    "dci": "Telmisartan",
+    "form": "comprime",
+    "dosage": "80 mg",
+    "notes": "Classe: ARA2, HTA\nVoie: orale"
+  },
+  {
+    "name": "201-300 sur 475 - page 3 / 5",
+    "dci": null,
+    "form": null,
+    "dosage": null,
+    "notes": null
+  },
+  {
+    "name": "MICROGYNON",
+    "dci": "Levonorgestrel / Ethinylestradiol",
+    "form": "comprime",
+    "dosage": "1 cp/j a heure fixe pendant 21 jours puis 7 jours arret",
+    "notes": "Classe: Contraception orale combinee\nIndications: Contraception\nVoie: orale\nContre-indications: thrombose, AVC, cancer sein/endometre, grossesse, hepatite severe, migraine avec aura, HTA non controlee\nInteractions: rifampicine, anticonvulsivant, antiretroviral, antifongique, antibiotique"
+  },
+  {
+    "name": "MONICOR LP 20mg",
+    "dci": "Isosorbide mononitrate",
+    "form": "gelule LP",
+    "dosage": "20 mg",
+    "notes": "Classe: Angor stable\nVoie: orale"
+  },
+  {
+    "name": "MONTELUKAST 10",
+    "dci": "Montelukast",
+    "form": "comprime",
+    "dosage": "1 cp le soir",
+    "notes": "Classe: Antagoniste leukotriene\nIndications: Asthme allergique, rhinite allergique\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: phenobarbital, rifampicine, carbamazepine"
+  },
+  {
+    "name": "MOPRAL 20mg",
+    "dci": "Omeprazole",
+    "form": "gelule",
+    "dosage": "20 mg",
+    "notes": "Classe: IPP, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "MORPHINE SR 30",
+    "dci": "Morphine",
+    "form": "comprime",
+    "dosage": "Selon protocole et echelle douleur",
+    "notes": "Classe: Analgesique opioide fort\nIndications: Douleur cancereuse ou severe chronique\nVoie: orale\nContre-indications: insuffisance respiratoire severe, choc, traumatisme cranien\nInteractions: antidepresseur sedatif, antihistaminique, alcool, benzodiazepine"
+  },
+  {
+    "name": "MOTILIUM 10mg",
+    "dci": "Domperidone",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Antiemetique, gastroprokinetique\nVoie: orale"
+  },
+  {
+    "name": "MUCOFLUX",
+    "dci": "Ambroxol",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j ou 1 sachet x 3/j",
+    "notes": "Classe: Mucolytique\nIndications: Toux productive, bronchite\nVoie: orale\nContre-indications: aucune majeure\nInteractions: antitussif, antibiotique (augmente penetration)"
+  },
+  {
+    "name": "MYCOSTATINE",
+    "dci": "Nystatine",
+    "form": "comprime",
+    "dosage": "4-6 cp/j ou suspension",
+    "notes": "Classe: Antifongique local\nIndications: Mycoses orales, candidoses digestives\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune majeure"
+  },
+  {
+    "name": "NAC 200",
+    "dci": "Acetylcysteine",
+    "form": "comprime",
+    "dosage": "1 cp x 2-3/j",
+    "notes": "Classe: Mucolytique antioxydant\nIndications: Toux productive, bronchite, intoxication paracetamol\nVoie: orale\nContre-indications: asthme bronchique (risque bronchospasme), ulcere gastroduodenal\nInteractions: antitussif, nitroglycerine"
+  },
+  {
+    "name": "NASONEX",
+    "dci": "Mometasone",
+    "form": "comprime",
+    "dosage": "1 pulverisation x 2/j",
+    "notes": "Classe: Corticoide nasal\nIndications: Rhinite allergique, polypose nasale\nVoie: orale\nContre-indications: infection nasale non traitee, tuberculose nasale\nInteractions: ketoconazole oral"
+  },
+  {
+    "name": "NEBILET",
+    "dci": "Nebivolol",
+    "form": "comprime",
+    "dosage": "1.25 a 5 mg/j",
+    "notes": "Classe: Beta-bloquant\nIndications: HTA, IC stable\nVoie: orale\nContre-indications: bradycardie severe, bloc AV, choc cardiogenique, asthme severe\nInteractions: verapamil, diltiazem, amiodarone, digoxine"
+  },
+  {
+    "name": "NEBILET 5mg",
+    "dci": "Nebivolol",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Beta-bloquant, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "NEOMERCAZOLE 20mg",
+    "dci": "Carbimazole",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Antithyroidien, hyperthyroidie\nVoie: orale"
+  },
+  {
+    "name": "NEOMERCAZOLE 5mg",
+    "dci": "Carbimazole",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Antithyroidien, hyperthyroidie\nVoie: orale"
+  },
+  {
+    "name": "NEURONTIN 300",
+    "dci": "Gabapentine",
+    "form": "comprime",
+    "dosage": "300 mg x 3/j puis titration",
+    "notes": "Classe: Anticonvulsivant / Analgesique neuropathique\nIndications: Neuropathie douloureuse, epilepsie partielle\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: morphine, antiacide"
+  },
+  {
+    "name": "NITRIDERM",
+    "dci": "Trinitrine",
+    "form": "comprime",
+    "dosage": "Patch selon prescription",
+    "notes": "Classe: Derive nitrate\nIndications: Prevention angor\nVoie: orale\nContre-indications: hypotension severe, prise inhibiteur PDE5, choc\nInteractions: sildenafil, tadalafil, vardenafil, antihypertenseur"
+  },
+  {
+    "name": "NITROGLICERINE 0.15mg",
+    "dci": "Trinitrine",
+    "form": "sublingual",
+    "dosage": "0.15 mg",
+    "notes": "Classe: Derive nitre\nIndications: Derive nitre: Crise angineuse\nVoie: sublinguale"
+  },
+  {
+    "name": "NOVALGIN 500",
+    "dci": "Metamizole",
+    "form": "comprime",
+    "dosage": "1 a 2 cp x 3/j",
+    "notes": "Classe: Analgesique antipyretique\nIndications: Douleur intense, spasmes, fievre refractaire\nVoie: orale\nContre-indications: allergie pyrazolone, agranulocytose, insuffisance hepatique severe\nInteractions: methotrexate, ciclosporine, warfarine"
+  },
+  {
+    "name": "NOVOMIX 30",
+    "dci": "Insuline asparte biphasic",
+    "form": "comprime",
+    "dosage": "Selon glycemies a jeun et post-prandiales",
+    "notes": "Classe: Insuline mixte\nIndications: Diabete type 2\nVoie: orale\nContre-indications: hypoglycemie, allergie insuline\nInteractions: beta-bloquant, alcool, AINS"
+  },
+  {
+    "name": "NOVORAPID",
+    "dci": "Insuline asparte",
+    "form": "comprime",
+    "dosage": "Selon ratio insuline/glucides et glycemie",
+    "notes": "Classe: Insuline rapide\nIndications: Diabete type 1 et 2\nVoie: orale\nContre-indications: hypoglycemie, allergie insuline\nInteractions: beta-bloquant, alcool, AINS, IEC"
+  },
+  {
+    "name": "NUROFEN 400",
+    "dci": "Ibuprofene",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j au cours des repas",
+    "notes": "Classe: AINS\nIndications: Douleur inflammatoire, fievre\nVoie: orale\nContre-indications: allergie AINS, ulcere gastroduodenal actif, insuffisance renale severe, grossesse 3e trimestre\nInteractions: anticoagulant, aspirine, iec, lithium, methotrexate"
+  },
+  {
+    "name": "OFLOXACINE 200mg",
+    "dci": "Ofloxacine",
+    "form": "comprime",
+    "dosage": "200 mg",
+    "notes": "Classe: Fluoroquinolone\nVoie: orale"
+  },
+  {
+    "name": "OMEPRAZOLE 20mg",
+    "dci": "Omeprazole",
+    "form": "gelule",
+    "dosage": "20 mg",
+    "notes": "Classe: IPP, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "ORELOX 200",
+    "dci": "Cefpodoxime",
+    "form": "comprime",
+    "dosage": "1 cp x 2/j pendant 5-10 jours",
+    "notes": "Classe: Cephalosporine III\nIndications: Infections ORL, bronchiques, urinaires\nVoie: orale\nContre-indications: allergie cephalosporine\nInteractions: antiacide, probenecide, warfarine"
+  },
+  {
+    "name": "OROKEN 200mg",
+    "dci": "Cefixime",
+    "form": "comprime",
+    "dosage": "200 mg",
+    "notes": "Classe: Cephalosporine 3e generation orale\nVoie: orale"
+  },
+  {
+    "name": "OTOSPORIN",
+    "dci": "Neomycine / Polymyxine B / Hydrocortisone",
+    "form": "comprime",
+    "dosage": "3-4 gouttes x 3-4/j",
+    "notes": "Classe: Antibiotique + corticoide auriculaire\nIndications: Otite externe\nVoie: orale\nContre-indications: perforation tympanique, infection virale, hypersensibilite aminoglucoside\nInteractions: autre nephrotoxique"
+  },
+  {
+    "name": "OZEMPIC 0.5mg",
+    "dci": "Semaglutide",
+    "form": "injectable",
+    "dosage": "0.5 mg/dose",
+    "notes": "Classe: Agoniste GLP-1, diabete type 2\nVoie: SC"
+  },
+  {
+    "name": "OZEMPIC 1mg",
+    "dci": "Semaglutide",
+    "form": "injectable",
+    "dosage": "1 mg/dose",
+    "notes": "Classe: Agoniste GLP-1, diabete type 2\nVoie: SC"
+  },
+  {
+    "name": "PANTOPRAZOLE 20mg",
+    "dci": "Pantoprazole",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: IPP, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "PANTOPRAZOLE 40mg",
+    "dci": "Pantoprazole",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: IPP, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "PERFALGAN 1g",
+    "dci": "Paracetamol",
+    "form": "injectable",
+    "dosage": "1 g/100ml",
+    "notes": "Classe: Antalgique, antipyretique injectable\nVoie: IV"
+  },
+  {
+    "name": "PILOCARPINE 2%",
+    "dci": "Pilocarpine",
+    "form": "comprime",
+    "dosage": "1 goutte x 3-4/j",
+    "notes": "Classe: Mioticique\nIndications: Glaucome a angle ferme aigu, crise\nVoie: orale\nContre-indications: uveite, iritis\nInteractions: beta-bloquant, atropine"
+  },
+  {
+    "name": "PLAVIX",
+    "dci": "Clopidogrel",
+    "form": "comprime",
+    "dosage": "75 mg/j",
+    "notes": "Classe: Antiagregant plaquettaire\nIndications: Prevention secondaire, post-stent\nVoie: orale\nContre-indications: hemorragie active, insuffisance hepatique severe\nInteractions: aspirine, rivaroxaban, apixaban, warfarine, omeprazole"
+  },
+  {
+    "name": "PLAVIX 75mg",
+    "dci": "Clopidogrel",
+    "form": "comprime",
+    "dosage": "75 mg",
+    "notes": "Classe: Antiagregant, prevention atherothrombose\nVoie: orale"
+  },
+  {
+    "name": "POLARAMINE 6mg",
+    "dci": "Dexchlorpheniramine",
+    "form": "comprime",
+    "dosage": "6 mg",
+    "notes": "Classe: Antihistaminique H1 sedatif\nVoie: orale"
+  },
+  {
+    "name": "POTASSIUM CHLORURE 600mg",
+    "dci": "Potassium chlorure",
+    "form": "comprime",
+    "dosage": "600 mg",
+    "notes": "Classe: Supplement potassium\nVoie: orale"
+  },
+  {
+    "name": "PRADAXA 110mg",
+    "dci": "Dabigatran",
+    "form": "gelule",
+    "dosage": "110 mg",
+    "notes": "Classe: AOD, anticoagulant direct\nVoie: orale"
+  },
+  {
+    "name": "PRADAXA 150mg",
+    "dci": "Dabigatran",
+    "form": "gelule",
+    "dosage": "150 mg",
+    "notes": "Classe: AOD, anticoagulant direct\nVoie: orale"
+  },
+  {
+    "name": "PRASUGREL 10mg",
+    "dci": "Prasugrel",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Antiagregant\nIndications: Antiagregant: SCA avec angioplastie\nVoie: orale"
+  },
+  {
+    "name": "PREVISCAN 20mg",
+    "dci": "Fluindione",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: AVK, anticoagulant oral\nVoie: orale"
+  },
+  {
+    "name": "PRIMPERAN 10mg",
+    "dci": "Metoclopramide",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Antiemetique\nVoie: orale"
+  },
+  {
+    "name": "PRISTINAMYCINE 500mg",
+    "dci": "Pristinamycine",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Streptogramine\nVoie: orale"
+  },
+  {
+    "name": "PROCORALAN 5mg",
+    "dci": "Ivabradine",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Inhibiteur If, IC, angor stable\nVoie: orale"
+  },
+  {
+    "name": "PROCORALAN 7.5mg",
+    "dci": "Ivabradine",
+    "form": "comprime",
+    "dosage": "7.5 mg",
+    "notes": "Classe: Inhibiteur If, IC, angor stable\nVoie: orale"
+  },
+  {
+    "name": "PROFENID 100mg",
+    "dci": "Ketoprofene",
+    "form": "suppositoire",
+    "dosage": "100 mg",
+    "notes": "Classe: Anti-inflammatoire, antalgique\nVoie: rectale"
+  },
+  {
+    "name": "PROFENID 100mg IM",
+    "dci": "Ketoprofene",
+    "form": "injectable",
+    "dosage": "100 mg",
+    "notes": "Classe: Anti-inflammatoire injectable\nVoie: IM"
+  },
+  {
+    "name": "PROGYNOVA 2",
+    "dci": "Estradiol valerate",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Hormonotherapie estrogenique\nIndications: Mأ©nopause, insuffisance estrogenique\nVoie: orale\nContre-indications: cancer sein/endometre, trombose, hepatite severe, saignements non diagnostiques\nInteractions: rifampicine, anticonvulsivant, antiretroviral"
+  },
+  {
+    "name": "PROTOPIC",
+    "dci": "Tacrolimus",
+    "form": "comprime",
+    "dosage": "2 applications/j",
+    "notes": "Classe: Inhibiteur calcineurine topique\nIndications: Dermatite atopique severe\nVoie: orale\nContre-indications: infection cutanee active, lymphome\nInteractions: CYP3A4 inhibiteur, erythromycine"
+  },
+  {
+    "name": "PROZAC 20",
+    "dci": "Fluoxetine",
+    "form": "comprime",
+    "dosage": "1 cp/j le matin",
+    "notes": "Classe: ISRS antidepresseur\nIndications: Depression, TOC, boulimie\nVoie: orale\nContre-indications: hypersensibilite, IMAO, thioridazine\nInteractions: IMAO, tramadol, lithium, warfarine, perte poids medicament"
+  },
+  {
+    "name": "PROZAC 20mg",
+    "dci": "Fluoxetine",
+    "form": "gelule",
+    "dosage": "20 mg",
+    "notes": "Classe: ISRS, antidepresseur\nVoie: orale"
+  },
+  {
+    "name": "PULMICORT 200",
+    "dci": "Budesonide",
+    "form": "comprime",
+    "dosage": "1-2 inhalations x 2/j",
+    "notes": "Classe: Corticoide inhale\nIndications: Asthme\nVoie: orale\nContre-indications: hypersensibilite, infection respiratoire aigue non traitee\nInteractions: ketoconazole, ritonavir"
+  },
+  {
+    "name": "RAMIPRIL 10mg",
+    "dci": "Ramipril",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: IEC\nIndications: IEC: HTA, IC, post-infarctus\nVoie: orale"
+  },
+  {
+    "name": "RAMIPRIL 5mg",
+    "dci": "Ramipril",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: IEC\nIndications: IEC: HTA, IC, post-infarctus\nVoie: orale"
+  },
+  {
+    "name": "RANITIDINE 150mg",
+    "dci": "Ranitidine",
+    "form": "comprime",
+    "dosage": "150 mg",
+    "notes": "Classe: Anti-H2, anti-ulcereux\nVoie: orale"
+  },
+  {
+    "name": "RENITEC 20mg",
+    "dci": "Enalapril",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: IEC, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "RENITEC 5mg",
+    "dci": "Enalapril",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: IEC, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "RHINOCORT",
+    "dci": "Budesonide",
+    "form": "comprime",
+    "dosage": "2 pulverisations x 2/j",
+    "notes": "Classe: Corticoide nasal\nIndications: Rhinite allergique\nVoie: orale\nContre-indications: infection nasale non traitee\nInteractions: ketoconazole, ritonavir"
+  },
+  {
+    "name": "RIMACTANE",
+    "dci": "Rifampicine",
+    "form": "comprime",
+    "dosage": "Selon protocole et poids",
+    "notes": "Classe: Antibiotique antituberculeux\nIndications: Tuberculose, prophylaxie meningocoque\nVoie: orale\nContre-indications: insuffisance hepatique severe, cholestase\nInteractions: contraceptif oral, warfarine, anticonvulsivant, antiretroviral"
+  },
+  {
+    "name": "RISORDAN",
+    "dci": "Dinitrate d isosorbide",
+    "form": "comprime",
+    "dosage": "Selon forme, symptomes et TA",
+    "notes": "Classe: Derive nitrate\nIndications: Angor, ischemie\nVoie: orale\nContre-indications: hypotension severe, prise inhibiteur PDE5, choc\nInteractions: sildenafil, tadalafil, vardenafil, antihypertenseur"
+  },
+  {
+    "name": "RISORDAN 20mg",
+    "dci": "Isosorbide dinitrate",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Angor, IC\nVoie: orale"
+  },
+  {
+    "name": "RIVOTRIL 2",
+    "dci": "Clonazepam",
+    "form": "comprime",
+    "dosage": "Selon indication et tolerance",
+    "notes": "Classe: Benzodiazepine anticonvulsivante\nIndications: Epilepsie myoclonique, crises d absence\nVoie: orale\nContre-indications: insuffisance respiratoire severe, myasthenie, apnee du sommeil\nInteractions: alcool, antidepresseur sedatif, antihistaminique, morphine"
+  },
+  {
+    "name": "ROACCUTANE 10",
+    "dci": "Isotretinoine",
+    "form": "comprime",
+    "dosage": "0.5-1 mg/kg/j",
+    "notes": "Classe: Retinoide systemique\nIndications: Acne severe, resistante\nVoie: orale\nContre-indications: grossesse, allaitement, insuffisance hepatique severe, hypertriglyceridemie severe, hypervitaminose A\nInteractions: tetracycline, vitamine A, anticonvulsivant, corticoide"
+  },
+  {
+    "name": "ROCEPHINE 1g",
+    "dci": "Ceftriaxone",
+    "form": "comprime",
+    "dosage": "1-2 g/j IM ou IV",
+    "notes": "Classe: Cephalosporine III\nIndications: Infections severes, meningite, sepsis\nVoie: orale\nContre-indications: allergie cephalosporine, hyperbilirubinemie neonatale, insuffisance renale severe associee\nInteractions: calcium IV, warfarine, aminoside"
+  },
+  {
+    "name": "ROVAMYCINE 3MUI",
+    "dci": "Spiramycine",
+    "form": "comprime",
+    "dosage": "3 MUI",
+    "notes": "Classe: Macrolide\nVoie: orale"
+  },
+  {
+    "name": "RYTHMODAN 100mg",
+    "dci": "Disopyramide",
+    "form": "gelule",
+    "dosage": "100 mg",
+    "notes": "Classe: Anti-arythmique classe Ia\nVoie: orale"
+  },
+  {
+    "name": "SACUBITRIL/VALSARTAN 97/103mg",
+    "dci": "Sacubitril/Valsartan",
+    "form": "comprime",
+    "dosage": "97/103 mg",
+    "notes": "Classe: ARNI\nIndications: ARNI: IC a FEVG reduite\nVoie: orale"
+  },
+  {
+    "name": "SALBUTAMOL 4 mg",
+    "dci": "Salbutamol",
+    "form": "comprime",
+    "dosage": "1 cp x 3-4/j",
+    "notes": "Classe: Bronchodilatateur\nIndications: Asthme, bronchospasme\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: beta-bloquant, diuretique"
+  },
+  {
+    "name": "SAYANA PRESS",
+    "dci": "Medroxyprogesterone",
+    "form": "comprime",
+    "dosage": "1 injection IM tous les 3 mois",
+    "notes": "Classe: Contraception injectable\nIndications: Contraception 3 mois\nVoie: orale\nContre-indications: grossesse non diagnostiquee, cancer sein, hepatite severe, trombose\nInteractions: aminoglutethimide, anticonvulsivant"
+  },
+  {
+    "name": "SECTRAL 2.5 mg",
+    "dci": "Acebutolol",
+    "form": "comprime",
+    "dosage": "Selon poids et specialiste",
+    "notes": "Classe: Beta-bloquant pediatrique\nIndications: HTA, tachycardie chez l enfant\nVoie: orale\nContre-indications: bradycardie, bloc AV, asthme severe\nInteractions: verapamil, digoxine"
+  },
+  {
+    "name": "SECTRAL 200mg",
+    "dci": "Acebutolol",
+    "form": "comprime",
+    "dosage": "200 mg",
+    "notes": "Classe: Beta-bloquant, HTA, angor\nVoie: orale\nContre-indications: Asthme, BAV"
+  },
+  {
+    "name": "SELOKEN 100mg",
+    "dci": "Metoprolol",
+    "form": "comprime",
+    "dosage": "100 mg",
+    "notes": "Classe: Beta-bloquant, HTA, angor, IC\nVoie: orale"
+  },
+  {
+    "name": "SELOKEN LP 95mg",
+    "dci": "Metoprolol",
+    "form": "comprime LP",
+    "dosage": "95 mg",
+    "notes": "Classe: Beta-bloquant LP, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "SEPTRIN",
+    "dci": "Sulfamethoxazole / Trimethoprime",
+    "form": "comprime",
+    "dosage": "1 cp x 2/j pendant 5-10 jours",
+    "notes": "Classe: Antibiotique ORL\nIndications: Angine, sinusite, otite\nVoie: orale\nContre-indications: allergie sulfamide, insuffisance hepatique severe\nInteractions: methotrexate, warfarine, phenytoine"
+  },
+  {
+    "name": "SERC 16",
+    "dci": "Betahistine",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j",
+    "notes": "Classe: Antihistaminique H1 agoniste\nIndications: Vertige de Meniere, vertige positionnel\nVoie: orale\nContre-indications: pheochromocytome, grossesse, allaitement\nInteractions: antihistaminique H1, beta-bloquant"
+  },
+  {
+    "name": "SERETIDE 250",
+    "dci": "Salmeterol / Fluticasone",
+    "form": "comprime",
+    "dosage": "2 inhalations x 2/j",
+    "notes": "Classe: Beta-2 agoniste long + corticoide inhale\nIndications: Asthme modere a severe, BPCO\nVoie: orale\nContre-indications: hypersensibilite, infection respiratoire aigue non traitee\nInteractions: ketoconazole, ritonavir, beta-bloquant"
+  },
+  {
+    "name": "SERETIDE 250/25",
+    "dci": "Fluticasone/Salmeterol",
+    "form": "aerosol",
+    "dosage": "250/25 ug",
+    "notes": "Classe: Corticoide + B2LA, asthme\nVoie: inhalee"
+  },
+  {
+    "name": "SEROPLEX 10mg",
+    "dci": "Escitalopram",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: ISRS, antidepresseur\nVoie: orale"
+  },
+  {
+    "name": "SEROPRAM 20",
+    "dci": "Citalopram",
+    "form": "comprime",
+    "dosage": "1 cp/j le matin",
+    "notes": "Classe: ISRS antidepresseur\nIndications: Depression, trouble anxieux\nVoie: orale\nContre-indications: hypersensibilite, allongement QT connu, prise de pimozide\nInteractions: IMAO, tramadol, lithium, warfarine, omeprazole"
+  },
+  {
+    "name": "SINGULAIR 10mg",
+    "dci": "Montelukast",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Antileucotrienes, asthme\nVoie: orale"
+  },
+  {
+    "name": "SINGULAIR 4 mg",
+    "dci": "Montelukast",
+    "form": "comprime",
+    "dosage": "1 cp le soir",
+    "notes": "Classe: Antagoniste leukotriene pediatrique\nIndications: Asthme pediatrique\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: phenobarbital, rifampicine"
+  },
+  {
+    "name": "SINTROM",
+    "dci": "Acenocoumarol",
+    "form": "comprime",
+    "dosage": "Selon INR et protocole",
+    "notes": "Classe: Anticoagulant AVK\nIndications: Anticoagulation orale avec surveillance INR\nVoie: orale\nContre-indications: grossesse, hemorragie active, insuffisance hepatique severe\nInteractions: aspirine, amiodarone, anti-inflammatoire"
+  },
+  {
+    "name": "SINTROM 4mg",
+    "dci": "Acenocoumarol",
+    "form": "comprime",
+    "dosage": "4 mg",
+    "notes": "Classe: AVK, anticoagulant oral\nVoie: orale\nContre-indications: Grossesse, hemorragie"
+  },
+  {
+    "name": "SMECTA",
+    "dci": "Diosmectite",
+    "form": "comprime",
+    "dosage": "3 sachets/j",
+    "notes": "Classe: Antidiarrheique protecteur\nIndications: Diarrhee aigue\nVoie: orale\nContre-indications: hypersensibilite, obstruction intestinale\nInteractions: espace de 2h avec autres medicaments"
+  },
+  {
+    "name": "SOLUMEDROL 120mg",
+    "dci": "Methylprednisolone",
+    "form": "injectable",
+    "dosage": "120 mg",
+    "notes": "Classe: Corticoide injectable forte dose\nVoie: IV"
+  },
+  {
+    "name": "SOLUMEDROL 40mg",
+    "dci": "Methylprednisolone",
+    "form": "injectable",
+    "dosage": "40 mg",
+    "notes": "Classe: Corticoide injectable\nVoie: IV/IM"
+  },
+  {
+    "name": "SOLUPRED 20mg",
+    "dci": "Prednisolone",
+    "form": "comprime orodispersible",
+    "dosage": "20 mg",
+    "notes": "Classe: Corticoide\nVoie: orale"
+  },
+  {
+    "name": "SOLUPRED sirop",
+    "dci": "Prednisolone",
+    "form": "sirop",
+    "dosage": "1 mg/ml",
+    "notes": "Classe: Corticoide oral, asthme aigu\nVoie: orale"
+  },
+  {
+    "name": "SOLVOCLEAR",
+    "dci": "Carbocysteine",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j",
+    "notes": "Classe: Mucolytique\nIndications: Toux productive\nVoie: orale\nContre-indications: ulcere gastroduodenal actif\nInteractions: aucune majeure"
+  },
+  {
+    "name": "SPASFON",
+    "dci": "Phloroglucinol / Trimethylphloroglucinol",
+    "form": "comprime",
+    "dosage": "2 cp x 3/j",
+    "notes": "Classe: Antispasmodique\nIndications: Spasmes digestifs, biliaires, urogenitaux\nVoie: orale\nContre-indications: allergie connue\nInteractions: aucune majeure connue"
+  },
+  {
+    "name": "SPASFON injectable",
+    "dci": "Phloroglucinol",
+    "form": "injectable",
+    "dosage": "40 mg",
+    "notes": "Classe: Antispasmodique injectable\nVoie: IV/IM"
+  },
+  {
+    "name": "SPASFON LYOC",
+    "dci": "Phloroglucinol",
+    "form": "comprime",
+    "dosage": "Selon age et poids",
+    "notes": "Classe: Antispasmodique pediatrique\nIndications: Coliques du nourrisson, spasmes\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune majeure"
+  },
+  {
+    "name": "SPECIAFOLDINE 5mg",
+    "dci": "Acide folique",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: Supplement folates\nVoie: orale"
+  },
+  {
+    "name": "SPIRALINE MIRENA",
+    "dci": "Levonorgestrel",
+    "form": "comprime",
+    "dosage": "Pose par gynecologue",
+    "notes": "Classe: Contraception intra-uterine\nIndications: Contraception 5 ans, meno-metrorragies\nVoie: orale\nContre-indications: grossesse, cancer cervix/utأ©rus, infection pelvienne active, anomalie uterine\nInteractions: aucune majeure"
+  },
+  {
+    "name": "SPIRIVA 18",
+    "dci": "Tiotropium",
+    "form": "comprime",
+    "dosage": "1 inhalation/j",
+    "notes": "Classe: Anticholinergique inhale long\nIndications: BPCO\nVoie: orale\nContre-indications: hypersensibilite, glaucome a angle ferme, retention urinaire\nInteractions: anticholinergique, amantadine"
+  },
+  {
+    "name": "SPORANOX 100",
+    "dci": "Itraconazole",
+    "form": "comprime",
+    "dosage": "100-200 mg x 1-2/j",
+    "notes": "Classe: Antifongique azole\nIndications: Mycoses severes, onychomycoses\nVoie: orale\nContre-indications: insuffisance cardiaque, allongement QT, grossesse\nInteractions: terfenadine, astemizole, cisapride, midazolam, triazolam, lovastatine, simvastatine"
+  },
+  {
+    "name": "STIEVA 0.05%",
+    "dci": "Tretinoine",
+    "form": "comprime",
+    "dosage": "1 application le soir",
+    "notes": "Classe: Retinoide topique\nIndications: Acne, rides, hyperpigmentation\nVoie: orale\nContre-indications: grossesse, allaitement, eczema, rosacee\nInteractions: peroxide benzoyle, acide glycolique, vitamine C"
+  },
+  {
+    "name": "STILNOX 10",
+    "dci": "Zolpidem",
+    "form": "comprime",
+    "dosage": "1 cp au coucher",
+    "notes": "Classe: Hypnotique imidazopyridine\nIndications: Insomnie aigue\nVoie: orale\nContre-indications: insuffisance respiratoire severe, apnee du sommeil, myasthenie\nInteractions: alcool, antidepresseur sedatif, antihistaminique, morphine"
+  },
+  {
+    "name": "STILNOX 10mg",
+    "dci": "Zolpidem",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Hypnotique\nVoie: orale"
+  },
+  {
+    "name": "STREPSILS",
+    "dci": "Amylmetacresol / Dichlorobenzyl alcool",
+    "form": "comprime",
+    "dosage": "1 pastille x 4-6/j",
+    "notes": "Classe: Antiseptique local\nIndications: Irritation pharyngee\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune majeure"
+  },
+  {
+    "name": "SUDAFED",
+    "dci": "Pseudoephedrine",
+    "form": "comprime",
+    "dosage": "1 cp x 3/j",
+    "notes": "Classe: Decongestionnant\nIndications: Congestion nasale\nVoie: orale\nContre-indications: HTA severe, glaucome a angle ferme, prostatisme, hyperthyroidie, IMAO\nInteractions: IMAO, antidepresseur, beta-bloquant"
+  },
+  {
+    "name": "301-400 sur 475 - page 4 / 5",
+    "dci": null,
+    "form": null,
+    "dosage": null,
+    "notes": null
+  },
+  {
+    "name": "SYMBICORT 200/6",
+    "dci": "Budesonide / Formoterol",
+    "form": "comprime",
+    "dosage": "1-2 inhalations x 2/j",
+    "notes": "Classe: Corticoide + Beta-2 agoniste long\nIndications: Asthme, BPCO\nVoie: orale\nContre-indications: hypersensibilite, infection respiratoire aigue non traitee\nInteractions: ketoconazole, ritonavir, beta-bloquant"
+  },
+  {
+    "name": "Systane ULTRA",
+    "dci": "Polyethylene glycol / Propylene glycol",
+    "form": "comprime",
+    "dosage": "1 goutte x 4-6/j",
+    "notes": "Classe: Larme artificielle\nIndications: Secheresse oculaire\nVoie: orale\nContre-indications: aucune\nInteractions: espace 10 min avec autres collyres"
+  },
+  {
+    "name": "TAHOR 10mg",
+    "dci": "Atorvastatine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale\nContre-indications: Insuffisance hepatique"
+  },
+  {
+    "name": "TAHOR 20mg",
+    "dci": "Atorvastatine",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "TAHOR 40",
+    "dci": "Atorvastatine",
+    "form": "comprime",
+    "dosage": "1 cp le soir",
+    "notes": "Classe: Statine\nIndications: Dyslipidemie et prevention CV\nVoie: orale\nContre-indications: maladie hepatique active, grossesse\nInteractions: amiodarone, macrolide, azole"
+  },
+  {
+    "name": "TAHOR 40mg",
+    "dci": "Atorvastatine",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "TAHOR 80mg",
+    "dci": "Atorvastatine",
+    "form": "comprime",
+    "dosage": "80 mg",
+    "notes": "Classe: Statine haute intensite\nVoie: orale"
+  },
+  {
+    "name": "TAMIFLU 75",
+    "dci": "Oseltamivir",
+    "form": "comprime",
+    "dosage": "1 cp x 2/j pendant 5 jours",
+    "notes": "Classe: Antiviral neuraminidase\nIndications: Grippe\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: aucune majeure connue"
+  },
+  {
+    "name": "TAMSULOSINE 0.4mg",
+    "dci": "Tamsulosine",
+    "form": "gelule LP",
+    "dosage": "0.4 mg",
+    "notes": "Classe: Alpha-bloquant, HBP\nVoie: orale"
+  },
+  {
+    "name": "TARDYFERON 80mg",
+    "dci": "Fer sulfate",
+    "form": "comprime",
+    "dosage": "80 mg fer",
+    "notes": "Classe: Supplement fer, anemie ferriprive\nVoie: orale"
+  },
+  {
+    "name": "TAREG",
+    "dci": "Valsartan",
+    "form": "comprime",
+    "dosage": "40 a 320 mg/j",
+    "notes": "Classe: ARA2\nIndications: HTA, IC, post-infarctus\nVoie: orale\nContre-indications: grossesse, hyperkaliemie severe, stenose arteres renales\nInteractions: spironolactone, potassium, ains, iec"
+  },
+  {
+    "name": "TAREG 160mg",
+    "dci": "Valsartan",
+    "form": "comprime",
+    "dosage": "160 mg",
+    "notes": "Classe: ARA2, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "TAREG 80mg",
+    "dci": "Valsartan",
+    "form": "comprime",
+    "dosage": "80 mg",
+    "notes": "Classe: ARA2, HTA, IC\nVoie: orale"
+  },
+  {
+    "name": "TEGRETOL 200",
+    "dci": "Carbamazepine",
+    "form": "comprime",
+    "dosage": "Selon taux sanguin et indication",
+    "notes": "Classe: Anticonvulsivant\nIndications: Epilepsie, nevralgie du trijumeau\nVoie: orale\nContre-indications: insuffisance hepatique severe, arythmie AV, allergie tricyclique, IMAO, grossesse\nInteractions: contraceptif oral, warfarine, antidepresseur, antipsychotique, isoniazide, erythromycine"
+  },
+  {
+    "name": "TELFAST 120",
+    "dci": "Fexofenadine",
+    "form": "comprime",
+    "dosage": "1 cp x 2/j",
+    "notes": "Classe: Antihistaminique H1 non sedatif\nIndications: Rhinite allergique, urticaire\nVoie: orale\nContre-indications: hypersensibilite\nInteractions: ketoconazole, erythromycine, jus de pamplemousse"
+  },
+  {
+    "name": "TEMESTA 2.5mg",
+    "dci": "Lorazepam",
+    "form": "comprime",
+    "dosage": "2.5 mg",
+    "notes": "Classe: Anxiolytique benzodiazepine\nVoie: orale"
+  },
+  {
+    "name": "TENORMINE",
+    "dci": "Atenolol",
+    "form": "comprime",
+    "dosage": "25 a 100 mg/j",
+    "notes": "Classe: Beta-bloquant\nIndications: HTA, angor, controle frequence\nVoie: orale\nContre-indications: bradycardie severe, bloc AV, asthme severe, choc cardiogenique\nInteractions: verapamil, diltiazem, digoxine, amiodarone"
+  },
+  {
+    "name": "TENORMINE 100mg",
+    "dci": "Atenolol",
+    "form": "comprime",
+    "dosage": "100 mg",
+    "notes": "Classe: Beta-bloquant, HTA, angor, arythmie\nVoie: orale\nContre-indications: Asthme, BAV"
+  },
+  {
+    "name": "TENORMINE 50mg",
+    "dci": "Atenolol",
+    "form": "comprime",
+    "dosage": "50 mg",
+    "notes": "Classe: Beta-bloquant, HTA, angor\nVoie: orale"
+  },
+  {
+    "name": "THEOPHYLLINE 200",
+    "dci": "Theophylline",
+    "form": "comprime",
+    "dosage": "1 cp x 2/j",
+    "notes": "Classe: Methylxanthine\nIndications: Asthme, BPCO\nVoie: orale\nContre-indications: arythmie, epilepsie, insuffisance hepatique severe, grossesse\nInteractions: ciprofloxacine, erythromycine, cimetidine, phenytoine, rifampicine"
+  },
+  {
+    "name": "THEOPHYLLINE 200mg LP",
+    "dci": "Theophylline",
+    "form": "comprime LP",
+    "dosage": "200 mg",
+    "notes": "Classe: Bronchodilatateur, asthme\nVoie: orale"
+  },
+  {
+    "name": "TICAGRELOR 90mg",
+    "dci": "Ticagrelor",
+    "form": "comprime",
+    "dosage": "90 mg",
+    "notes": "Classe: Antiagregant\nIndications: Antiagregant: SCA\nVoie: orale"
+  },
+  {
+    "name": "TILDIEM",
+    "dci": "Diltiazem",
+    "form": "comprime",
+    "dosage": "Selon forme et indication",
+    "notes": "Classe: Inhibiteur calcique non DHP\nIndications: Angor, HTA, controle frequence\nVoie: orale\nContre-indications: insuffisance cardiaque systolique, bloc AV, bradycardie severe\nInteractions: beta-bloquant, digoxine, ivabradine, statine"
+  },
+  {
+    "name": "TIMOLOL 0.5%",
+    "dci": "Timolol",
+    "form": "comprime",
+    "dosage": "1 goutte x 2/j",
+    "notes": "Classe: Beta-bloquant ophtalmique\nIndications: Glaucome a pression ouverte\nVoie: orale\nContre-indications: asthme, BPCO severe, bradycardie, bloc AV, insuffisance cardiaque\nInteractions: beta-bloquant oral, verapamil, digoxine"
+  },
+  {
+    "name": "TOBREX",
+    "dci": "Tobramycine",
+    "form": "comprime",
+    "dosage": "1 goutte x 4/j ou pommade x 3/j",
+    "notes": "Classe: Antibiotique ophtalmique aminoglucoside\nIndications: Conjonctivite bacterienne, kأ©ratite\nVoie: orale\nContre-indications: hypersensibilite aminoglucoside\nInteractions: autre nephrotoxique, curare"
+  },
+  {
+    "name": "TOBREX collyre",
+    "dci": "Tobramycine",
+    "form": "collyre",
+    "dosage": "0.3%",
+    "notes": "Classe: Antibiotique oculaire\nVoie: oculaire"
+  },
+  {
+    "name": "TOPAMAX 25",
+    "dci": "Topiramate",
+    "form": "comprime",
+    "dosage": "Titration progressive",
+    "notes": "Classe: Anticonvulsivant\nIndications: Epilepsie, migraine\nVoie: orale\nContre-indications: grossesse, allaitement, insuffisance renale severe, lithiase renale\nInteractions: contraceptif oral, metformine, lithium"
+  },
+  {
+    "name": "TRAMADOL 100mg LP",
+    "dci": "Tramadol",
+    "form": "comprime LP",
+    "dosage": "100 mg",
+    "notes": "Classe: Antalgique central palier 2\nVoie: orale"
+  },
+  {
+    "name": "TRAMADOL 50",
+    "dci": "Tramadol",
+    "form": "comprime",
+    "dosage": "1 a 2 cp x 3-4/j",
+    "notes": "Classe: Analgesique opioide faible\nIndications: Douleur moderee a severe\nVoie: orale\nContre-indications: insuffisance respiratoire severe, epilepsie non controlee, intoxication alcoolique aigue\nInteractions: antidepresseur ISRS/IRSNA, carbamazepine, warfarine"
+  },
+  {
+    "name": "TRAMADOL 50mg",
+    "dci": "Tramadol",
+    "form": "gelule",
+    "dosage": "50 mg",
+    "notes": "Classe: Antalgique central palier 2\nVoie: orale"
+  },
+  {
+    "name": "TRAVATAN",
+    "dci": "Travoprost",
+    "form": "comprime",
+    "dosage": "1 goutte le soir",
+    "notes": "Classe: Analogue prostaglandine ophtalmique\nIndications: Glaucome a pression ouverte, hypertension oculaire\nVoie: orale\nContre-indications: grossesse, allaitement, uveite active, maculaire pseudophake\nInteractions: timolol, dorzolamide, pilocarpine"
+  },
+  {
+    "name": "TRIATEC",
+    "dci": "Ramipril",
+    "form": "comprime",
+    "dosage": "1.25 a 10 mg/j",
+    "notes": "Classe: IEC\nIndications: HTA, prevention CV, IC\nVoie: orale\nContre-indications: grossesse, angioedeme, hyperkaliemie severe\nInteractions: spironolactone, potassium, ains, lithium"
+  },
+  {
+    "name": "TRIATEC 10mg",
+    "dci": "Ramipril",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: IEC, HTA, IC, post-infarctus\nVoie: orale"
+  },
+  {
+    "name": "TRIATEC 5mg",
+    "dci": "Ramipril",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: IEC, HTA, IC, post-infarctus\nVoie: orale\nContre-indications: Grossesse, hyperkaliemie"
+  },
+  {
+    "name": "TRIMETAZIDINE 35mg",
+    "dci": "Trimetazidine",
+    "form": "comprime MR",
+    "dosage": "35 mg",
+    "notes": "Classe: Anti-ischemique\nIndications: Anti-ischemique: Angor stable\nVoie: orale"
+  },
+  {
+    "name": "TRINITRINE spray",
+    "dci": "Trinitrine",
+    "form": "spray sublingual",
+    "dosage": "0.4 mg/dose",
+    "notes": "Classe: Crise angineuse\nVoie: sublinguale"
+  },
+  {
+    "name": "UTROGESTAN 200",
+    "dci": "Progesterone micronisee",
+    "form": "comprime",
+    "dosage": "1-2 cp/j voie vaginale ou orale",
+    "notes": "Classe: Progestatif naturel\nIndications: Menopause hormonale, menaces d avortement, insuffisance luteale\nVoie: orale\nContre-indications: cancer sein/endometre, trombose, hemorragie non diagnostiquee\nInteractions: rifampicine, anticonvulsivant"
+  },
+  {
+    "name": "UVEDOSE 100000 UI",
+    "dci": "Cholecalciferol",
+    "form": "ampoule buvable",
+    "dosage": "100000 UI",
+    "notes": "Classe: Vitamine D\nVoie: orale"
+  },
+  {
+    "name": "VALIUM 10mg",
+    "dci": "Diazepam",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Anxiolytique benzodiazepine\nVoie: orale"
+  },
+  {
+    "name": "VALSARTAN 80mg",
+    "dci": "Valsartan",
+    "form": "comprime",
+    "dosage": "80 mg",
+    "notes": "Classe: ARA2\nIndications: ARA2: HTA, IC, post-infarctus\nVoie: orale"
+  },
+  {
+    "name": "VALTREX 500",
+    "dci": "Valaciclovir",
+    "form": "comprime",
+    "dosage": "2 cp x 3/j pendant 7-10 jours",
+    "notes": "Classe: Antiviral\nIndications: Herpes genital, zona\nVoie: orale\nContre-indications: hypersensibilite aciclovir\nInteractions: probenecide, nephrotoxique associe"
+  },
+  {
+    "name": "VASTAREL 35mg MR",
+    "dci": "Trimetazidine",
+    "form": "comprime MR",
+    "dosage": "35 mg",
+    "notes": "Classe: Anti-ischemique, angor stable\nVoie: orale"
+  },
+  {
+    "name": "VENTOLINE 100",
+    "dci": "Salbutamol",
+    "form": "comprime",
+    "dosage": "1-2 inhalations en cas de besoin",
+    "notes": "Classe: Beta-2 agoniste de courte duree\nIndications: Asthme, BPCO, bronchospasme\nVoie: orale\nContre-indications: hypersensibilite, tachycardie\nInteractions: beta-bloquant non selectif, diuretique, digoxine"
+  },
+  {
+    "name": "VENTOLINE nebuliseur",
+    "dci": "Salbutamol",
+    "form": "solution nebulisation",
+    "dosage": "5 mg/2.5ml",
+    "notes": "Classe: Bronchodilatateur B2 nebulisation\nVoie: inhalee"
+  },
+  {
+    "name": "VENTOLINE spray",
+    "dci": "Salbutamol",
+    "form": "aerosol",
+    "dosage": "100 ug/dose",
+    "notes": "Classe: Bronchodilatateur B2, asthme, BPCO\nVoie: inhalee"
+  },
+  {
+    "name": "VERMOX 100",
+    "dci": "Mebendazole",
+    "form": "comprime",
+    "dosage": "1 cp dose unique ou 2 cp/j x 3 jours",
+    "notes": "Classe: Antiparasitaire\nIndications: Parasitoses intestinales\nVoie: orale\nContre-indications: hypersensibilite, grossesse 1er trimestre\nInteractions: carbamazepine, phenytoine, metronidazole"
+  },
+  {
+    "name": "VICTOZA",
+    "dci": "Liraglutide",
+    "form": "injectable",
+    "dosage": "6 mg/ml",
+    "notes": "Classe: Agoniste GLP-1, diabete type 2\nVoie: SC"
+  },
+  {
+    "name": "VITAMINE B12 1000ug",
+    "dci": "Cyanocobalamine",
+    "form": "injectable",
+    "dosage": "1000 ug",
+    "notes": "Classe: Supplement B12\nVoie: IM"
+  },
+  {
+    "name": "VITAMINE D 1000 UI",
+    "dci": "Cholecalciferol",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Vitamine D\nIndications: Prevention rachitisme, carence vitamine D\nVoie: orale\nContre-indications: hypercalcemie, lithiase renale, sarcoidose\nInteractions: diuretique thiazidique, digitalique"
+  },
+  {
+    "name": "VITAMINE K1 10mg",
+    "dci": "Phytomenadione",
+    "form": "injectable",
+    "dosage": "10 mg",
+    "notes": "Classe: Antidote AVK, coagulation\nVoie: IV/IM"
+  },
+  {
+    "name": "VOGALENE 15mg",
+    "dci": "Metopimazine",
+    "form": "gelule",
+    "dosage": "15 mg",
+    "notes": "Classe: Antiemetique\nVoie: orale"
+  },
+  {
+    "name": "VOLTAREN COLLYRE",
+    "dci": "Diclofenac",
+    "form": "comprime",
+    "dosage": "1 goutte x 4/j",
+    "notes": "Classe: AINS ophtalmique\nIndications: Inflammation post-operatoire, photophobie, douleur\nVoie: orale\nContre-indications: allergie AINS, grossesse 3e trimestre\nInteractions: anticoagulant oral, autre AINS"
+  },
+  {
+    "name": "VOLTARENE 25",
+    "dci": "Diclofenac",
+    "form": "comprime",
+    "dosage": "1 cp x 2-3/j",
+    "notes": "Classe: AINS\nIndications: Douleur inflammatoire\nVoie: orale\nContre-indications: allergie AINS, ulcere actif, insuffisance cardiaque severe\nInteractions: anticoagulant, aspirine, iec, lithium"
+  },
+  {
+    "name": "VOLTARENE 25mg",
+    "dci": "Diclofenac",
+    "form": "comprime",
+    "dosage": "25 mg",
+    "notes": "Classe: Anti-inflammatoire, antalgique\nVoie: orale\nContre-indications: Ulcere, insuffisance renale"
+  },
+  {
+    "name": "VOLTARENE 50mg",
+    "dci": "Diclofenac",
+    "form": "comprime",
+    "dosage": "50 mg",
+    "notes": "Classe: Anti-inflammatoire, antalgique\nVoie: orale\nContre-indications: Ulcere, insuffisance renale"
+  },
+  {
+    "name": "VOLTARENE 75mg IM",
+    "dci": "Diclofenac",
+    "form": "injectable",
+    "dosage": "75 mg/3ml",
+    "notes": "Classe: Anti-inflammatoire injectable\nVoie: IM\nContre-indications: Ulcere, insuffisance renale"
+  },
+  {
+    "name": "VOLTARENE gel 1%",
+    "dci": "Diclofenac",
+    "form": "gel",
+    "dosage": "1%",
+    "notes": "Classe: Anti-inflammatoire local\nVoie: cutanee"
+  },
+  {
+    "name": "WARFARINE 5mg",
+    "dci": "Warfarine",
+    "form": "comprime",
+    "dosage": "5 mg",
+    "notes": "Classe: AVK\nIndications: AVK: Prevention thrombo-embolique\nVoie: orale"
+  },
+  {
+    "name": "XALATAN",
+    "dci": "Latanoprost",
+    "form": "comprime",
+    "dosage": "1 goutte le soir",
+    "notes": "Classe: Analogue prostaglandine ophtalmique\nIndications: Glaucome, hypertension oculaire\nVoie: orale\nContre-indications: grossesse, allaitement, uveite active, maculaire pseudophake\nInteractions: timolol, dorzolamide"
+  },
+  {
+    "name": "XANAX 0.25mg",
+    "dci": "Alprazolam",
+    "form": "comprime",
+    "dosage": "0.25 mg",
+    "notes": "Classe: Anxiolytique benzodiazepine\nVoie: orale"
+  },
+  {
+    "name": "XANAX 0.5",
+    "dci": "Alprazolam",
+    "form": "comprime",
+    "dosage": "0.25-0.5 mg x 3/j",
+    "notes": "Classe: Benzodiazepine anxiolytique\nIndications: Anxiete generalisee, crise d angoisse\nVoie: orale\nContre-indications: insuffisance respiratoire severe, myasthenie, apnee du sommeil\nInteractions: alcool, antidepresseur sedatif, antihistaminique, morphine"
+  },
+  {
+    "name": "XANAX 0.5mg",
+    "dci": "Alprazolam",
+    "form": "comprime",
+    "dosage": "0.5 mg",
+    "notes": "Classe: Anxiolytique benzodiazepine\nVoie: orale"
+  },
+  {
+    "name": "XARELTO",
+    "dci": "Rivaroxaban",
+    "form": "comprime",
+    "dosage": "Selon indication, age, poids",
+    "notes": "Classe: Anticoagulant oral direct\nIndications: Anticoagulation selon indication\nVoie: orale\nContre-indications: hemorragie active, insuffisance renale severe, valve mecanique\nInteractions: aspirine, clopidogrel, anti-inflammatoire"
+  },
+  {
+    "name": "XARELTO 10mg",
+    "dci": "Rivaroxaban",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: AOD, prevention TVP\nVoie: orale"
+  },
+  {
+    "name": "XARELTO 15mg",
+    "dci": "Rivaroxaban",
+    "form": "comprime",
+    "dosage": "15 mg",
+    "notes": "Classe: AOD, anticoagulant direct\nVoie: orale"
+  },
+  {
+    "name": "XARELTO 20mg",
+    "dci": "Rivaroxaban",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: AOD, anticoagulant direct\nVoie: orale"
+  },
+  {
+    "name": "ZESTRIL",
+    "dci": "Lisinopril",
+    "form": "comprime",
+    "dosage": "5 a 40 mg/j",
+    "notes": "Classe: IEC\nIndications: HTA, IC, post-infarctus\nVoie: orale\nContre-indications: grossesse, angioedeme, hyperkaliemie severe\nInteractions: spironolactone, potassium, ains, lithium"
+  },
+  {
+    "name": "ZINNAT 500mg",
+    "dci": "Cefuroxime",
+    "form": "comprime",
+    "dosage": "500 mg",
+    "notes": "Classe: Cephalosporine 2e generation\nVoie: orale"
+  },
+  {
+    "name": "ZITHROMAX 200 mg/5ml",
+    "dci": "Azithromycine",
+    "form": "comprime",
+    "dosage": "10 mg/kg/j pendant 3 jours",
+    "notes": "Classe: Antibiotique macrolide pediatrique\nIndications: Infections ORL, bronchiques chez l enfant\nVoie: orale\nContre-indications: allergie macrolide, insuffisance hepatique\nInteractions: amiodarone, warfarine"
+  },
+  {
+    "name": "ZITHROMAX 250",
+    "dci": "Azithromycine",
+    "form": "comprime",
+    "dosage": "500 mg/j pendant 3 jours ou 250 mg x 3/j",
+    "notes": "Classe: Antibiotique macrolide\nIndications: Infections ORL, bronchiques, atypiques\nVoie: orale\nContre-indications: allergie macrolide, insuffisance hepatique severe, arythmie QT\nInteractions: amiodarone, digoxine, warfarine, antiacide, statine"
+  },
+  {
+    "name": "ZITHROMAX 250mg",
+    "dci": "Azithromycine",
+    "form": "gelule",
+    "dosage": "250 mg",
+    "notes": "Classe: Macrolide\nVoie: orale"
+  },
+  {
+    "name": "ZOCOR 20mg",
+    "dci": "Simvastatine",
+    "form": "comprime",
+    "dosage": "20 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "ZOCOR 40mg",
+    "dci": "Simvastatine",
+    "form": "comprime",
+    "dosage": "40 mg",
+    "notes": "Classe: Statine, dyslipidemie\nVoie: orale"
+  },
+  {
+    "name": "ZYRTEC",
+    "dci": "Cetirizine",
+    "form": "comprime",
+    "dosage": "1 cp/j",
+    "notes": "Classe: Antihistaminique H1\nIndications: Rhinite, urticaire, prurit\nVoie: orale\nContre-indications: hypersensibilite, insuffisance renale severe\nInteractions: alcool, sedatif, theophylline"
+  },
+  {
+    "name": "ZYRTEC 10mg",
+    "dci": "Cetirizine",
+    "form": "comprime",
+    "dosage": "10 mg",
+    "notes": "Classe: Antihistaminique H1\nVoie: orale"
+  },
+  {
+    "name": "401-475 sur 475 - page 5 / 5",
+    "dci": null,
+    "form": null,
+    "dosage": null,
+    "notes": null
+  }
+]

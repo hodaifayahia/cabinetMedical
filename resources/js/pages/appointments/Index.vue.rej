@@ -1,0 +1,14 @@
+--- resources/js/pages/appointments/Index.vue
++++ resources/js/pages/appointments/Index.vue
+@@ -419,9 +419,9 @@
+     const query = patientSearch.value.trim().toLowerCase();
+ 
+     const matches = query
+-        ? props.patients.filter(
++        ? patientOptions.value.filter(
+               (patient) =>
+                   patient.full_name.toLowerCase().includes(query) ||
+                   patient.patient_number.toLowerCase().includes(query),
+           )
+-        : props.patients;
++        : patientOptions.value;

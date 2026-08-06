@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-lan-adapters"
+description = "Enables the list_lan_adapters command without any pre-configured scope."
+commands.allow = ["list_lan_adapters"]
+
+[[permission]]
+identifier = "deny-list-lan-adapters"
+description = "Denies the list_lan_adapters command without any pre-configured scope."
+commands.deny = ["list_lan_adapters"]

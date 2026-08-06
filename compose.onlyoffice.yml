@@ -1,0 +1,23 @@
+services:
+  onlyoffice:
+    # Keep the document editor reproducible. Review release notes and replace both
+    # the version and digest deliberately when upgrading.
+    image: onlyoffice/documentserver:9.4.0.1@sha256:3ab6ebc7c605e5a32b7ae3ff19daed4925090245acc8100ce2230bd766c88212
+    ports:
+      - '127.0.0.1:8088:80'
+    environment:
+      JWT_ENABLED: 'true'
+      JWT_SECRET: '${ONLYOFFICE_JWT_SECRET:?Set ONLYOFFICE_JWT_SECRET in .env}'
+      ALLOW_PRIVATE_IP_ADDRESS: 'true'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    restart: unless-stopped
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+      - onlyoffice_lib:/var/lib/onlyoffice
+
+volumes:
+  onlyoffice_data:
+  onlyoffice_logs:
+  onlyoffice_lib:

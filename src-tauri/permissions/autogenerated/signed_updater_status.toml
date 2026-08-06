@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-signed-updater-status"
+description = "Enables the signed_updater_status command without any pre-configured scope."
+commands.allow = ["signed_updater_status"]
+
+[[permission]]
+identifier = "deny-signed-updater-status"
+description = "Denies the signed_updater_status command without any pre-configured scope."
+commands.deny = ["signed_updater_status"]

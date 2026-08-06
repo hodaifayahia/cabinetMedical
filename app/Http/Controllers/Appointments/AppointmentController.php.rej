@@ -1,0 +1,9 @@
+--- app/Http/Controllers/Appointments/AppointmentController.php
++++ app/Http/Controllers/Appointments/AppointmentController.php
+@@ -75,5 +75,6 @@
+                 'confirm' => $user->can('appointments.update'),
+                 'checkIn' => $user->can('appointments.check-in'),
+                 'cancel' => $user->can('appointments.cancel'),
+                 'configure' => $user->can('appointments.configure'),
++                'manageActs' => $user->can('configuration.manage'),
+             ],

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="color-scheme" content="light" />
+        <title>Démarrage de MediSmart</title>
+        <link rel="stylesheet" href="startup.css" />
+        <script src="startup.js" defer></script>
+    </head>
+    <body>
+        <main class="startup-card" aria-live="polite">
+            <div class="mark" aria-hidden="true">M</div>
+            <p class="eyebrow">MediSmart Desktop</p>
+            <h1 id="startup-title">Démarrage sécurisé…</h1>
+            <p id="startup-message">
+                Le serveur médical local est en cours de vérification.
+            </p>
+            <div id="startup-progress" class="progress" aria-hidden="true">
+                <span></span>
+            </div>
+            <section id="startup-recovery" class="recovery" hidden>
+                <p>
+                    Fermez puis relancez MediSmart. Si le problème persiste,
+                    transmettez uniquement le code ci-dessous au support.
+                </p>
+                <code id="startup-code">startup_failed</code>
+                <p class="hint">
+                    Le journal technique filtré est enregistré dans le dossier
+                    local MediSmart, sous <strong>logs</strong>.
+                </p>
+            </section>
+        </main>
+    </body>
+</html>
