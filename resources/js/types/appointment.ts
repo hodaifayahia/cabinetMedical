@@ -53,6 +53,9 @@ export type AppointmentListItem = {
     can_confirm: boolean;
     can_check_in: boolean;
     can_cancel: boolean;
+    can_start: boolean;
+    consultation_id: number | null;
+    consultation_status: string | null;
 };
 
 export type AppointmentStatusOption = {
