@@ -12,12 +12,15 @@ import {
     Check,
     ChevronsUpDown,
     Clock,
+    Eye,
     MoreVertical,
     Pencil,
+    Play,
     Printer,
     Plus,
     RefreshCw,
     Search,
+    Stethoscope,
     UserCheck,
     X,
 } from '@lucide/vue';
@@ -93,6 +96,7 @@ const props = defineProps<{
         cancel: boolean;
         configure: boolean;
         manageActs: boolean;
+        startConsultation: boolean;
     };
     today: string;
 }>();
@@ -307,6 +311,27 @@ const checkInAppointment = (appointment: AppointmentListItem) => {
         { preserveScroll: true, preserveState: true },
     );
 };
+
+// Requirement #2: start (or resume) the consultation for an appointment.
+// Posts to the existing consultations.start endpoint which creates/opens the
+// Consultation for the patient and redirects into the workspace.
+const startConsultation = (appointment: AppointmentListItem) => {
+    if (appointment.consultation_id) {
+        router.visit(`/app/consultations/${appointment.consultation_id}`);
+
+        return;
+    }
+
+    router.post(
+        `/app/consultations/${appointment.id}/start`,
+        {},
+        { preserveScroll: true },
+    );
+};
+
+const consultationIsCompleted = (appointment: AppointmentListItem): boolean =>
+    appointment.consultation_status === 'completed' ||
+    appointment.status === 'completed';
 
 const cancelTarget = ref<AppointmentListItem | null>(null);
 const cancelForm = useForm<{ reason: string }>({ reason: '' });
@@ -998,6 +1023,48 @@ const printAppointments = () => {
                             <div class="flex items-center justify-end gap-0.5">
                                 <Button
                                     v-if="
+                                        permissions.startConsultation &&
+                                        consultationIsCompleted(appointment) &&
+                                        appointment.consultation_id
+                                    "
+                                    variant="outline"
+                                    size="sm"
+                                    class="rounded-lg"
+                                    title="Voir la consultation"
+                                    @click="startConsultation(appointment)"
+                                >
+                                    <Eye class="size-4" />
+                                    Voir
+                                </Button>
+                                <Button
+                                    v-else-if="
+                                        permissions.startConsultation &&
+                                        appointment.consultation_id
+                                    "
+                                    variant="secondary"
+                                    size="sm"
+                                    class="rounded-lg"
+                                    title="Continuer la consultation"
+                                    @click="startConsultation(appointment)"
+                                >
+                                    <Stethoscope class="size-4" />
+                                    Continuer
+                                </Button>
+                                <Button
+                                    v-else-if="
+                                        permissions.startConsultation &&
+                                        appointment.can_start
+                                    "
+                                    size="sm"
+                                    class="rounded-lg bg-[#3e739f] text-white hover:bg-[#24557d]"
+                                    title="Démarrer la consultation"
+                                    @click="startConsultation(appointment)"
+                                >
+                                    <Play class="size-4" />
+                                    Consultation
+                                </Button>
+                                <Button
+                                    v-if="
                                         permissions.confirm &&
                                         appointment.can_confirm
                                     "
@@ -1429,6 +1496,48 @@ const printAppointments = () => {
                                         class="flex items-center justify-end gap-1"
                                     >
                                         <Button
+                                            v-if="
+                                                permissions.startConsultation &&
+                                                consultationIsCompleted(
+                                                    appointment,
+                                                ) &&
+                                                appointment.consultation_id
+                                            "
+                                            variant="outline"
+                                            size="sm"
+                                            title="Voir la consultation"
+                                            @click="startConsultation(appointment)"
+                                        >
+                                            <Eye class="size-4" />
+                                            Voir
+                                        </Button>
+                                        <Button
+                                            v-else-if="
+                                                permissions.startConsultation &&
+                                                appointment.consultation_id
+                                            "
+                                            variant="secondary"
+                                            size="sm"
+                                            title="Continuer la consultation"
+                                            @click="startConsultation(appointment)"
+                                        >
+                                            <Stethoscope class="size-4" />
+                                            Continuer
+                                        </Button>
+                                        <Button
+                                            v-else-if="
+                                                permissions.startConsultation &&
+                                                appointment.can_start
+                                            "
+                                            size="sm"
+                                            class="bg-[#3e739f] text-white hover:bg-[#24557d]"
+                                            title="Démarrer la consultation"
+                                            @click="startConsultation(appointment)"
+                                        >
+                                            <Play class="size-4" />
+                                            Consultation
+                                        </Button>
+                                        <Button
                                             v-if="permissions.confirm"
                                             variant="ghost"
                                             size="icon-sm"
@@ -1474,7 +1583,8 @@ const printAppointments = () => {
                                             v-if="
                                                 !permissions.confirm &&
                                                 !permissions.checkIn &&
-                                                !permissions.cancel
+                                                !permissions.cancel &&
+                                                !permissions.startConsultation
                                             "
                                             class="text-xs text-muted-foreground"
                                         >
