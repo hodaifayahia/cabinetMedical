@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Appointments\StoreAppointmentRequest;
 use App\Models\Act;
 use App\Models\Appointment;
+use App\Models\Consultation;
 use App\Models\ConsultationFee;
 use App\Models\Patient;
 use App\Models\User;
@@ -58,7 +59,7 @@ class AppointmentController extends Controller
                 'is_open_month' => false,
                 'days' => [],
             ],
-            'appointments' => $this->appointmentList($filterDate, $search, $status, $perPage),
+            'appointments' => $this->appointmentList($filterDate, $search, $status, $perPage, $today),
             'stats' => $this->statusCounts($filterDate, $search),
             'statusOptions' => $this->statusOptions(),
             'filters' => [
@@ -79,6 +80,7 @@ class AppointmentController extends Controller
                 'cancel' => $user->can('appointments.cancel'),
                 'configure' => $user->can('appointments.configure'),
                 'manageActs' => $user->can('configuration.manage'),
+                'startConsultation' => $user->can('consultations.create'),
             ],
             'today' => $today->toDateString(),
         ]);
@@ -506,9 +508,9 @@ class AppointmentController extends Controller
      *
      * @return LengthAwarePaginator<int, array<string, mixed>>
      */
-    private function appointmentList(CarbonImmutable $date, string $search, ?AppointmentStatus $status, int $perPage): LengthAwarePaginator
+    private function appointmentList(CarbonImmutable $date, string $search, ?AppointmentStatus $status, int $perPage, CarbonImmutable $today): LengthAwarePaginator
     {
-        return Appointment::query()
+        $paginator = Appointment::query()
             ->with('patient:id,first_name,last_name,patient_number')
             ->when($search === '', static fn (Builder $query): Builder => $query->whereDate('appointment_date', $date->toDateString()))
             ->when($search !== '', $this->patientSearchFilter($search))
@@ -516,8 +518,29 @@ class AppointmentController extends Controller
             ->when($search !== '', static fn (Builder $query): Builder => $query->orderByDesc('appointment_date'))
             ->orderBy('starts_at')
             ->paginate($perPage)
-            ->withQueryString()
-            ->through(static fn (Appointment $appointment): array => [
+            ->withQueryString();
+
+        // Map each appointment to its consultation (if the visit was already
+        // started) so the list can offer "Continuer" / "Voir" alongside
+        // "Démarrer la consultation" without an N+1 lookup.
+        $consultations = Consultation::query()
+            ->whereIn('appointment_id', $paginator->getCollection()->pluck('id')->all())
+            ->get(['id', 'appointment_id', 'status'])
+            ->keyBy('appointment_id');
+
+        $todayString = $today->toDateString();
+
+        return $paginator->through(function (Appointment $appointment) use ($consultations, $todayString): array {
+            $consultation = $consultations->get($appointment->id);
+            $isToday = $appointment->appointment_date?->toDateString() === $todayString;
+            $startableStatus = in_array($appointment->status, [
+                AppointmentStatus::SCHEDULED,
+                AppointmentStatus::CONFIRMED,
+                AppointmentStatus::CHECKED_IN,
+                AppointmentStatus::IN_PROGRESS,
+            ], true);
+
+            return [
                 'id' => $appointment->id,
                 'date' => $appointment->appointment_date?->toDateString(),
                 'starts_at' => $appointment->starts_at?->toIso8601String(),
@@ -533,7 +556,13 @@ class AppointmentController extends Controller
                 'can_confirm' => $appointment->status === AppointmentStatus::SCHEDULED,
                 'can_check_in' => in_array($appointment->status, [AppointmentStatus::SCHEDULED, AppointmentStatus::CONFIRMED], true),
                 'can_cancel' => ! in_array($appointment->status, [AppointmentStatus::COMPLETED, AppointmentStatus::CANCELLED, AppointmentStatus::NO_SHOW], true),
-            ]);
+                // Start-the-consultation affordances (requirement #2). Only
+                // today's, non-terminal appointments may launch a new visit.
+                'can_start' => $isToday && $startableStatus,
+                'consultation_id' => $consultation?->id,
+                'consultation_status' => $consultation?->status,
+            ];
+        });
     }
 
     /**
