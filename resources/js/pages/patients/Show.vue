@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { usePage } from '@inertiajs/vue3';
-import { Pencil } from '@lucide/vue';
+import { Pencil, Stethoscope } from '@lucide/vue';
 import { computed } from 'vue';
-import Heading from '@/components/Heading.vue';
 import PageBackButton from '@/components/PageBackButton.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import type { PatientDetail } from '@/types';
 
@@ -99,31 +99,41 @@ const details = computed(() => [
     <Head :title="props.patient.full_name" />
 
     <div class="med-page">
-        <section class="med-panel p-6">
+        <div>
             <PageBackButton
                 href="/app/patients"
                 label="Retour aux patients"
                 class="mb-4"
             />
-            <div
-                class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+            <PageHeader
+                :title="props.patient.full_name"
+                :description="`Dossier ${props.patient.patient_number}`"
             >
-                <Heading
-                    :title="props.patient.full_name"
-                    :description="`Dossier ${props.patient.patient_number}`"
-                />
-
-                <div class="flex items-center gap-2">
+                <template #actions>
+                    <Button
+                        v-if="can('consultations.view')"
+                        variant="outline"
+                        as-child
+                    >
+                        <Link
+                            :href="`/app/patients/${props.patient.id}/consultation-history`"
+                        >
+                            <Stethoscope class="size-4" />
+                            Historique des consultations
+                        </Link>
+                    </Button>
                     <Button v-if="can('patients.update')" as-child>
                         <Link :href="`/app/patients/${props.patient.id}/edit`">
                             <Pencil class="size-4" />
                             Modifier
                         </Link>
                     </Button>
-                </div>
-            </div>
+                </template>
+            </PageHeader>
+        </div>
 
-            <dl class="mt-6 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+        <section class="med-panel p-6">
+            <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div
                     v-for="detail in details"
                     :key="detail.label"
