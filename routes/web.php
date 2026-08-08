@@ -6,13 +6,9 @@ use App\Http\Controllers\Appointments\AvailabilityController;
 use App\Http\Controllers\Appointments\OpenMonthController;
 use App\Http\Controllers\Appointments\ScheduleController;
 use App\Http\Controllers\Appointments\TimeOffController;
-use App\Http\Controllers\Auth\DesktopCabinetLoginController;
-use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
-use App\Http\Controllers\Auth\DesktopPinLoginController;
 use App\Http\Controllers\Auth\SessionLockController;
 use App\Http\Controllers\Cabinet\CabinetStatusController;
 use App\Http\Controllers\Cabinet\JoinCabinetController;
-use App\Http\Controllers\Cabinet\RedeemHostedLicenseCodeController;
 use App\Http\Controllers\Configuration\AccountingController;
 use App\Http\Controllers\Configuration\BackupController;
 use App\Http\Controllers\Configuration\ClinicIdentityController;
@@ -25,9 +21,9 @@ use App\Http\Controllers\Configuration\ReferentialController;
 use App\Http\Controllers\Configuration\UploadSessionController;
 use App\Http\Controllers\Consultations\ClinicalDocumentController;
 use App\Http\Controllers\Consultations\ConsultationController;
+use App\Http\Controllers\Consultations\ConsultationHistoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DesktopDownloadController;
-use App\Http\Controllers\DesktopDownloadLeadController;
 use App\Http\Controllers\Encounters\EncounterController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Payments\PaymentController;
@@ -43,25 +39,7 @@ Route::get('/', static fn () => Inertia::render('Welcome', [
     'canRegister' => true,
 ]))->name('home');
 
-Route::get('desktop/download', [DesktopDownloadLeadController::class, 'show'])
-    ->name('desktop.download');
-Route::post('desktop/download', [DesktopDownloadLeadController::class, 'store'])
-    ->middleware('throttle:desktop-download-leads')
-    ->name('desktop.download.store');
-Route::get('desktop/download/file/{lead}', DesktopDownloadController::class)
-    ->middleware(['signed', 'throttle:desktop-download-files'])
-    ->name('desktop.download.file');
-
-Route::middleware('guest')->group(function (): void {
-    Route::get('desktop/cabinet-login', [DesktopCabinetLoginController::class, 'create'])
-        ->name('desktop.cabinet-login');
-    Route::post('desktop/cabinet-login', [DesktopCabinetLoginController::class, 'store'])
-        ->middleware('throttle:desktop-cabinet-login')
-        ->name('desktop.cabinet-login.store');
-    Route::post('desktop/pin/login', DesktopPinLoginController::class)
-        ->middleware('throttle:desktop-pin-login')
-        ->name('desktop.pin.login');
-});
+Route::get('desktop/download', DesktopDownloadController::class)->name('desktop.download');
 
 // Public "join an existing cabinet" flow (rate limited).
 Route::middleware('throttle:cabinet-join')->group(function (): void {
@@ -71,16 +49,10 @@ Route::middleware('throttle:cabinet-join')->group(function (): void {
 
 // Cabinet lifecycle status screens for authenticated but gated users.
 Route::middleware('auth')->group(function (): void {
-    Route::post('desktop/pin/enroll', DesktopPinEnrollmentController::class)
-        ->middleware('throttle:desktop-pin-enroll')
-        ->name('desktop.pin.enroll');
     Route::get('cabinet/pending', [CabinetStatusController::class, 'pending'])
         ->name('cabinet.pending');
     Route::get('cabinet/awaiting-approval', [CabinetStatusController::class, 'awaitingApproval'])
         ->name('cabinet.awaiting-approval');
-    Route::post('cabinet/license/redeem', RedeemHostedLicenseCodeController::class)
-        ->middleware('throttle:license-activation')
-        ->name('cabinet.license.redeem');
 });
 
 Route::middleware('auth')->prefix('session')->name('session-lock.')->group(function (): void {
@@ -137,6 +109,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::middleware('permission:consultations.view')->group(function () {
             Route::get('consultations', [ConsultationController::class, 'index'])->name('consultations.index');
+            Route::get('patients/{patient}/consultation-history', [ConsultationHistoryController::class, 'index'])
+                ->name('consultations.history');
+            Route::get('consultation-history/{consultation}', [ConsultationHistoryController::class, 'show'])
+                ->name('consultations.history.show');
             Route::get('consultations/{consultation}', [ConsultationController::class, 'show'])->name('consultations.show');
         });
         Route::post('consultations/{appointment}/start', [ConsultationController::class, 'start'])
