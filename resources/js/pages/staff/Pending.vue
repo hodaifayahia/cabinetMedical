@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
+import { Clock3, Users } from '@lucide/vue';
 import { reactive } from 'vue';
+import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -50,72 +52,83 @@ function reject(member: PendingMember): void {
 <template>
     <Head title="Demandes en attente" />
 
-    <div class="space-y-6 p-4">
-        <header class="space-y-1">
-            <h1 class="text-xl font-semibold">Membres en attente</h1>
-            <p class="text-sm text-muted-foreground">
-                Approuvez ou rejetez les demandes d'accès à votre cabinet.
-                Sièges utilisés : {{ props.seats.used }} /
-                {{ props.seats.max }}.
-            </p>
-        </header>
+    <div class="med-page">
+        <Heading
+            title="Membres en attente"
+            :description="`Approuvez ou rejetez les demandes d’accès à votre cabinet. Sièges utilisés : ${props.seats.used} / ${props.seats.max}.`"
+        />
 
-        <p
-            v-if="props.pending.length === 0"
-            class="text-sm text-muted-foreground"
-        >
-            Aucune demande en attente.
-        </p>
+        <section class="med-panel p-6">
+            <div v-if="props.pending.length === 0" class="med-empty">
+                <Clock3 class="med-empty-icon" />
+                <p class="med-empty-title">Aucune demande en attente</p>
+                <p class="med-empty-hint">
+                    Les nouvelles demandes d’accès apparaîtront ici pour
+                    validation.
+                </p>
+            </div>
 
-        <ul v-else class="space-y-4">
-            <li
-                v-for="member in props.pending"
-                :key="member.id"
-                class="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-                <div class="space-y-1">
-                    <p class="font-medium">{{ member.name }}</p>
-                    <p class="text-sm text-muted-foreground">
-                        {{ member.email }}
-                    </p>
-                    <Badge variant="secondary">En attente</Badge>
-                </div>
-
-                <div class="flex flex-wrap items-end gap-2">
-                    <div class="grid gap-1">
-                        <Label :for="`role-${member.id}`" class="text-xs">
-                            Rôle
-                        </Label>
-                        <Select v-model="selectedRole[member.id]">
-                            <SelectTrigger
-                                :id="`role-${member.id}`"
-                                class="w-48"
-                            >
-                                <SelectValue placeholder="Choisir un rôle" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="role in props.roles"
-                                    :key="role"
-                                    :value="role"
-                                >
-                                    {{ role }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+            <ul v-else class="space-y-4">
+                <li
+                    v-for="member in props.pending"
+                    :key="member.id"
+                    class="flex flex-col gap-4 rounded-xl border border-border/70 bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span
+                            class="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand"
+                        >
+                            <Users class="size-5" />
+                        </span>
+                        <div class="min-w-0 space-y-1">
+                            <div class="flex items-center gap-2">
+                                <p class="truncate font-semibold">
+                                    {{ member.name }}
+                                </p>
+                                <Badge variant="secondary">En attente</Badge>
+                            </div>
+                            <p class="truncate text-sm text-muted-foreground">
+                                {{ member.email }}
+                            </p>
+                        </div>
                     </div>
 
-                    <Button
-                        :disabled="!selectedRole[member.id]"
-                        @click="approve(member)"
-                    >
-                        Approuver
-                    </Button>
-                    <Button variant="destructive" @click="reject(member)">
-                        Rejeter
-                    </Button>
-                </div>
-            </li>
-        </ul>
+                    <div class="flex flex-wrap items-end gap-2">
+                        <div class="grid gap-1.5">
+                            <Label :for="`role-${member.id}`" class="text-xs">
+                                Rôle
+                            </Label>
+                            <Select v-model="selectedRole[member.id]">
+                                <SelectTrigger
+                                    :id="`role-${member.id}`"
+                                    class="w-48"
+                                >
+                                    <SelectValue placeholder="Choisir un rôle" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem
+                                        v-for="role in props.roles"
+                                        :key="role"
+                                        :value="role"
+                                    >
+                                        {{ role }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <Button
+                            :disabled="!selectedRole[member.id]"
+                            @click="approve(member)"
+                        >
+                            Approuver
+                        </Button>
+                        <Button variant="destructive" @click="reject(member)">
+                            Rejeter
+                        </Button>
+                    </div>
+                </li>
+            </ul>
+        </section>
     </div>
 </template>
