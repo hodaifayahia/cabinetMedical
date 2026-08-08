@@ -48,7 +48,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                         :class="[
                             'w-full justify-start',
                             {
-                                'bg-[#4c82b7] text-white hover:bg-[#4275a7] hover:text-white':
+                                'bg-brand text-brand-foreground hover:bg-brand/90 hover:text-brand-foreground':
                                     isCurrentOrParentUrl(item.href),
                             },
                         ]"
