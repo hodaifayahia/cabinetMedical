@@ -1,18 +1,1 @@
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Model;
-
-#[Fillable(['label', 'amount_minor', 'category', 'is_active'])]
-class ConsultationFee extends Model
-{
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return ['amount_minor' => 'integer', 'is_active' => 'boolean'];
-    }
-}
+PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcQXR0cmlidXRlc1xGaWxsYWJsZTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcTW9kZWw7CgojW0ZpbGxhYmxlKFsnbGFiZWwnLCAnYW1vdW50X21pbm9yJywgJ2NhdGVnb3J5JywgJ2lzX2FjdGl2ZSddKV0KY2xhc3MgQ29uc3VsdGF0aW9uRmVlIGV4dGVuZHMgTW9kZWwKewogICAgdXNlIFxBcHBcTW9kZWxzXENvbmNlcm5zXEJlbG9uZ3NUb0NhYmluZXQ7CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIGFycmF5PHN0cmluZywgc3RyaW5nPgogICAgICovCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gY2FzdHMoKTogYXJyYXkKICAgIHsKICAgICAgICByZXR1cm4gWydhbW91bnRfbWlub3InID0+ICdpbnRlZ2VyJywgJ2lzX2FjdGl2ZScgPT4gJ2Jvb2xlYW4nXTsKICAgIH0KfQo=

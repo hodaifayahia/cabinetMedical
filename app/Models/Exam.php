@@ -1,18 +1,1 @@
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Model;
-
-#[Fillable(['name', 'category', 'is_active'])]
-class Exam extends Model
-{
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return ['is_active' => 'boolean'];
-    }
-}
+PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcQXR0cmlidXRlc1xGaWxsYWJsZTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcTW9kZWw7CgojW0ZpbGxhYmxlKFsnbmFtZScsICdjYXRlZ29yeScsICdpc19hY3RpdmUnXSldCmNsYXNzIEV4YW0gZXh0ZW5kcyBNb2RlbAp7CiAgICB1c2UgXEFwcFxNb2RlbHNcQ29uY2VybnNcQmVsb25nc1RvQ2FiaW5ldDsKCiAgICAvKioKICAgICAqIEByZXR1cm4gYXJyYXk8c3RyaW5nLCBzdHJpbmc+CiAgICAgKi8KICAgIHByb3RlY3RlZCBmdW5jdGlvbiBjYXN0cygpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbJ2lzX2FjdGl2ZScgPT4gJ2Jvb2xlYW4nXTsKICAgIH0KfQo=
