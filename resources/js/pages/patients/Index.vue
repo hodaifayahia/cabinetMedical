@@ -2,7 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Eye, Pencil, Plus, Search, Users } from '@lucide/vue';
 import { ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PatientForm from '@/components/patients/PatientForm.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -82,15 +82,11 @@ const paginationLabel = (label: string): string => {
     <Head title="Patients" />
 
     <div class="med-page overflow-x-auto">
-        <section class="med-panel p-6">
-            <div
-                class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-                <Heading
-                    title="Patients"
-                    description="Rechercher, enregistrer et gérer les dossiers patients."
-                />
-
+        <PageHeader
+            title="Patients"
+            description="Rechercher, enregistrer et gérer les dossiers patients."
+        >
+            <template #actions>
                 <Button
                     v-if="can('patients.create')"
                     @click="showCreate = true"
@@ -98,10 +94,12 @@ const paginationLabel = (label: string): string => {
                     <Plus class="size-4" />
                     Ajouter un patient
                 </Button>
-            </div>
+            </template>
+        </PageHeader>
 
+        <section class="med-panel p-6">
             <form
-                class="mt-6 flex max-w-2xl flex-col gap-2 sm:flex-row"
+                class="flex max-w-2xl flex-col gap-2 sm:flex-row"
                 @submit.prevent="submitSearch"
             >
                 <div class="relative min-w-0 flex-1">
@@ -145,12 +143,17 @@ const paginationLabel = (label: string): string => {
                         class="divide-y divide-sidebar-border/70 dark:divide-sidebar-border"
                     >
                         <tr v-if="patients.data.length === 0">
-                            <td
-                                class="px-4 py-8 text-center text-muted-foreground"
-                                colspan="7"
-                            >
-                                <Users class="mx-auto mb-2 size-8 opacity-40" />
-                                Aucun patient trouvé.
+                            <td colspan="7">
+                                <div class="med-empty">
+                                    <Users class="med-empty-icon" />
+                                    <p class="med-empty-title">
+                                        Aucun patient trouvé
+                                    </p>
+                                    <p class="med-empty-hint">
+                                        Ajustez votre recherche ou enregistrez un
+                                        nouveau dossier patient.
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                         <tr
