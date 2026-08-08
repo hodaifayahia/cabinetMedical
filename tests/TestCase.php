@@ -1,16 +1,1 @@
-<?php
-
-namespace Tests;
-
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Laravel\Fortify\Features;
-
-abstract class TestCase extends BaseTestCase
-{
-    protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void
-    {
-        if (! Features::enabled($feature)) {
-            $this->markTestSkipped($message ?? "Fortify feature [{$feature}] is not enabled.");
-        }
-    }
-}
+PD9waHAKCm5hbWVzcGFjZSBUZXN0czsKCnVzZSBJbGx1bWluYXRlXEZvdW5kYXRpb25cVGVzdGluZ1xUZXN0Q2FzZSBhcyBCYXNlVGVzdENhc2U7CnVzZSBMYXJhdmVsXEZvcnRpZnlcRmVhdHVyZXM7CgphYnN0cmFjdCBjbGFzcyBUZXN0Q2FzZSBleHRlbmRzIEJhc2VUZXN0Q2FzZQp7CiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gc2V0VXAoKTogdm9pZAogICAgewogICAgICAgIHBhcmVudDo6c2V0VXAoKTsKCiAgICAgICAgLy8gVGhlIGNvbXBpbGVkIFZpdGUgbWFuaWZlc3QgaXMgbm90IHByZXNlbnQgaW4gdGhlIHRlc3QvQ0kgZW52aXJvbm1lbnQKICAgICAgICAvLyAoZnJvbnQtZW5kIGFzc2V0cyBhcmUgYnVpbHQgc2VwYXJhdGVseSkuIERpc2FibGluZyBWaXRlIGxldHMgQmxhZGUgLwogICAgICAgIC8vIEluZXJ0aWEgcm9vdCB2aWV3cyByZW5kZXIgd2l0aG91dCBhIG1hbmlmZXN0IHdoaWxlIHN0aWxsIGV4ZXJjaXNpbmcKICAgICAgICAvLyBjb250cm9sbGVycywgbWlkZGxld2FyZSBhbmQgSW5lcnRpYSByZXNwb25zZSBhc3NlcnRpb25zLgogICAgICAgICR0aGlzLT53aXRob3V0Vml0ZSgpOwogICAgfQoKICAgIHByb3RlY3RlZCBmdW5jdGlvbiBza2lwVW5sZXNzRm9ydGlmeUhhcyhzdHJpbmcgJGZlYXR1cmUsID9zdHJpbmcgJG1lc3NhZ2UgPSBudWxsKTogdm9pZAogICAgewogICAgICAgIGlmICghIEZlYXR1cmVzOjplbmFibGVkKCRmZWF0dXJlKSkgewogICAgICAgICAgICAkdGhpcy0+bWFya1Rlc3RTa2lwcGVkKCRtZXNzYWdlID8/ICJGb3J0aWZ5IGZlYXR1cmUgW3skZmVhdHVyZX1dIGlzIG5vdCBlbmFibGVkLiIpOwogICAgICAgIH0KICAgIH0KfQo=
