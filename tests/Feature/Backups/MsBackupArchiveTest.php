@@ -126,7 +126,7 @@ class MsBackupArchiveTest extends TestCase
     {
         $created = app(MsBackupArchiveCreator::class)->create(
             $this->destination,
-            'MediSmart-Backup-test.msbackup',
+            'Drclick-Backup-test.msbackup',
         );
 
         $this->assertFileExists($created['path']);
@@ -225,7 +225,7 @@ class MsBackupArchiveTest extends TestCase
     {
         $created = app(MsBackupArchiveCreator::class)->create(
             $this->destination,
-            'MediSmart-Backup-tamper.msbackup',
+            'Drclick-Backup-tamper.msbackup',
         );
         $zip = new ZipArchive;
         $this->assertTrue($zip->open($created['path']));
@@ -246,7 +246,7 @@ class MsBackupArchiveTest extends TestCase
     {
         $created = app(MsBackupArchiveCreator::class)->create(
             $this->destination,
-            'MediSmart-Backup-slip.msbackup',
+            'Drclick-Backup-slip.msbackup',
         );
         $zip = new ZipArchive;
         $this->assertTrue($zip->open($created['path']));
@@ -274,13 +274,13 @@ class MsBackupArchiveTest extends TestCase
         );
 
         try {
-            $creator->create($this->destination, 'MediSmart-Backup-failure.msbackup');
+            $creator->create($this->destination, 'Drclick-Backup-failure.msbackup');
             $this->fail('The rejecting verifier should abort archive creation.');
         } catch (BackupArchiveException $exception) {
             $this->assertSame('Injected verification failure.', $exception->getMessage());
         }
 
-        $this->assertFileDoesNotExist($this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-failure.msbackup');
+        $this->assertFileDoesNotExist($this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-failure.msbackup');
         $this->assertSame([], File::files($this->destination));
     }
 
@@ -296,7 +296,7 @@ class MsBackupArchiveTest extends TestCase
         try {
             app(MsBackupArchiveCreator::class)->create(
                 $this->destination,
-                'MediSmart-Backup-missing-asset.msbackup',
+                'Drclick-Backup-missing-asset.msbackup',
             );
             $this->fail('A snapshot referencing a missing asset must not be published.');
         } catch (BackupArchiveException $exception) {

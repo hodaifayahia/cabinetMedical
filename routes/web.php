@@ -6,6 +6,8 @@ use App\Http\Controllers\Appointments\AvailabilityController;
 use App\Http\Controllers\Appointments\OpenMonthController;
 use App\Http\Controllers\Appointments\ScheduleController;
 use App\Http\Controllers\Appointments\TimeOffController;
+use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
+use App\Http\Controllers\Auth\DesktopPinLoginController;
 use App\Http\Controllers\Auth\SessionLockController;
 use App\Http\Controllers\Cabinet\CabinetStatusController;
 use App\Http\Controllers\Cabinet\JoinCabinetController;
@@ -24,6 +26,7 @@ use App\Http\Controllers\Consultations\ConsultationController;
 use App\Http\Controllers\Consultations\ConsultationHistoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DesktopDownloadController;
+use App\Http\Controllers\DesktopDownloadLeadController;
 use App\Http\Controllers\Encounters\EncounterController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Payments\PaymentController;
@@ -39,7 +42,23 @@ Route::get('/', static fn () => Inertia::render('Welcome', [
     'canRegister' => true,
 ]))->name('home');
 
-Route::get('desktop/download', DesktopDownloadController::class)->name('desktop.download');
+Route::get('desktop/download', [DesktopDownloadLeadController::class, 'show'])
+    ->name('desktop.download');
+Route::post('desktop/download', [DesktopDownloadLeadController::class, 'store'])
+    ->middleware('throttle:desktop-download-leads')
+    ->name('desktop.download.store');
+Route::get('desktop/download/file/{lead}', DesktopDownloadController::class)
+    ->middleware(['signed', 'throttle:desktop-download-files'])
+    ->name('desktop.download.file');
+
+// Desktop PIN authentication is separate from Fortify's email/password flow.
+Route::post('desktop/pin/login', DesktopPinLoginController::class)
+    ->middleware('throttle:desktop-pin-login')
+    ->name('desktop.pin.login');
+
+Route::post('desktop/pin/enroll', DesktopPinEnrollmentController::class)
+    ->middleware(['auth', 'verified', 'throttle:desktop-pin-enroll'])
+    ->name('desktop.pin.enroll');
 
 // Public "join an existing cabinet" flow (rate limited).
 Route::middleware('throttle:cabinet-join')->group(function (): void {

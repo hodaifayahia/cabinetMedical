@@ -358,7 +358,7 @@ class RemoteBackupRetentionCommandTest extends TestCase
         return DriveBackupConnection::query()->create([
             'cabinet_setting_id' => $cabinet->getKey(),
             'email' => 'doctor@example.test',
-            'folder_name' => 'MediSmart Backups',
+            'folder_name' => 'Drclick Backups',
             'folder_id' => 'drive-folder-id',
             'access_token' => 'drive-access-token',
             'refresh_token' => 'drive-refresh-token',
@@ -381,7 +381,7 @@ class RemoteBackupRetentionCommandTest extends TestCase
         ?string $recordId = null,
     ): BackupRecord {
         $record = new BackupRecord([
-            'filename' => 'MediSmart-Backup-'.$remoteFileId.'.msbackup',
+            'filename' => 'Drclick-Backup-'.$remoteFileId.'.msbackup',
             'disk' => 'local',
             'remote_file_id' => $remoteFileId,
             'size' => strlen($bytes),
@@ -415,7 +415,7 @@ class RemoteBackupRetentionCommandTest extends TestCase
 
         return [
             'id' => $fileId,
-            'name' => 'MediSmart-Backup-'.$fileId.'.msbackup',
+            'name' => 'Drclick-Backup-'.$fileId.'.msbackup',
             'size' => $size,
             'createdTime' => $createdAt,
             'mimeType' => 'application/vnd.medismart.backup',

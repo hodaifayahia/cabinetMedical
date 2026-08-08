@@ -275,13 +275,13 @@ mod tests {
         let logger = RuntimeLogger::open(
             &directory,
             &["health-secret-123".to_owned()],
-            &[PathBuf::from("/home/clinic/MediSmart")],
+            &[PathBuf::from("/home/clinic/Drclick")],
         )
         .unwrap();
 
         logger.child_output(
             "PHP",
-            "GET /upload/abcdefghijklmnopqrst?token=raw-token Authorization: Bearer abc.def health-secret-123 /home/clinic/MediSmart/storage",
+            "GET /upload/abcdefghijklmnopqrst?token=raw-token Authorization: Bearer abc.def health-secret-123 /home/clinic/Drclick/storage",
         );
         drop(logger);
 

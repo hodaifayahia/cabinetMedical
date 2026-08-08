@@ -7,6 +7,15 @@
         <meta name="referrer" content="no-referrer">
         <meta property="csp-nonce" nonce="{{ Vite::cspNonce() }}">
 
+        {{-- The desktop shell must never render the public marketing page. --}}
+        <script nonce="{{ Vite::cspNonce() }}">
+            (function() {
+                if (globalThis.isTauri && window.location.pathname === '/') {
+                    window.location.replace('/login');
+                }
+            })();
+        </script>
+
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script nonce="{{ Vite::cspNonce() }}">
             (function() {

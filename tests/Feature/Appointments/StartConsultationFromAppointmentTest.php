@@ -33,7 +33,7 @@ class StartConsultationFromAppointmentTest extends TestCase
         return $user;
     }
 
-    public function test_appointment_list_flags_todays_appointment_as_startable(): void
+    public function test_appointment_list_only_flags_checked_in_appointments_as_startable(): void
     {
         $doctor = $this->doctor();
         $patient = Patient::factory()->create();
@@ -49,7 +49,7 @@ class StartConsultationFromAppointmentTest extends TestCase
             ->get(route('app.appointments.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('appointments.data.0.can_start', true)
+                ->where('appointments.data.0.can_start', false)
                 ->where('appointments.data.0.consultation_id', null)
                 ->where('permissions.startConsultation', true),
             );
@@ -63,7 +63,7 @@ class StartConsultationFromAppointmentTest extends TestCase
         $appointment = Appointment::factory()->for($patient)->create([
             'appointment_date' => $startsAt->toDateString(),
             'starts_at' => $startsAt,
-            'status' => AppointmentStatus::CONFIRMED,
+            'status' => AppointmentStatus::CHECKED_IN,
             'created_by' => $doctor->id,
         ]);
 
@@ -96,7 +96,7 @@ class StartConsultationFromAppointmentTest extends TestCase
         $appointment = Appointment::factory()->for($patient)->create([
             'appointment_date' => $startsAt->toDateString(),
             'starts_at' => $startsAt,
-            'status' => AppointmentStatus::SCHEDULED,
+            'status' => AppointmentStatus::CHECKED_IN,
             'created_by' => $doctor->id,
         ]);
 
@@ -122,6 +122,22 @@ class StartConsultationFromAppointmentTest extends TestCase
         $this->actingAs($receptionist)
             ->post(route('app.consultations.start', $appointment))
             ->assertForbidden();
+
+        $this->assertDatabaseCount('consultations', 0);
+    }
+
+    public function test_start_endpoint_requires_the_patient_to_be_checked_in(): void
+    {
+        $doctor = $this->doctor();
+        $patient = Patient::factory()->create();
+        $appointment = Appointment::factory()->for($patient)->create([
+            'status' => AppointmentStatus::CONFIRMED,
+            'created_by' => $doctor->id,
+        ]);
+
+        $this->actingAs($doctor)
+            ->post(route('app.consultations.start', $appointment))
+            ->assertSessionHasErrors('status');
 
         $this->assertDatabaseCount('consultations', 0);
     }

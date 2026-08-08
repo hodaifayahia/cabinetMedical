@@ -28,7 +28,7 @@ class BackupControllerFailureTest extends TestCase
     public function test_drive_upload_is_disabled_until_the_transfer_workflow_is_available(): void
     {
         $this->post(route('app.configuration.backup.drive.store'), [
-            'folder_name' => 'MediSmart Backups',
+            'folder_name' => 'Drclick Backups',
         ])
             ->assertStatus(503);
 
@@ -56,7 +56,7 @@ class BackupControllerFailureTest extends TestCase
         ])->post(
             'http://127.0.0.1:43123/app/configuration/backup/drive',
             [
-                'folder_name' => 'MediSmart Backups',
+                'folder_name' => 'Drclick Backups',
                 'passphrase' => 'correct horse battery staple',
                 'passphrase_confirmation' => 'correct horse battery staple',
             ],

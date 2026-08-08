@@ -78,7 +78,7 @@ class DriveUploadCancellationTest extends TestCase
     private function record(string $driveStatus, ?string $remoteId = null): BackupRecord
     {
         return BackupRecord::query()->create([
-            'filename' => 'MediSmart-Backup-cancel-test.msbackup',
+            'filename' => 'Drclick-Backup-cancel-test.msbackup',
             'disk' => 'local',
             'local_path' => storage_path('app/private/backups/cancel-test.msbackup'),
             'remote_file_id' => $remoteId,

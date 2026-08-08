@@ -39,7 +39,7 @@ class AdminOverview extends StatsOverviewWidget
 
     protected function getDescription(): ?string
     {
-        return 'Suivi en temps réel des inscriptions et des licences DrClickDz.';
+        return 'Suivi en temps réel des inscriptions et des licences Drclick.';
     }
 
     protected function getStats(): array

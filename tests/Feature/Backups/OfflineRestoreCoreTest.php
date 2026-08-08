@@ -444,9 +444,9 @@ class OfflineRestoreCoreTest extends TestCase
     {
         $plain = app(MsBackupArchiveCreator::class)->create(
             $this->destination,
-            "MediSmart-Backup-{$suffix}-plain.msbackup",
+            "Drclick-Backup-{$suffix}-plain.msbackup",
         );
-        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR."MediSmart-Backup-{$suffix}-encrypted.msbackup";
+        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR."Drclick-Backup-{$suffix}-encrypted.msbackup";
         app(EncryptedMsBackupArchive::class)->encrypt(
             $plain['path'],
             $encryptedPath,

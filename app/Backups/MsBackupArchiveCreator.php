@@ -48,15 +48,15 @@ final class MsBackupArchiveCreator
         ?string $backupId = null,
     ): array {
         if (! class_exists(ZipArchive::class)) {
-            throw new BackupArchiveException('The ZIP extension is required to create DrClickDz backups.');
+            throw new BackupArchiveException('The ZIP extension is required to create Drclick backups.');
         }
 
         if (config('database.default') !== 'sqlite') {
-            throw new BackupArchiveException('DrClickDz archives currently require an SQLite database.');
+            throw new BackupArchiveException('Drclick archives currently require an SQLite database.');
         }
 
         if (PHP_INT_SIZE < 8) {
-            throw new BackupArchiveException('DrClickDz archives require a 64-bit PHP runtime.');
+            throw new BackupArchiveException('Drclick archives require a 64-bit PHP runtime.');
         }
 
         $destination = $this->writableDestination(
@@ -65,7 +65,7 @@ final class MsBackupArchiveCreator
                 storage_path('app/private/backups'),
             ),
         );
-        $filename ??= 'MediSmart-Backup-'.now()->format('Y-m-d-His').'-'.Str::lower(Str::random(6)).'.msbackup';
+        $filename ??= 'Drclick-Backup-'.now()->format('Y-m-d-His').'-'.Str::lower(Str::random(6)).'.msbackup';
         $this->assertFilename($filename);
 
         $finalPath = $destination.DIRECTORY_SEPARATOR.$filename;

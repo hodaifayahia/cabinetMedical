@@ -36,7 +36,7 @@ final class NormalContentSecurityPolicyTest extends TestCase
         Route::get('/_security/csp/payment-receipt', static fn () => view('payments.receipt', [
             'branding' => [
                 'address_line' => '1 Test Street, Ghardaia',
-                'clinic_name' => 'MediSmart Test Clinic',
+                'clinic_name' => 'Drclick Test Clinic',
                 'doctor_name' => 'Dr Test',
                 'email' => 'clinic@example.test',
                 'footer' => 'Test footer',

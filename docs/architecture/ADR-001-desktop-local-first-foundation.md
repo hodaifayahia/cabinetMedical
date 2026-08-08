@@ -2,12 +2,12 @@
 
 - Status: Accepted for the Phase 1 foundation
 - Date: 2026-08-04
-- Decision owners: MediSmart engineering
+- Decision owners: Drclick engineering
 - Related: [Phase 1 audit](../PHASE-1-AUDIT.md), [security checklist](../SECURITY-CHECKLIST.md)
 
 ## Context
 
-MediSmart is an existing Laravel, Vue, and Inertia medical application. It already manages users, patients, consultations, documents, appointments, clinic identity, and SQLite data. The desktop product must preserve that working application while adding local-first Windows operation, temporary phone uploads, backup and recovery, optional cloud connectivity, licensing, and diagnostics.
+Drclick is an existing Laravel, Vue, and Inertia medical application. It already manages users, patients, consultations, documents, appointments, clinic identity, and SQLite data. The desktop product must preserve that working application while adding local-first Windows operation, temporary phone uploads, backup and recovery, optional cloud connectivity, licensing, and diagnostics.
 
 The application contains medical data and must remain useful when the internet, tunnel, licensing server, or update service is unavailable. A packaging failure must not move mutable data into `Program Files`, expose the administrative application to a LAN or public tunnel, or make patient records depend on a subscription check.
 
@@ -15,7 +15,7 @@ Phase 1 therefore establishes stable Laravel-side boundaries and schemas without
 
 ## Decision
 
-MediSmart will remain a Laravel-backed modern monolith with Vue 3 and Inertia. SQLite remains the default local database. Tauri 2 will later be the Windows shell and privileged process supervisor; it will not replace Laravel business logic or expose a general shell to the webview.
+Drclick will remain a Laravel-backed modern monolith with Vue 3 and Inertia. SQLite remains the default local database. Tauri 2 will later be the Windows shell and privileged process supervisor; it will not replace Laravel business logic or expose a general shell to the webview.
 
 The runtime ownership is:
 
@@ -120,7 +120,7 @@ SQLite will serve the local-first workload, but concurrent web, queue, and phone
 - A permanent authenticated dashboard URL inside a QR code.
 - Exposing the entire local application through a Cloudflare Tunnel.
 - Treating a serial string as the complete licensing mechanism.
-- Treating a copied SQLite file as a complete, portable, safely restorable MediSmart backup.
+- Treating a copied SQLite file as a complete, portable, safely restorable Drclick backup.
 - Shipping one `APP_KEY`, OAuth secret, tunnel token, update private key, or license private key to every installation.
 
 ## Required follow-up decisions

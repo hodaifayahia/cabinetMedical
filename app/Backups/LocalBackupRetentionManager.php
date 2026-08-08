@@ -716,7 +716,7 @@ final class LocalBackupRetentionManager
             return 'non_completed_backup_record';
         }
 
-        if (str_starts_with($relative, 'MediSmart-Pre-Restore-Safety-')) {
+        if ($this->isPreRestoreSafetyArchive($relative)) {
             return 'pre_restore_safety_archive';
         }
 
@@ -739,7 +739,7 @@ final class LocalBackupRetentionManager
     {
         if ($relative === 'pre-restore-safety'
             || str_starts_with($relative, 'pre-restore-safety'.DIRECTORY_SEPARATOR)
-            || str_starts_with(basename($relative), 'MediSmart-Pre-Restore-Safety-')) {
+            || $this->isPreRestoreSafetyArchive(basename($relative))) {
             return 'pre_restore_safety_archive';
         }
 
@@ -752,6 +752,12 @@ final class LocalBackupRetentionManager
         }
 
         return 'unowned_managed_directory_file';
+    }
+
+    private function isPreRestoreSafetyArchive(string $path): bool
+    {
+        return str_starts_with($path, 'Drclick-Pre-Restore-Safety-')
+            || str_starts_with($path, 'MediSmart-Pre-Restore-Safety-');
     }
 
     /** @return array{record_id: string|null, file_ref: string|null, reason_code: string, size_bytes: int} */

@@ -412,7 +412,7 @@ final class ConnectivityAndBackupController extends Controller
             'license' => $license,
             'hostedEntitlement' => $hostedLicense === null ? null : [
                 'plan' => $hostedLicense->plan?->value,
-                'plan_label' => $hostedLicense->plan?->label(),
+                'plan_label' => $hostedLicense->typeLabel(),
                 'status' => $hostedLicense->effectiveStatus(),
                 'status_label' => $hostedLicense->effectiveStatusLabel(),
                 'expires_at' => $hostedLicense->expires_at?->toIso8601String(),
@@ -422,7 +422,7 @@ final class ConnectivityAndBackupController extends Controller
                 : $this->hiddenLicenseActivationStatus(
                     $hostedLicense === null
                         ? 'Autorisation de gestion de licence requise.'
-                        : 'La licence de ce cabinet est gérée par la plateforme DrClickDz.',
+                        : 'La licence de ce cabinet est gérée par la plateforme Drclick.',
                 ),
         ]);
     }
@@ -541,7 +541,7 @@ final class ConnectivityAndBackupController extends Controller
         ], userId: $request->user()?->getKey());
         Inertia::flash('toast', [
             'type' => 'info',
-            'message' => 'Préférences enregistrées sur le serveur DrClickDz.',
+            'message' => 'Préférences enregistrées sur le serveur Drclick.',
         ]);
 
         return back();
@@ -637,7 +637,7 @@ final class ConnectivityAndBackupController extends Controller
             'google_drive_configured' => false,
             'google_drive_email' => null,
             'google_drive_connected' => false,
-            'google_drive_folder' => 'MediSmart Backups',
+            'google_drive_folder' => 'Drclick Backups',
             'last_backup_at' => null,
             'last_backup_name' => null,
             'verification_state' => 'not_tested',

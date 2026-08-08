@@ -53,8 +53,8 @@ class WelcomeTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Welcome')
-                ->where('name', (string) config('app.name', 'DrClickDz'))
-                ->where('cabinet.name', (string) config('app.name', 'DrClickDz'))
+                ->where('name', (string) config('app.name', 'Drclick'))
+                ->where('cabinet.name', (string) config('app.name', 'Drclick'))
                 ->where('cabinet.phone', null)
                 ->where('cabinet.email', null)
                 ->where('cabinet.address', null)

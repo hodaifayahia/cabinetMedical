@@ -110,7 +110,7 @@ class GoogleDriveDisconnectTest extends TestCase
         return DriveBackupConnection::query()->create([
             'cabinet_setting_id' => $cabinet->getKey(),
             'email' => 'doctor@example.test',
-            'folder_name' => 'MediSmart Backups',
+            'folder_name' => 'Drclick Backups',
             'folder_id' => 'drive-folder-id',
             'access_token' => 'drive-access-token',
             'refresh_token' => 'drive-refresh-token',

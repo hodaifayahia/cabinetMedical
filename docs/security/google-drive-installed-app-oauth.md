@@ -2,7 +2,7 @@
 
 ## Deployment configuration
 
-MediSmart uses an installed-app OAuth client, PKCE S256, the operating system's
+Drclick uses an installed-app OAuth client, PKCE S256, the operating system's
 default browser, and only the `drive.file` scope. A production package needs:
 
 ```dotenv

@@ -14,10 +14,10 @@ final class DesktopDownloadTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_default_desktop_installer_uses_the_drclickdz_filename(): void
+    public function test_default_desktop_installer_uses_the_drclick_filename(): void
     {
         $this->assertSame(
-            'DrClickDz-Desktop-Setup.exe',
+            'Drclick-Desktop-Setup.exe',
             config('medismart.desktop_download.installer_path'),
         );
     }
@@ -85,7 +85,7 @@ final class DesktopDownloadTest extends TestCase
         ]);
 
         $this->get($downloadUrl)
-            ->assertRedirect('https://downloads.example.test/DrClickDz-Setup.exe');
+            ->assertRedirect('https://downloads.example.test/Drclick-Setup.exe');
 
         $this->assertNotNull(
             DesktopDownloadLead::query()->sole()->downloaded_at,
@@ -95,7 +95,7 @@ final class DesktopDownloadTest extends TestCase
     public function test_local_installer_download_still_uses_private_storage_after_the_lead_gate(): void
     {
         $directory = storage_path('app/private/desktop');
-        $path = $directory.'/DrClickDz-Test.zip';
+        $path = $directory.'/Drclick-Test.zip';
 
         if (! is_dir($directory)) {
             mkdir($directory, 0755, true);
@@ -106,7 +106,7 @@ final class DesktopDownloadTest extends TestCase
         try {
             config([
                 'medismart.desktop_download.url' => null,
-                'medismart.desktop_download.installer_path' => 'DrClickDz-Test.zip',
+                'medismart.desktop_download.installer_path' => 'Drclick-Test.zip',
             ]);
 
             $registration = $this->post(
@@ -116,7 +116,7 @@ final class DesktopDownloadTest extends TestCase
 
             $this->get((string) $registration->headers->get('Location'))
                 ->assertOk()
-                ->assertDownload('DrClickDz-Test.zip');
+                ->assertDownload('Drclick-Test.zip');
         } finally {
             if (is_file($path)) {
                 unlink($path);
@@ -237,7 +237,7 @@ final class DesktopDownloadTest extends TestCase
 
         foreach (range(1, 10) as $attempt) {
             $this->get($downloadUrl)
-                ->assertRedirect('https://downloads.example.test/DrClickDz-Setup.exe');
+                ->assertRedirect('https://downloads.example.test/Drclick-Setup.exe');
         }
 
         $this->get($downloadUrl)->assertTooManyRequests();
@@ -281,7 +281,7 @@ final class DesktopDownloadTest extends TestCase
     private function configureExternalInstaller(): void
     {
         config([
-            'medismart.desktop_download.url' => 'https://downloads.example.test/DrClickDz-Setup.exe',
+            'medismart.desktop_download.url' => 'https://downloads.example.test/Drclick-Setup.exe',
             'medismart.desktop_download.installer_path' => 'missing.exe',
         ]);
     }

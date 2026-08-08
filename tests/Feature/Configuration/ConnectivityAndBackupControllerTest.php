@@ -101,7 +101,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
                 ->where('licenseActivation.configured', false)
                 ->where('licenseActivation.refresh_configured', false)
                 ->where('licenseActivation.deactivation_configured', false)
-                ->where('licenseActivation.reason', 'La licence de ce cabinet est gérée par la plateforme DrClickDz.')
+                ->where('licenseActivation.reason', 'La licence de ce cabinet est gérée par la plateforme Drclick.')
                 ->where('capabilities.remote_upload.available', false)
                 ->where('capabilities.google_drive.available', false));
 
@@ -151,7 +151,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas(
                 'inertia.flash_data.toast.message',
-                'Préférences enregistrées sur le serveur DrClickDz.',
+                'Préférences enregistrées sur le serveur Drclick.',
             )
             ->assertSessionHasNoErrors();
 
@@ -403,7 +403,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('activeUpload.id', $created['session']->getKey())
                 ->where('activeUpload.reachability.state', 'verified')
-                ->where('activeUpload.reachability.message', 'Le portail de téléversement DrClickDz répond à cette adresse.')
+                ->where('activeUpload.reachability.message', 'Le portail de téléversement Drclick répond à cette adresse.')
                 ->missing('activeUpload.public_selector')
                 ->missing('activeUpload.public_token_hash'));
     }
@@ -460,7 +460,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
         $administrator = User::factory()->create();
         $administrator->assignRole(RoleName::ADMINISTRATOR->value);
         $record = BackupRecord::query()->create([
-            'filename' => 'MediSmart-Backup-test.msbackup',
+            'filename' => 'Drclick-Backup-test.msbackup',
             'disk' => 'local',
             'local_path' => storage_path('app/private/backups/private-name.msbackup'),
             'size' => 1234,
@@ -484,7 +484,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('backupHistory', 1)
                 ->where('backupHistory.0.id', $record->getKey())
-                ->where('backupHistory.0.filename', 'MediSmart-Backup-test.msbackup')
+                ->where('backupHistory.0.filename', 'Drclick-Backup-test.msbackup')
                 ->where('backupHistory.0.status', 'failed')
                 ->where('backupHistory.0.sha256_hint', str_repeat('a', 12))
                 ->where('backupHistory.0.drive_upload_status', null)
@@ -503,7 +503,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
         $administrator = User::factory()->create();
         $administrator->assignRole(RoleName::ADMINISTRATOR->value);
         $record = BackupRecord::query()->create([
-            'filename' => 'MediSmart-Backup-progress.msbackup',
+            'filename' => 'Drclick-Backup-progress.msbackup',
             'disk' => 'local',
             'local_path' => storage_path('app/private/backups/private-progress.msbackup'),
             'size' => 1000,
@@ -589,7 +589,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
         $user = User::factory()->create();
         $user->givePermissionTo(PermissionName::CONFIGURATION_DRIVE_MANAGE->value);
         $record = BackupRecord::query()->create([
-            'filename' => 'MediSmart-Backup-drive-manager.msbackup',
+            'filename' => 'Drclick-Backup-drive-manager.msbackup',
             'disk' => 'local',
             'local_path' => storage_path('app/private/backups/private-drive-manager.msbackup'),
             'size' => 2048,
@@ -655,7 +655,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
             'token_expires_at' => now()->addHour(),
         ]);
         BackupRecord::query()->create([
-            'filename' => 'MediSmart-Backup-private.msbackup',
+            'filename' => 'Drclick-Backup-private.msbackup',
             'disk' => 'local',
             'size' => 100,
             'sha256' => str_repeat('b', 64),

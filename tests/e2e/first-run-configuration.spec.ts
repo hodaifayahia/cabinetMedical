@@ -53,7 +53,7 @@ test('le premier propriétaire peut enregistrer l’identité du cabinet', async
 
     await page.getByLabel('Nom du médecin').fill('Dr Nadia Test');
     await page.getByLabel(/identifiant professionnel/u).fill('E2E-0001');
-    await page.getByLabel('Nom du cabinet').fill('Cabinet E2E MediSmart');
+    await page.getByLabel('Nom du cabinet').fill('Cabinet E2E Drclick');
     await page.getByLabel('Téléphone').fill('+213 555 000 000');
     await page
         .getByLabel('Email', { exact: true })
@@ -87,7 +87,7 @@ test('le premier propriétaire peut enregistrer l’identité du cabinet', async
         'E2E-0001',
     );
     await expect(page.getByLabel('Nom du cabinet')).toHaveValue(
-        'Cabinet E2E MediSmart',
+        'Cabinet E2E Drclick',
     );
     await expect(page.getByLabel('Spécialité', { exact: true })).toBeDisabled();
     await expect(

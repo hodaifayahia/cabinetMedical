@@ -363,7 +363,7 @@ final class EncryptedMsBackupArchive
             $magic = $this->readAndHashExact($input, strlen(self::MAGIC), $archiveHash, $archiveSize, false);
 
             if ($magic !== self::MAGIC) {
-                throw new BackupArchiveException('The selected file is not a supported encrypted DrClickDz backup.');
+                throw new BackupArchiveException('The selected file is not a supported encrypted Drclick backup.');
             }
 
             $lengthBytes = $this->readAndHashExact($input, 4, $archiveHash, $archiveSize, false);
@@ -525,11 +525,11 @@ final class EncryptedMsBackupArchive
         if (! extension_loaded('sodium')
             || ! function_exists('sodium_crypto_pwhash')
             || ! function_exists('sodium_crypto_secretstream_xchacha20poly1305_init_push')) {
-            throw new BackupArchiveException('The Sodium extension is required for encrypted DrClickDz backups.');
+            throw new BackupArchiveException('The Sodium extension is required for encrypted Drclick backups.');
         }
 
         if (PHP_INT_SIZE < 8) {
-            throw new BackupArchiveException('Encrypted DrClickDz backups require a 64-bit PHP runtime.');
+            throw new BackupArchiveException('Encrypted Drclick backups require a 64-bit PHP runtime.');
         }
     }
 
@@ -570,7 +570,7 @@ final class EncryptedMsBackupArchive
         if (! is_string($resolved) || ! is_file($resolved) || ! is_readable($resolved)
             || ($requireExtension
                 && Str::lower(pathinfo($resolved, PATHINFO_EXTENSION)) !== 'msbackup')) {
-            throw new BackupArchiveException('The selected file is not a readable DrClickDz backup.');
+            throw new BackupArchiveException('The selected file is not a readable Drclick backup.');
         }
 
         return $resolved;

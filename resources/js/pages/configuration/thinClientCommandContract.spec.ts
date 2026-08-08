@@ -40,7 +40,7 @@ describe('hosted desktop command contract', () => {
     it('keeps settings server-backed and OAuth on the guarded navigation path', () => {
         expect(componentSource).toContain('form.put(settingsUrl');
         expect(componentSource).toContain(
-            'Préférences enregistrées sur le serveur DrClickDz.',
+            'Préférences enregistrées sur le serveur Drclick.',
         );
         expect(componentSource).toContain('openGoogleAuthorization(');
     });

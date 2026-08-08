@@ -55,7 +55,7 @@ const MAX_NATIVE_ERROR_MESSAGE_LENGTH = 160;
 const SIGNED_UPDATER_FALLBACK_MESSAGE =
     'Le programme de mise à jour signé n’a pas répondu.';
 const SIGNED_UPDATE_INSTALL_SUCCESS_MESSAGE =
-    'La mise à jour vérifiée est installée; DrClickDz va redémarrer.';
+    'La mise à jour vérifiée est installée; Drclick va redémarrer.';
 
 const SIGNED_UPDATER_ERROR_MESSAGES = {
     signed_updater_unavailable:

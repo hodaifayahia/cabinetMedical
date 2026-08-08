@@ -11,6 +11,7 @@ use App\Models\AuditLog;
 use App\Models\Cabinet;
 use App\Models\HostedLicenseGrant;
 use App\Models\License;
+use App\Models\LicenseType;
 use App\Models\User;
 use App\Support\IssuedHostedLicenseCode;
 use Carbon\CarbonImmutable;
@@ -84,7 +85,7 @@ class CabinetFulfillmentService
      * Regeneration serializes on the cabinet row and revokes every earlier
      * outstanding grant, so at most one code can be accepted for a cabinet.
      */
-    public function issueLicenseCode(Cabinet $cabinet, LicensePlan $plan): IssuedHostedLicenseCode
+    public function issueLicenseCode(Cabinet $cabinet, LicensePlan|LicenseType $plan): IssuedHostedLicenseCode
     {
         $actor = auth()->user();
 
@@ -114,14 +115,17 @@ class CabinetFulfillmentService
             $grant = HostedLicenseGrant::withoutCabinetScope()->create([
                 'cabinet_id' => $lockedCabinet->getKey(),
                 'issued_by_user_id' => $actor->getKey(),
-                'plan' => $plan,
+                'plan' => $this->planForType($plan)?->value,
+                'license_type_id' => $plan instanceof LicenseType ? $plan->getKey() : $this->typeForPlan($plan)?->getKey(),
+                'duration_days' => $plan instanceof LicenseType ? $plan->duration_days : $plan->expiresAt(CarbonImmutable::now())?->diffInDays(CarbonImmutable::now()),
+                'type_name' => $plan instanceof LicenseType ? $plan->name : $plan->label(),
                 'code_hash' => $this->hashLicenseCode($normalizedCode),
                 'code_suffix' => Str::substr($normalizedCode, -4),
             ]);
 
             AuditLog::record('cabinet.license_code_issued', $lockedCabinet, [
                 'grant_id' => $grant->getKey(),
-                'license_plan' => $plan->value,
+                'license_plan' => $plan instanceof LicensePlan ? $plan->value : $plan->slug,
                 'grant_suffix' => $grant->code_suffix,
                 'revoked_pending_grants_count' => $revokedCount,
                 'owner_user_id' => $lockedCabinet->owner_user_id,
@@ -181,7 +185,7 @@ class CabinetFulfillmentService
 
                 $license = $this->issueLicense(
                     $lockedCabinet,
-                    $grant->plan,
+                    $grant->licenseType ?? $grant->plan,
                     $redeemedAt,
                     [
                         'source' => 'hosted_license_code',
@@ -199,7 +203,7 @@ class CabinetFulfillmentService
 
                 AuditLog::record('cabinet.activated', $lockedCabinet, [
                     'license_id' => $license->license_id,
-                    'license_plan' => $grant->plan->value,
+                    'license_plan' => $grant->typeLabel(),
                     'expires_at' => $license->expires_at?->toIso8601String(),
                     'grant_id' => $grant->getKey(),
                     'activation_method' => 'license_code',
@@ -216,15 +220,16 @@ class CabinetFulfillmentService
                 $previousExpiry = $license->expires_at;
                 $license->forceFill([
                     'plan' => $grant->plan,
+                    'license_type_id' => $grant->license_type_id,
                     'status' => 'active',
-                    'expires_at' => $grant->plan->expiresAt($redeemedAt),
+                    'expires_at' => $grant->expiresAt($redeemedAt),
                     'offline_grace_until' => null,
                     'last_verified_at' => $redeemedAt,
                     'last_server_response' => array_merge($license->last_server_response ?? [], [
                         'source' => 'hosted_license_code',
                         'cabinet_id' => $lockedCabinet->getKey(),
                         'one_time_activation' => true,
-                        'plan' => $grant->plan->value,
+                        'plan' => $grant->typeLabel(),
                         'grant_id' => $grant->getKey(),
                         'redeemed_at' => $redeemedAt->toIso8601String(),
                     ]),
@@ -232,7 +237,7 @@ class CabinetFulfillmentService
 
                 AuditLog::record('cabinet.license_renewed', $lockedCabinet, [
                     'previous_plan' => $previousPlan->value,
-                    'new_plan' => $grant->plan->value,
+                'new_plan' => $grant->typeLabel(),
                     'previous_expires_at' => $previousExpiry?->toIso8601String(),
                     'expires_at' => $license->expires_at?->toIso8601String(),
                     'grant_id' => $grant->getKey(),
@@ -241,7 +246,7 @@ class CabinetFulfillmentService
                 ], $owner->getKey());
             } else {
                 throw ValidationException::withMessages([
-                    'license_code' => 'Ce cabinet est suspendu. Contactez l’administration DrClickDz.',
+                    'license_code' => 'Ce cabinet est suspendu. Contactez l’administration Drclick.',
                 ]);
             }
 
@@ -253,7 +258,7 @@ class CabinetFulfillmentService
             AuditLog::record('cabinet.license_code_redeemed', $lockedCabinet, [
                 'grant_id' => $grant->getKey(),
                 'license_id' => $license->license_id,
-                'license_plan' => $grant->plan->value,
+                'license_plan' => $grant->typeLabel(),
                 'initial_activation' => $initialActivation,
                 'grant_suffix' => $grant->code_suffix,
             ], $owner->getKey());
@@ -403,7 +408,7 @@ class CabinetFulfillmentService
     /** @param array<string, mixed> $responseContext */
     private function issueLicense(
         Cabinet $cabinet,
-        LicensePlan $plan,
+        LicensePlan|LicenseType $plan,
         ?CarbonImmutable $issuedAt = null,
         array $responseContext = [],
     ): License {
@@ -413,20 +418,39 @@ class CabinetFulfillmentService
             'license_id' => 'CAB-'.$cabinet->getKey().'-'.Str::upper(Str::random(10)),
             'product' => (string) config('medismart.licensing.product', config('app.name', 'ClickDZ')),
             'edition' => 'hosted',
-            'plan' => $plan,
+            'plan' => $this->planForType($plan),
+            'license_type_id' => $plan instanceof LicenseType ? $plan->getKey() : $this->typeForPlan($plan)?->getKey(),
             'customer_id' => (string) $cabinet->getKey(),
             'status' => 'active',
             'issued_at' => $issuedAt,
-            'expires_at' => $plan->expiresAt($issuedAt),
+            'expires_at' => $plan instanceof LicenseType ? $plan->expiresAt($issuedAt) : $plan->expiresAt($issuedAt),
             'offline_grace_until' => null,
             'last_verified_at' => $issuedAt,
             'last_server_response' => array_merge([
                 'source' => 'central_fulfillment',
                 'cabinet_id' => $cabinet->getKey(),
                 'one_time_activation' => true,
-                'plan' => $plan->value,
+                'plan' => $plan instanceof LicensePlan ? $plan->value : $plan->slug,
             ], $responseContext),
         ]);
+    }
+
+    private function planForType(LicensePlan|LicenseType|null $type): ?LicensePlan
+    {
+        if ($type instanceof LicensePlan) {
+            return $type;
+        }
+
+        return match ($type?->slug) {
+            'trial', 'trial-7-days' => LicensePlan::TRIAL,
+            'lifetime' => LicensePlan::LIFETIME,
+            default => null,
+        };
+    }
+
+    private function typeForPlan(LicensePlan $plan): ?LicenseType
+    {
+        return LicenseType::query()->where('slug', $plan === LicensePlan::TRIAL ? 'trial-7-days' : 'lifetime')->first();
     }
 
     private function assertCodeMayBeIssued(Cabinet $cabinet): void

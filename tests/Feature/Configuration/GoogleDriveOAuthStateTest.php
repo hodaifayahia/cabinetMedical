@@ -113,7 +113,7 @@ class GoogleDriveOAuthStateTest extends TestCase
             ->assertHeader('Cache-Control', 'max-age=0, no-store, private')
             ->assertHeader('Referrer-Policy', 'no-referrer')
             ->assertSee('Google Drive est connect', false)
-            ->assertSee('revenir &agrave; DrClickDz', false)
+            ->assertSee('revenir &agrave; Drclick', false)
             ->assertDontSee('authorization-code')
             ->assertDontSee($query['state'])
             ->assertDontSee('access-token')

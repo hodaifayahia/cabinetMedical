@@ -40,7 +40,7 @@ class CabinetActivatedMail extends Mailable implements ShouldQueue
             with: [
                 'cabinetName' => $this->cabinet->name,
                 'ownerName' => $this->ownerName,
-                'licensePlan' => $this->cabinet->license?->plan?->label(),
+                'licensePlan' => $this->cabinet->license?->typeLabel(),
                 'expiresAt' => $this->cabinet->license?->expires_at,
                 'loginUrl' => route('login'),
             ],

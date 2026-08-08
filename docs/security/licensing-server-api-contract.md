@@ -1,6 +1,6 @@
 # Production licensing-server API contract
 
-MediSmart is the client of three separately configured endpoints:
+Drclick is the client of three separately configured endpoints:
 
 - `MEDISMART_LICENSE_ACTIVATION_URL`
 - `MEDISMART_LICENSE_STATUS_URL`
@@ -11,7 +11,7 @@ or a non-TLS port. The client does not follow redirects. Production should put
 all three paths on one allowlisted origin with publicly trusted TLS and keep
 the signing private key exclusively on the licensing server or an HSM. The
 packaged verification key must be RSA 2048 bits or stronger; replacing or
-rotating it requires a signed MediSmart application update.
+rotating it requires a signed Drclick application update.
 
 ## Common request rules
 
@@ -105,7 +105,7 @@ unsigned response fields never grant an entitlement.
 
 Deactivation must be repeatable. If the server committed deactivation but its
 response was lost, a retry for that same license and installation must still
-return success. MediSmart removes only licensing rows and its clock anchor,
+return success. Drclick removes only licensing rows and its clock anchor,
 and only after confirmed server success. On timeout, rejection, invalid
 response, or local transaction failure, it keeps the local certificate so the
 operation can be retried. Patient records, documents, exports, and local

@@ -59,7 +59,7 @@ final class BackupService
             'medismart.backups.managed_directory',
             storage_path('app/private/backups'),
         );
-        $filename = 'MediSmart-Backup-'.now()->format('Y-m-d-His')
+        $filename = 'Drclick-Backup-'.now()->format('Y-m-d-His')
             .'-'.Str::lower(Str::random(6)).'.msbackup';
         $plain = null;
         $encrypted = null;
@@ -213,7 +213,7 @@ final class BackupService
 
             try {
                 $record = BackupRecord::query()->create([
-                    'filename' => 'MediSmart-Backup-failed-'.Str::lower(Str::random(8)).'.msbackup',
+                    'filename' => 'Drclick-Backup-failed-'.Str::lower(Str::random(8)).'.msbackup',
                     'disk' => 'local',
                     'application_version' => (string) config('medismart.version', 'unknown'),
                     'schema_version' => MsBackupArchiveCreator::DATABASE_SCHEMA_VERSION,
@@ -362,7 +362,7 @@ final class BackupService
     ): void {
         try {
             $record = BackupRecord::query()->create([
-                'filename' => 'MediSmart-Backup-failed-'.Str::lower(Str::random(8)).'.msbackup',
+                'filename' => 'Drclick-Backup-failed-'.Str::lower(Str::random(8)).'.msbackup',
                 'disk' => 'local',
                 'application_version' => (string) config('medismart.version', 'unknown'),
                 'schema_version' => MsBackupArchiveCreator::DATABASE_SCHEMA_VERSION,

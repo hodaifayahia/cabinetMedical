@@ -1,7 +1,7 @@
 {
     "$schema": "../gen/schemas/desktop-schema.json",
     "identifier": "desktop-windows",
-    "description": "The hosted DrClickDz application window may invoke signed-updater commands. No offline-restore, LAN, Google OAuth, opener, shell, or filesystem capability is granted.",
+    "description": "The hosted Drclick application window may invoke signed-updater commands. No offline-restore, LAN, Google OAuth, opener, shell, or filesystem capability is granted.",
     "local": false,
     "remote": {
         "urls": ["https://app.medismart.dz/*", "https://*.medismart.dz/*"]

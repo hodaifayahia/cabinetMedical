@@ -8,10 +8,13 @@ import {
     Stethoscope,
 } from '@lucide/vue';
 import { computed } from 'vue';
-import { home } from '@/routes';
+import { isTauri } from '@tauri-apps/api/core';
+import { onMounted, ref } from 'vue';
+import { home, login } from '@/routes';
 
 const page = usePage();
-const productName = 'DrClickDz';
+const productName = 'Drclick';
+const authHome = ref(home());
 const isWideOnboarding = computed(() =>
     ['auth/Register', 'auth/JoinCabinet', 'auth/DesktopCabinetLogin'].includes(
         page.component,
@@ -22,6 +25,12 @@ defineProps<{
     title?: string;
     description?: string;
 }>();
+
+onMounted(() => {
+    if (isTauri()) {
+        authHome.value = login();
+    }
+});
 </script>
 
 <template>
@@ -30,7 +39,7 @@ defineProps<{
     >
         <section
             class="relative hidden min-h-svh overflow-hidden bg-[linear-gradient(145deg,#082c46_0%,#0e527d_52%,#087ca2_100%)] px-12 py-10 text-white lg:flex lg:flex-col xl:px-16"
-            aria-label="Présentation de DrClickDz"
+            aria-label="Présentation de Drclick"
         >
             <div
                 class="absolute -top-32 -right-24 size-[28rem] rounded-full border-[56px] border-white/5"
@@ -46,9 +55,9 @@ defineProps<{
             />
 
             <Link
-                :href="home()"
+                :href="authHome"
                 class="relative z-10 inline-flex w-fit items-center gap-3 rounded-2xl focus-visible:ring-2 focus-visible:ring-white"
-                aria-label="Retour à l’accueil DrClickDz"
+                aria-label="Retour à l’accueil Drclick"
             >
                 <span
                     class="flex size-12 items-center justify-center rounded-2xl bg-white text-[#0d6797] shadow-xl shadow-slate-950/15"
@@ -154,9 +163,9 @@ defineProps<{
                 :class="isWideOnboarding ? 'max-w-3xl' : 'max-w-lg'"
             >
                 <Link
-                    :href="home()"
+                    :href="authHome"
                     class="mb-7 flex w-fit items-center gap-3 rounded-xl lg:hidden"
-                    aria-label="Retour à l’accueil DrClickDz"
+                    aria-label="Retour à l’accueil Drclick"
                 >
                     <span
                         class="flex size-10 items-center justify-center rounded-xl bg-[#0d6797] text-white shadow-lg shadow-sky-900/15"

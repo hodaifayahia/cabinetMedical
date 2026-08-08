@@ -1,7 +1,7 @@
 [package]
-name = "medismart-runtime"
+name = "drclick-runtime"
 version = "0.1.0"
-description = "Process supervision core for MediSmart Desktop"
+description = "Process supervision core for Drclick Desktop"
 edition = "2021"
 rust-version = "1.84"
 

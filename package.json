@@ -1,11 +1,13 @@
 {
     "$schema": "https://www.schemastore.org/package.json",
+    "name": "drclick",
     "private": true,
     "type": "module",
     "scripts": {
         "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",
         "desktop:build": "node scripts/desktop/build-thin-client.mjs",
+        "desktop:build:local": "tauri build --debug --config src-tauri/tauri.local.conf.json --no-sign",
         "desktop:check": "cargo check --manifest-path src-tauri/Cargo.toml --all-targets",
         "desktop:dev": "tauri dev",
         "desktop:dev:local": "node scripts/desktop/dev-local-thin-client.mjs",

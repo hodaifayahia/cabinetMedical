@@ -52,7 +52,7 @@ const profileDetails = [
                         class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold tracking-wide text-emerald-700 uppercase"
                     >
                         <Check class="size-3.5" />
-                        DrClickDz est installé
+                        Drclick est installé
                     </div>
                     <h1
                         id="desktop-onboarding-title"

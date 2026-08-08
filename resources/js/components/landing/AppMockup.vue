@@ -25,7 +25,7 @@ const statusTone = (index: number): string =>
             <span class="size-3 rounded-full bg-red-300"></span>
             <span class="size-3 rounded-full bg-amber-300"></span>
             <span class="size-3 rounded-full bg-emerald-300"></span>
-            <span class="ms-3 text-xs font-medium text-muted-foreground">MediSmart</span>
+            <span class="ms-3 text-xs font-medium text-muted-foreground">Drclick</span>
         </div>
 
         <div class="grid grid-cols-[130px_1fr] sm:grid-cols-[150px_1fr]">
@@ -37,7 +37,7 @@ const statusTone = (index: number): string =>
                     >
                         <Stethoscope class="size-4" />
                     </span>
-                    <span class="text-xs font-bold text-sidebar-foreground">MediSmart</span>
+                    <span class="text-xs font-bold text-sidebar-foreground">Drclick</span>
                 </div>
                 <ul class="space-y-1">
                     <li

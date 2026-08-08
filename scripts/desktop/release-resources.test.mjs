@@ -357,7 +357,7 @@ function updaterManifest(signature = 'Q'.repeat(44)) {
         pub_date: '2026-08-05T10:00:00.000Z',
         platforms: {
             'windows-x86_64-nsis': {
-                url: 'https://updates.example.test/MediSmart-1.2.3.nsis.zip',
+                url: 'https://updates.example.test/Drclick-1.2.3.nsis.zip',
                 signature,
             },
         },
@@ -370,7 +370,7 @@ test('release readiness accepts an exact static signed updater contract', () => 
             applicationVersion: '1.2.3',
             target: 'windows-x86_64-nsis',
             artifactUrl:
-                'https://updates.example.test/MediSmart-1.2.3.nsis.zip',
+                'https://updates.example.test/Drclick-1.2.3.nsis.zip',
             signature: 'Q'.repeat(44),
         }),
     );
@@ -383,7 +383,7 @@ test('release readiness refuses updater signature or publication URL drift', () 
                 applicationVersion: '1.2.3',
                 target: 'windows-x86_64-nsis',
                 artifactUrl:
-                    'https://updates.example.test/MediSmart-1.2.3.nsis.zip',
+                    'https://updates.example.test/Drclick-1.2.3.nsis.zip',
                 signature: 'R'.repeat(44),
             }),
         /signature does not match/i,

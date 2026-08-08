@@ -3,8 +3,8 @@ import { desktopChromeVisibility } from './desktopExperience';
 
 const download = {
     available: true,
-    url: '/downloads/DrClickDz.exe',
-    label: 'Télécharger DrClickDz',
+    url: '/downloads/Drclick.exe',
+    label: 'Télécharger Drclick',
     reason: null,
 };
 

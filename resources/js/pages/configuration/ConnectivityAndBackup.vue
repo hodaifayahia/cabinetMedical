@@ -883,7 +883,7 @@ const checkForSignedUpdate = async (manual = true) => {
 
         updateNotice.value = result.update
             ? `La version ${result.update.version} est disponible sur le canal approuvé.`
-            : 'DrClickDz est à jour.';
+            : 'Drclick est à jour.';
         await refreshSignedUpdaterStatus();
     } catch (error) {
         updateError.value = signedUpdaterErrorMessage(error);
@@ -915,7 +915,7 @@ const installPendingSignedUpdate = async () => {
 
     if (
         !window.confirm(
-            `Installer DrClickDz ${pending.version} ? Une sauvegarde locale vérifiée sera créée avant le téléchargement. L’application redémarrera pendant l’installation.`,
+            `Installer Drclick ${pending.version} ? Une sauvegarde locale vérifiée sera créée avant le téléchargement. L’application redémarrera pendant l’installation.`,
         )
     ) {
         return;
@@ -1089,7 +1089,7 @@ const submitSettings = () => {
         onSuccess: () => {
             form.defaults();
             settingsNotice.value =
-                'Préférences enregistrées sur le serveur DrClickDz.';
+                'Préférences enregistrées sur le serveur Drclick.';
         },
     });
 };
@@ -1214,7 +1214,7 @@ const chooseOfflineRestoreArchive = (event: Event) => {
         /[/\\<>:"|?*\u0000-\u001f\u007f]/.test(file.name)
     ) {
         offlineRestoreError.value =
-            'Choisissez une archive DrClickDz portant l’extension .msbackup.';
+            'Choisissez une archive Drclick portant l’extension .msbackup.';
 
         return;
     }
@@ -1295,7 +1295,7 @@ const applyOfflineRestore = () => {
     }
 
     offlineRestoreError.value =
-        'L’application locale d’une archive n’est pas disponible dans le client hébergé. Contactez le support DrClickDz pour une restauration gérée côté serveur.';
+        'L’application locale d’une archive n’est pas disponible dans le client hébergé. Contactez le support Drclick pour une restauration gérée côté serveur.';
 };
 const chooseLocalBackup = (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0] ?? null;
@@ -1879,7 +1879,7 @@ const testDriveConnection = () => {
                         </h2>
                         <p class="mt-1 text-sm text-muted-foreground">
                             Ces préférences sont enregistrées et appliquées par
-                            le serveur DrClickDz.
+                            le serveur Drclick.
                         </p>
                     </div>
                     <span
@@ -2004,7 +2004,7 @@ const testDriveConnection = () => {
                         <p class="font-semibold">Configuration hébergée</p>
                         <p class="mt-1">
                             Le client de bureau enregistre ces préférences sur
-                            le serveur DrClickDz. Il n’exécute aucun listener
+                            le serveur Drclick. Il n’exécute aucun listener
                             LAN et ne modifie pas le pare-feu Windows.
                         </p>
                     </div>
@@ -2998,7 +2998,7 @@ const testDriveConnection = () => {
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
                         Cette licence est attribuée et gérée par la plateforme
-                        DrClickDz.
+                        Drclick.
                     </p>
                 </div>
                 <span
@@ -3049,7 +3049,7 @@ const testDriveConnection = () => {
             >
                 Aucun numéro de série ni certificat machine n’est requis. Pour
                 renouveler un essai ou passer à une licence à vie, contactez
-                l’administration DrClickDz.
+                l’administration Drclick.
             </p>
         </section>
 
@@ -3060,7 +3060,7 @@ const testDriveConnection = () => {
                         class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
                     >
                         <ShieldCheck class="size-5 text-emerald-600" />
-                        Licence DrClickDz
+                        Licence Drclick
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
                         La licence signe les fonctions commerciales sans jamais
@@ -3286,7 +3286,7 @@ const testDriveConnection = () => {
                     <div class="flex items-start justify-between gap-3">
                         <h3 class="flex items-center gap-2 font-semibold">
                             <HardDrive class="size-4 text-blue-600" />
-                            Archive DrClickDz (.msbackup)
+                            Archive Drclick (.msbackup)
                         </h3>
                         <span
                             class="rounded-full border px-2 py-0.5 text-xs font-semibold"
@@ -3357,7 +3357,7 @@ const testDriveConnection = () => {
                         </div>
                         <p class="text-xs text-amber-800 dark:text-amber-300">
                             Cette phrase n’est ni stockée ni récupérable par
-                            DrClickDz. Conservez-la séparément : elle sera
+                            Drclick. Conservez-la séparément : elle sera
                             obligatoire pour restaurer l’archive.
                         </p>
                         <InputError :message="encryptedBackupError" />
@@ -3719,7 +3719,7 @@ const testDriveConnection = () => {
                         class="mt-4 border-t border-emerald-200 pt-4 dark:border-emerald-900"
                     >
                         <p class="mb-2 text-xs font-semibold">
-                            Archives DrClickDz reconnues sur Drive ({{
+                            Archives Drclick reconnues sur Drive ({{
                                 remoteDriveBackups.length
                             }})
                         </p>
@@ -3727,7 +3727,7 @@ const testDriveConnection = () => {
                             v-if="remoteDriveBackups.length === 0"
                             class="text-xs text-muted-foreground"
                         >
-                            Aucune archive chiffrée DrClickDz v2 dans ce
+                            Aucune archive chiffrée Drclick v2 dans ce
                             dossier.
                         </p>
                         <div
@@ -3900,7 +3900,7 @@ const testDriveConnection = () => {
                     <p class="font-semibold">Restauration gérée côté serveur</p>
                     <p class="mt-1">
                         Le client hébergé n’applique aucune archive locale.
-                        Contactez le support DrClickDz pour organiser une
+                        Contactez le support Drclick pour organiser une
                         restauration supervisée sur le serveur.
                     </p>
                 </div>
@@ -3919,7 +3919,7 @@ const testDriveConnection = () => {
                     Les actions de restauration restent bloquées pour éviter une
                     nouvelle modification. Conservez l’ordinateur allumé et
                     suivez le diagnostic fourni par le superviseur ou le support
-                    DrClickDz.
+                    Drclick.
                 </p>
             </div>
 
@@ -3948,7 +3948,7 @@ const testDriveConnection = () => {
             >
                 <div class="grid gap-2">
                     <Label for="offline-restore-backup">
-                        Archive DrClickDz chiffrée
+                        Archive Drclick chiffrée
                     </Label>
                     <label
                         for="offline-restore-backup"
@@ -4055,7 +4055,7 @@ const testDriveConnection = () => {
                     </div>
                     <div>
                         <dt class="text-xs text-muted-foreground">
-                            Version DrClickDz
+                            Version Drclick
                         </dt>
                         <dd class="mt-1 text-sm font-semibold">
                             {{
@@ -4130,7 +4130,7 @@ const testDriveConnection = () => {
                 >
                     <p class="flex items-start gap-2 font-semibold">
                         <AlertTriangle class="mt-0.5 size-4 shrink-0" />
-                        Cette opération arrête temporairement DrClickDz et
+                        Cette opération arrête temporairement Drclick et
                         remplace la base, les documents gérés et le logo par le
                         contenu vérifié ci-dessus.
                     </p>
@@ -4167,7 +4167,7 @@ const testDriveConnection = () => {
                             class="size-4 animate-spin"
                         />
                         <RefreshCw v-else class="size-4" />
-                        Appliquer et redémarrer DrClickDz
+                        Appliquer et redémarrer Drclick
                     </Button>
                     <Button
                         type="button"
@@ -4442,7 +4442,7 @@ const testDriveConnection = () => {
                 >
                     {{
                         offlineRestoreApplyMessage ??
-                        'DrClickDz vérifie la sauvegarde de sécurité, remplace les données et redémarre ses services. N’éteignez pas cet ordinateur et ne fermez pas l’application.'
+                        'Drclick vérifie la sauvegarde de sécurité, remplace les données et redémarre ses services. N’éteignez pas cet ordinateur et ne fermez pas l’application.'
                     }}
                 </p>
                 <p class="mt-3 text-xs text-slate-400">

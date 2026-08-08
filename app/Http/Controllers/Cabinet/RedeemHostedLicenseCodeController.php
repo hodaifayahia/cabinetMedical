@@ -27,7 +27,7 @@ class RedeemHostedLicenseCodeController extends Controller
 
         return to_route('dashboard')->with(
             'success',
-            'Licence activée. Bienvenue dans votre espace DrClickDz.',
+            'Licence activée. Bienvenue dans votre espace Drclick.',
         );
     }
 }

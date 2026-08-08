@@ -274,7 +274,7 @@ class CabinetActivationTest extends TestCase
 
         $legacy = License::query()->create([
             'license_id' => 'LEGACY-LOCAL-001',
-            'product' => 'DrClickDz',
+            'product' => 'Drclick',
             'edition' => 'professional',
             'plan' => null,
             'status' => 'active',

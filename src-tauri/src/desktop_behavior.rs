@@ -1,4 +1,4 @@
-// DrClickDz Desktop — system tray and window behaviour
+// Drclick Desktop — system tray and window behaviour
 //
 // Unchanged from the original except:
 //   - should_hide_on_close now only manages "main" (the "startup" window is gone
@@ -33,12 +33,12 @@ impl DesktopBehaviorState {
 }
 
 pub(crate) fn install_system_tray(app: &AppHandle) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, OPEN_MENU_ID, "Ouvrir DrClickDz", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, QUIT_MENU_ID, "Quitter DrClickDz", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, OPEN_MENU_ID, "Ouvrir Drclick", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, QUIT_MENU_ID, "Quitter Drclick", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
     let mut tray = TrayIconBuilder::with_id("medismart-main-tray")
         .menu(&menu)
-        .tooltip("DrClickDz")
+        .tooltip("Drclick")
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
             OPEN_MENU_ID => show_desktop_window(app),

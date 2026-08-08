@@ -290,7 +290,7 @@ return [
     'log_channel' => null,
 
     /*
-     * Retention for verified DrClickDz archives stored in the application's
+     * Retention for verified Drclick archives stored in the application's
      * exact Google Drive folder. This policy is applied by a supervised daily
      * command. The retention counts and optional storage cap are persisted
      * through the registered application settings.

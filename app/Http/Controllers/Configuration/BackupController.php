@@ -275,11 +275,11 @@ class BackupController extends Controller
             ]);
         } catch (Throwable) {
             return back()->withErrors([
-                'drive_delete' => 'La suppression a été refusée ou le fichier n’est plus une archive DrClickDz gérée.',
+                'drive_delete' => 'La suppression a été refusée ou le fichier n’est plus une archive Drclick gérée.',
             ]);
         }
 
-        return back()->with('status', 'Archive DrClickDz supprimée de Google Drive.');
+        return back()->with('status', 'Archive Drclick supprimée de Google Drive.');
     }
 
     /** @return array<string, string> */

@@ -1,4 +1,4 @@
-# MediSmart offline restore core
+# Drclick offline restore core
 
 ## Current safety boundary
 

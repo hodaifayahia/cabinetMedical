@@ -56,7 +56,7 @@ class CabinetsTable
                     }),
                 TextColumn::make('license_plan')
                     ->label('Licence')
-                    ->state(fn (Cabinet $record): string => $record->license?->plan?->label() ?? 'Non attribuée')
+                    ->state(fn (Cabinet $record): string => $record->license?->typeLabel() ?? 'Non attribuée')
                     ->badge()
                     ->color(fn (Cabinet $record): string => match ($record->license?->plan) {
                         LicensePlan::LIFETIME => 'success',
@@ -218,6 +218,6 @@ class CabinetsTable
 
         return $grant === null
             ? '—'
-            : $grant->plan->label().' · ••••'.$grant->code_suffix;
+            : $grant->typeLabel().' · ••••'.$grant->code_suffix;
     }
 }

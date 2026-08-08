@@ -163,8 +163,8 @@ final class UploadSessionController extends Controller
             'state' => $reachable ? 'verified' : 'failed',
             'checked_at' => $checkedAt,
             'message' => $reachable
-                ? 'Le portail de téléversement DrClickDz répond à cette adresse.'
-                : 'Cette adresse ne répond pas comme un portail de téléversement DrClickDz.',
+                ? 'Le portail de téléversement Drclick répond à cette adresse.'
+                : 'Cette adresse ne répond pas comme un portail de téléversement Drclick.',
         ];
 
         $activeUpload = json_encode($payload, JSON_THROW_ON_ERROR);

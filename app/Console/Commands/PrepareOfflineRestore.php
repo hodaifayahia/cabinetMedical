@@ -12,7 +12,7 @@ final class PrepareOfflineRestore extends Command
     protected $signature = 'medismart:restore:prepare
                             {archive : Absolute path to an encrypted v2 .msbackup}';
 
-    protected $description = 'Authenticate and stage an encrypted DrClickDz backup without applying it';
+    protected $description = 'Authenticate and stage an encrypted Drclick backup without applying it';
 
     public function handle(OfflineRestorePreparer $preparer): int
     {

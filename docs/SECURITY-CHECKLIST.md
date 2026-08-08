@@ -1,4 +1,4 @@
-# MediSmart security checklist
+# Drclick security checklist
 
 > Historical audit backlog: checkbox state is preserved as evidence of the
 > original review and is not a current implementation matrix. Several controls

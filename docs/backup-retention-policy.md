@@ -1,4 +1,4 @@
-# MediSmart local backup retention
+# Drclick local backup retention
 
 ## Ownership and fail-closed boundary
 
@@ -16,7 +16,7 @@ Each inventory pass reads all backup rows and recursively inventories the manage
 
 This includes the verified v1 archives produced by the current scheduled-backup workflow and the completed portable v2 archives produced by the encrypted workflow. No passphrase is retained or requested by retention; v2 eligibility relies on its freshly hashed, previously completed outer artifact plus strict envelope/framing validation.
 
-Anything ambiguous is protected, never guessed. This includes incomplete or non-local rows, missing files, row/file mismatches, unsupported or malformed archives, duplicate row ownership, files outside the exact root, symlinks, hard links, unowned files, legacy SQLite snapshots, prior retention tombstones, and files in `pre-restore-safety`. Pre-restore files and names beginning with `MediSmart-Pre-Restore-Safety-` are always protected. External row paths are neither opened nor counted as managed files.
+Anything ambiguous is protected, never guessed. This includes incomplete or non-local rows, missing files, row/file mismatches, unsupported or malformed archives, duplicate row ownership, files outside the exact root, symlinks, hard links, unowned files, legacy SQLite snapshots, prior retention tombstones, and files in `pre-restore-safety`. Pre-restore files and names beginning with `Drclick-Pre-Restore-Safety-` are always protected. External row paths are neither opened nor counted as managed files.
 
 Diagnostics expose a backup-record ID when applicable, a one-way relative file reference, a reason code, and byte count. They never expose a filesystem path. Protected physical bytes are counted once by device/inode and participate in the storage calculation.
 

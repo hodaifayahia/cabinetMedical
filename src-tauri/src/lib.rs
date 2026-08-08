@@ -1,4 +1,4 @@
-// DrClickDz Desktop — thin connected-client shell
+// Drclick Desktop — thin connected-client shell
 //
 // Architecture change (2025): The app no longer bundles a local PHP/Laravel runtime.
 // It simply loads the central hosted server (SERVER_URL) in a Tauri webview window.
@@ -18,6 +18,7 @@
 //   - oauth_opener.rs Google Drive loopback flow (tied to local runtime port)
 //   - All LAN / offline-restore / tunnel commands
 
+mod connection;
 mod desktop_behavior;
 mod updates;
 
@@ -29,11 +30,12 @@ use std::{
 use tauri::{
     plugin::{Builder as PluginBuilder, TauriPlugin},
     webview::WebviewWindowBuilder,
-    AppHandle, Manager, RunEvent, WebviewUrl,
+    AppHandle, Manager, RunEvent, State, WebviewUrl,
 };
 use tauri_plugin_opener::OpenerExt;
 use url::Url;
 
+use crate::connection::{persist_server_url, probe_server, validate_server_url, ServerProbe};
 use crate::desktop_behavior::{install_system_tray, show_desktop_window, DesktopBehaviorState};
 use crate::updates::SignedUpdaterState;
 
@@ -85,15 +87,8 @@ fn resolve_server_url(app: &AppHandle) -> Url {
         if let Ok(bytes) = fs::read(&override_path) {
             if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
                 if let Some(url_str) = value.get("url").and_then(|v| v.as_str()) {
-                    if let Ok(url) = Url::parse(url_str) {
-                        if url.scheme() == "https"
-                            && url.host_str().is_some()
-                            && url.username().is_empty()
-                            && url.password().is_none()
-                            && url.fragment().is_none()
-                        {
-                            return url;
-                        }
+                    if let Ok(url) = validate_server_url(url_str) {
+                        return url;
                     }
                 }
             }
@@ -102,6 +97,28 @@ fn resolve_server_url(app: &AppHandle) -> Url {
     // Fallback: compile-time constant (always valid, panics only in tests if
     // the constant itself is malformed — caught at development time).
     Url::parse(DEFAULT_SERVER_URL).expect("DEFAULT_SERVER_URL is a valid HTTPS URL")
+}
+
+#[tauri::command]
+async fn probe_server_connection(url: String) -> Result<ServerProbe, String> {
+    let url = validate_server_url(&url)?;
+
+    probe_server(&url).await
+}
+
+#[tauri::command]
+async fn configure_server_connection(
+    app: AppHandle,
+    policy: State<'_, NavigationPolicy>,
+    url: String,
+) -> Result<ServerProbe, String> {
+    let url = validate_server_url(&url)?;
+    let probe = probe_server(&url).await?;
+
+    persist_server_url(&app, &url)?;
+    policy.set_server_url(url);
+
+    Ok(probe)
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +187,7 @@ impl NavigationPolicy {
 pub fn run() {
     let navigation_policy = NavigationPolicy::default();
     let policy_for_guard = navigation_policy.clone();
+    let policy_for_commands = navigation_policy.clone();
 
     let application = tauri::Builder::default()
         .plugin(
@@ -187,7 +205,10 @@ pub fn run() {
         .plugin(navigation_guard(policy_for_guard))
         .manage(DesktopBehaviorState::default())
         .manage(SignedUpdaterState::compiled())
+        .manage(policy_for_commands)
         .invoke_handler(tauri::generate_handler![
+            probe_server_connection,
+            configure_server_connection,
             updates::signed_updater_status,
             updates::check_for_signed_update,
             updates::install_signed_update
@@ -220,7 +241,7 @@ pub fn run() {
             }
         })
         .build(tauri::generate_context!())
-        .expect("failed to build the DrClickDz desktop shell");
+        .expect("failed to build the Drclick desktop shell");
 
     // No runtime shutdown needed — there are no supervised processes.
     application.run(|_app, _event| {
@@ -238,8 +259,15 @@ fn build_main_window(app: &mut tauri::App, server_url: Url) -> tauri::Result<()>
     let initial_url = if is_valid_local_development_server_url(&server_url) {
         // Chromium can reject the local loader's cross-origin loopback probe
         // under its Private Network Access rules. The exact debug-only origin
-        // has already been validated, so navigate to it directly.
-        WebviewUrl::External(server_url.clone())
+        // has already been validated, so navigate to its authentication page
+        // directly. The public root is the marketing landing page and must
+        // never be the desktop app's entry point.
+        let mut authentication_url = server_url.clone();
+        if authentication_url.path() == "" || authentication_url.path() == "/" {
+            authentication_url.set_path("/login");
+        }
+
+        WebviewUrl::External(authentication_url)
     } else {
         WebviewUrl::App("index.html".into())
     };
@@ -248,7 +276,7 @@ fn build_main_window(app: &mut tauri::App, server_url: Url) -> tauri::Result<()>
     let initial_url = WebviewUrl::App("index.html".into());
 
     WebviewWindowBuilder::new(app, "main", initial_url)
-        .title("DrClickDz")
+        .title("Drclick")
         .inner_size(1440.0, 900.0)
         .min_inner_size(1100.0, 720.0)
         .center()

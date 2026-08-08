@@ -35,7 +35,7 @@ class CabinetLicenseUpdatedMail extends Mailable implements ShouldQueue
             with: [
                 'cabinetName' => $this->cabinet->name,
                 'ownerName' => $this->ownerName,
-                'licensePlan' => $this->license->plan?->label(),
+                'licensePlan' => $this->license->typeLabel(),
                 'expiresAt' => $this->license->expires_at,
                 'loginUrl' => route('login'),
             ],

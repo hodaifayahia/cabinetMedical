@@ -1,4 +1,4 @@
-// DrClickDz signed updater — thin-client edition
+// Drclick signed updater — thin-client edition
 //
 // Architecture change (2025): The updater no longer requires a local
 // installation identity (app_key / installation_id) sourced from the PHP
@@ -415,7 +415,7 @@ pub async fn install_signed_update(
         Ok(UpdateInstallResponse {
             accepted: true,
             target_version,
-            message_fr: "La mise à jour vérifiée est installée; DrClickDz va redémarrer.",
+            message_fr: "La mise à jour vérifiée est installée; Drclick va redémarrer.",
         })
     }
 }

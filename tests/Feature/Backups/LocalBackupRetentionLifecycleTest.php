@@ -109,17 +109,17 @@ class LocalBackupRetentionLifecycleTest extends TestCase
 
     public function test_dry_run_selects_only_verified_v1_records_and_protects_every_other_entry(): void
     {
-        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'MediSmart-Backup-old.msbackup');
-        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'MediSmart-Backup-new.msbackup');
+        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'Drclick-Backup-old.msbackup');
+        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'Drclick-Backup-new.msbackup');
         $safetyDirectory = $this->managedRoot.DIRECTORY_SEPARATOR.'pre-restore-safety';
         File::ensureDirectoryExists($safetyDirectory);
-        $safetyPath = $safetyDirectory.DIRECTORY_SEPARATOR.'MediSmart-Pre-Restore-Safety-copy.msbackup';
+        $safetyPath = $safetyDirectory.DIRECTORY_SEPARATOR.'Drclick-Pre-Restore-Safety-copy.msbackup';
         copy($new->local_path, $safetyPath);
         $orphanPath = $this->managedRoot.DIRECTORY_SEPARATOR.'malformed-orphan.msbackup';
         file_put_contents($orphanPath, 'not-an-archive');
         $linkPath = $this->managedRoot.DIRECTORY_SEPARATOR.'unmanaged-link.msbackup';
         symlink($new->local_path, $linkPath);
-        $missing = $this->createMissingRecord('MediSmart-Backup-missing.msbackup');
+        $missing = $this->createMissingRecord('Drclick-Backup-missing.msbackup');
 
         $preview = $this->manager()->preview(new BackupRetentionPolicy(0, 0, 0));
         $array = $preview->toArray();
@@ -143,7 +143,7 @@ class LocalBackupRetentionLifecycleTest extends TestCase
 
     public function test_conflicting_rows_for_one_physical_archive_are_protected_together(): void
     {
-        $record = $this->createArchive('2026-08-01T10:00:00+00:00', 'MediSmart-Backup-conflict.msbackup');
+        $record = $this->createArchive('2026-08-01T10:00:00+00:00', 'Drclick-Backup-conflict.msbackup');
         $duplicate = $record->replicate();
         $duplicate->id = (string) Str::uuid();
         $duplicate->local_path = $this->managedRoot.DIRECTORY_SEPARATOR.'.'.DIRECTORY_SEPARATOR.$record->filename;
@@ -167,7 +167,7 @@ class LocalBackupRetentionLifecycleTest extends TestCase
 
     public function test_hard_linked_archives_are_never_candidates_and_physical_bytes_are_counted_once(): void
     {
-        $record = $this->createArchive('2026-08-01T10:00:00+00:00', 'MediSmart-Backup-linked.msbackup');
+        $record = $this->createArchive('2026-08-01T10:00:00+00:00', 'Drclick-Backup-linked.msbackup');
         $alias = $this->managedRoot.DIRECTORY_SEPARATOR.'unowned-hardlink.msbackup';
         $this->assertTrue(link($record->local_path, $alias));
 
@@ -189,7 +189,7 @@ class LocalBackupRetentionLifecycleTest extends TestCase
             $this->markTestSkipped('The Sodium extension is required for encrypted backup retention.');
         }
 
-        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'MediSmart-Backup-old-v1.msbackup');
+        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'Drclick-Backup-old-v1.msbackup');
         CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-01T10:00:00+00:00'));
         $workingDirectory = $this->workspace.DIRECTORY_SEPARATOR.'encrypted-work';
         File::ensureDirectoryExists($workingDirectory);
@@ -215,11 +215,11 @@ class LocalBackupRetentionLifecycleTest extends TestCase
 
     public function test_maximum_storage_trims_oldest_tier_keep_but_never_newest_or_safety_archive(): void
     {
-        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'MediSmart-Backup-old.msbackup');
-        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'MediSmart-Backup-new.msbackup');
+        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'Drclick-Backup-old.msbackup');
+        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'Drclick-Backup-new.msbackup');
         $safetyDirectory = $this->managedRoot.DIRECTORY_SEPARATOR.'pre-restore-safety';
         File::ensureDirectoryExists($safetyDirectory);
-        $safetyPath = $safetyDirectory.DIRECTORY_SEPARATOR.'MediSmart-Pre-Restore-Safety-copy.msbackup';
+        $safetyPath = $safetyDirectory.DIRECTORY_SEPARATOR.'Drclick-Pre-Restore-Safety-copy.msbackup';
         copy($old->local_path, $safetyPath);
         $safetySize = filesize($safetyPath);
 
@@ -242,8 +242,8 @@ class LocalBackupRetentionLifecycleTest extends TestCase
 
     public function test_apply_requires_both_internal_flag_and_a_fresh_matching_token(): void
     {
-        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'MediSmart-Backup-old.msbackup');
-        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'MediSmart-Backup-new.msbackup');
+        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'Drclick-Backup-old.msbackup');
+        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'Drclick-Backup-new.msbackup');
         $manager = $this->manager();
         $policy = new BackupRetentionPolicy(0, 0, 0);
         $token = $manager->issueConfirmation($manager->preview($policy));
@@ -288,8 +288,8 @@ class LocalBackupRetentionLifecycleTest extends TestCase
 
     public function test_inventory_mutation_after_token_fails_closed_without_deleting_anything(): void
     {
-        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'MediSmart-Backup-old.msbackup');
-        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'MediSmart-Backup-new.msbackup');
+        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'Drclick-Backup-old.msbackup');
+        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'Drclick-Backup-new.msbackup');
         $manager = $this->manager();
         $policy = new BackupRetentionPolicy(0, 0, 0);
         $token = $manager->issueConfirmation($manager->preview($policy));
@@ -310,11 +310,11 @@ class LocalBackupRetentionLifecycleTest extends TestCase
 
     public function test_valid_apply_replans_each_old_candidate_and_preserves_database_history(): void
     {
-        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'MediSmart-Backup-old.msbackup');
+        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'Drclick-Backup-old.msbackup');
         $oldPath = $old->local_path;
-        $middle = $this->createArchive('2026-07-15T10:00:00+00:00', 'MediSmart-Backup-middle.msbackup');
+        $middle = $this->createArchive('2026-07-15T10:00:00+00:00', 'Drclick-Backup-middle.msbackup');
         $middlePath = $middle->local_path;
-        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'MediSmart-Backup-new.msbackup');
+        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'Drclick-Backup-new.msbackup');
         $manager = $this->manager();
         $policy = new BackupRetentionPolicy(0, 0, 0);
         $token = $manager->issueConfirmation($manager->preview($policy));
@@ -343,8 +343,8 @@ class LocalBackupRetentionLifecycleTest extends TestCase
 
     public function test_command_defaults_to_dry_run_and_apply_without_internal_confirmation_fails(): void
     {
-        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'MediSmart-Backup-old.msbackup');
-        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'MediSmart-Backup-new.msbackup');
+        $old = $this->createArchive('2026-07-01T10:00:00+00:00', 'Drclick-Backup-old.msbackup');
+        $new = $this->createArchive('2026-08-01T10:00:00+00:00', 'Drclick-Backup-new.msbackup');
 
         $this->artisan('medismart:backup:retention')
             ->expectsOutputToContain('"mode": "dry_run"')

@@ -1,17 +1,17 @@
 [package]
-name = "drclickdz-desktop"
+name = "drclick-desktop"
 version = "0.1.0"
-description = "DrClickDz thin-client desktop shell"
-authors = ["DrClickDz"]
+description = "Drclick thin-client desktop shell"
+authors = ["Drclick"]
 edition = "2021"
 rust-version = "1.84"
 
 [lib]
-name = "drclickdz_desktop"
+name = "drclick_desktop"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "DrClickDz"
+name = "Drclick"
 path = "src/main.rs"
 
 [build-dependencies]
@@ -20,6 +20,7 @@ url = "2.5"
 
 [dependencies]
 hmac = "0.12"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-native-roots"] }
 semver = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

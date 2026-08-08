@@ -61,10 +61,10 @@ impl StartupMigrationError {
                 "Une autre opération sécurisée utilise la base locale. Fermez l’autre instance puis réessayez."
             }
             "migration_resources_invalid" | "migration_runtime_mismatch" => {
-                "Les ressources de mise à niveau de MediSmart ne sont pas valides. Réinstallez cette version avant de rouvrir le cabinet."
+                "Les ressources de mise à niveau de Drclick ne sont pas valides. Réinstallez cette version avant de rouvrir le cabinet."
             }
             "migration_database_newer_than_release" => {
-                "La base locale provient d’une version plus récente. Installez la version MediSmart correspondante."
+                "La base locale provient d’une version plus récente. Installez la version Drclick correspondante."
             }
             "migration_recovery_required" | "migration_recovery_snapshot_invalid" => {
                 "La mise à niveau locale est interrompue. Les données sont conservées hors ligne ; contactez l’assistance."

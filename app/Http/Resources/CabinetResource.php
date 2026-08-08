@@ -27,7 +27,7 @@ class CabinetResource extends JsonResource
             ],
             'license' => $this->whenLoaded('license', fn (): ?array => $this->license === null ? null : [
                 'plan' => $this->license->plan?->value,
-                'plan_label' => $this->license->plan?->label(),
+            'plan_label' => $this->license->typeLabel(),
                 'status' => $this->license->effectiveStatus(),
                 'status_label' => $this->license->effectiveStatusLabel(),
                 'expires_at' => $this->license->expires_at?->toIso8601String(),

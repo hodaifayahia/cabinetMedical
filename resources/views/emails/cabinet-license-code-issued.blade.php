@@ -1,5 +1,5 @@
 @component('mail::message')
-# Votre code d’activation DrClickDz
+# Votre code d’activation Drclick
 
 Bonjour {{ $ownerName }},
 

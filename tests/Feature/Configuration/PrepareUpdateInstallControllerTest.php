@@ -46,8 +46,8 @@ class PrepareUpdateInstallControllerTest extends TestCase
     public function test_it_creates_a_verified_backup_before_issuing_native_install_authorization(): void
     {
         $backup = BackupRecord::query()->create([
-            'filename' => 'MediSmart-Backup-update.msbackup',
-            'local_path' => 'backups/MediSmart-Backup-update.msbackup',
+            'filename' => 'Drclick-Backup-update.msbackup',
+            'local_path' => 'backups/Drclick-Backup-update.msbackup',
             'size' => 4096,
             'sha256' => str_repeat('42', 32),
             'schema_version' => 2,

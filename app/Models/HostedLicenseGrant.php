@@ -20,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $id
  * @property int $cabinet_id
  * @property LicensePlan $plan
+ * @property LicenseType|null $licenseType
+ * @property int|null $duration_days
+ * @property string|null $type_name
  * @property string $code_hash
  * @property string $code_suffix
  * @property CarbonImmutable|null $redeemed_at
@@ -31,6 +34,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'redeemed_by_user_id',
     'revoked_by_user_id',
     'plan',
+    'license_type_id',
+    'duration_days',
+    'type_name',
     'code_hash',
     'code_suffix',
     'redeemed_at',
@@ -45,6 +51,7 @@ class HostedLicenseGrant extends Model
     {
         return [
             'plan' => LicensePlan::class,
+            'duration_days' => 'integer',
             'redeemed_at' => 'immutable_datetime',
             'revoked_at' => 'immutable_datetime',
         ];
@@ -59,6 +66,24 @@ class HostedLicenseGrant extends Model
     public function isOutstanding(): bool
     {
         return $this->redeemed_at === null && $this->revoked_at === null;
+    }
+
+    /** @return BelongsTo<LicenseType, $this> */
+    public function licenseType(): BelongsTo
+    {
+        return $this->belongsTo(LicenseType::class);
+    }
+
+    public function typeLabel(): string
+    {
+        return $this->type_name ?? $this->licenseType?->name ?? $this->plan?->label() ?? 'Licence';
+    }
+
+    public function expiresAt(CarbonImmutable $startsAt): ?CarbonImmutable
+    {
+        return $this->duration_days !== null
+            ? $startsAt->addDays($this->duration_days)
+            : $this->plan?->expiresAt($startsAt);
     }
 
     /** @return BelongsTo<User, $this> */

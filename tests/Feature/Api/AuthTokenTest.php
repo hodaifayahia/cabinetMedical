@@ -70,7 +70,7 @@ class AuthTokenTest extends TestCase
         [$cabinet] = $this->activeCabinetWithOwner('expired@example.com');
         $license = License::query()->create([
             'license_id' => 'CAB-EXPIRED-001',
-            'product' => 'DrClickDz',
+            'product' => 'Drclick',
             'edition' => 'hosted',
             'plan' => LicensePlan::TRIAL,
             'customer_id' => (string) $cabinet->getKey(),
@@ -88,7 +88,7 @@ class AuthTokenTest extends TestCase
         ])->assertStatus(403)
             ->assertJsonPath('reason', 'license_expired')
             ->assertJsonPath('status', 'expired')
-            ->assertJsonPath('message', "Votre essai de 7 jours est expiré. Contactez l'administration DrClickDz pour renouveler votre licence ou passer à une licence à vie.");
+            ->assertJsonPath('message', "Votre essai de 7 jours est expiré. Contactez l'administration Drclick pour renouveler votre licence ou passer à une licence à vie.");
 
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }
@@ -99,7 +99,7 @@ class AuthTokenTest extends TestCase
         $expiresAt = now()->addDays(7)->startOfSecond();
         $license = License::query()->create([
             'license_id' => 'CAB-ACTIVE-001',
-            'product' => 'DrClickDz',
+            'product' => 'Drclick',
             'edition' => 'hosted',
             'plan' => LicensePlan::TRIAL,
             'customer_id' => (string) $cabinet->getKey(),

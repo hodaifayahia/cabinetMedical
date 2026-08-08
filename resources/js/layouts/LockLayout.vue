@@ -24,7 +24,7 @@ const { title = '', description = '' } = defineProps<{
                 <span
                     class="text-lg font-bold tracking-tight text-slate-800 dark:text-white"
                 >
-                    DrClickDz
+                    Drclick
                 </span>
             </div>
 

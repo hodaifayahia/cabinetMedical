@@ -82,7 +82,7 @@ impl LanListenerError {
             }
             "lan_port_invalid" => "Le port LAN doit être compris entre 1024 et 65535.",
             "lan_bind_failed" => {
-                "MediSmart n’a pas pu réserver cette adresse et ce port. Choisissez un autre port ou vérifiez la carte réseau."
+                "Drclick n’a pas pu réserver cette adresse et ce port. Choisissez un autre port ou vérifiez la carte réseau."
             }
             "lan_configuration_invalid" => {
                 "La configuration LAN native est invalide et le listener reste fermé."

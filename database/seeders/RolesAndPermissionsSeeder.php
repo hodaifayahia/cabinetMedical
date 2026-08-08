@@ -52,6 +52,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 PermissionName::PATIENTS_UPDATE->value,
                 PermissionName::PATIENTS_VIEW_MEDICAL_RECORD->value,
                 PermissionName::APPOINTMENTS_VIEW->value,
+                PermissionName::APPOINTMENTS_CREATE->value,
                 PermissionName::APPOINTMENTS_UPDATE->value,
                 PermissionName::APPOINTMENTS_CONFIGURE->value,
                 PermissionName::CONFIGURATION_MANAGE->value,

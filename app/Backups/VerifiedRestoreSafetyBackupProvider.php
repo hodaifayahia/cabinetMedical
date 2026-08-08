@@ -14,7 +14,7 @@ final class VerifiedRestoreSafetyBackupProvider implements RestoreSafetyBackupPr
     public function createSafetyBackup(PreparedRestore $restore): RestoreSafetyBackupReceipt
     {
         $backupId = (string) Str::uuid();
-        $filename = 'MediSmart-Pre-Restore-Safety-'
+        $filename = 'Drclick-Pre-Restore-Safety-'
             .now()->format('Y-m-d-His').'-'.$restore->operationId.'-'.$backupId.'.msbackup';
         $managedRoot = (string) config(
             'medismart.backups.managed_directory',

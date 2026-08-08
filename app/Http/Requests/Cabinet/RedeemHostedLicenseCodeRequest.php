@@ -28,7 +28,7 @@ class RedeemHostedLicenseCodeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'license_code.required' => 'Saisissez le code de licence fourni par DrClickDz.',
+            'license_code.required' => 'Saisissez le code de licence fourni par Drclick.',
             'license_code.max' => 'Ce code de licence est invalide.',
         ];
     }

@@ -2,11 +2,11 @@
 
 - Status: accepted direction; implementation is staged
 - Date: 2026-08-08
-- Scope: DrClickDz desktop, cabinet data plane, cloud control plane
+- Scope: Drclick desktop, cabinet data plane, cloud control plane
 
 ## Context
 
-The DrClickDz Windows application is a thin Tauri client. It currently loads one
+The Drclick Windows application is a thin Tauri client. It currently loads one
 HTTPS Laravel origin and intentionally contains no PHP runtime or clinical
 database. This is the correct model for hosted use, but it cannot provide shared
 clinical work when Internet access is unavailable unless another machine on the
@@ -19,12 +19,12 @@ clinical data.
 
 ## Decision
 
-DrClickDz will use one authoritative **Cabinet Hub** for every cabinet that needs
+Drclick will use one authoritative **Cabinet Hub** for every cabinet that needs
 offline LAN operation.
 
 The Hub is a separate service/appliance, not a runtime embedded in the Tauri
 client. It runs the Laravel application and PostgreSQL on one always-on LAN host.
-All doctor and staff desktops use their existing individual DrClickDz accounts and
+All doctor and staff desktops use their existing individual Drclick accounts and
 connect to that Hub. Internet access is not required for LAN clinical work.
 
 For a hub-enabled cabinet, the Hub remains the only clinical write authority both
@@ -35,7 +35,7 @@ backup custody, and hub presence. It must not accept competing clinical writes.
 ```text
                  Internet available
         +--------------------------------+
-        | DrClickDz cloud control plane  |
+        | Drclick cloud control plane  |
         | licence / seats / updates / DR |
         +---------------+----------------+
                         | outbound authenticated sync
@@ -43,7 +43,7 @@ backup custody, and hub presence. It must not accept competing clinical writes.
     Cabinet LAN         |
   +---------------------+-------------------------------+
   |             +-------v------------------+            |
-  |             | DrClickDz Cabinet Hub    |            |
+  |             | Drclick Cabinet Hub    |            |
   |             | Laravel + PostgreSQL     |            |
   |             | canonical clinical data |            |
   |             +-----+---------------+----+            |
@@ -92,7 +92,7 @@ The installer or first-run screen can discover candidate Hubs with mDNS, but the
 user must confirm the cabinet and a short code or QR descriptor. The desktop pins
 the signed identity. A discovered hostname alone is never accepted.
 
-Production LAN HTTPS uses the DrClickDz private PKI or an equivalent managed
+Production LAN HTTPS uses the Drclick private PKI or an equivalent managed
 certificate design. Certificate rotation is signed by the previous Hub identity
 and the control plane. Exact loopback HTTP remains development-only.
 
@@ -177,7 +177,7 @@ a new authority epoch; automatic dual-primary failover is prohibited.
 
 ## Acceptance criteria for the offline claim
 
-DrClickDz may be advertised as shared-offline only after an automated and manual
+Drclick may be advertised as shared-offline only after an automated and manual
 test demonstrates: two different Windows desktops, two different cabinet users,
 Internet physically blocked, concurrent appointments/patients/payments/documents,
 restart and power-loss recovery, backup restore to replacement hardware, no

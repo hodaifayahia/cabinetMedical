@@ -139,7 +139,7 @@ class BackupAuthorizationTest extends TestCase
             'REMOTE_ADDR' => '127.0.0.1',
         ])->get('http://127.0.0.1:43123/app/configuration/backup/google/callback?state=invalid')
             ->assertStatus(400)
-            ->assertSee('revenir &agrave; DrClickDz', false);
+            ->assertSee('revenir &agrave; Drclick', false);
     }
 
     public function test_an_administrator_passes_backup_authorization(): void

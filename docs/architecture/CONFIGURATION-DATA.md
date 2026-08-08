@@ -1,4 +1,4 @@
-# MediSmart configuration data contract
+# Drclick configuration data contract
 
 - Status: Accepted; implemented incrementally with fail-closed capability gates
 - Date: 2026-08-04
@@ -7,7 +7,7 @@
 
 ## Purpose
 
-MediSmart needs configuration for the clinic, documents, uploads, connectivity, backups, Drive, licensing, updates, desktop behavior, and diagnostics. Those values do not all have the same owner or lifecycle. This contract prevents the Configuration interface, `.env`, the Tauri launcher, and SQLite from becoming competing sources of truth.
+Drclick needs configuration for the clinic, documents, uploads, connectivity, backups, Drive, licensing, updates, desktop behavior, and diagnostics. Those values do not all have the same owner or lifecycle. This contract prevents the Configuration interface, `.env`, the Tauri launcher, and SQLite from becoming competing sources of truth.
 
 The Configuration interface must expose supported, typed settings only. It must never become an arbitrary key/value editor and must never edit `.env`, bundled resources, or files under `Program Files`.
 
@@ -17,7 +17,7 @@ The checked-in `.env.example` is the authoritative development template. A packa
 
 | Variable                                                          | Owner                            | Safe/default state                                             | Purpose                                                                                                                                                                                                                                         |
 | ----------------------------------------------------------------- | -------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_NAME`, `APP_LOCALE`, `APP_FALLBACK_LOCALE`, `APP_TIMEZONE`   | release                          | `MediSmart`, `fr`, `fr`, `Africa/Algiers`                      | Product identity and regional defaults.                                                                                                                                                                                                         |
+| `APP_NAME`, `APP_LOCALE`, `APP_FALLBACK_LOCALE`, `APP_TIMEZONE`   | release                          | `Drclick`, `fr`, `fr`, `Africa/Algiers`                      | Product identity and regional defaults.                                                                                                                                                                                                         |
 | `APP_KEY`                                                         | Tauri installation               | generated per installation; never shared                       | Encrypts local Laravel secrets. The Windows build protects it with DPAPI.                                                                                                                                                                       |
 | `APP_URL`, `MEDISMART_LOCAL_URL`                                  | Tauri runtime                    | dynamic `http://127.0.0.1:{port}`                              | Exact loopback origin selected after port allocation.                                                                                                                                                                                           |
 | `MEDISMART_LAN_UPLOAD_URL`                                        | Tauri runtime                    | blank until the selected native listener is bound and attested | Exact direct-phone origin: HTTP, literal selected private IPv4, and explicit dynamic high port. It is independently attested and never authorizes administration routes.                                                                        |
@@ -40,7 +40,7 @@ The checked-in `.env.example` is the authoritative development template. A packa
 | `MEDISMART_FINGERPRINT_PEPPER`                                    | Tauri installation               | derived from per-install key when blank                        | Protects the privacy-preserving machine fingerprint hash.                                                                                                                                                                                       |
 | `MEDISMART_LICENSE_CLOCK_TOLERANCE_HOURS`                         | release                          | 6                                                              | Major rollback threshold for the encrypted local time anchor; signed online refresh permits recovery.                                                                                                                                           |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | deployment                       | blank client ID; optional secret; launcher-derived callback    | Installed-app OAuth bootstrap only. Public desktop clients omit the secret, and an optional redirect is accepted only as an exact assertion of the supervised loopback callback. User access and refresh tokens are stored encrypted in SQLite. |
-| `GOOGLE_DRIVE_SCOPE`                                              | release                          | `drive.file`                                                   | Restricts MediSmart to files it creates or opens through the app.                                                                                                                                                                               |
+| `GOOGLE_DRIVE_SCOPE`                                              | release                          | `drive.file`                                                   | Restricts Drclick to files it creates or opens through the app.                                                                                                                                                                               |
 | `SESSION_DRIVER`, `SESSION_ENCRYPT`, `QUEUE_CONNECTION`           | release/runtime                  | database, `true`, database                                     | Encrypted durable sessions and persistent queued work for the supervised desktop process.                                                                                                                                                       |
 | `MEDISMART_UPDATER_ENDPOINT`, `MEDISMART_UPDATER_PUBLIC_KEY`      | protected release build          | required only while compiling a release                        | Exact HTTPS manifest endpoint and Tauri updater public key embedded in the signed native binary. They are not Laravel settings and cannot be changed by the webview.                                                                            |
 | `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | protected release infrastructure | absent from source, `.env`, resources, and installed state     | Create updater signatures during a controlled release build. Their presence is required by the fail-closed release build, but their values are never logged or shipped.                                                                         |
@@ -217,7 +217,7 @@ Deletion is fail-closed. Before deleting the selected managed Drive object, the
 service first requires the target itself to match a completed local
 `backup_records` row by record ID, remote file ID, safe filename, size, and
 SHA-256. It then requires another strictly newer object in the same exact
-managed folder, validates its complete MediSmart v2 metadata, matches it to the
+managed folder, validates its complete Drclick v2 metadata, matches it to the
 same exact local-record contract, and re-fetches both target and replacement
 before issuing DELETE. Provider name/app-properties alone, a foreign or
 unrecorded upload, an older/equal artifact, metadata drift, or an unavailable

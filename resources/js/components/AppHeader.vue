@@ -65,7 +65,7 @@ const page = usePage();
 const desktopRuntime = ref(false);
 const runtimeResolved = ref(false);
 const auth = computed(() => page.props.auth);
-const clinicName = computed(() => String(page.props.name ?? 'DrClickDz'));
+const clinicName = computed(() => String(page.props.name ?? 'Drclick'));
 const clinicLogoUrl = computed(() => page.props.cabinet?.logo_url ?? null);
 const desktopDownload = computed(() => page.props.desktopDownload);
 const chromeVisibility = computed(() => {

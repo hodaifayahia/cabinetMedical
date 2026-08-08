@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cabinet_setting_id')->unique()->constrained()->cascadeOnDelete();
             $table->string('email')->nullable();
-            $table->string('folder_name')->default('MediSmart Backups');
+            $table->string('folder_name')->default('Drclick Backups');
             $table->string('folder_id')->nullable();
             $table->text('access_token')->nullable();
             $table->text('refresh_token')->nullable();

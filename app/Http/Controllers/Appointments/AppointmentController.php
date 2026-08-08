@@ -533,12 +533,10 @@ class AppointmentController extends Controller
         return $paginator->through(function (Appointment $appointment) use ($consultations, $todayString): array {
             $consultation = $consultations->get($appointment->id);
             $isToday = $appointment->appointment_date?->toDateString() === $todayString;
-            $startableStatus = in_array($appointment->status, [
-                AppointmentStatus::SCHEDULED,
-                AppointmentStatus::CONFIRMED,
-                AppointmentStatus::CHECKED_IN,
-                AppointmentStatus::IN_PROGRESS,
-            ], true);
+            // A new consultation can only be started after the patient has
+            // been checked in. Confirming an appointment must never open the
+            // consultation workspace.
+            $startableStatus = $appointment->status === AppointmentStatus::CHECKED_IN;
 
             return [
                 'id' => $appointment->id,

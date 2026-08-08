@@ -1,4 +1,4 @@
-// DrClickDz Desktop — build script (thin-client edition)
+// Drclick Desktop — build script (thin-client edition)
 //
 // Removed (2025): bundled resource existence checks, cloudflared manifest
 // verification, PHP/Laravel/migration resource SHA injection. These were only
@@ -20,7 +20,7 @@ fn main() {
             "install_signed_update",
         ]),
     ))
-    .expect("failed to build the DrClickDz Tauri application manifest");
+    .expect("failed to build the Drclick Tauri application manifest");
 
     // Rebuild triggers
     println!("cargo:rerun-if-env-changed=PROFILE");

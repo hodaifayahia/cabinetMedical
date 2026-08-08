@@ -43,7 +43,7 @@ defineOptions({
     layout: {
         title: 'Heureux de vous revoir',
         description:
-            'Connectez-vous à votre espace DrClickDz pour retrouver votre cabinet.',
+            'Connectez-vous à votre espace Drclick pour retrouver votre cabinet.',
     },
 });
 

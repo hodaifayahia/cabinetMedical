@@ -53,8 +53,8 @@ class CabinetStatusController extends Controller
         return Inertia::render('auth/PendingActivation', [
             'can_redeem_license' => $canRedeemLicense,
             'pending_license_grant' => $outstandingGrant === null ? null : [
-                'plan' => $outstandingGrant->plan->value,
-                'plan_label' => $outstandingGrant->plan->label(),
+                'plan' => $outstandingGrant->licenseType?->slug ?? $outstandingGrant->plan?->value,
+                'plan_label' => $outstandingGrant->typeLabel(),
                 'issued_at' => $outstandingGrant->created_at?->toIso8601String(),
                 'code_suffix' => $outstandingGrant->code_suffix,
             ],
@@ -70,7 +70,7 @@ class CabinetStatusController extends Controller
                     : $this->access->denialMessage($user),
                 'license' => $license === null ? null : [
                     'plan' => $license->plan?->value,
-                    'plan_label' => $license->plan?->label(),
+                    'plan_label' => $license->typeLabel(),
                     'status' => $license->effectiveStatus(),
                     'status_label' => $license->effectiveStatusLabel(),
                     'expires_at' => $license->expires_at?->toIso8601String(),

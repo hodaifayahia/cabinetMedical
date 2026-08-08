@@ -49,7 +49,7 @@ class HandleInertiaRequests extends Middleware
         $cabinet = $user instanceof User && ! $user->is_platform_admin
             ? CabinetSetting::current()
             : null;
-        $cabinetName = $cabinet?->name ?? (string) config('app.name', 'DrClickDz');
+        $cabinetName = $cabinet?->name ?? (string) config('app.name', 'Drclick');
         $sessionLock = $user instanceof User
             ? app(SessionLockService::class)
             : null;

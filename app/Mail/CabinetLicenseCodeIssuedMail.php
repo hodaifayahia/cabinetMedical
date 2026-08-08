@@ -28,7 +28,7 @@ class CabinetLicenseCodeIssuedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Votre code d’activation DrClickDz',
+            subject: 'Votre code d’activation Drclick',
         );
     }
 
@@ -39,7 +39,7 @@ class CabinetLicenseCodeIssuedMail extends Mailable
             with: [
                 'cabinetName' => $this->cabinet->name,
                 'ownerName' => $this->ownerName,
-                'licensePlan' => $this->grant->plan->label(),
+                'licensePlan' => $this->grant->typeLabel(),
                 'licenseCode' => $this->licenseCode,
                 'activationUrl' => route('cabinet.pending'),
             ],

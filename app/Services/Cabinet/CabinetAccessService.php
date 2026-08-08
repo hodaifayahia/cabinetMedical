@@ -79,10 +79,10 @@ class CabinetAccessService
     public function denialMessage(User $user): ?string
     {
         return match ($this->denialReason($user)) {
-            self::REASON_CABINET_PENDING => "Votre cabinet est en attente d'activation par l'équipe DrClickDz.",
-            self::REASON_CABINET_SUSPENDED => 'Votre cabinet est actuellement suspendu. Contactez le support DrClickDz.',
-            self::REASON_LICENSE_EXPIRED => "Votre essai de 7 jours est expiré. Contactez l'administration DrClickDz pour renouveler votre licence ou passer à une licence à vie.",
-            self::REASON_LICENSE_INACTIVE => "La licence de votre cabinet n'est pas active. Contactez l'administration DrClickDz.",
+            self::REASON_CABINET_PENDING => "Votre cabinet est en attente d'activation par l'équipe Drclick.",
+            self::REASON_CABINET_SUSPENDED => 'Votre cabinet est actuellement suspendu. Contactez le support Drclick.',
+            self::REASON_LICENSE_EXPIRED => "Votre essai de 7 jours est expiré. Contactez l'administration Drclick pour renouveler votre licence ou passer à une licence à vie.",
+            self::REASON_LICENSE_INACTIVE => "La licence de votre cabinet n'est pas active. Contactez l'administration Drclick.",
             self::REASON_AWAITING_APPROVAL => "Votre compte est en attente d'approbation par le propriétaire du cabinet.",
             default => null,
         };

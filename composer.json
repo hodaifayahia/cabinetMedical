@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/vue-starter-kit",
+    "name": "drclick/drclick",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Drclick medical practice management application.",
     "keywords": [
         "laravel",
         "framework"

@@ -32,7 +32,7 @@ const form = useForm({
     device_token: '',
     pin: '',
     pin_confirmation: '',
-    device_name: 'Poste DrClickDz',
+    device_name: 'Poste Drclick',
 });
 
 const authenticatedUser = computed(() => page.props.auth.user);
@@ -73,7 +73,7 @@ function prepareDeviceToken(): boolean {
         return true;
     } catch {
         localError.value =
-            'La protection cryptographique de cet appareil est indisponible. Redémarrez DrClickDz puis réessayez.';
+            'La protection cryptographique de cet appareil est indisponible. Redémarrez Drclick puis réessayez.';
 
         return false;
     }
@@ -136,7 +136,7 @@ function enroll(): void {
 
             if (!saved) {
                 localError.value =
-                    'DrClickDz ne peut pas mémoriser cet appareil. Vérifiez les autorisations de stockage puis redémarrez l’application.';
+                    'Drclick ne peut pas mémoriser cet appareil. Vérifiez les autorisations de stockage puis redémarrez l’application.';
 
                 return;
             }
@@ -219,7 +219,7 @@ onMounted(async () => {
                         Ce code à 4 chiffres permet d’ouvrir rapidement votre
                         cabinet sur cet ordinateur, sans ressaisir votre e-mail
                         ni votre mot de passe. Il reste lié uniquement à cette
-                        installation DrClickDz.
+                        installation Drclick.
                     </p>
 
                     <form

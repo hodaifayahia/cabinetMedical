@@ -79,7 +79,7 @@ function submit(): void {
                     </span>
                     <DialogHeader class="space-y-2 text-left">
                         <DialogTitle class="text-2xl font-black text-white">
-                            Télécharger DrClickDz Desktop
+                            Télécharger Drclick Desktop
                         </DialogTitle>
                         <DialogDescription class="leading-6 text-sky-50/85">
                             Quelques informations professionnelles suffisent

@@ -163,7 +163,7 @@ class LicenseServiceTest extends TestCase
     {
         $hostedBefore = License::query()->create([
             'license_id' => 'CAB-HOSTED-BEFORE',
-            'product' => 'DrClickDz',
+            'product' => 'Drclick',
             'edition' => 'hosted',
             'plan' => LicensePlan::LIFETIME,
             'status' => 'active',
@@ -181,7 +181,7 @@ class LicenseServiceTest extends TestCase
 
         $hostedAfter = License::query()->create([
             'license_id' => 'CAB-HOSTED-AFTER',
-            'product' => 'DrClickDz',
+            'product' => 'Drclick',
             'edition' => 'hosted',
             'plan' => LicensePlan::TRIAL,
             'status' => 'active',

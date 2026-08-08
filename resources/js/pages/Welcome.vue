@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     Building2,
     CalendarClock,
@@ -17,11 +17,19 @@ import {
     Users,
     Wifi,
 } from '@lucide/vue';
-import { computed, ref, type Component } from 'vue';
+import { isTauri } from '@tauri-apps/api/core';
+import { computed, onMounted, ref, type Component } from 'vue';
 import AppMockup from '@/components/landing/AppMockup.vue';
+import DesktopDownloadLeadDialog from '@/components/DesktopDownloadLeadDialog.vue';
+import DesktopOnboarding from '@/components/DesktopOnboarding.vue';
 import DownloadButton from '@/components/landing/DownloadButton.vue';
 import LanguageSwitcher from '@/components/landing/LanguageSwitcher.vue';
 import { useLandingLocale } from '@/components/landing/translations';
+import {
+    hasCompletedDesktopOnboarding,
+    markDesktopOnboardingComplete,
+} from '@/lib/desktopOnboarding';
+import { dashboard, login } from '@/routes';
 
 // `canRegister` is still provided by the home route and asserted by the
 // feature test, but the public landing page intentionally exposes no
@@ -32,6 +40,31 @@ defineProps<{
 
 const page = usePage();
 const desktopDownload = computed(() => page.props.desktopDownload);
+const desktopRuntime = ref(false);
+const runtimeResolved = ref(false);
+const desktopOnboardingComplete = ref(false);
+const downloadDialogOpen = ref(false);
+const authenticatedDesktopDestination = computed<string | null>(() => {
+    if (!desktopRuntime.value || !page.props.auth.user) {
+        return null;
+    }
+
+    return page.props.auth.user.can.accessAdminPanel
+        ? '/admin'
+        : dashboard().url;
+});
+const showDesktopOnboarding = computed(
+    () =>
+        desktopRuntime.value &&
+        !page.props.auth.user &&
+        !desktopOnboardingComplete.value,
+);
+const redirectRememberedDesktopToLogin = computed(
+    () =>
+        desktopRuntime.value &&
+        !page.props.auth.user &&
+        desktopOnboardingComplete.value,
+);
 
 const { locale, dir, copy, setLocale } = useLandingLocale();
 
@@ -61,17 +94,88 @@ const navLinks = computed(() => [
 function closeMobileNav(): void {
     mobileNavOpen.value = false;
 }
+
+function openDownloadDialog(): void {
+    if (desktopDownload.value?.available) {
+        downloadDialogOpen.value = true;
+    }
+}
+
+onMounted(() => {
+    desktopRuntime.value = isTauri();
+
+    if (desktopRuntime.value) {
+        desktopOnboardingComplete.value = hasCompletedDesktopOnboarding();
+
+        if (page.props.auth.user) {
+            markDesktopOnboardingComplete();
+        }
+    }
+
+    if (authenticatedDesktopDestination.value === '/admin') {
+        window.location.replace('/admin');
+
+        return;
+    }
+
+    if (authenticatedDesktopDestination.value) {
+        router.visit(authenticatedDesktopDestination.value, { replace: true });
+
+        return;
+    }
+
+    if (redirectRememberedDesktopToLogin.value) {
+        router.visit(login().url, { replace: true });
+
+        return;
+    }
+
+    runtimeResolved.value = true;
+
+    if (desktopRuntime.value) {
+        return;
+    }
+
+    if (new URLSearchParams(window.location.search).get('download') === '1') {
+        openDownloadDialog();
+    }
+});
 </script>
 
 <template>
     <Head :title="copy.tagline" />
 
     <div
+        v-if="!runtimeResolved"
+        class="min-h-screen bg-slate-950"
+        aria-live="polite"
+        aria-label="Préparation de Drclick"
+        data-test="desktop-runtime-pending"
+    />
+
+    <DesktopOnboarding
+        v-else-if="showDesktopOnboarding"
+        :can-register="canRegister"
+    />
+
+    <div
+        v-else-if="
+            authenticatedDesktopDestination || redirectRememberedDesktopToLogin
+        "
+        class="min-h-screen bg-slate-950"
+        aria-live="polite"
+        aria-label="Ouverture de votre espace"
+    />
+
+    <div
+        v-else
         :dir="dir"
         :lang="locale"
         :style="
             locale === 'ar'
-                ? { fontFamily: `'Noto Naskh Arabic', 'Cairo', 'Segoe UI', 'Tahoma', 'Geeza Pro', 'Arial', sans-serif` }
+                ? {
+                      fontFamily: `'Noto Naskh Arabic', 'Cairo', 'Segoe UI', 'Tahoma', 'Geeza Pro', 'Arial', sans-serif`,
+                  }
                 : undefined
         "
         class="min-h-screen bg-background text-foreground"
@@ -81,7 +185,9 @@ function closeMobileNav(): void {
         <header
             class="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur"
         >
-            <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+            <div
+                class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"
+            >
                 <a href="#top" class="flex items-center gap-2.5">
                     <span
                         class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm"
@@ -89,8 +195,12 @@ function closeMobileNav(): void {
                         <Stethoscope class="size-5" />
                     </span>
                     <span class="flex flex-col leading-tight">
-                        <span class="text-base font-bold tracking-tight">MediSmart</span>
-                        <span class="hidden text-[11px] text-muted-foreground sm:block">
+                        <span class="text-base font-bold tracking-tight"
+                            >Drclick</span
+                        >
+                        <span
+                            class="hidden text-[11px] text-muted-foreground sm:block"
+                        >
                             {{ copy.tagline }}
                         </span>
                     </span>
@@ -120,6 +230,7 @@ function closeMobileNav(): void {
                             :reason="desktopDownload?.reason ?? null"
                             :label="copy.download.cta"
                             :unavailable-label="copy.download.unavailable"
+                            @click.prevent="openDownloadDialog"
                         />
                     </div>
                     <button
@@ -158,6 +269,7 @@ function closeMobileNav(): void {
                         :label="copy.download.cta"
                         :unavailable-label="copy.download.unavailable"
                         class="w-full"
+                        @click.prevent="openDownloadDialog"
                     />
                 </div>
             </div>
@@ -184,7 +296,9 @@ function closeMobileNav(): void {
                         >
                             {{ copy.hero.title }}
                         </h1>
-                        <p class="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
+                        <p
+                            class="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg"
+                        >
                             {{ copy.hero.subtitle }}
                         </p>
 
@@ -203,7 +317,9 @@ function closeMobileNav(): void {
                             </li>
                         </ul>
 
-                        <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                        <div
+                            class="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center"
+                        >
                             <DownloadButton
                                 :available="desktopDownload?.available ?? false"
                                 :url="desktopDownload?.url ?? null"
@@ -211,6 +327,7 @@ function closeMobileNav(): void {
                                 :label="copy.download.cta"
                                 :unavailable-label="copy.download.unavailable"
                                 size="lg"
+                                @click.prevent="openDownloadDialog"
                             />
                             <p class="text-sm text-muted-foreground">
                                 {{ copy.download.note }}
@@ -228,18 +345,26 @@ function closeMobileNav(): void {
             <section id="features" class="border-t border-border bg-card">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
                     <div class="max-w-2xl">
-                        <p class="text-sm font-semibold tracking-wide text-primary uppercase">
+                        <p
+                            class="text-sm font-semibold tracking-wide text-primary uppercase"
+                        >
                             {{ copy.benefits.eyebrow }}
                         </p>
-                        <h2 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                        <h2
+                            class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl"
+                        >
                             {{ copy.benefits.title }}
                         </h2>
-                        <p class="mt-3 text-base leading-7 text-muted-foreground">
+                        <p
+                            class="mt-3 text-base leading-7 text-muted-foreground"
+                        >
                             {{ copy.benefits.subtitle }}
                         </p>
                     </div>
 
-                    <div class="mt-12 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+                    <div
+                        class="mt-12 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3"
+                    >
                         <article
                             v-for="(benefit, index) in copy.benefits.items"
                             :key="benefit.title"
@@ -248,12 +373,19 @@ function closeMobileNav(): void {
                             <span
                                 class="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
                             >
-                                <component :is="benefitIcons[index]" class="size-5" />
+                                <component
+                                    :is="benefitIcons[index]"
+                                    class="size-5"
+                                />
                             </span>
-                            <h3 class="mt-4 text-lg font-semibold text-foreground">
+                            <h3
+                                class="mt-4 text-lg font-semibold text-foreground"
+                            >
                                 {{ benefit.title }}
                             </h3>
-                            <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                            <p
+                                class="mt-2 text-sm leading-6 text-muted-foreground"
+                            >
                                 {{ benefit.body }}
                             </p>
                         </article>
@@ -265,13 +397,19 @@ function closeMobileNav(): void {
             <section id="how" class="border-t border-border">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
                     <div class="max-w-2xl">
-                        <p class="text-sm font-semibold tracking-wide text-primary uppercase">
+                        <p
+                            class="text-sm font-semibold tracking-wide text-primary uppercase"
+                        >
                             {{ copy.how.eyebrow }}
                         </p>
-                        <h2 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                        <h2
+                            class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl"
+                        >
                             {{ copy.how.title }}
                         </h2>
-                        <p class="mt-3 text-base leading-7 text-muted-foreground">
+                        <p
+                            class="mt-3 text-base leading-7 text-muted-foreground"
+                        >
                             {{ copy.how.subtitle }}
                         </p>
                     </div>
@@ -287,10 +425,14 @@ function closeMobileNav(): void {
                             >
                                 {{ index + 1 }}
                             </span>
-                            <h3 class="mt-4 text-lg font-semibold text-foreground">
+                            <h3
+                                class="mt-4 text-lg font-semibold text-foreground"
+                            >
                                 {{ step.title }}
                             </h3>
-                            <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                            <p
+                                class="mt-2 text-sm leading-6 text-muted-foreground"
+                            >
                                 {{ step.body }}
                             </p>
                         </li>
@@ -302,13 +444,19 @@ function closeMobileNav(): void {
             <section id="roles" class="border-t border-border bg-card">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
                     <div class="max-w-2xl">
-                        <p class="text-sm font-semibold tracking-wide text-primary uppercase">
+                        <p
+                            class="text-sm font-semibold tracking-wide text-primary uppercase"
+                        >
                             {{ copy.roles.eyebrow }}
                         </p>
-                        <h2 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                        <h2
+                            class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl"
+                        >
                             {{ copy.roles.title }}
                         </h2>
-                        <p class="mt-3 text-base leading-7 text-muted-foreground">
+                        <p
+                            class="mt-3 text-base leading-7 text-muted-foreground"
+                        >
                             {{ copy.roles.subtitle }}
                         </p>
                     </div>
@@ -323,16 +471,25 @@ function closeMobileNav(): void {
                                 <span
                                     class="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
                                 >
-                                    <component :is="roleIcons[index]" class="size-5" />
+                                    <component
+                                        :is="roleIcons[index]"
+                                        class="size-5"
+                                    />
                                 </span>
                                 <div>
-                                    <h3 class="text-lg font-semibold text-foreground">
+                                    <h3
+                                        class="text-lg font-semibold text-foreground"
+                                    >
                                         {{ role.title }}
                                     </h3>
-                                    <p class="text-sm text-muted-foreground">{{ role.body }}</p>
+                                    <p class="text-sm text-muted-foreground">
+                                        {{ role.body }}
+                                    </p>
                                 </div>
                             </div>
-                            <ul class="mt-5 space-y-2.5 border-t border-border pt-5">
+                            <ul
+                                class="mt-5 space-y-2.5 border-t border-border pt-5"
+                            >
                                 <li
                                     v-for="point in role.points"
                                     :key="point"
@@ -354,15 +511,23 @@ function closeMobileNav(): void {
             <!-- System requirements -->
             <section id="requirements" class="border-t border-border">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-                    <div class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+                    <div
+                        class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
+                    >
                         <div class="max-w-md">
-                            <p class="text-sm font-semibold tracking-wide text-primary uppercase">
+                            <p
+                                class="text-sm font-semibold tracking-wide text-primary uppercase"
+                            >
                                 {{ copy.requirements.eyebrow }}
                             </p>
-                            <h2 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                            <h2
+                                class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl"
+                            >
                                 {{ copy.requirements.title }}
                             </h2>
-                            <p class="mt-3 text-base leading-7 text-muted-foreground">
+                            <p
+                                class="mt-3 text-base leading-7 text-muted-foreground"
+                            >
                                 {{ copy.requirements.subtitle }}
                             </p>
                         </div>
@@ -375,9 +540,15 @@ function closeMobileNav(): void {
                                 <span
                                     class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground"
                                 >
-                                    <component :is="requirementIcons[index]" class="size-5" />
+                                    <component
+                                        :is="requirementIcons[index]"
+                                        class="size-5"
+                                    />
                                 </span>
-                                <span class="text-sm font-medium text-foreground">{{ item }}</span>
+                                <span
+                                    class="text-sm font-medium text-foreground"
+                                    >{{ item }}</span
+                                >
                             </li>
                         </ul>
                     </div>
@@ -390,10 +561,14 @@ function closeMobileNav(): void {
                     <div
                         class="flex flex-col items-center gap-6 rounded-3xl bg-primary px-6 py-12 text-center text-primary-foreground sm:px-12"
                     >
-                        <h2 class="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
+                        <h2
+                            class="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl"
+                        >
                             {{ copy.hero.title }}
                         </h2>
-                        <p class="max-w-xl text-sm text-primary-foreground/85 sm:text-base">
+                        <p
+                            class="max-w-xl text-sm text-primary-foreground/85 sm:text-base"
+                        >
                             {{ copy.download.note }}
                         </p>
                         <DownloadButton
@@ -404,6 +579,7 @@ function closeMobileNav(): void {
                             :unavailable-label="copy.download.unavailable"
                             variant="inverse"
                             size="lg"
+                            @click.prevent="openDownloadDialog"
                         />
                     </div>
                 </div>
@@ -421,28 +597,42 @@ function closeMobileNav(): void {
                             >
                                 <Stethoscope class="size-5" />
                             </span>
-                            <span class="text-base font-bold tracking-tight">MediSmart</span>
+                            <span class="text-base font-bold tracking-tight"
+                                >Drclick</span
+                            >
                         </div>
-                        <p class="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
+                        <p
+                            class="mt-4 max-w-sm text-sm leading-6 text-muted-foreground"
+                        >
                             {{ copy.footer.blurb }}
                         </p>
                     </div>
 
                     <div>
-                        <h2 class="text-sm font-semibold tracking-wide text-foreground uppercase">
+                        <h2
+                            class="text-sm font-semibold tracking-wide text-foreground uppercase"
+                        >
                             {{ copy.footer.contactTitle }}
                         </h2>
-                        <ul class="mt-4 space-y-3 text-sm text-muted-foreground">
+                        <ul
+                            class="mt-4 space-y-3 text-sm text-muted-foreground"
+                        >
                             <li class="flex items-center gap-3">
                                 <Phone class="size-4 shrink-0 text-primary" />
-                                <span dir="ltr">{{ copy.footer.phoneValue }}</span>
+                                <span dir="ltr">{{
+                                    copy.footer.phoneValue
+                                }}</span>
                             </li>
                             <li class="flex items-center gap-3">
                                 <Mail class="size-4 shrink-0 text-primary" />
-                                <span dir="ltr">{{ copy.footer.emailValue }}</span>
+                                <span dir="ltr">{{
+                                    copy.footer.emailValue
+                                }}</span>
                             </li>
                             <li class="flex items-start gap-3">
-                                <CalendarClock class="mt-0.5 size-4 shrink-0 text-primary" />
+                                <CalendarClock
+                                    class="mt-0.5 size-4 shrink-0 text-primary"
+                                />
                                 <span>{{ copy.footer.hoursValue }}</span>
                             </li>
                         </ul>
@@ -452,9 +642,19 @@ function closeMobileNav(): void {
                 <div
                     class="mt-10 border-t border-border pt-6 text-xs text-muted-foreground"
                 >
-                    &copy; {{ new Date().getFullYear() }} {{ copy.footer.rights }}
+                    &copy; {{ new Date().getFullYear() }}
+                    {{ copy.footer.rights }}
                 </div>
             </div>
         </footer>
+
+        <DesktopDownloadLeadDialog
+            v-if="!desktopRuntime"
+            v-model:open="downloadDialogOpen"
+            :available="desktopDownload?.available ?? false"
+            action="/desktop/download"
+            :label="desktopDownload?.label ?? copy.download.cta"
+            :reason="desktopDownload?.reason ?? null"
+        />
     </div>
 </template>

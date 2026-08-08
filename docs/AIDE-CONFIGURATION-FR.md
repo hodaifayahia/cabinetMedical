@@ -1,4 +1,4 @@
-# Aide utilisateur — Configuration MediSmart
+# Aide utilisateur — Configuration Drclick
 
 Cette aide décrit l'interface réellement disponible dans l'application Windows.
 Certaines options restent grisées tant que le service local, la licence ou la
@@ -6,7 +6,7 @@ configuration de déploiement correspondante n'est pas vérifié.
 
 ## Première ouverture
 
-Sur une installation vide, MediSmart demande une seule fois de créer le compte
+Sur une installation vide, Drclick demande une seule fois de créer le compte
 propriétaire :
 
 1. saisissez le nom complet du médecin ;
@@ -17,7 +17,7 @@ propriétaire :
 La création initiale est ensuite fermée. Les autres comptes doivent être créés
 par un administrateur et nécessitent la fonction de licence
 `multi_user`. Si cette fonction n'est plus disponible, les comptes existants
-restent visibles et administrables ; MediSmart refuse seulement l'ajout d'un
+restent visibles et administrables ; Drclick refuse seulement l'ajout d'un
 nouveau compte. La spécialité choisie est utilisée dans les documents et est
 volontairement verrouillée après cette étape.
 
@@ -77,7 +77,7 @@ Pour recevoir un document depuis un téléphone sur le même réseau privé :
 1. Dans **Réseau local**, activez **Activer la réception locale**.
 2. Sélectionnez la carte réseau physique du cabinet. Évitez VPN, partage public
    et réseau invité isolé.
-3. Enregistrez et attendez l'état **actif et vérifié**. MediSmart choisit un port
+3. Enregistrez et attendez l'état **actif et vérifié**. Drclick choisit un port
    sûr ; le port préféré n'est qu'une préférence.
 4. Dans **Politique de téléversement**, choisissez **Réseau local**, une durée de
    validité de 1 à 30 minutes et les limites de fichiers/taille, puis enregistrez.
@@ -85,11 +85,11 @@ Pour recevoir un document depuis un téléphone sur le même réseau privé :
    **Créer le lien QR**.
 6. Scannez le QR depuis le téléphone connecté au même réseau. Seuls PDF, JPEG et
    PNG sont acceptés.
-7. Dans MediSmart, contrôlez chaque fichier en attente, puis acceptez-le ou
+7. Dans Drclick, contrôlez chaque fichier en attente, puis acceptez-le ou
    rejetez-le. Aucun fichier n'entre directement dans le dossier clinique.
 8. Révoquez la session quand l'envoi est terminé.
 
-MediSmart ne modifie pas le pare-feu Windows. Si le diagnostic local réussit
+Drclick ne modifie pas le pare-feu Windows. Si le diagnostic local réussit
 mais que le téléphone ne se connecte pas, vérifiez le profil **Réseau privé** et
 l'autorisation de l'application signée. Ne désactivez pas le pare-feu et
 n'ouvrez pas de port sur le routeur.
@@ -109,7 +109,7 @@ Dans **Sauvegarde immédiate vérifiée** :
 2. saisissez deux fois une phrase secrète d'au moins 12 caractères ;
 3. cliquez sur **Créer l'archive chiffrée** ;
 4. conservez le fichier `.msbackup` sur un support chiffré approuvé ;
-5. conservez la phrase secrète séparément ; MediSmart ne la stocke pas et ne
+5. conservez la phrase secrète séparément ; Drclick ne la stocke pas et ne
    peut pas la récupérer ;
 6. vérifiez l'état **Vérifiée** dans **Historique des sauvegardes**.
 
@@ -133,7 +133,7 @@ Quand Drive est disponible :
 
 1. confirmez votre mot de passe et cliquez sur **Connecter Google Drive** ;
 2. autorisez le compte dans le navigateur système ;
-3. revenez à MediSmart et testez la connexion ;
+3. revenez à Drclick et testez la connexion ;
 4. saisissez le dossier Drive et la phrase secrète de sauvegarde ;
 5. lancez l'envoi et attendez la confirmation dans l'historique ;
 6. utilisez la liste Drive pour actualiser, télécharger et vérifier une archive.
@@ -142,7 +142,7 @@ Quand Drive est disponible :
    local terminé (identifiant, taille et SHA-256) et passe une seconde
    vérification de ses métadonnées.
 
-Sans cette preuve d'une copie distante plus récente, MediSmart refuse la
+Sans cette preuve d'une copie distante plus récente, Drclick refuse la
 suppression. Une suppression autorisée est définitive sur Drive et ne supprime
 pas une éventuelle copie locale. **Déconnecter Google Drive** supprime les
 identifiants OAuth locaux, mais conserve les fichiers déjà présents sur Drive.
@@ -156,20 +156,20 @@ uniquement l'archive chiffrée `.msbackup` depuis l'application Windows :
 2. confirmez le mot de passe administrateur ;
 3. choisissez l'archive et saisissez sa phrase secrète ;
 4. cliquez sur **Vérifier l'archive** ;
-5. contrôlez la date, la version MediSmart, le schéma, les composants, le nombre
+5. contrôlez la date, la version Drclick, le schéma, les composants, le nombre
    de fichiers et la taille ; aucune donnée active n'est encore modifiée ;
 6. cochez la confirmation seulement si le contenu est correct ;
-7. cliquez sur **Appliquer et redémarrer MediSmart** ;
+7. cliquez sur **Appliquer et redémarrer Drclick** ;
 8. n'éteignez pas l'ordinateur et ne fermez pas l'application ;
 9. après redémarrage, vérifiez les patients récents, les documents, le logo et
    l'historique des sauvegardes.
 
-MediSmart crée une sauvegarde de sécurité avant le remplacement et redémarre
+Drclick crée une sauvegarde de sécurité avant le remplacement et redémarre
 seulement après vérification du service. Si **Récupération manuelle requise**
 apparaît, ne relancez pas l'application, PHP ou les workers. Ne supprimez aucun
 fichier de restauration/rollback et contactez le support autorisé.
 
-## Licence MediSmart
+## Licence Drclick
 
 L'activation nécessite une connexion internet et un serveur de licences déjà
 configuré par le déploiement :
@@ -213,9 +213,9 @@ Dans une version configurée :
 2. si une version signée est proposée, confirmez votre mot de passe ;
 3. choisissez **Sauvegarder et installer** ;
 4. attendez la création et la vérification de la nouvelle archive
-   `.msbackup` ; MediSmart lie l'autorisation à cette sauvegarde, à cet
+   `.msbackup` ; Drclick lie l'autorisation à cette sauvegarde, à cet
    ordinateur et à la version proposée ;
-5. laissez MediSmart vérifier la signature native puis redémarrer.
+5. laissez Drclick vérifier la signature native puis redémarrer.
 
 La recherche automatique nécessite `automatic_updates`. Le téléchargement
 automatique reste désactivé : aucune option ne doit prétendre télécharger en
@@ -223,19 +223,19 @@ arrière-plan. Ne téléchargez jamais un exécutable depuis un lien non approuv
 La publication et l'installation réelle restent soumises au canal officiel et
 à la validation de la version Windows signée.
 
-Au premier démarrage après une mise à niveau, MediSmart vérifie le contrat de
+Au premier démarrage après une mise à niveau, Drclick vérifie le contrat de
 migration avant de lancer les services. Si des migrations sont nécessaires, il
 crée d'abord une copie SQLite de sécurité vérifiée, journalise l'opération,
 applique uniquement le lot prévu et contrôle la base. Un état de récupération
 ambigu laisse l'application hors ligne : ne supprimez alors ni la base, ni le
 journal, ni les copies de sécurité.
 
-## Fermer ou quitter MediSmart
+## Fermer ou quitter Drclick
 
-La croix de la fenêtre masque MediSmart dans la zone de notification Windows ;
+La croix de la fenêtre masque Drclick dans la zone de notification Windows ;
 elle n'arrête pas les services locaux. Cliquez ou double-cliquez sur l'icône,
-ou choisissez **Ouvrir MediSmart**, pour réafficher la fenêtre. Pour arrêter
-proprement MediSmart et ses services, choisissez **Quitter MediSmart** dans le
+ou choisissez **Ouvrir Drclick**, pour réafficher la fenêtre. Pour arrêter
+proprement Drclick et ses services, choisissez **Quitter Drclick** dans le
 menu de cette icône. Le lancement automatique à l'ouverture de session n'est
 pas disponible.
 

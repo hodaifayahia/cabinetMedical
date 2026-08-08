@@ -80,6 +80,12 @@ class ConsultationController extends Controller
      */
     public function start(Appointment $appointment): RedirectResponse
     {
+        if ($appointment->status !== AppointmentStatus::CHECKED_IN) {
+            throw ValidationException::withMessages([
+                'status' => 'The patient must be checked in before starting a consultation.',
+            ]);
+        }
+
         $consultation = Consultation::query()->firstOrCreate(
             ['appointment_id' => $appointment->getKey()],
             [
@@ -90,13 +96,11 @@ class ConsultationController extends Controller
             ],
         );
 
-        if (in_array($appointment->status, [AppointmentStatus::SCHEDULED, AppointmentStatus::CONFIRMED, AppointmentStatus::CHECKED_IN], true)) {
-            $appointment->update([
-                'status' => AppointmentStatus::IN_PROGRESS,
-                'checked_in_at' => $appointment->checked_in_at ?? now(),
-                'started_at' => $appointment->started_at ?? now(),
-            ]);
-        }
+        $appointment->update([
+            'status' => AppointmentStatus::IN_PROGRESS,
+            'checked_in_at' => $appointment->checked_in_at ?? now(),
+            'started_at' => $appointment->started_at ?? now(),
+        ]);
 
         return to_route('app.consultations.show', $consultation);
     }

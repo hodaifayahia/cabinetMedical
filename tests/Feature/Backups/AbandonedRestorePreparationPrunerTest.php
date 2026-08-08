@@ -400,9 +400,9 @@ class AbandonedRestorePreparationPrunerTest extends TestCase
 
         $plain = app(MsBackupArchiveCreator::class)->create(
             $this->destination,
-            'MediSmart-Backup-prune-plain.msbackup',
+            'Drclick-Backup-prune-plain.msbackup',
         );
-        $this->encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-prune-encrypted.msbackup';
+        $this->encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-prune-encrypted.msbackup';
         app(EncryptedMsBackupArchive::class)->encrypt(
             $plain['path'],
             $this->encryptedPath,

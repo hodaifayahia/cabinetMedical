@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
+import { isTauri } from '@tauri-apps/api/core';
+import { onMounted, ref } from 'vue';
 import { LockKeyhole, LogOut, Settings } from '@lucide/vue';
 import {
     DropdownMenuGroup,
@@ -13,6 +15,7 @@ import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
 const page = usePage();
+const logoutDestination = ref(logout());
 
 type Props = {
     user: User;
@@ -35,6 +38,12 @@ const handleLock = () => {
 };
 
 defineProps<Props>();
+
+onMounted(() => {
+    if (isTauri()) {
+        logoutDestination.value = logout({ query: { desktop: 1 } });
+    }
+});
 </script>
 
 <template>
@@ -65,7 +74,7 @@ defineProps<Props>();
     <DropdownMenuItem :as-child="true">
         <Link
             class="block w-full cursor-pointer"
-            :href="logout()"
+            :href="logoutDestination"
             @click="handleLogout"
             as="button"
             data-session-lock-no-activity

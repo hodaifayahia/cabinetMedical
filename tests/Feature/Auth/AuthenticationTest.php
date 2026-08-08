@@ -159,6 +159,16 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_desktop_users_are_returned_to_the_pin_login_after_logout(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post(route('logout', ['desktop' => 1]));
+
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
+    }
+
     public function test_users_are_rate_limited()
     {
         $user = User::factory()->create();

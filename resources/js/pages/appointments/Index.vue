@@ -312,9 +312,9 @@ const checkInAppointment = (appointment: AppointmentListItem) => {
     );
 };
 
-// Requirement #2: start (or resume) the consultation for an appointment.
-// Posts to the existing consultations.start endpoint which creates/opens the
-// Consultation for the patient and redirects into the workspace.
+// Start (or resume) the consultation. The new-consultation button is only
+// rendered for checked-in patients; confirm/check-in actions stay on this
+// appointment list.
 const startConsultation = (appointment: AppointmentListItem) => {
     if (appointment.consultation_id) {
         router.visit(`/app/consultations/${appointment.consultation_id}`);
@@ -883,6 +883,14 @@ const printAppointments = () => {
                         @click="printAppointments"
                     >
                         <Printer class="size-4" />
+                    </Button>
+                    <Button
+                        v-if="permissions.book"
+                        class="h-10 rounded-xl bg-[#1268a5] px-4 text-sm font-bold text-white shadow-sm hover:bg-[#0d578b]"
+                        @click="openBooking"
+                    >
+                        <Plus class="size-4" />
+                        Nouveau rendez-vous
                     </Button>
                 </div>
             </div>

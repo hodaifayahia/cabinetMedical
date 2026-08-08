@@ -251,7 +251,7 @@ class PrepareOfflineRestoreControllerTest extends TestCase
         $backup = $this->createEncryptedBackup('archive-mismatch');
 
         $malformed = UploadedFile::fake()->createWithContent(
-            'MediSmart-Restore-malformed.msbackup',
+            'Drclick-Restore-malformed.msbackup',
             'not-an-encrypted-backup',
         );
         $this->assertGenericFailure($this->postPreparation($malformed, self::PASSPHRASE), [
@@ -279,13 +279,13 @@ class PrepareOfflineRestoreControllerTest extends TestCase
     public function test_only_safe_msbackup_filenames_are_accepted(): void
     {
         $upload = UploadedFile::fake()->createWithContent(
-            'MediSmart-Restore.zip',
+            'Drclick-Restore.zip',
             'not-relevant',
         );
 
         $response = $this->postPreparation($upload, self::PASSPHRASE);
 
-        $this->assertGenericFailure($response, ['MediSmart-Restore.zip', self::PASSPHRASE]);
+        $this->assertGenericFailure($response, ['Drclick-Restore.zip', self::PASSPHRASE]);
 
         $unsafeFixture = UploadedFile::fake()->createWithContent(
             'unsafe-fixture.msbackup',
@@ -293,14 +293,14 @@ class PrepareOfflineRestoreControllerTest extends TestCase
         );
         $unsafePath = new UploadedFile(
             $unsafeFixture->getPathname(),
-            '../MediSmart-Restore.msbackup',
+            '../Drclick-Restore.msbackup',
             'application/octet-stream',
             UPLOAD_ERR_OK,
             true,
         );
         $this->assertGenericFailure(
             $this->postPreparation($unsafePath, self::PASSPHRASE),
-            ['../MediSmart-Restore.msbackup', self::PASSPHRASE],
+            ['../Drclick-Restore.msbackup', self::PASSPHRASE],
         );
         $this->assertDatabaseMissing('audit_logs', ['action' => 'restore.offline_prepared']);
         $this->assertSame([], $this->newWorkspaceNames());
@@ -326,7 +326,7 @@ class PrepareOfflineRestoreControllerTest extends TestCase
         for ($attempt = 1; $attempt <= 5; $attempt++) {
             $response = $this->postPreparation(
                 UploadedFile::fake()->createWithContent(
-                    "MediSmart-Restore-malformed-{$attempt}.msbackup",
+                    "Drclick-Restore-malformed-{$attempt}.msbackup",
                     'not-an-encrypted-backup',
                 ),
                 self::PASSPHRASE,
@@ -337,7 +337,7 @@ class PrepareOfflineRestoreControllerTest extends TestCase
 
         $this->postPreparation(
             UploadedFile::fake()->createWithContent(
-                'MediSmart-Restore-malformed-blocked.msbackup',
+                'Drclick-Restore-malformed-blocked.msbackup',
                 'not-an-encrypted-backup',
             ),
             self::PASSPHRASE,
@@ -411,9 +411,9 @@ class PrepareOfflineRestoreControllerTest extends TestCase
     {
         $plain = app(MsBackupArchiveCreator::class)->create(
             $this->destination,
-            "MediSmart-Backup-{$suffix}-plain.msbackup",
+            "Drclick-Backup-{$suffix}-plain.msbackup",
         );
-        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR."MediSmart-Backup-{$suffix}-encrypted.msbackup";
+        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR."Drclick-Backup-{$suffix}-encrypted.msbackup";
         app(EncryptedMsBackupArchive::class)->encrypt(
             $plain['path'],
             $encryptedPath,
@@ -463,7 +463,7 @@ class PrepareOfflineRestoreControllerTest extends TestCase
         }
 
         return UploadedFile::fake()->createWithContent(
-            'MediSmart-Restore-upload.msbackup',
+            'Drclick-Restore-upload.msbackup',
             $contents,
         );
     }

@@ -7,6 +7,10 @@ const offlinePage = readFileSync(
     resolve(process.cwd(), 'src-tauri/frontend/index.html'),
     'utf8',
 );
+const applicationShell = readFileSync(
+    resolve(process.cwd(), 'resources/views/app.blade.php'),
+    'utf8',
+);
 const desktopIcon = readFileSync(
     resolve(process.cwd(), 'src-tauri/icons/source.svg'),
     'utf8',
@@ -35,15 +39,15 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
-test('the desktop bundle exposes DrClickDz while preserving its installed identity', () => {
-    expect(tauriConfig.productName).toBe('DrClickDz');
-    expect(tauriConfig.mainBinaryName).toBe('DrClickDz');
+test('the desktop bundle exposes Drclick while preserving its installed identity', () => {
+    expect(tauriConfig.productName).toBe('Drclick');
+    expect(tauriConfig.mainBinaryName).toBe('Drclick');
     expect(tauriConfig.identifier).toBe('dz.click.medismart');
     expect(tauriConfig.bundle.windows.wix.language).toBe('fr-FR');
     expect(tauriConfig.bundle.windows.nsis.languages).toEqual(['French']);
 });
 
-test('the offline shell and icon use the DrClickDz brand', () => {
+test('the offline shell and icon use the Drclick brand', () => {
     const parsedPage = new DOMParser().parseFromString(
         offlinePage,
         'text/html',
@@ -53,15 +57,22 @@ test('the offline shell and icon use the DrClickDz brand', () => {
         parsedPage.querySelector('#offline-card')?.textContent,
     ].join(' ');
 
-    expect(parsedPage.title).toBe('DrClickDz');
-    expect(visibleShell).toContain('DrClickDz');
+    expect(parsedPage.title).toBe('Drclick');
+    expect(visibleShell).toContain('Drclick');
     expect(visibleShell).not.toContain('MediSmart');
     expect(
         [...parsedPage.querySelectorAll<HTMLElement>('.mark')].map(
             (mark) => mark.textContent,
         ),
     ).toEqual(['D', 'D']);
-    expect(desktopIcon).toContain('<title id="title">DrClickDz</title>');
+    expect(desktopIcon).toContain('<title id="title">Drclick</title>');
+});
+
+test('desktop entry points bypass the public landing page', () => {
+    expect(offlinePage).toContain('function authenticationEntryUrl(url)');
+    expect(offlinePage).toContain("target.pathname = '/login'");
+    expect(applicationShell).toContain('globalThis.isTauri');
+    expect(applicationShell).toContain("window.location.replace('/login')");
 });
 
 test('the offline retry button remains clickable during automatic backoff', async () => {

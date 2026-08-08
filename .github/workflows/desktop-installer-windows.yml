@@ -1,6 +1,6 @@
 name: desktop-installer-windows
 
-# Builds the DrClickDz Windows desktop installer (.msi + .exe NSIS)
+# Builds the Drclick Windows desktop installer (.msi + .exe NSIS)
 # and uploads it as a workflow artifact. On tags (v*), it also attaches
 # the installers to a GitHub Release.
 
@@ -148,7 +148,7 @@ jobs:
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: drclickdz-windows-installer
+          name: drclick-windows-installer
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/msi/*.sig
@@ -168,7 +168,7 @@ jobs:
       - name: Download installer artifacts
         uses: actions/download-artifact@v4
         with:
-          name: drclickdz-windows-installer
+          name: drclick-windows-installer
           path: release-artifacts
 
       - name: Attach installers to release

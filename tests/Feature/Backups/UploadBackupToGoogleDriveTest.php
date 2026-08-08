@@ -57,7 +57,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         $job = new UploadBackupToGoogleDrive(
             (int) $cabinet->getKey(),
             (string) $record->getKey(),
-            'MediSmart Backups',
+            'Drclick Backups',
         );
         $serializedJob = serialize($job);
 
@@ -172,7 +172,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         $job = (new UploadBackupToGoogleDrive(
             (int) $cabinet->getKey(),
             (string) $record->getKey(),
-            'MediSmart Backups',
+            'Drclick Backups',
         ))->withFakeQueueInteractions();
 
         $job->handle(app(GoogleDriveService::class));
@@ -199,7 +199,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         $job = (new UploadBackupToGoogleDrive(
             (int) $cabinet->getKey(),
             (string) $record->getKey(),
-            'MediSmart Backups',
+            'Drclick Backups',
         ))->withFakeQueueInteractions();
 
         $job->handle(app(GoogleDriveService::class));
@@ -223,7 +223,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         $job = (new UploadBackupToGoogleDrive(
             (int) $cabinet->getKey(),
             (string) $record->getKey(),
-            'MediSmart Backups',
+            'Drclick Backups',
         ))->withFakeQueueInteractions();
 
         try {
@@ -262,7 +262,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         (new UploadBackupToGoogleDrive(
             (int) $cabinet->getKey(),
             (string) $record->getKey(),
-            'MediSmart Backups',
+            'Drclick Backups',
         ))->handle(app(GoogleDriveService::class));
 
         $record->refresh();
@@ -300,7 +300,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
 
                 return Http::response([
                     'id' => 'remote-race-winner',
-                    'name' => 'MediSmart encrypted backup',
+                    'name' => 'Drclick encrypted backup',
                 ]);
             }
 
@@ -310,7 +310,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         (new UploadBackupToGoogleDrive(
             (int) $cabinet->getKey(),
             (string) $record->getKey(),
-            'MediSmart Backups',
+            'Drclick Backups',
         ))->handle(app(GoogleDriveService::class));
 
         $record->refresh();
@@ -345,7 +345,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         (new UploadBackupToGoogleDrive(
             (int) $cabinet->getKey(),
             (string) $record->getKey(),
-            'MediSmart Backups',
+            'Drclick Backups',
         ))->handle(app(GoogleDriveService::class));
 
         $record->refresh();
@@ -369,7 +369,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         $job = new UploadBackupToGoogleDrive(
             (int) CabinetSetting::current()->getKey(),
             (string) $record->getKey(),
-            'MediSmart Backups',
+            'Drclick Backups',
         );
 
         $job->failed(new RuntimeException('sensitive provider detail'));
@@ -398,7 +398,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
                 'files' => [
                     [
                         'id' => 'remote-valid-id',
-                        'name' => 'MediSmart-Backup-valid.msbackup',
+                        'name' => 'Drclick-Backup-valid.msbackup',
                         'size' => '123456',
                         'createdTime' => '2026-08-04T18:30:00Z',
                         'mimeType' => 'application/vnd.medismart.backup',
@@ -426,7 +426,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
 
         $this->assertCount(1, $backups);
         $this->assertSame('remote-valid-id', $backups[0]['id']);
-        $this->assertSame('MediSmart-Backup-valid.msbackup', $backups[0]['name']);
+        $this->assertSame('Drclick-Backup-valid.msbackup', $backups[0]['name']);
         $this->assertSame(123456, $backups[0]['size_bytes']);
         $this->assertSame(str_repeat('b', 12), $backups[0]['sha256_hint']);
         Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
@@ -511,14 +511,14 @@ class UploadBackupToGoogleDriveTest extends TestCase
         $targetRecord = $this->recordFor($targetPath, $bytes);
         $targetRecord->update([
             'remote_file_id' => 'remote-delete-id',
-            'filename' => 'MediSmart-Backup-remote.msbackup',
+            'filename' => 'Drclick-Backup-remote.msbackup',
         ]);
         $newerPath = storage_path('app/private/backups/newer-'.Str::uuid().'.msbackup');
         $this->writeTestFile($newerPath, $newerBytes);
         $newerRecord = $this->recordFor($newerPath, $newerBytes);
         $newerRecord->update([
             'remote_file_id' => 'remote-newer-id',
-            'filename' => 'MediSmart-Backup-remote.msbackup',
+            'filename' => 'Drclick-Backup-remote.msbackup',
         ]);
         $targetMetadata = $this->remoteMetadata(
             'remote-delete-id',
@@ -582,7 +582,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         $targetRecord = $this->recordFor($targetPath, $bytes);
         $targetRecord->update([
             'remote_file_id' => 'remote-delete-id',
-            'filename' => 'MediSmart-Backup-remote.msbackup',
+            'filename' => 'Drclick-Backup-remote.msbackup',
         ]);
         $targetMetadata = $this->remoteMetadata(
             'remote-delete-id',
@@ -716,7 +716,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
     ): array {
         return [
             'id' => $fileId,
-            'name' => 'MediSmart-Backup-remote.msbackup',
+            'name' => 'Drclick-Backup-remote.msbackup',
             'size' => (string) strlen($bytes),
             'createdTime' => $createdAt,
             'mimeType' => 'application/vnd.medismart.backup',
@@ -752,7 +752,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
         return DriveBackupConnection::query()->create([
             'cabinet_setting_id' => $cabinet->getKey(),
             'email' => 'doctor@example.test',
-            'folder_name' => 'MediSmart Backups',
+            'folder_name' => 'Drclick Backups',
             'folder_id' => 'drive-folder-id',
             'access_token' => 'drive-access-token',
             'refresh_token' => 'drive-refresh-token',
@@ -774,7 +774,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
 
                 return Http::response([
                     'id' => 'remote-file-id',
-                    'name' => 'MediSmart encrypted backup',
+                    'name' => 'Drclick encrypted backup',
                 ]);
             }
 
@@ -790,7 +790,7 @@ class UploadBackupToGoogleDriveTest extends TestCase
             (new UploadBackupToGoogleDrive(
                 (int) $cabinet->getKey(),
                 (string) $record->getKey(),
-                'MediSmart Backups',
+                'Drclick Backups',
             ))->handle(app(GoogleDriveService::class));
             $this->fail('An unsafe or altered backup artifact must not be transferred.');
         } catch (RuntimeException $exception) {

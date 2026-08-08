@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property CarbonImmutable|null $expires_at
@@ -17,12 +18,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property CarbonImmutable|null $last_verified_at
  * @property array<string, mixed>|null $last_server_response
  * @property LicensePlan|null $plan
+ * @property int|null $license_type_id
  */
 #[Fillable([
     'license_id',
     'product',
     'edition',
     'plan',
+    'license_type_id',
     'customer_id',
     'signed_certificate',
     'status',
@@ -64,6 +67,12 @@ class License extends Model
         return $this->hasMany(LicenseActivation::class);
     }
 
+    /** @return BelongsTo<LicenseType, $this> */
+    public function licenseType(): BelongsTo
+    {
+        return $this->belongsTo(LicenseType::class);
+    }
+
     /** @return HasOne<Cabinet, $this> */
     public function cabinet(): HasOne
     {
@@ -78,6 +87,11 @@ class License extends Model
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->lessThanOrEqualTo(now());
+    }
+
+    public function typeLabel(): string
+    {
+        return $this->licenseType?->name ?? $this->plan?->label() ?? 'Licence';
     }
 
     /**

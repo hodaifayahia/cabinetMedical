@@ -35,7 +35,7 @@ class ScheduledBackupCommandTest extends TestCase
                 $this->calls++;
 
                 return BackupRecord::query()->create([
-                    'filename' => 'MediSmart-Backup-scheduled.msbackup',
+                    'filename' => 'Drclick-Backup-scheduled.msbackup',
                     'disk' => 'local',
                     'size' => 1024,
                     'sha256' => str_repeat('a', 64),

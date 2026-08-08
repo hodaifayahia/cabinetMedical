@@ -67,12 +67,12 @@ export function isValidDesktopPin(value: string): boolean {
 
 export function defaultDesktopDeviceName(): string {
     if (typeof navigator === 'undefined') {
-        return 'Poste DrClickDz';
+        return 'Poste Drclick';
     }
 
     const platform = navigator.platform.trim();
 
-    return platform ? `Poste DrClickDz · ${platform}` : 'Poste DrClickDz';
+    return platform ? `Poste Drclick · ${platform}` : 'Poste Drclick';
 }
 
 export function readDesktopPinEnrollment(): DesktopPinEnrollment | null {

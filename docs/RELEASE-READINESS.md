@@ -1,4 +1,4 @@
-# MediSmart release-readiness contract
+# Drclick release-readiness contract
 
 Status: current repository evidence as of 2026-08-05. This document is the
 release decision record; older audit checklists remain historical evidence, not
@@ -115,7 +115,7 @@ configured release.
 
 ## Required clean-VM rehearsal
 
-Use a VM snapshot with no previous MediSmart data. Test the exact signed
+Use a VM snapshot with no previous Drclick data. Test the exact signed
 installer hash and record at least:
 
 - installer success and expected publisher display;
@@ -185,12 +185,12 @@ On the controlled Windows release host, run:
 npm run desktop:release:readiness -- `
   --resources C:\release\resources `
   --expected-version 0.1.0 `
-  --installer C:\release\MediSmart-signed.exe `
+  --installer C:\release\Drclick-signed.exe `
   --updater-manifest C:\release\latest.json `
-  --updater-artifact C:\release\MediSmart_0.1.0_x64-setup.nsis.zip `
-  --updater-signature C:\release\MediSmart_0.1.0_x64-setup.nsis.zip.sig `
+  --updater-artifact C:\release\Drclick_0.1.0_x64-setup.nsis.zip `
+  --updater-signature C:\release\Drclick_0.1.0_x64-setup.nsis.zip.sig `
   --updater-target windows-x86_64-nsis `
-  --updater-artifact-url https://updates.example.dz/MediSmart_0.1.0_x64-setup.nsis.zip `
+  --updater-artifact-url https://updates.example.dz/Drclick_0.1.0_x64-setup.nsis.zip `
   --clean-vm-evidence C:\release\clean-vm-evidence.json
 ```
 

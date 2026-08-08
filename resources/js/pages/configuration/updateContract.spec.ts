@@ -28,7 +28,7 @@ const installPreparation = () => ({
     },
     backup: {
         id: '57dca9dd-6c10-49c8-ae81-3d773bf36582',
-        filename: 'MediSmart-Backup-2026-08-05-100000-abc123.msbackup',
+        filename: 'Drclick-Backup-2026-08-05-100000-abc123.msbackup',
         sha256_hint: '424242424242…',
         completed_at: '2026-08-05T10:00:00+01:00',
     },
@@ -63,7 +63,7 @@ describe('signed updater native contracts', () => {
             accepted: true,
             target_version: '1.2.3',
             message_fr:
-                'La mise à jour vérifiée est installée; DrClickDz va redémarrer.',
+                'La mise à jour vérifiée est installée; Drclick va redémarrer.',
         };
 
         expect(normalizeNativeUpdateInstallResponse(result)).not.toBeNull();
@@ -124,11 +124,11 @@ describe('signed updater native contracts', () => {
 
     it('rejects unsafe or inconsistent backup display metadata', () => {
         const pathTraversal = installPreparation();
-        pathTraversal.backup.filename = '../MediSmart-Backup.msbackup';
+        pathTraversal.backup.filename = '../Drclick-Backup.msbackup';
         expect(normalizeUpdateInstallPreparation(pathTraversal)).toBeNull();
 
         const oversizedFilename = installPreparation();
-        oversizedFilename.backup.filename = `MediSmart-Backup-${'a'.repeat(240)}.msbackup`;
+        oversizedFilename.backup.filename = `Drclick-Backup-${'a'.repeat(240)}.msbackup`;
         expect(normalizeUpdateInstallPreparation(oversizedFilename)).toBeNull();
 
         const unrelatedHashHint = installPreparation();

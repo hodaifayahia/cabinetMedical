@@ -110,8 +110,8 @@ class EncryptedMsBackupArchiveTest extends TestCase
 
     public function test_it_authenticates_encrypts_verifies_and_decrypts_a_v1_archive(): void
     {
-        $plain = $this->createPlainArchive('MediSmart-Backup-plain.msbackup');
-        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-encrypted.msbackup';
+        $plain = $this->createPlainArchive('Drclick-Backup-plain.msbackup');
+        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-encrypted.msbackup';
         $service = app(EncryptedMsBackupArchive::class);
         $encrypted = $service->encrypt(
             $plain['path'],
@@ -145,7 +145,7 @@ class EncryptedMsBackupArchiveTest extends TestCase
         $this->assertSame($encrypted['sha256'], $verified['archive_sha256']);
         $this->assertSame($plain['sha256'], $verified['plaintext_sha256']);
 
-        $decryptedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-decrypted.msbackup';
+        $decryptedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-decrypted.msbackup';
         $decrypted = $service->decrypt($encryptedPath, $decryptedPath, self::PASSPHRASE);
         $this->assertFileExists($decryptedPath);
         $this->assertSame($plain['sha256'], hash_file('sha256', $decryptedPath));
@@ -197,8 +197,8 @@ class EncryptedMsBackupArchiveTest extends TestCase
 
     public function test_wrong_passphrase_fails_closed_without_publishing_plaintext_or_exposing_secrets(): void
     {
-        $plain = $this->createPlainArchive('MediSmart-Backup-wrong-key-source.msbackup');
-        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-wrong-key.msbackup';
+        $plain = $this->createPlainArchive('Drclick-Backup-wrong-key-source.msbackup');
+        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-wrong-key.msbackup';
         $service = app(EncryptedMsBackupArchive::class);
         $service->encrypt($plain['path'], $encryptedPath, self::PASSPHRASE, $this->parameters());
         $decryptedPath = $this->destination.DIRECTORY_SEPARATOR.'must-not-exist.msbackup';
@@ -219,8 +219,8 @@ class EncryptedMsBackupArchiveTest extends TestCase
 
     public function test_ciphertext_tampering_is_detected_and_plaintext_is_removed(): void
     {
-        $plain = $this->createPlainArchive('MediSmart-Backup-tamper-source.msbackup');
-        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-tamper.msbackup';
+        $plain = $this->createPlainArchive('Drclick-Backup-tamper-source.msbackup');
+        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-tamper.msbackup';
         $service = app(EncryptedMsBackupArchive::class);
         $service->encrypt($plain['path'], $encryptedPath, self::PASSPHRASE, $this->parameters());
         $this->flipFirstCiphertextByte($encryptedPath);
@@ -237,8 +237,8 @@ class EncryptedMsBackupArchiveTest extends TestCase
 
     public function test_envelope_tampering_is_bound_to_the_ciphertext_authentication(): void
     {
-        $plain = $this->createPlainArchive('MediSmart-Backup-envelope-source.msbackup');
-        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-envelope.msbackup';
+        $plain = $this->createPlainArchive('Drclick-Backup-envelope-source.msbackup');
+        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-envelope.msbackup';
         $service = app(EncryptedMsBackupArchive::class);
         $service->encrypt($plain['path'], $encryptedPath, self::PASSPHRASE, $this->parameters());
         $this->flipEnvelopeSaltByte($encryptedPath);
@@ -255,12 +255,12 @@ class EncryptedMsBackupArchiveTest extends TestCase
 
     public function test_truncation_and_appended_data_are_rejected(): void
     {
-        $plain = $this->createPlainArchive('MediSmart-Backup-framing-source.msbackup');
-        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-framing.msbackup';
+        $plain = $this->createPlainArchive('Drclick-Backup-framing-source.msbackup');
+        $encryptedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-framing.msbackup';
         $service = app(EncryptedMsBackupArchive::class);
         $service->encrypt($plain['path'], $encryptedPath, self::PASSPHRASE, $this->parameters());
-        $truncatedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-truncated.msbackup';
-        $appendedPath = $this->destination.DIRECTORY_SEPARATOR.'MediSmart-Backup-appended.msbackup';
+        $truncatedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-truncated.msbackup';
+        $appendedPath = $this->destination.DIRECTORY_SEPARATOR.'Drclick-Backup-appended.msbackup';
         $this->assertTrue(copy($encryptedPath, $truncatedPath));
         $this->assertTrue(copy($encryptedPath, $appendedPath));
         $this->assertTrue(ftruncate(
@@ -295,7 +295,7 @@ class EncryptedMsBackupArchiveTest extends TestCase
 
     public function test_short_passphrase_is_rejected_without_exposing_it(): void
     {
-        $plain = $this->createPlainArchive('MediSmart-Backup-short-passphrase-source.msbackup');
+        $plain = $this->createPlainArchive('Drclick-Backup-short-passphrase-source.msbackup');
         $shortPassphrase = 'too short';
 
         try {
@@ -317,7 +317,7 @@ class EncryptedMsBackupArchiveTest extends TestCase
 
     public function test_atomic_publication_never_overwrites_an_existing_backup(): void
     {
-        $plain = $this->createPlainArchive('MediSmart-Backup-no-overwrite-source.msbackup');
+        $plain = $this->createPlainArchive('Drclick-Backup-no-overwrite-source.msbackup');
         $existingPath = $this->destination.DIRECTORY_SEPARATOR.'existing.msbackup';
         file_put_contents($existingPath, 'user-owned-backup');
 

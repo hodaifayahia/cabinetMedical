@@ -4,124 +4,100 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="light dark" />
-        <title>DrClickDz</title>
+        <title>Drclick</title>
         <style>
-            /* ---------------------------------------------------------------
-               Minimal offline / redirect page for the DrClickDz thin client.
-               Visible only when the central server cannot be reached.
-               --------------------------------------------------------------- */
-            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
 
             :root {
-                --accent: #0057b8;
-                --bg: #f4f6f9;
+                --accent: #0669c9;
+                --accent-strong: #0756a2;
+                --bg: #eef5f8;
                 --card-bg: #ffffff;
-                --text: #1a1d23;
-                --muted: #6b7280;
-                --border: #e2e6ed;
-                --radius: 12px;
+                --surface: #f5f8fb;
+                --text: #102033;
+                --muted: #637083;
+                --border: #dbe4ec;
+                --danger: #b42318;
+                --success: #047857;
+                --radius: 18px;
             }
 
             @media (prefers-color-scheme: dark) {
                 :root {
-                    --bg: #0f1117;
-                    --card-bg: #1a1d27;
-                    --text: #e8eaf0;
-                    --muted: #9ca3af;
-                    --border: #2a2d3a;
+                    --bg: #0f141d;
+                    --card-bg: #181e29;
+                    --surface: #202735;
+                    --text: #eef4fa;
+                    --muted: #aab5c3;
+                    --border: #303a4a;
+                    --danger: #ff9b92;
+                    --success: #5ee3b0;
                 }
             }
 
-            html, body {
-                height: 100%;
-                background: var(--bg);
-                font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            html,
+            body {
+                min-height: 100%;
+                background:
+                    radial-gradient(
+                        circle at 10% 10%,
+                        rgba(6, 105, 201, 0.1),
+                        transparent 38%
+                    ),
+                    var(--bg);
                 color: var(--text);
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    'Segoe UI',
+                    Roboto,
+                    sans-serif;
             }
 
             body {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 24px;
+                padding: 28px;
             }
 
-            /* Hidden by default — shown only on connectivity failure */
-            .offline-card {
-                display: none;
-                flex-direction: column;
-                align-items: center;
-                gap: 20px;
-                background: var(--card-bg);
-                border: 1px solid var(--border);
-                border-radius: var(--radius);
-                padding: 48px 40px;
-                max-width: 480px;
-                width: 100%;
-                text-align: center;
-                box-shadow: 0 4px 24px rgba(0,0,0,.07);
+            button,
+            input {
+                font: inherit;
             }
 
-            .offline-card.visible { display: flex; }
-
-            .mark {
-                width: 56px;
-                height: 56px;
-                border-radius: 14px;
-                background: var(--accent);
-                color: #fff;
-                font-size: 28px;
-                font-weight: 700;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                letter-spacing: -1px;
-                flex-shrink: 0;
-            }
-
-            .eyebrow {
-                font-size: 11px;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: .08em;
-                color: var(--muted);
-            }
-
-            h1 {
-                font-size: 20px;
-                font-weight: 700;
-                line-height: 1.3;
-            }
-
-            .message {
-                font-size: 15px;
-                color: var(--muted);
-                line-height: 1.6;
-            }
-
-            .retry-btn {
-                margin-top: 8px;
-                padding: 12px 28px;
-                background: var(--accent);
-                color: #fff;
-                border: none;
-                border-radius: 8px;
-                font-size: 15px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: opacity .15s;
-            }
-
-            .retry-btn:hover { opacity: .85; }
-            .retry-btn:active { opacity: .7; }
-            /* Connecting spinner shown during initial redirect */
             .spinner-wrap {
                 display: none;
                 flex-direction: column;
                 align-items: center;
                 gap: 16px;
             }
-            .spinner-wrap.visible { display: flex; }
+
+            .spinner-wrap.visible {
+                display: flex;
+            }
+
+            .mark {
+                display: flex;
+                width: 58px;
+                height: 58px;
+                flex-shrink: 0;
+                align-items: center;
+                justify-content: center;
+                border-radius: 16px;
+                background: linear-gradient(145deg, #0877df, #0758ad);
+                color: #fff;
+                font-size: 29px;
+                font-weight: 800;
+                letter-spacing: -1px;
+                box-shadow: 0 12px 30px rgba(6, 105, 201, 0.24);
+            }
 
             .spinner {
                 width: 40px;
@@ -129,124 +105,532 @@
                 border: 3px solid var(--border);
                 border-top-color: var(--accent);
                 border-radius: 50%;
-                animation: spin .8s linear infinite;
+                animation: spin 0.8s linear infinite;
             }
 
-            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
 
-            .spinner-label {
-                font-size: 14px;
+            .spinner-label,
+            .muted {
                 color: var(--muted);
+            }
+
+            .offline-card {
+                display: none;
+                width: min(760px, 100%);
+                overflow: hidden;
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                background: var(--card-bg);
+                box-shadow: 0 22px 60px rgba(16, 32, 51, 0.13);
+            }
+
+            .offline-card.visible {
+                display: block;
+            }
+
+            .card-header {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 18px;
+                align-items: center;
+                padding: 30px 32px 24px;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .eyebrow {
+                margin-bottom: 5px;
+                color: var(--accent);
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+            }
+
+            h1 {
+                font-size: clamp(23px, 3vw, 31px);
+                line-height: 1.15;
+            }
+
+            .intro {
+                grid-column: 1 / -1;
+                color: var(--muted);
+                font-size: 15px;
+                line-height: 1.6;
+            }
+
+            .content {
+                display: grid;
+                gap: 18px;
+                padding: 24px 32px 30px;
+            }
+
+            .status {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: center;
+                justify-content: space-between;
+                padding: 13px 15px;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                background: var(--surface);
+            }
+
+            .status-copy {
+                min-width: 0;
+                font-size: 13px;
+            }
+
+            .status-copy strong,
+            .status-copy span {
+                display: block;
+            }
+
+            .status-copy span {
+                max-width: 460px;
+                overflow: hidden;
+                color: var(--muted);
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .options {
+                display: grid;
+                grid-template-columns: 1fr 1.25fr;
+                gap: 14px;
+            }
+
+            .option {
+                display: flex;
+                min-width: 0;
+                flex-direction: column;
+                gap: 12px;
+                padding: 19px;
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                background: var(--surface);
+            }
+
+            .option h2 {
+                font-size: 17px;
+            }
+
+            .option p {
+                color: var(--muted);
+                font-size: 13px;
+                line-height: 1.5;
+            }
+
+            .field-label {
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .server-input {
+                width: 100%;
+                min-width: 0;
+                padding: 11px 12px;
+                border: 1px solid var(--border);
+                border-radius: 9px;
+                outline: none;
+                background: var(--card-bg);
+                color: var(--text);
+            }
+
+            .server-input:focus {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px rgba(6, 105, 201, 0.14);
+            }
+
+            .actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 9px;
+                margin-top: auto;
+            }
+
+            .button {
+                display: inline-flex;
+                min-height: 42px;
+                align-items: center;
+                justify-content: center;
+                padding: 10px 16px;
+                border: 1px solid transparent;
+                border-radius: 9px;
+                cursor: pointer;
+                font-weight: 750;
+                transition: 0.15s ease;
+            }
+
+            .button:hover {
+                transform: translateY(-1px);
+            }
+
+            .button:disabled {
+                cursor: wait;
+                opacity: 0.55;
+                transform: none;
+            }
+
+            .button-primary {
+                background: var(--accent);
+                color: #fff;
+            }
+
+            .button-primary:hover {
+                background: var(--accent-strong);
+            }
+
+            .button-secondary {
+                border-color: var(--border);
+                background: var(--card-bg);
+                color: var(--text);
+            }
+
+            .connection-error {
+                min-height: 20px;
+                color: var(--danger);
+                font-size: 13px;
+                font-weight: 650;
+            }
+
+            details {
+                border-top: 1px solid var(--border);
+                padding-top: 15px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+            summary {
+                cursor: pointer;
+                font-weight: 700;
+            }
+
+            .technical-content {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: center;
+                justify-content: space-between;
+                padding-top: 12px;
+            }
+
+            @media (max-width: 700px) {
+                body {
+                    align-items: flex-start;
+                    padding: 14px;
+                }
+
+                .card-header,
+                .content {
+                    padding-right: 20px;
+                    padding-left: 20px;
+                }
+
+                .options {
+                    grid-template-columns: 1fr;
+                }
             }
         </style>
     </head>
     <body>
-        <!-- Initial connecting state (shown briefly while navigating) -->
         <div class="spinner-wrap visible" id="spinner">
             <div class="mark">D</div>
-            <div class="spinner" role="status" aria-label="Connexion en cours"></div>
-            <p class="spinner-label">Connexion à DrClickDz…</p>
+            <div
+                class="spinner"
+                role="status"
+                aria-label="Connexion en cours"
+            ></div>
+            <p class="spinner-label">Vérification du serveur Drclick…</p>
         </div>
 
-        <!-- Offline error card (shown only when server is unreachable) -->
-        <div class="offline-card" id="offline-card" role="alert" aria-live="assertive">
-            <div class="mark" aria-hidden="true">D</div>
-            <p class="eyebrow">DrClickDz</p>
-            <h1>Connexion au serveur impossible</h1>
-            <p class="message">
-                Vérifiez votre connexion Internet puis réessayez.<br>
-                Si le problème persiste, contactez le support DrClickDz.
-            </p>
-            <button class="retry-btn" id="retry-btn" type="button">Réessayer</button>
-        </div>
+        <main class="offline-card" id="offline-card" aria-live="polite">
+            <header class="card-header">
+                <div class="mark" aria-hidden="true">D</div>
+                <div>
+                    <p class="eyebrow">Drclick · Connexion du cabinet</p>
+                    <h1>Choisissez où se trouve votre cabinet</h1>
+                </div>
+                <p class="intro">
+                    Le serveur mémorisé ne répond pas. Utilisez le Cloud quand
+                    Internet est disponible, ou le Hub Drclick du cabinet pour
+                    continuer à travailler ensemble sur le réseau local.
+                </p>
+            </header>
+
+            <section class="content">
+                <div class="status">
+                    <div class="status-copy">
+                        <strong>Serveur actuellement mémorisé</strong>
+                        <span id="current-server"></span>
+                    </div>
+                    <button
+                        class="button button-secondary retry-btn"
+                        id="retry-btn"
+                        type="button"
+                    >
+                        Réessayer
+                    </button>
+                </div>
+
+                <div class="options">
+                    <section class="option">
+                        <h2>Cloud Drclick</h2>
+                        <p>
+                            Pour les cabinets connectés à la plateforme
+                            hébergée. Les utilisateurs du même cabinet partagent
+                            automatiquement les mêmes données.
+                        </p>
+                        <div class="actions">
+                            <button
+                                class="button button-primary"
+                                id="cloud-btn"
+                                type="button"
+                            >
+                                Se connecter au Cloud
+                            </button>
+                        </div>
+                    </section>
+
+                    <form class="option" id="hub-form">
+                        <h2>Hub du cabinet</h2>
+                        <p>
+                            Pour travailler à deux ou trois PC sans Internet. Le
+                            Hub doit être installé, allumé et associé à ce
+                            cabinet.
+                        </p>
+                        <label class="field-label" for="hub-url"
+                            >Adresse HTTPS fournie lors de l’installation du
+                            Hub</label
+                        >
+                        <input
+                            class="server-input"
+                            id="hub-url"
+                            name="hub-url"
+                            type="url"
+                            inputmode="url"
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder="https://hub-cabinet.drclick.local"
+                            required
+                        />
+                        <div class="actions">
+                            <button
+                                class="button button-primary"
+                                id="hub-btn"
+                                type="submit"
+                            >
+                                Vérifier et utiliser ce Hub
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <p
+                    class="connection-error"
+                    id="connection-error"
+                    role="alert"
+                ></p>
+
+                <details>
+                    <summary>Test local pour le technicien</summary>
+                    <div class="technical-content">
+                        <span
+                            >Utilise uniquement le serveur de développement de
+                            ce PC sur localhost:8000.</span
+                        >
+                        <button
+                            class="button button-secondary"
+                            id="local-btn"
+                            type="button"
+                        >
+                            Ouvrir le test local
+                        </button>
+                    </div>
+                </details>
+            </section>
+        </main>
 
         <script>
-            // ---------------------------------------------------------------
-            // DrClickDz thin-client redirect page
-            //
-            // Strategy:
-            //   1. Read the server URL injected by Rust at window creation time
-            //      (window.__MEDISMART_SERVER_URL).
-            //   2. Probe reachability with a short fetch HEAD request.
-            //   3. If reachable → navigate the webview to the server URL.
-            //   4. If unreachable → show the offline card with a Retry button.
-            //   5. Automatic retries use exponential backoff while the manual
-            //      Retry button remains available.
-            // ---------------------------------------------------------------
-
             (function () {
                 'use strict';
 
-                const serverUrl = window.__MEDISMART_SERVER_URL || 'https://app.medismart.dz';
-                const INITIAL_DELAY_MS = 1500;
+                const currentServerUrl =
+                    window.__MEDISMART_SERVER_URL ||
+                    'https://app.medismart.dz/';
+                const cloudServerUrl = 'https://app.medismart.dz/';
+                const localServerUrl = 'http://localhost:8000/';
+                const INITIAL_DELAY_MS = 2_000;
                 const MAX_DELAY_MS = 30_000;
-                const PROBE_TIMEOUT_MS = 8_000;
 
                 const spinner = document.getElementById('spinner');
                 const offlineCard = document.getElementById('offline-card');
                 const retryBtn = document.getElementById('retry-btn');
+                const cloudBtn = document.getElementById('cloud-btn');
+                const hubBtn = document.getElementById('hub-btn');
+                const localBtn = document.getElementById('local-btn');
+                const hubForm = document.getElementById('hub-form');
+                const hubUrl = document.getElementById('hub-url');
+                const connectionError =
+                    document.getElementById('connection-error');
+                const currentServer = document.getElementById('current-server');
 
                 let retryDelay = INITIAL_DELAY_MS;
                 let retryTimer = null;
+                let busy = false;
+
+                currentServer.textContent = currentServerUrl;
+
+                function invoke(command, payload) {
+                    if (
+                        !window.__TAURI_INTERNALS__ ||
+                        typeof window.__TAURI_INTERNALS__.invoke !== 'function'
+                    ) {
+                        return null;
+                    }
+
+                    return window.__TAURI_INTERNALS__.invoke(command, payload);
+                }
+
+                function readableError(error) {
+                    if (typeof error === 'string' && error.trim()) {
+                        return error;
+                    }
+                    if (
+                        error &&
+                        typeof error.message === 'string' &&
+                        error.message.trim()
+                    ) {
+                        return error.message;
+                    }
+
+                    return 'Impossible de vérifier ce serveur.';
+                }
+
+                // The public root is the marketing site. The installed
+                // desktop client must always enter through authentication so
+                // users see sign-in, sign-up, or the saved PIN screen.
+                function authenticationEntryUrl(url) {
+                    const target = new URL(url, window.location.href);
+
+                    if (target.pathname === '/' || target.pathname === '') {
+                        target.pathname = '/login';
+                    }
+
+                    return target.href;
+                }
 
                 function showSpinner() {
                     spinner.classList.add('visible');
                     offlineCard.classList.remove('visible');
                 }
 
-                function showOffline() {
+                function showSetup(message) {
                     spinner.classList.remove('visible');
                     offlineCard.classList.add('visible');
+                    connectionError.textContent = message || '';
+                }
+
+                function setBusy(value) {
+                    busy = value;
+                    retryBtn.disabled = value;
+                    cloudBtn.disabled = value;
+                    hubBtn.disabled = value;
+                    localBtn.disabled = value;
                 }
 
                 function scheduleRetry() {
                     clearTimeout(retryTimer);
-                    retryTimer = setTimeout(attempt, retryDelay);
+                    retryTimer = setTimeout(attemptCurrent, retryDelay);
                     retryDelay = Math.min(retryDelay * 2, MAX_DELAY_MS);
                 }
 
-                async function probe() {
+                async function fallbackProbe(url) {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+                    const timeoutId = setTimeout(function () {
+                        controller.abort();
+                    }, 8_000);
                     try {
-                        // A HEAD request is lightweight and avoids downloading the page body.
-                        // `mode: 'no-cors'` is needed when the server does not send
-                        // Access-Control-Allow-Origin; an opaque response still confirms
-                        // the server is reachable.
-                        await fetch(serverUrl, {
-                            method: 'HEAD',
+                        await fetch(new URL('health', url), {
+                            method: 'GET',
                             mode: 'no-cors',
                             signal: controller.signal,
                         });
-                        return true;
-                    } catch (_) {
-                        return false;
+                        return { url: url };
                     } finally {
                         clearTimeout(timeoutId);
                     }
                 }
 
-                async function attempt() {
+                async function probe(url) {
+                    const nativeRequest = invoke('probe_server_connection', {
+                        url: url,
+                    });
+                    return nativeRequest || fallbackProbe(url);
+                }
+
+                async function attemptCurrent() {
+                    if (busy) {
+                        return;
+                    }
                     showSpinner();
-                    const reachable = await probe();
-                    if (reachable) {
-                        // Navigate the entire webview to the server — this replaces
-                        // the loader page so no cleanup needed.
-                        window.location.replace(serverUrl);
-                    } else {
-                        showOffline();
+                    try {
+                        const result = await probe(currentServerUrl);
+                        window.location.replace(
+                            authenticationEntryUrl(result.url || currentServerUrl),
+                        );
+                    } catch (error) {
+                        showSetup(readableError(error));
                         scheduleRetry();
+                    }
+                }
+
+                async function configureAndOpen(url) {
+                    clearTimeout(retryTimer);
+                    connectionError.textContent = '';
+                    setBusy(true);
+                    try {
+                        const request = invoke('configure_server_connection', {
+                            url: url,
+                        });
+                        if (!request) {
+                            throw new Error(
+                                'Cette configuration est disponible dans l’application Windows Drclick.',
+                            );
+                        }
+                        const result = await request;
+                        window.location.replace(authenticationEntryUrl(result.url));
+                    } catch (error) {
+                        showSetup(readableError(error));
+                        setBusy(false);
                     }
                 }
 
                 retryBtn.addEventListener('click', function () {
                     clearTimeout(retryTimer);
                     retryDelay = INITIAL_DELAY_MS;
-                    attempt();
+                    attemptCurrent();
                 });
 
-                // Start immediately on page load.
-                attempt();
+                cloudBtn.addEventListener('click', function () {
+                    configureAndOpen(cloudServerUrl);
+                });
+
+                hubForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    configureAndOpen(hubUrl.value);
+                });
+
+                localBtn.addEventListener('click', function () {
+                    configureAndOpen(localServerUrl);
+                });
+
+                attemptCurrent();
             })();
         </script>
     </body>

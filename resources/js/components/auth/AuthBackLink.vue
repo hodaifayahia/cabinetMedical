@@ -2,8 +2,11 @@
 import type { LinkComponentBaseProps, Method } from '@inertiajs/core';
 import { Link } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
+import { isTauri } from '@tauri-apps/api/core';
+import { onMounted, ref } from 'vue';
+import { login } from '@/routes';
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
         href: LinkComponentBaseProps['href'];
         label?: string;
@@ -16,11 +19,19 @@ withDefaults(
         as: 'a',
     },
 );
+
+const destination = ref(props.href);
+
+onMounted(() => {
+    if (isTauri()) {
+        destination.value = login();
+    }
+});
 </script>
 
 <template>
     <Link
-        :href="href"
+        :href="destination"
         :method="method"
         :as="as"
         class="group mb-6 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-slate-500 transition hover:text-[#1268a5] focus-visible:outline-none dark:text-slate-400 dark:hover:text-sky-300"

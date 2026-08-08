@@ -1,4 +1,4 @@
-# MediSmart Windows operator runbook
+# Drclick Windows operator runbook
 
 Status: operational behavior implemented in the repository as of 2026-08-05,
 with unverified release boundaries called out explicitly. This runbook does not
@@ -7,7 +7,7 @@ make the current unsigned development build a production installer.
 ## Deployment boundary
 
 Deploy only an installer that passed [the release-readiness
-contract](RELEASE-READINESS.md). MediSmart declares MSI and NSIS outputs, but a
+contract](RELEASE-READINESS.md). Drclick declares MSI and NSIS outputs, but a
 clean-VM release decision has not yet selected or certified either format.
 Verify the expected publisher in Windows before installation; do not teach
 users to bypass SmartScreen or signature warnings.
@@ -49,7 +49,7 @@ tmp/                       temporary runtime files
 
 Do not move any of those paths into `Program Files`, a synchronized cloud
 folder, a network share, or a removable drive. Do not edit `runtime/*.json` or
-`config/*.json` while MediSmart is running.
+`config/*.json` while Drclick is running.
 
 Native logs include `desktop-supervisor.log` and dedicated queue, scheduler,
 LAN, and cloudflared supervisor logs when those services are active. Each
@@ -103,10 +103,10 @@ observation; the installation cards are the service-health authority.
 
 ## System tray and exit
 
-Closing the startup or main window hides MediSmart in the Windows notification
+Closing the startup or main window hides Drclick in the Windows notification
 area; it does not stop Laravel, the queue worker, scheduler, LAN listener, or
-tunnel. Left-click/double-click the MediSmart icon, or choose **Ouvrir
-MediSmart**, to restore the window. Use **Quitter MediSmart** from that menu for
+tunnel. Left-click/double-click the Drclick icon, or choose **Ouvrir
+Drclick**, to restore the window. Use **Quitter Drclick** from that menu for
 the normal ordered shutdown. Do not use Task Manager unless the process is
 unresponsive and the incident is being preserved for support. Launch at login
 is not implemented.
@@ -118,7 +118,7 @@ Use a trusted private clinic network:
 1. In **Connexion & sauvegardes**, select the physical private-network adapter,
    enable local reception, optionally request firewall diagnostics, and save.
 2. Wait for the page to report the native LAN listener as active and verified.
-   MediSmart binds only the selected private IPv4 address and a managed high
+   Drclick binds only the selected private IPv4 address and a managed high
    port; it does not bind the administration interface to the network.
 3. Set the QR mode to **Réseau local**, choose the expiry and file limits, then
    create a temporary link. The phone must be on the same trusted network.
@@ -127,9 +127,9 @@ Use a trusted private clinic network:
 5. Revoke the session when finished. Never reuse or copy a QR verifier into a
    ticket or diagnostic message.
 
-MediSmart never creates, removes, or changes Windows Firewall rules. If local
+Drclick never creates, removes, or changes Windows Firewall rules. If local
 health passes but the phone cannot connect, check that Windows classified the
-network as Private and that the approved signed MediSmart executable is
+network as Private and that the approved signed Drclick executable is
 allowed only on the intended Private profile. Do not open a permanent broad
 port, allow Public networks, disable the firewall, or forward a router port.
 Adapter/address changes deliberately close the old listener and require a new
@@ -154,10 +154,10 @@ certificate contains that feature.
 
 ## Local and automatic backup
 
-Use **Sauvegarde immédiate vérifiée > Archive MediSmart (.msbackup)**. The
+Use **Sauvegarde immédiate vérifiée > Archive Drclick (.msbackup)**. The
 encrypted archive contains a consistent SQLite snapshot, managed documents,
 logos, versioned manifest, and SHA-256 inventory. Enter and confirm a recovery
-phrase of at least 12 characters. MediSmart does not retain or recover that
+phrase of at least 12 characters. Drclick does not retain or recover that
 phrase; store it in the clinic's approved password/recovery system, separate
 from the archive.
 
@@ -178,7 +178,7 @@ license, Sodium, internet, and the supervised queue worker.
 1. Confirm the administrator password, choose **Connecter Google Drive**, and
    complete consent in the system browser. The embedded app never receives a
    generic open-URL capability.
-2. Return to MediSmart and run the connection test. The exact dynamic loopback
+2. Return to Drclick and run the connection test. The exact dynamic loopback
    callback is created by the launcher; do not configure a LAN/public callback.
 3. Enter the Drive folder name and a recovery phrase, then queue an encrypted
    backup. Verify both local completion and Drive confirmation.
@@ -201,17 +201,17 @@ verified `.msbackup` from the Windows desktop UI:
 1. Close clinical work on every workstation/device using the installation.
 2. Confirm the administrator password. Select the archive and enter its
    recovery phrase.
-3. Choose **Vérifier l'archive**. Check its creation date, MediSmart version,
+3. Choose **Vérifier l'archive**. Check its creation date, Drclick version,
    schema, components, file count, and size. At this point active data has not
    changed.
-4. Acknowledge replacement and choose **Appliquer et redémarrer MediSmart**.
+4. Acknowledge replacement and choose **Appliquer et redémarrer Drclick**.
    Do not close the app, power off, or start another PHP/queue process.
 5. The native owner stops all writers, creates and verifies a safety backup,
    revalidates the staged inventory, performs same-volume swaps, and restarts
    only after keyed health succeeds. Verify patients, recent documents, clinic
    logo, and backup history after restart.
 
-If the UI says manual recovery is required, leave MediSmart and every writer
+If the UI says manual recovery is required, leave Drclick and every writer
 stopped. Preserve AppLocalData, the source `.msbackup`, recovery phrase, safety
 archives, journals, staging, and rollback files. Escalate through the approved
 support process. Never rename/delete recovery files or run a Laravel/web apply
@@ -264,7 +264,7 @@ The primary recovery artifact is the newest independently stored, verified
 encrypted `.msbackup` plus its separately held phrase. Periodically rehearse a
 restore on a controlled non-production installation.
 
-If the active installation is damaged, stop MediSmart fully before preserving
+If the active installation is damaged, stop Drclick fully before preserving
 AppLocalData. Copying only `database.sqlite` while writers or SQLite WAL files
 are active is not a valid backup. Preserve the entire directory read-only for
 forensics, reinstall only the approved signed version, and use the supervised

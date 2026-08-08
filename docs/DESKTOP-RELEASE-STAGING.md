@@ -47,7 +47,7 @@ probes the runtime. It accepts only a Windows 64-bit CLI build in the PHP 8.x
 series at version 8.3 or newer. Loaded INI files must remain inside the supplied
 runtime directory. The required extension baseline includes SQLite/PDO,
 OpenSSL, cURL, mbstring, intl, XML/DOM, GD, ZIP, Sodium, fileinfo, and the PHP
-core extensions needed by Laravel and the MediSmart workflows.
+core extensions needed by Laravel and the Drclick workflows.
 
 Create a review candidate outside the runtime directory:
 

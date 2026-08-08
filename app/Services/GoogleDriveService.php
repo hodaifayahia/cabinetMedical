@@ -347,7 +347,7 @@ final class GoogleDriveService
         $safeStem = is_string($safeStem) ? trim($safeStem, '.-_') : '';
 
         if ($safeStem === '') {
-            $safeStem = 'MediSmart-Backup';
+            $safeStem = 'Drclick-Backup';
         }
 
         return Str::limit($safeStem, 170, '')

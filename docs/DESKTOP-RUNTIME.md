@@ -1,4 +1,4 @@
-# MediSmart desktop runtime foundation
+# Drclick desktop runtime foundation
 
 ## Implemented boundary
 
@@ -97,10 +97,10 @@ portable backups and do not replace the normal `.msbackup` workflow.
 
 ## System tray and application exit
 
-The native tray is active. Closing either the startup or main MediSmart window
+The native tray is active. Closing either the startup or main Drclick window
 hides it without stopping the local runtime. A left click, double-click, or
-**Ouvrir MediSmart** restores and focuses the available window. The explicit
-**Quitter MediSmart** tray item marks a real quit and lets the ordered shutdown
+**Ouvrir Drclick** restores and focuses the available window. The explicit
+**Quitter Drclick** tray item marks a real quit and lets the ordered shutdown
 stop and join the tunnel, LAN listener, scheduler, queue worker, and main PHP
 process. Start-at-login is not implemented and no corresponding preference is
 exposed.
@@ -211,7 +211,7 @@ the PHP environment is refreshed, and the replacement address must pass a new
 origin-bound attestation before becoming active. There is never an automatic
 fallback to another adapter. `firewall_diagnostics_enabled` exposes only the
 result of the bounded local listener health probe. A successful result is not
-proof that a phone can cross Windows Firewall, and MediSmart never creates,
+proof that a phone can cross Windows Firewall, and Drclick never creates,
 removes, or modifies firewall rules.
 
 `GET /upload/<selector>` is a self-contained Blade document at

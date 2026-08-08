@@ -60,7 +60,7 @@ final class GoogleDriveBackup
             'google_drive_configured' => $this->isConfigured(),
             'google_drive_email' => $connection?->email,
             'google_drive_connected' => $connection?->refresh_token !== null,
-            'google_drive_folder' => $connection?->folder_name ?: 'MediSmart Backups',
+            'google_drive_folder' => $connection?->folder_name ?: 'Drclick Backups',
             'last_backup_at' => $lastBackupAt?->format('d/m/Y H:i'),
             'last_backup_name' => $connection?->last_backup_name,
         ];
@@ -266,7 +266,7 @@ final class GoogleDriveBackup
     }
 
     /**
-     * List only files carrying the complete MediSmart v2 metadata contract.
+     * List only files carrying the complete Drclick v2 metadata contract.
      * Provider names and arbitrary descriptions are never rendered blindly.
      *
      * @return list<array{
@@ -638,7 +638,7 @@ final class GoogleDriveBackup
         }
 
         try {
-            $requestedFolder = trim($folderName) ?: 'MediSmart Backups';
+            $requestedFolder = trim($folderName) ?: 'Drclick Backups';
 
             if ($connection->folder_name !== $requestedFolder) {
                 $connection->folder_name = $requestedFolder;
@@ -670,7 +670,7 @@ final class GoogleDriveBackup
                 'name' => $artifact['filename'],
                 'parents' => [$folderId],
                 'mimeType' => self::ENCRYPTED_BACKUP_MIME,
-                'description' => 'DrClickDz encrypted backup v2',
+                'description' => 'Drclick encrypted backup v2',
                 'appProperties' => [
                     'medismart_backup_record_id' => $artifact['backup_record_id'],
                     'medismart_format' => $artifact['format'],
@@ -926,7 +926,7 @@ final class GoogleDriveBackup
             : null;
 
         if ($metadata === null || ! hash_equals($fileId, $metadata['id'])) {
-            throw new RuntimeException('The selected Google Drive file is not a managed DrClickDz backup.');
+            throw new RuntimeException('The selected Google Drive file is not a managed Drclick backup.');
         }
 
         return $metadata;
@@ -1065,7 +1065,7 @@ final class GoogleDriveBackup
         }
 
         $response = Http::withToken($token)->post('https://www.googleapis.com/drive/v3/files', [
-            'name' => $connection->folder_name ?: 'MediSmart Backups',
+            'name' => $connection->folder_name ?: 'Drclick Backups',
             'mimeType' => 'application/vnd.google-apps.folder',
         ]);
 

@@ -53,6 +53,7 @@ class LicenseResource extends Resource
     {
         return (string) License::query()
             ->whereNull('plan')
+            ->where('edition', '!=', 'hosted')
             ->where('status', 'active')
             ->count();
     }
@@ -64,7 +65,9 @@ class LicenseResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereNull('plan');
+        return parent::getEloquentQuery()
+            ->whereNull('plan')
+            ->where('edition', '!=', 'hosted');
     }
 
     public static function form(Schema $schema): Schema

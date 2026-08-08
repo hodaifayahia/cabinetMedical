@@ -26,7 +26,7 @@ const pagesWithBackNavigation = [
     'VerifyEmail',
 ];
 
-describe('DrClickDz authentication and onboarding contract', () => {
+describe('Drclick authentication and onboarding contract', () => {
     it.each(pagesWithBackNavigation)(
         '%s exposes an explicit back action',
         (page) => {

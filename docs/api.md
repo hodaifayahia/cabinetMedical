@@ -1,4 +1,4 @@
-# MediSmart — API v1
+# Drclick — API v1
 
 REST API used by the desktop / companion clients. All routes are prefixed with
 `/api/v1` and return JSON. Authentication uses **Laravel Sanctum personal
@@ -32,10 +32,10 @@ with a machine-readable `reason`:
 
 | `reason` | Meaning | `message` (fr) |
 | --- | --- | --- |
-| `cabinet_pending` | Cabinet not yet activated by DrClickDz. | "Votre cabinet est en attente d'activation par l'équipe DrClickDz." |
-| `cabinet_suspended` | Cabinet suspended. | "Votre cabinet est actuellement suspendu. Contactez le support DrClickDz." |
-| `license_expired` | The cabinet's 7-day trial reached its exact expiry time. | "Votre essai de 7 jours est expiré. Contactez l'administration DrClickDz pour renouveler votre licence ou passer à une licence à vie." |
-| `license_inactive` | The hosted cabinet licence is inactive or revoked. | "La licence de votre cabinet n'est pas active. Contactez l'administration DrClickDz." |
+| `cabinet_pending` | Cabinet not yet activated by Drclick. | "Votre cabinet est en attente d'activation par l'équipe Drclick." |
+| `cabinet_suspended` | Cabinet suspended. | "Votre cabinet est actuellement suspendu. Contactez le support Drclick." |
+| `license_expired` | The cabinet's 7-day trial reached its exact expiry time. | "Votre essai de 7 jours est expiré. Contactez l'administration Drclick pour renouveler votre licence ou passer à une licence à vie." |
+| `license_inactive` | The hosted cabinet licence is inactive or revoked. | "La licence de votre cabinet n'est pas active. Contactez l'administration Drclick." |
 | `awaiting_approval` | Member account not yet approved by the cabinet owner. | "Votre compte est en attente d'approbation par le propriétaire du cabinet." |
 
 Hosted cabinet activation is fulfilled once by a platform administrator, who
@@ -140,7 +140,7 @@ Errors:
 
 Provision a brand-new cabinet in the `pending` state together with its owner
 (administrator) account. Mirrors the web registration flow
-(`RegisterCabinetAction`). The cabinet must be activated by DrClickDz before the
+(`RegisterCabinetAction`). The cabinet must be activated by Drclick before the
 owner can obtain a usable token.
 
 - Auth: none (public, throttled `registration`).

@@ -1,4 +1,4 @@
-# MediSmart Phase 1 audit
+# Drclick Phase 1 audit
 
 > Historical snapshot: this audit is retained without rewriting its findings.
 > It predates later native supervision, versioned backup/restore, OAuth, release
@@ -22,7 +22,7 @@ The most urgent operational findings are:
 1. The PowerShell/Windows `php` command resolves to PHP 8.2.12 and cannot boot the project; WSL PHP 8.3.6 works.
 2. The active SQLite database is approximately 589.4 MB, of which roughly 585 MB is retained Telescope telemetry and indexes (about 846,800 entries at freeze). When enabled in `local`, Telescope records all entries and skips sensitive-request redaction. Phase 1 now defaults both Telescope and Inertia devtools off, but no historical telemetry was pruned.
 3. Managed private storage is approximately 1.72 GB, but the current legacy backup contains only SQLite.
-4. Raw SQLite restore is not a safe or complete MediSmart restore and remains only a compatibility path.
+4. Raw SQLite restore is not a safe or complete Drclick restore and remains only a compatibility path.
 5. A portable restore must address `APP_KEY`-encrypted values and must not overwrite machine-bound installation, license, tunnel, or device state blindly.
 6. The active database was initially observed in `delete` journal mode. After the Phase 1 configuration landed and Laravel reopened it during verification, a direct PDO probe reported persistent `journal_mode=wal`. The 5-second busy timeout, `NORMAL` synchronization, deferred transactions, WAL sidecar handling, and concurrent/crash behavior still require verification against the packaged runtime.
 7. The directory supplied for this task has no `.git` metadata, so tracked status, diffs, history, and accidental inclusion of data files could not be verified with Git.
@@ -188,7 +188,7 @@ The packaged Windows PHP/Tauri runtime, production-sized managed storage, and re
 The generated artifact remains a raw `.sqlite3` file:
 
 - It omits approximately 1.72 GB of managed private documents and public logos.
-- It has no MediSmart manifest, format identifier, component list, archive encryption, or per-file checksums.
+- It has no Drclick manifest, format identifier, component list, archive encryption, or per-file checksums.
 - Restore validates only the 16-byte SQLite header.
 - Restore does not run integrity checks, validate expected tables/schema, reject malicious triggers, enter maintenance mode, stop queue workers, handle WAL/SHM sidecars, extract to a temporary location, replace atomically, or roll back automatically.
 - The safety snapshot created before restore is not connected to an automatic rollback path.
@@ -279,7 +279,7 @@ Production desktop configuration must still use `APP_ENV=production`, `APP_DEBUG
 
 - `.env` and the active database are mode `0644` in the current WSL environment. Desktop data needs per-user Windows ACLs.
 - The nested `database/.gitignore` ignores `*.sqlite*`, including `database/database.sqlite`. No Git metadata was available to verify tracked state or history, so release packaging must still use an explicit allowlist.
-- The current app name defaults vary among `Laravel`, `ClickDZ Clinic`, and `MediSmart`; session cookie naming and branding should be unique and consistent.
+- The current app name defaults vary among `Laravel`, `ClickDZ Clinic`, and `Drclick`; session cookie naming and branding should be unique and consistent.
 - Fixed `localhost:8000` assumptions occur in app URL, Google redirect, OnlyOffice callback URL, public storage URL, and passkey allowed origins. Dynamic ports require a consistent runtime-origin strategy.
 - Passkey allowed origins include the exact configured origin. A changed host or port must be reflected safely.
 - Cloudflare proxy trust and trusted-host policy are not configured.
@@ -405,7 +405,7 @@ Keep Phase 1 tests on temporary/in-memory data and mocked tunnel, Drive, and lic
 Provision these values without committing secrets:
 
 ```text
-APP_NAME=MediSmart
+APP_NAME=Drclick
 APP_ENV=production
 APP_DEBUG=false
 APP_KEY=<unique per installation>

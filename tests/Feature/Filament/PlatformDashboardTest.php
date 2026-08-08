@@ -172,7 +172,7 @@ class PlatformDashboardTest extends TestCase
     {
         $license = License::query()->create([
             'license_id' => 'TEST-'.str()->uuid(),
-            'product' => 'DrClickDz',
+            'product' => 'Drclick',
             'edition' => 'hosted',
             'plan' => $plan,
             'status' => 'active',
