@@ -59,6 +59,16 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Single medical accent + shared surface tokens (used app-wide). */
+    --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
+    --color-brand-soft: var(--brand-soft);
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
 }
 
 /*
@@ -81,7 +91,7 @@
 
 @layer components {
     .med-page {
-        @apply mx-auto flex min-h-full w-full max-w-[1800px] min-w-0 flex-1 flex-col gap-6 bg-[#edf3f6] px-4 py-5 text-slate-900 lg:px-7 lg:py-6 dark:bg-slate-950 dark:text-slate-100;
+        @apply mx-auto flex min-h-full w-full max-w-[1800px] min-w-0 flex-1 flex-col gap-6 bg-canvas px-4 py-5 text-foreground lg:px-7 lg:py-6;
     }
 
     .med-page-inner {
@@ -89,15 +99,50 @@
     }
 
     .med-panel {
-        @apply rounded-2xl border border-white/80 bg-white shadow-[0_4px_18px_rgba(38,70,91,0.07)] dark:border-slate-800 dark:bg-slate-900;
+        @apply rounded-2xl border border-border/70 bg-surface shadow-[0_4px_18px_rgba(38,70,91,0.07)] dark:border-border dark:shadow-none;
     }
 
     .med-toolbar {
-        @apply flex flex-col gap-3 rounded-2xl border border-white/80 bg-white p-4 shadow-[0_4px_18px_rgba(38,70,91,0.07)] sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900;
+        @apply flex flex-col gap-3 rounded-2xl border border-border/70 bg-surface p-4 shadow-[0_4px_18px_rgba(38,70,91,0.07)] sm:flex-row sm:items-center sm:justify-between dark:border-border dark:shadow-none;
     }
 
     .med-native-control {
-        @apply h-10 rounded-xl border border-input bg-white px-3 text-sm shadow-sm outline-none focus:border-[#4c82b7] focus:ring-2 focus:ring-[#4c82b7]/20 dark:bg-slate-900;
+        @apply h-10 rounded-xl border border-input bg-surface px-3 text-sm shadow-sm outline-none transition-[color,box-shadow] focus:border-ring focus:ring-2 focus:ring-ring/25;
+    }
+
+    /* Standard page header: eyebrow accent + title + description + action. */
+    .med-page-title {
+        @apply text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-[1.75rem];
+    }
+
+    .med-page-accent {
+        @apply mt-2.5 h-1 w-12 rounded-full bg-brand;
+    }
+
+    .med-page-description {
+        @apply mt-3 max-w-3xl text-sm leading-6 text-muted-foreground;
+    }
+
+    /* Compact stat card used on dashboards and index headers. */
+    .med-stat-icon {
+        @apply flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand;
+    }
+
+    /* Consistent empty-state block for tables and lists. */
+    .med-empty {
+        @apply flex flex-col items-center justify-center gap-2 px-6 py-14 text-center;
+    }
+
+    .med-empty-icon {
+        @apply size-10 text-muted-foreground/35;
+    }
+
+    .med-empty-title {
+        @apply mt-1 font-semibold text-foreground;
+    }
+
+    .med-empty-hint {
+        @apply text-sm text-muted-foreground;
     }
 
     .med-table-wrap {
@@ -165,6 +210,11 @@
     --chart-4: hsl(43 74% 66%);
     --chart-5: hsl(27 87% 67%);
     --radius: 0.75rem;
+    --brand: hsl(207 72% 40%);
+    --brand-foreground: hsl(0 0% 100%);
+    --brand-soft: hsl(205 60% 95%);
+    --canvas: hsl(202 30% 95%);
+    --surface: hsl(0 0% 100%);
     --sidebar-background: hsl(210 35% 98%);
     --sidebar-foreground: hsl(215 25% 30%);
     --sidebar-primary: hsl(207 72% 40%);
@@ -210,6 +260,11 @@
     --sidebar-border: hsl(0 0% 15.9%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
     --sidebar: hsl(240 5.9% 10%);
+    --brand: hsl(205 80% 62%);
+    --brand-foreground: hsl(215 40% 10%);
+    --brand-soft: hsl(207 40% 18%);
+    --canvas: hsl(0 0% 3.9%);
+    --surface: hsl(0 0% 5.5%);
 }
 
 @layer base {
