@@ -1,1 +1,21 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcQXR0cmlidXRlc1xGaWxsYWJsZTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcTW9kZWw7CgojW0ZpbGxhYmxlKFsnY29kZScsICduYW1lJywgJ3ByaWNlX21pbm9yJywgJ2NhdGVnb3J5JywgJ2lzX2FjdGl2ZSddKV0KY2xhc3MgQWN0IGV4dGVuZHMgTW9kZWwKewogICAgdXNlIFxBcHBcTW9kZWxzXENvbmNlcm5zXEJlbG9uZ3NUb0NhYmluZXQ7CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIGFycmF5PHN0cmluZywgc3RyaW5nPgogICAgICovCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gY2FzdHMoKTogYXJyYXkKICAgIHsKICAgICAgICByZXR1cm4gWydwcmljZV9taW5vcicgPT4gJ2ludGVnZXInLCAnaXNfYWN0aXZlJyA9PiAnYm9vbGVhbiddOwogICAgfQp9Cg==
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToCabinet;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+
+#[Fillable(['code', 'name', 'price_minor', 'category', 'is_active'])]
+class Act extends Model
+{
+    use BelongsToCabinet;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return ['price_minor' => 'integer', 'is_active' => 'boolean'];
+    }
+}

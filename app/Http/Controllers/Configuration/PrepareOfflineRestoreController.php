@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Configuration\PrepareOfflineRestoreRequest;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\InstallationMaintenanceAccessService;
 use Illuminate\Http\JsonResponse;
 use Throwable;
 
@@ -17,9 +18,11 @@ final class PrepareOfflineRestoreController extends Controller
     public function __invoke(
         PrepareOfflineRestoreRequest $request,
         OfflineRestorePreparer $preparer,
+        InstallationMaintenanceAccessService $installationMaintenance,
     ): JsonResponse {
         $actor = $request->user();
         abort_unless($actor instanceof User, 401);
+        $installationMaintenance->authorize($actor);
         $passphrase = $request->recoveryPassphrase();
 
         try {

@@ -1,1 +1,61 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIERhdGFiYXNlXEZhY3Rvcmllc1xNZWRpY2F0aW9uRmFjdG9yeTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcQXR0cmlidXRlc1xGaWxsYWJsZTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcQnVpbGRlcjsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcRmFjdG9yaWVzXEhhc0ZhY3Rvcnk7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XE1vZGVsOwoKI1tGaWxsYWJsZShbCiAgICAnbmFtZScsCiAgICAnZGNpJywKICAgICdmb3JtJywKICAgICdkb3NhZ2UnLAogICAgJ25vdGVzJywKICAgICdpc19hY3RpdmUnLApdKV0KY2xhc3MgTWVkaWNhdGlvbiBleHRlbmRzIE1vZGVsCnsKICAgIC8qKiBAdXNlIEhhc0ZhY3Rvcnk8TWVkaWNhdGlvbkZhY3Rvcnk+ICovCiAgICB1c2UgXEFwcFxNb2RlbHNcQ29uY2VybnNcQmVsb25nc1RvQ2FiaW5ldCwgSGFzRmFjdG9yeTsKCiAgICAvKioKICAgICAqIEByZXR1cm4gYXJyYXk8c3RyaW5nLCBzdHJpbmc+CiAgICAgKi8KICAgIHByb3RlY3RlZCBmdW5jdGlvbiBjYXN0cygpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICdpc19hY3RpdmUnID0+ICdib29sZWFuJywKICAgICAgICBdOwogICAgfQoKICAgIHByb3RlY3RlZCBzdGF0aWMgZnVuY3Rpb24gbmV3RmFjdG9yeSgpOiBNZWRpY2F0aW9uRmFjdG9yeQogICAgewogICAgICAgIHJldHVybiBNZWRpY2F0aW9uRmFjdG9yeTo6bmV3KCk7CiAgICB9CgogICAgLyoqCiAgICAgKiBGaWx0ZXIgYnkgYSBmcmVlLXRleHQgc2VhcmNoIGFjcm9zcyBuYW1lLCBnZW5lcmljIG5hbWUsIGFuZCBmb3JtLgogICAgICoKICAgICAqIEBwYXJhbSAgQnVpbGRlcjxzZWxmPiAgJHF1ZXJ5CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBzY29wZVNlYXJjaChCdWlsZGVyICRxdWVyeSwgP3N0cmluZyAkdGVybSk6IHZvaWQKICAgIHsKICAgICAgICAkdGVybSA9IHRyaW0oKHN0cmluZykgJHRlcm0pOwoKICAgICAgICBpZiAoJHRlcm0gPT09ICcnKSB7CiAgICAgICAgICAgIHJldHVybjsKICAgICAgICB9CgogICAgICAgICRsaWtlID0gJyUnLnN0cl9yZXBsYWNlKFsnJScsICdfJ10sIFsnXCUnLCAnXF8nXSwgJHRlcm0pLiclJzsKCiAgICAgICAgJHF1ZXJ5LT53aGVyZShmdW5jdGlvbiAoQnVpbGRlciAkcXVlcnkpIHVzZSAoJGxpa2UpOiB2b2lkIHsKICAgICAgICAgICAgJHF1ZXJ5LT53aGVyZSgnbmFtZScsICdsaWtlJywgJGxpa2UpCiAgICAgICAgICAgICAgICAtPm9yV2hlcmUoJ2RjaScsICdsaWtlJywgJGxpa2UpCiAgICAgICAgICAgICAgICAtPm9yV2hlcmUoJ2Zvcm0nLCAnbGlrZScsICRsaWtlKTsKICAgICAgICB9KTsKICAgIH0KfQo=
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToCabinet;
+use Database\Factories\MedicationFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+#[Fillable([
+    'name',
+    'dci',
+    'form',
+    'dosage',
+    'notes',
+    'is_active',
+])]
+class Medication extends Model
+{
+    /** @use HasFactory<MedicationFactory> */
+    use BelongsToCabinet, HasFactory;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
+    protected static function newFactory(): MedicationFactory
+    {
+        return MedicationFactory::new();
+    }
+
+    /**
+     * Filter by a free-text search across name, generic name, and form.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeSearch(Builder $query, ?string $term): void
+    {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return;
+        }
+
+        $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
+
+        $query->where(function (Builder $query) use ($like): void {
+            $query->where('name', 'like', $like)
+                ->orWhere('dci', 'like', $like)
+                ->orWhere('form', 'like', $like);
+        });
+    }
+}

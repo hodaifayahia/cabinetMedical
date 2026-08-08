@@ -1,1 +1,44 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxDb250cm9sbGVyc1xBcGlcVjE7Cgp1c2UgQXBwXEFjdGlvbnNcQ2FiaW5ldFxKb2luQ2FiaW5ldEFjdGlvbjsKdXNlIEFwcFxBY3Rpb25zXEZvcnRpZnlcUmVnaXN0ZXJDYWJpbmV0QWN0aW9uOwp1c2UgQXBwXEh0dHBcQ29udHJvbGxlcnNcQ29udHJvbGxlcjsKdXNlIEFwcFxIdHRwXFJlcXVlc3RzXEpvaW5DYWJpbmV0UmVxdWVzdDsKdXNlIEFwcFxNb2RlbHNcVXNlcjsKdXNlIElsbHVtaW5hdGVcSHR0cFxKc29uUmVzcG9uc2U7CnVzZSBJbGx1bWluYXRlXEh0dHBcUmVxdWVzdDsKCmNsYXNzIENhYmluZXRDb250cm9sbGVyIGV4dGVuZHMgQ29udHJvbGxlcgp7CiAgICAvKioKICAgICAqIFByb3Zpc2lvbiBhIGJyYW5kLW5ldyBjYWJpbmV0IGluIHRoZSBwZW5kaW5nIHN0YXRlIHdpdGggaXRzIG93bmVyIGFjY291bnQuCiAgICAgKiBNaXJyb3JzIHRoZSB3ZWIgcmVnaXN0cmF0aW9uIHZhbGlkYXRpb24gdmlhIFJlZ2lzdGVyQ2FiaW5ldEFjdGlvbi4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIHJlZ2lzdGVyKFJlcXVlc3QgJHJlcXVlc3QsIFJlZ2lzdGVyQ2FiaW5ldEFjdGlvbiAkYWN0aW9uKTogSnNvblJlc3BvbnNlCiAgICB7CiAgICAgICAgJG93bmVyID0gJGFjdGlvbi0+ZXhlY3V0ZSgkcmVxdWVzdC0+YWxsKCkpOwoKICAgICAgICByZXR1cm4gcmVzcG9uc2UoKS0+anNvbihbCiAgICAgICAgICAgICdjYWJpbmV0X2lkJyA9PiAkb3duZXItPmNhYmluZXRfaWQsCiAgICAgICAgICAgICdzdGF0dXMnID0+ICdwZW5kaW5nJywKICAgICAgICBdLCAyMDEpOwogICAgfQoKICAgIC8qKgogICAgICogUmVxdWVzdCBtZW1iZXJzaGlwIG9mIGFuIGV4aXN0aW5nIGFjdGl2ZSBjYWJpbmV0LiBUaGUgYWNjb3VudCBpcyBjcmVhdGVkCiAgICAgKiBwZW5kaW5nIHRoZSBvd25lcidzIGFwcHJvdmFsIChubyB0b2tlbiBpc3N1ZWQgdW50aWwgYXBwcm92ZWQgKyBhY3RpdmUpLgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gam9pbihKb2luQ2FiaW5ldFJlcXVlc3QgJHJlcXVlc3QsIEpvaW5DYWJpbmV0QWN0aW9uICRhY3Rpb24pOiBKc29uUmVzcG9uc2UKICAgIHsKICAgICAgICAvKiogQHZhciBVc2VyICRtZW1iZXIgKi8KICAgICAgICAkbWVtYmVyID0gJGFjdGlvbi0+ZXhlY3V0ZSgkcmVxdWVzdC0+dmFsaWRhdGVkKCkpOwoKICAgICAgICByZXR1cm4gcmVzcG9uc2UoKS0+anNvbihbCiAgICAgICAgICAgICdtZXNzYWdlJyA9PiAnVm90cmUgZGVtYW5kZSBhIMOpdMOpIGVudm95w6llLiBWb3VzIHBvdXJyZXogdm91cyBjb25uZWN0ZXIgdW5lIGZvaXMgYXBwcm91dsOpIHBhciBsZSBwcm9wcmnDqXRhaXJlIGR1IGNhYmluZXQuJywKICAgICAgICAgICAgJ2NhYmluZXRfaWQnID0+ICRtZW1iZXItPmNhYmluZXRfaWQsCiAgICAgICAgICAgICdzdGF0dXMnID0+ICdhd2FpdGluZ19hcHByb3ZhbCcsCiAgICAgICAgXSwgMjAxKTsKICAgIH0KfQo=
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Actions\Cabinet\JoinCabinetAction;
+use App\Actions\Fortify\RegisterCabinetAction;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\JoinCabinetRequest;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class CabinetController extends Controller
+{
+    /**
+     * Provision a brand-new cabinet in the pending state with its owner account.
+     * Mirrors the web registration validation via RegisterCabinetAction.
+     */
+    public function register(Request $request, RegisterCabinetAction $action): JsonResponse
+    {
+        $owner = $action->execute($request->all());
+
+        return response()->json([
+            'cabinet_id' => $owner->cabinet_id,
+            'status' => 'pending',
+        ], 201);
+    }
+
+    /**
+     * Request membership of an existing active cabinet. The account is created
+     * pending the owner's approval (no token issued until approved + active).
+     */
+    public function join(JoinCabinetRequest $request, JoinCabinetAction $action): JsonResponse
+    {
+        /** @var User $member */
+        $member = $action->execute($request->validated());
+
+        return response()->json([
+            'message' => 'Votre demande a été envoyée. Vous pourrez vous connecter une fois approuvé par le propriétaire du cabinet.',
+            'cabinet_id' => $member->cabinet_id,
+            'status' => 'awaiting_approval',
+        ], 201);
+    }
+}

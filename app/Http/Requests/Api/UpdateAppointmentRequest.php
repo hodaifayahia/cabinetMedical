@@ -1,1 +1,28 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxSZXF1ZXN0c1xBcGk7Cgp1c2UgQXBwXEVudW1zXEFwcG9pbnRtZW50U3RhdHVzOwp1c2UgSWxsdW1pbmF0ZVxDb250cmFjdHNcVmFsaWRhdGlvblxWYWxpZGF0aW9uUnVsZTsKdXNlIElsbHVtaW5hdGVcRm91bmRhdGlvblxIdHRwXEZvcm1SZXF1ZXN0Owp1c2UgSWxsdW1pbmF0ZVxWYWxpZGF0aW9uXFJ1bGU7CgpjbGFzcyBVcGRhdGVBcHBvaW50bWVudFJlcXVlc3QgZXh0ZW5kcyBGb3JtUmVxdWVzdAp7CiAgICAvKioKICAgICAqIEByZXR1cm4gYXJyYXk8c3RyaW5nLCBWYWxpZGF0aW9uUnVsZXxhcnJheTxtaXhlZD58c3RyaW5nPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gcnVsZXMoKTogYXJyYXkKICAgIHsKICAgICAgICByZXR1cm4gWwogICAgICAgICAgICAncmVhc29uJyA9PiBbJ3NvbWV0aW1lcycsICdudWxsYWJsZScsICdzdHJpbmcnLCAnbWF4OjEwMDAnXSwKICAgICAgICAgICAgJ3JlY2VwdGlvbl9ub3RlcycgPT4gWydzb21ldGltZXMnLCAnbnVsbGFibGUnLCAnc3RyaW5nJywgJ21heDoyMDAwJ10sCiAgICAgICAgICAgICdwcmVzdGF0aW9uJyA9PiBbJ3NvbWV0aW1lcycsICdudWxsYWJsZScsICdzdHJpbmcnLCAnbWF4OjI1NSddLAogICAgICAgICAgICAnc3RhdHVzJyA9PiBbJ3NvbWV0aW1lcycsICdzdHJpbmcnLCBSdWxlOjppbihhcnJheV9tYXAoCiAgICAgICAgICAgICAgICBzdGF0aWMgZm4gKEFwcG9pbnRtZW50U3RhdHVzICRzdGF0dXMpOiBzdHJpbmcgPT4gJHN0YXR1cy0+dmFsdWUsCiAgICAgICAgICAgICAgICBBcHBvaW50bWVudFN0YXR1czo6Y2FzZXMoKSwKICAgICAgICAgICAgKSldLAogICAgICAgICAgICAnY2FuY2VsbGF0aW9uX3JlYXNvbicgPT4gWydyZXF1aXJlZF9pZjpzdGF0dXMsY2FuY2VsbGVkJywgJ251bGxhYmxlJywgJ3N0cmluZycsICdtaW46MycsICdtYXg6MTAwMCddLAogICAgICAgIF07CiAgICB9Cn0K
+<?php
+
+namespace App\Http\Requests\Api;
+
+use App\Enums\AppointmentStatus;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateAppointmentRequest extends FormRequest
+{
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'reception_notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'prestation' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'status' => ['sometimes', 'string', Rule::in(array_map(
+                static fn (AppointmentStatus $status): string => $status->value,
+                AppointmentStatus::cases(),
+            ))],
+            'cancellation_reason' => ['required_if:status,cancelled', 'nullable', 'string', 'min:3', 'max:1000'],
+        ];
+    }
+}

@@ -1,1 +1,539 @@
-Ly8gTWVkaVNtYXJ0IHNpZ25lZCB1cGRhdGVyIOKAlCB0aGluLWNsaWVudCBlZGl0aW9uCi8vCi8vIEFyY2hpdGVjdHVyZSBjaGFuZ2UgKDIwMjUpOiBUaGUgdXBkYXRlciBubyBsb25nZXIgcmVxdWlyZXMgYSBsb2NhbAovLyBpbnN0YWxsYXRpb24gaWRlbnRpdHkgKGFwcF9rZXkgLyBpbnN0YWxsYXRpb25faWQpIHNvdXJjZWQgZnJvbSB0aGUgUEhQCi8vIHJ1bnRpbWUuIEluc3RlYWQsIHRoZSBzZXJ2ZXIgaXNzdWVzIGEgc2hvcnQtbGl2ZWQgSE1BQy1zaWduZWQgYXV0aG9yaXphdGlvbgovLyB0aGF0IHRoZSBKYXZhU2NyaXB0IGZyb250LWVuZCBmb3J3YXJkcyB3aGVuIHJlcXVlc3RpbmcgYW4gdXBkYXRlIGluc3RhbGwuCi8vIFRoZSBITUFDIGtleSBpcyBub3cgdGhlIHVwZGF0ZXIgZW5kcG9pbnQgdG9rZW4gZW1iZWRkZWQgYXQgYnVpbGQgdGltZQovLyAoTUVESVNNQVJUX1VQREFURVJfSU5TVEFMTF9TRUNSRVQpLCB3aGljaCBpcyBvcHRpb25hbDsgaWYgYWJzZW50LCB0aGUKLy8gaW5zdGFsbCBjb21tYW5kIHJlcXVpcmVzIG5vIGF1dGhvcml6YXRpb24gYW5kIHRoZSBidXR0b24gaXMgZ2F0ZWQgc2VydmVyLXNpZGUuCi8vCi8vIEtlcHQgaW50YWN0OiBjaGVja19mb3Jfc2lnbmVkX3VwZGF0ZSwgaW5zdGFsbF9zaWduZWRfdXBkYXRlLCBzaWduZWRfdXBkYXRlcl9zdGF0dXMsCi8vIHRoZSBVcGRhdGVJbnN0YWxsQXV0aG9yaXphdGlvbiBITUFDIHZlcmlmaWNhdGlvbiBmbG93LCBhbmQgYWxsIHVuaXQgdGVzdHMuCgp1c2Ugc3RkOjp7CiAgICBzeW5jOjp7CiAgICAgICAgYXRvbWljOjp7QXRvbWljQm9vbCwgQXRvbWljVTY0LCBPcmRlcmluZ30sCiAgICAgICAgTXV0ZXgsCiAgICB9LAogICAgdGltZTo6e0R1cmF0aW9uLCBTeXN0ZW1UaW1lLCBVTklYX0VQT0NIfSwKfTsKCnVzZSBobWFjOjp7SG1hYywgTWFjfTsKdXNlIHNlcmRlOjp7RGVzZXJpYWxpemUsIFNlcmlhbGl6ZX07CnVzZSBzaGEyOjpTaGEyNTY7CnVzZSB0YXVyaTo6e0FwcEhhbmRsZSwgUnVudGltZSwgU3RhdGV9Owp1c2UgdGF1cmlfcGx1Z2luX3VwZGF0ZXI6OntVcGRhdGUsIFVwZGF0ZXJFeHR9Owp1c2UgdXJsOjpVcmw7Cgpjb25zdCBBVVRIT1JJWkFUSU9OX1BST1RPQ09MOiAmc3RyID0gIm1lZGlzbWFydC11cGRhdGUtaW5zdGFsbC1hdXRob3JpemF0aW9uIjsKY29uc3QgQVVUSE9SSVpBVElPTl9WRVJTSU9OOiB1OCA9IDE7CmNvbnN0IE1BWF9BVVRIT1JJWkFUSU9OX0xJRkVUSU1FX1NFQ09ORFM6IHU2NCA9IDYwMDsKCiNbZGVyaXZlKENsb25lKV0Kc3RydWN0IFJlbGVhc2VDb25maWd1cmF0aW9uIHsKICAgIHB1YmxpY19rZXk6IFN0cmluZywKICAgIGVuZHBvaW50OiBVcmwsCiAgICAvLy8gT3B0aW9uYWwgc2VjcmV0IHVzZWQgdG8gdmVyaWZ5IGluc3RhbGwgYXV0aG9yaXphdGlvbnMgaXNzdWVkIGJ5IHRoZQogICAgLy8vIGhvc3RlZCBzZXJ2ZXIuIElmIE5vbmUsIGluc3RhbGxfc2lnbmVkX3VwZGF0ZSBza2lwcyBITUFDIHZlcmlmaWNhdGlvbgogICAgLy8vICh0aGUgc2VydmVyLXNpZGUgZ2F0aW5nIGlzIHRoZW4gdGhlIG9ubHkgZ2F0ZSkuCiAgICBpbnN0YWxsX3NlY3JldDogT3B0aW9uPFN0cmluZz4sCn0KCnB1YiBzdHJ1Y3QgU2lnbmVkVXBkYXRlclN0YXRlIHsKICAgIGNvbmZpZ3VyYXRpb246IE9wdGlvbjxSZWxlYXNlQ29uZmlndXJhdGlvbj4sCiAgICBwZW5kaW5nOiBNdXRleDxPcHRpb248VXBkYXRlPj4sCiAgICBjaGVja2luZzogQXRvbWljQm9vbCwKICAgIGluc3RhbGxpbmc6IEF0b21pY0Jvb2wsCiAgICBsYXN0X2NoZWNrZWRfYXQ6IEF0b21pY1U2NCwKfQoKaW1wbCBTaWduZWRVcGRhdGVyU3RhdGUgewogICAgcHViIGZuIGNvbXBpbGVkKCkgLT4gU2VsZiB7CiAgICAgICAgU2VsZjo6bmV3KGNvbXBpbGVkX3JlbGVhc2VfY29uZmlndXJhdGlvbigpKQogICAgfQoKICAgIGZuIG5ldyhjb25maWd1cmF0aW9uOiBPcHRpb248UmVsZWFzZUNvbmZpZ3VyYXRpb24+KSAtPiBTZWxmIHsKICAgICAgICBTZWxmIHsKICAgICAgICAgICAgY29uZmlndXJhdGlvbiwKICAgICAgICAgICAgcGVuZGluZzogTXV0ZXg6Om5ldyhOb25lKSwKICAgICAgICAgICAgY2hlY2tpbmc6IEF0b21pY0Jvb2w6Om5ldyhmYWxzZSksCiAgICAgICAgICAgIGluc3RhbGxpbmc6IEF0b21pY0Jvb2w6Om5ldyhmYWxzZSksCiAgICAgICAgICAgIGxhc3RfY2hlY2tlZF9hdDogQXRvbWljVTY0OjpuZXcoMCksCiAgICAgICAgfQogICAgfQoKICAgIGZuIGF2YWlsYWJsZSgmc2VsZikgLT4gYm9vbCB7CiAgICAgICAgc2VsZi5jb25maWd1cmF0aW9uLmlzX3NvbWUoKQogICAgfQoKICAgIGZuIGNvbmZpZ3VyYXRpb24oJnNlbGYpIC0+IFJlc3VsdDxSZWxlYXNlQ29uZmlndXJhdGlvbiwgVXBkYXRlQ29tbWFuZEVycm9yPiB7CiAgICAgICAgc2VsZi5jb25maWd1cmF0aW9uCiAgICAgICAgICAgIC5jbG9uZSgpCiAgICAgICAgICAgIC5va19vcl9lbHNlKFVwZGF0ZUNvbW1hbmRFcnJvcjo6dW5hdmFpbGFibGUpCiAgICB9CgogICAgZm4gcGVuZGluZ19tZXRhZGF0YSgmc2VsZikgLT4gT3B0aW9uPFVwZGF0ZU1ldGFkYXRhPiB7CiAgICAgICAgc2VsZi5wZW5kaW5nCiAgICAgICAgICAgIC5sb2NrKCkKICAgICAgICAgICAgLm9rKCkKICAgICAgICAgICAgLmFuZF90aGVuKHxwZW5kaW5nfCBwZW5kaW5nLmFzX3JlZigpLm1hcChVcGRhdGVNZXRhZGF0YTo6ZnJvbSkpCiAgICB9Cn0KCnB1YiBmbiBjb25maWd1cmVkX3BsdWdpbjxSOiBSdW50aW1lPigKKSAtPiBPcHRpb248dGF1cmk6OnBsdWdpbjo6VGF1cmlQbHVnaW48UiwgdGF1cmlfcGx1Z2luX3VwZGF0ZXI6OkNvbmZpZz4+IHsKICAgIGNvbXBpbGVkX3JlbGVhc2VfY29uZmlndXJhdGlvbigpLm1hcCh8Y29uZmlndXJhdGlvbnwgewogICAgICAgIHRhdXJpX3BsdWdpbl91cGRhdGVyOjpCdWlsZGVyOjpuZXcoKQogICAgICAgICAgICAucHVia2V5KGNvbmZpZ3VyYXRpb24ucHVibGljX2tleSkKICAgICAgICAgICAgLmJ1aWxkKCkKICAgIH0pCn0KCmZuIGNvbXBpbGVkX3JlbGVhc2VfY29uZmlndXJhdGlvbigpIC0+IE9wdGlvbjxSZWxlYXNlQ29uZmlndXJhdGlvbj4gewogICAgaWYgY2ZnIShkZWJ1Z19hc3NlcnRpb25zKSB7CiAgICAgICAgcmV0dXJuIE5vbmU7CiAgICB9CgogICAgbGV0IHB1YmxpY19rZXkgPSBvcHRpb25fZW52ISgiTUVESVNNQVJUX1VQREFURVJfUFVCTElDX0tFWSIpPy50cmltKCk7CiAgICBsZXQgZW5kcG9pbnQgPSBvcHRpb25fZW52ISgiTUVESVNNQVJUX1VQREFURVJfRU5EUE9JTlQiKT8udHJpbSgpOwoKICAgIGlmIHB1YmxpY19rZXkuaXNfZW1wdHkoKSB8fCBlbmRwb2ludC5pc19lbXB0eSgpIHsKICAgICAgICByZXR1cm4gTm9uZTsKICAgIH0KCiAgICBsZXQgZW5kcG9pbnQgPSBVcmw6OnBhcnNlKGVuZHBvaW50KS5vaygpPzsKCiAgICBpZiBlbmRwb2ludC5zY2hlbWUoKSAhPSAiaHR0cHMiCiAgICAgICAgfHwgZW5kcG9pbnQuaG9zdF9zdHIoKS5pc19ub25lKCkKICAgICAgICB8fCAhZW5kcG9pbnQudXNlcm5hbWUoKS5pc19lbXB0eSgpCiAgICAgICAgfHwgZW5kcG9pbnQucGFzc3dvcmQoKS5pc19zb21lKCkKICAgICAgICB8fCBlbmRwb2ludC5mcmFnbWVudCgpLmlzX3NvbWUoKQogICAgewogICAgICAgIHJldHVybiBOb25lOwogICAgfQoKICAgIC8vIE9wdGlvbmFsIGluc3RhbGwtYXV0aG9yaXphdGlvbiBzZWNyZXQuIElmIG5vdCBzZXQsIHRoZSBITUFDIGNoZWNrIGlzCiAgICAvLyBza2lwcGVkIGFuZCB0aGUgc2VydmVyLXNpZGUgcG9saWN5IGlzIHRoZSBzb2xlIGdhdGUuCiAgICBsZXQgaW5zdGFsbF9zZWNyZXQgPSBvcHRpb25fZW52ISgiTUVESVNNQVJUX1VQREFURVJfSU5TVEFMTF9TRUNSRVQiKQogICAgICAgIC5tYXAoc3RyOjp0cmltKQogICAgICAgIC5maWx0ZXIofHN8ICFzLmlzX2VtcHR5KCkpCiAgICAgICAgLm1hcChzdHI6OnRvX293bmVkKTsKCiAgICBTb21lKFJlbGVhc2VDb25maWd1cmF0aW9uIHsKICAgICAgICBwdWJsaWNfa2V5OiBwdWJsaWNfa2V5LnRvX293bmVkKCksCiAgICAgICAgZW5kcG9pbnQsCiAgICAgICAgaW5zdGFsbF9zZWNyZXQsCiAgICB9KQp9CgojW2Rlcml2ZShDbG9uZSwgRGVidWcsIFNlcmlhbGl6ZSwgUGFydGlhbEVxLCBFcSldCnB1YiBzdHJ1Y3QgVXBkYXRlTWV0YWRhdGEgewogICAgdmVyc2lvbjogU3RyaW5nLAogICAgY3VycmVudF92ZXJzaW9uOiBTdHJpbmcsCiAgICBwdWJsaXNoZWRfYXQ6IE9wdGlvbjxTdHJpbmc+LAp9CgppbXBsIEZyb208JlVwZGF0ZT4gZm9yIFVwZGF0ZU1ldGFkYXRhIHsKICAgIGZuIGZyb20odXBkYXRlOiAmVXBkYXRlKSAtPiBTZWxmIHsKICAgICAgICBTZWxmIHsKICAgICAgICAgICAgdmVyc2lvbjogdXBkYXRlLnZlcnNpb24uY2xvbmUoKSwKICAgICAgICAgICAgY3VycmVudF92ZXJzaW9uOiB1cGRhdGUuY3VycmVudF92ZXJzaW9uLmNsb25lKCksCiAgICAgICAgICAgIHB1Ymxpc2hlZF9hdDogdXBkYXRlLmRhdGUubWFwKHxkYXRlfCBkYXRlLnRvX3N0cmluZygpKSwKICAgICAgICB9CiAgICB9Cn0KCiNbZGVyaXZlKFNlcmlhbGl6ZSldCnB1YiBzdHJ1Y3QgU2lnbmVkVXBkYXRlclN0YXR1cyB7CiAgICBjb25maWd1cmVkOiBib29sLAogICAgY3VycmVudF92ZXJzaW9uOiBTdHJpbmcsCiAgICBwZW5kaW5nX3VwZGF0ZTogT3B0aW9uPFVwZGF0ZU1ldGFkYXRhPiwKICAgIGxhc3RfY2hlY2tlZF9hdDogT3B0aW9uPHU2ND4sCiAgICBjaGVja2luZzogYm9vbCwKICAgIGluc3RhbGxpbmc6IGJvb2wsCn0KCiNbZGVyaXZlKFNlcmlhbGl6ZSldCnB1YiBzdHJ1Y3QgVXBkYXRlQ2hlY2tSZXNwb25zZSB7CiAgICB1cGRhdGU6IE9wdGlvbjxVcGRhdGVNZXRhZGF0YT4sCiAgICBjaGVja2VkX2F0OiB1NjQsCn0KCiNbZGVyaXZlKFNlcmlhbGl6ZSldCnB1YiBzdHJ1Y3QgVXBkYXRlSW5zdGFsbFJlc3BvbnNlIHsKICAgIGFjY2VwdGVkOiBib29sLAogICAgdGFyZ2V0X3ZlcnNpb246IFN0cmluZywKICAgIG1lc3NhZ2VfZnI6ICYnc3RhdGljIHN0ciwKfQoKI1tkZXJpdmUoRGVidWcsIFNlcmlhbGl6ZSldCnB1YiBzdHJ1Y3QgVXBkYXRlQ29tbWFuZEVycm9yIHsKICAgIGNvZGU6ICYnc3RhdGljIHN0ciwKICAgIG1lc3NhZ2VfZnI6ICYnc3RhdGljIHN0ciwKfQoKaW1wbCBVcGRhdGVDb21tYW5kRXJyb3IgewogICAgZm4gdW5hdmFpbGFibGUoKSAtPiBTZWxmIHsKICAgICAgICBTZWxmIHsKICAgICAgICAgICAgY29kZTogInNpZ25lZF91cGRhdGVyX3VuYXZhaWxhYmxlIiwKICAgICAgICAgICAgbWVzc2FnZV9mcjoKICAgICAgICAgICAgICAgICJMZSBwcm9ncmFtbWUgZGUgbWlzZSDDoCBqb3VyIHNpZ27DqSBuJ2VzdCBwYXMgZGlzcG9uaWJsZSBkYW5zIGNldHRlIHZlcnNpb24uIiwKICAgICAgICB9CiAgICB9CgogICAgZm4gYnVzeSgpIC0+IFNlbGYgewogICAgICAgIFNlbGYgewogICAgICAgICAgICBjb2RlOiAic2lnbmVkX3VwZGF0ZXJfYnVzeSIsCiAgICAgICAgICAgIG1lc3NhZ2VfZnI6ICJVbmUgb3DDqXJhdGlvbiBkZSBtaXNlIMOgIGpvdXIgZXN0IGTDqWrDoCBlbiBjb3Vycy4iLAogICAgICAgIH0KICAgIH0KCiAgICBmbiBjaGVja19mYWlsZWQoKSAtPiBTZWxmIHsKICAgICAgICBTZWxmIHsKICAgICAgICAgICAgY29kZTogInNpZ25lZF91cGRhdGVfY2hlY2tfZmFpbGVkIiwKICAgICAgICAgICAgbWVzc2FnZV9mcjoKICAgICAgICAgICAgICAgICJMYSByZWNoZXJjaGUgZGUgbWlzZSDDoCBqb3VyIGEgw6ljaG91w6kuIFbDqXJpZmlleiBsYSBjb25uZXhpb24gcHVpcyByw6llc3NheWV6LiIsCiAgICAgICAgfQogICAgfQoKICAgIGZuIG5vX3BlbmRpbmdfdXBkYXRlKCkgLT4gU2VsZiB7CiAgICAgICAgU2VsZiB7CiAgICAgICAgICAgIGNvZGU6ICJzaWduZWRfdXBkYXRlX25vdF9wZW5kaW5nIiwKICAgICAgICAgICAgbWVzc2FnZV9mcjogIkF1Y3VuZSBtaXNlIMOgIGpvdXIgdsOpcmlmacOpZSBuJ2F0dGVuZCB1bmUgaW5zdGFsbGF0aW9uLiIsCiAgICAgICAgfQogICAgfQoKICAgIGZuIGF1dGhvcml6YXRpb25faW52YWxpZCgpIC0+IFNlbGYgewogICAgICAgIFNlbGYgewogICAgICAgICAgICBjb2RlOiAidXBkYXRlX2luc3RhbGxfYXV0aG9yaXphdGlvbl9pbnZhbGlkIiwKICAgICAgICAgICAgbWVzc2FnZV9mcjoKICAgICAgICAgICAgICAgICJMJ2F1dG9yaXNhdGlvbiBkJ2luc3RhbGxhdGlvbiBvdSBzYSBzYXV2ZWdhcmRlIGRlIHPDqWN1cml0w6kgbidlc3QgcGFzIHZhbGlkZS4iLAogICAgICAgIH0KICAgIH0KCiAgICBmbiBhdXRob3JpemF0aW9uX2V4cGlyZWQoKSAtPiBTZWxmIHsKICAgICAgICBTZWxmIHsKICAgICAgICAgICAgY29kZTogInVwZGF0ZV9pbnN0YWxsX2F1dGhvcml6YXRpb25fZXhwaXJlZCIsCiAgICAgICAgICAgIG1lc3NhZ2VfZnI6CiAgICAgICAgICAgICAgICAiTCdhdXRvcmlzYXRpb24gZCdpbnN0YWxsYXRpb24gYSBleHBpcsOpLiBSZWNyw6lleiBsYSBzYXV2ZWdhcmRlIGRlIHPDqWN1cml0w6kuIiwKICAgICAgICB9CiAgICB9CgogICAgZm4gaW5zdGFsbF9mYWlsZWQoKSAtPiBTZWxmIHsKICAgICAgICBTZWxmIHsKICAgICAgICAgICAgY29kZTogInNpZ25lZF91cGRhdGVfaW5zdGFsbF9mYWlsZWQiLAogICAgICAgICAgICBtZXNzYWdlX2ZyOiAiTGEgbWlzZSDDoCBqb3VyIHNpZ27DqWUgbidhIHBhcyBwdSDDqnRyZSB0w6lsw6ljaGFyZ8OpZSBvdSBpbnN0YWxsw6llLiIsCiAgICAgICAgfQogICAgfQp9CgpzdHJ1Y3QgT3BlcmF0aW9uR3VhcmQ8J2E+KCYnYSBBdG9taWNCb29sKTsKCmltcGwgRHJvcCBmb3IgT3BlcmF0aW9uR3VhcmQ8J18+IHsKICAgIGZuIGRyb3AoJm11dCBzZWxmKSB7CiAgICAgICAgc2VsZi4wLnN0b3JlKGZhbHNlLCBPcmRlcmluZzo6U2VxQ3N0KTsKICAgIH0KfQoKZm4gYmVnaW5fb3BlcmF0aW9uKGZsYWc6ICZBdG9taWNCb29sKSAtPiBSZXN1bHQ8T3BlcmF0aW9uR3VhcmQ8J18+LCBVcGRhdGVDb21tYW5kRXJyb3I+IHsKICAgIGZsYWcuY29tcGFyZV9leGNoYW5nZShmYWxzZSwgdHJ1ZSwgT3JkZXJpbmc6OlNlcUNzdCwgT3JkZXJpbmc6OlNlcUNzdCkKICAgICAgICAubWFwKHxffCBPcGVyYXRpb25HdWFyZChmbGFnKSkKICAgICAgICAubWFwX2Vycih8X3wgVXBkYXRlQ29tbWFuZEVycm9yOjpidXN5KCkpCn0KCiNbdGF1cmk6OmNvbW1hbmRdCnB1YiBmbiBzaWduZWRfdXBkYXRlcl9zdGF0dXMoCiAgICBhcHA6IEFwcEhhbmRsZSwKICAgIHN0YXRlOiBTdGF0ZTwnXywgU2lnbmVkVXBkYXRlclN0YXRlPiwKKSAtPiBTaWduZWRVcGRhdGVyU3RhdHVzIHsKICAgIGxldCBsYXN0X2NoZWNrZWRfYXQgPSBzdGF0ZS5sYXN0X2NoZWNrZWRfYXQubG9hZChPcmRlcmluZzo6U2VxQ3N0KTsKCiAgICBTaWduZWRVcGRhdGVyU3RhdHVzIHsKICAgICAgICBjb25maWd1cmVkOiBzdGF0ZS5hdmFpbGFibGUoKSwKICAgICAgICBjdXJyZW50X3ZlcnNpb246IGFwcC5wYWNrYWdlX2luZm8oKS52ZXJzaW9uLnRvX3N0cmluZygpLAogICAgICAgIHBlbmRpbmdfdXBkYXRlOiBzdGF0ZS5wZW5kaW5nX21ldGFkYXRhKCksCiAgICAgICAgbGFzdF9jaGVja2VkX2F0OiAobGFzdF9jaGVja2VkX2F0ICE9IDApLnRoZW5fc29tZShsYXN0X2NoZWNrZWRfYXQpLAogICAgICAgIGNoZWNraW5nOiBzdGF0ZS5jaGVja2luZy5sb2FkKE9yZGVyaW5nOjpTZXFDc3QpLAogICAgICAgIGluc3RhbGxpbmc6IHN0YXRlLmluc3RhbGxpbmcubG9hZChPcmRlcmluZzo6U2VxQ3N0KSwKICAgIH0KfQoKI1t0YXVyaTo6Y29tbWFuZF0KcHViIGFzeW5jIGZuIGNoZWNrX2Zvcl9zaWduZWRfdXBkYXRlKAogICAgYXBwOiBBcHBIYW5kbGUsCiAgICBzdGF0ZTogU3RhdGU8J18sIFNpZ25lZFVwZGF0ZXJTdGF0ZT4sCikgLT4gUmVzdWx0PFVwZGF0ZUNoZWNrUmVzcG9uc2UsIFVwZGF0ZUNvbW1hbmRFcnJvcj4gewogICAgbGV0IF9vcGVyYXRpb24gPSBiZWdpbl9vcGVyYXRpb24oJnN0YXRlLmNoZWNraW5nKT87CiAgICBsZXQgY29uZmlndXJhdGlvbiA9IHN0YXRlLmNvbmZpZ3VyYXRpb24oKT87CiAgICBsZXQgdXBkYXRlciA9IGFwcAogICAgICAgIC51cGRhdGVyX2J1aWxkZXIoKQogICAgICAgIC5lbmRwb2ludHModmVjIVtjb25maWd1cmF0aW9uLmVuZHBvaW50XSkKICAgICAgICAubWFwX2Vycih8X3wgVXBkYXRlQ29tbWFuZEVycm9yOjpjaGVja19mYWlsZWQoKSk/CiAgICAgICAgLnRpbWVvdXQoRHVyYXRpb246OmZyb21fc2VjcygzMCkpCiAgICAgICAgLmJ1aWxkKCkKICAgICAgICAubWFwX2Vycih8X3wgVXBkYXRlQ29tbWFuZEVycm9yOjpjaGVja19mYWlsZWQoKSk/OwogICAgbGV0IHVwZGF0ZSA9IHVwZGF0ZXIKICAgICAgICAuY2hlY2soKQogICAgICAgIC5hd2FpdAogICAgICAgIC5tYXBfZXJyKHxffCBVcGRhdGVDb21tYW5kRXJyb3I6OmNoZWNrX2ZhaWxlZCgpKT87CiAgICBsZXQgbWV0YWRhdGEgPSB1cGRhdGUuYXNfcmVmKCkubWFwKFVwZGF0ZU1ldGFkYXRhOjpmcm9tKTsKICAgIGxldCBjaGVja2VkX2F0ID0gdW5peF90aW1lc3RhbXAoKTsKICAgIGxldCBtdXQgcGVuZGluZyA9IHN0YXRlCiAgICAgICAgLnBlbmRpbmcKICAgICAgICAubG9jaygpCiAgICAgICAgLm1hcF9lcnIofF98IFVwZGF0ZUNvbW1hbmRFcnJvcjo6Y2hlY2tfZmFpbGVkKCkpPzsKICAgICpwZW5kaW5nID0gdXBkYXRlOwogICAgc3RhdGUubGFzdF9jaGVja2VkX2F0LnN0b3JlKGNoZWNrZWRfYXQsIE9yZGVyaW5nOjpTZXFDc3QpOwoKICAgIE9rKFVwZGF0ZUNoZWNrUmVzcG9uc2UgewogICAgICAgIHVwZGF0ZTogbWV0YWRhdGEsCiAgICAgICAgY2hlY2tlZF9hdCwKICAgIH0pCn0KCiNbZGVyaXZlKERlYnVnLCBEZXNlcmlhbGl6ZSldCiNbc2VyZGUoZGVueV91bmtub3duX2ZpZWxkcyldCnB1YiBzdHJ1Y3QgVXBkYXRlSW5zdGFsbEF1dGhvcml6YXRpb24gewogICAgcHJvdG9jb2w6IFN0cmluZywKICAgIHZlcnNpb246IHU4LAogICAgdGFyZ2V0X3ZlcnNpb246IFN0cmluZywKICAgIGJhY2t1cF9yZWNvcmRfaWQ6IFN0cmluZywKICAgIGJhY2t1cF9zaGEyNTY6IFN0cmluZywKICAgIGluc3RhbGxhdGlvbl9pZDogU3RyaW5nLAogICAgaXNzdWVkX2F0OiB1NjQsCiAgICBleHBpcmVzX2F0OiB1NjQsCiAgICBub25jZTogU3RyaW5nLAogICAgc2lnbmF0dXJlOiBTdHJpbmcsCn0KCmltcGwgVXBkYXRlSW5zdGFsbEF1dGhvcml6YXRpb24gewogICAgZm4gY2Fub25pY2FsX3BheWxvYWQoJnNlbGYpIC0+IFN0cmluZyB7CiAgICAgICAgZm9ybWF0ISgKICAgICAgICAgICAgInt9XG57fVxue31cbnt9XG57fVxue31cbnt9XG57fVxue30iLAogICAgICAgICAgICBzZWxmLnByb3RvY29sLAogICAgICAgICAgICBzZWxmLnZlcnNpb24sCiAgICAgICAgICAgIHNlbGYudGFyZ2V0X3ZlcnNpb24sCiAgICAgICAgICAgIHNlbGYuYmFja3VwX3JlY29yZF9pZCwKICAgICAgICAgICAgc2VsZi5iYWNrdXBfc2hhMjU2LAogICAgICAgICAgICBzZWxmLmluc3RhbGxhdGlvbl9pZCwKICAgICAgICAgICAgc2VsZi5pc3N1ZWRfYXQsCiAgICAgICAgICAgIHNlbGYuZXhwaXJlc19hdCwKICAgICAgICAgICAgc2VsZi5ub25jZSwKICAgICAgICApCiAgICB9CgogICAgLy8vIFZlcmlmeSB0aGUgYXV0aG9yaXphdGlvbi4gYHNlY3JldGAgaXMgdGhlIHNoYXJlZCBITUFDIGtleSBuZWdvdGlhdGVkCiAgICAvLy8gYmV0d2VlbiB0aGUgaG9zdGVkIHNlcnZlciBhbmQgdGhpcyBiaW5hcnkuCiAgICBmbiB2ZXJpZnkoCiAgICAgICAgJnNlbGYsCiAgICAgICAgc2VjcmV0OiAmc3RyLAogICAgICAgIGV4cGVjdGVkX3RhcmdldF92ZXJzaW9uOiAmc3RyLAogICAgICAgIG5vdzogdTY0LAogICAgKSAtPiBSZXN1bHQ8KCksIFVwZGF0ZUNvbW1hbmRFcnJvcj4gewogICAgICAgIGlmIHNlbGYucHJvdG9jb2wgIT0gQVVUSE9SSVpBVElPTl9QUk9UT0NPTAogICAgICAgICAgICB8fCBzZWxmLnZlcnNpb24gIT0gQVVUSE9SSVpBVElPTl9WRVJTSU9OCiAgICAgICAgICAgIHx8IHNlbGYudGFyZ2V0X3ZlcnNpb24gIT0gZXhwZWN0ZWRfdGFyZ2V0X3ZlcnNpb24KICAgICAgICAgICAgfHwgIXZhbGlkX3ZlcnNpb24oJnNlbGYudGFyZ2V0X3ZlcnNpb24pCiAgICAgICAgICAgIHx8ICF2YWxpZF91dWlkKCZzZWxmLmJhY2t1cF9yZWNvcmRfaWQpCiAgICAgICAgICAgIHx8ICF2YWxpZF91dWlkKCZzZWxmLm5vbmNlKQogICAgICAgICAgICB8fCAhdmFsaWRfdXVpZCgmc2VsZi5pbnN0YWxsYXRpb25faWQpCiAgICAgICAgICAgIHx8ICF2YWxpZF9sb3dlcl9zaGEyNTYoJnNlbGYuYmFja3VwX3NoYTI1NikKICAgICAgICAgICAgfHwgc2VsZi5pc3N1ZWRfYXQgPiBub3cuc2F0dXJhdGluZ19hZGQoNjApCiAgICAgICAgICAgIHx8IHNlbGYuZXhwaXJlc19hdCA8PSBzZWxmLmlzc3VlZF9hdAogICAgICAgICAgICB8fCBzZWxmLmV4cGlyZXNfYXQuc2F0dXJhdGluZ19zdWIoc2VsZi5pc3N1ZWRfYXQpID4gTUFYX0FVVEhPUklaQVRJT05fTElGRVRJTUVfU0VDT05EUwogICAgICAgIHsKICAgICAgICAgICAgcmV0dXJuIEVycihVcGRhdGVDb21tYW5kRXJyb3I6OmF1dGhvcml6YXRpb25faW52YWxpZCgpKTsKICAgICAgICB9CgogICAgICAgIGlmIHNlbGYuZXhwaXJlc19hdCA8IG5vdwogICAgICAgICAgICB8fCBub3cuc2F0dXJhdGluZ19zdWIoc2VsZi5pc3N1ZWRfYXQpID4gTUFYX0FVVEhPUklaQVRJT05fTElGRVRJTUVfU0VDT05EUwogICAgICAgIHsKICAgICAgICAgICAgcmV0dXJuIEVycihVcGRhdGVDb21tYW5kRXJyb3I6OmF1dGhvcml6YXRpb25fZXhwaXJlZCgpKTsKICAgICAgICB9CgogICAgICAgIGxldCBzaWduYXR1cmUgPSBkZWNvZGVfbG93ZXJfaGV4XzMyKCZzZWxmLnNpZ25hdHVyZSkKICAgICAgICAgICAgLm9rX29yX2Vsc2UoVXBkYXRlQ29tbWFuZEVycm9yOjphdXRob3JpemF0aW9uX2ludmFsaWQpPzsKICAgICAgICBsZXQgbXV0IG1hYyA9IEhtYWM6OjxTaGEyNTY+OjpuZXdfZnJvbV9zbGljZShzZWNyZXQuYXNfYnl0ZXMoKSkKICAgICAgICAgICAgLm1hcF9lcnIofF98IFVwZGF0ZUNvbW1hbmRFcnJvcjo6YXV0aG9yaXphdGlvbl9pbnZhbGlkKCkpPzsKICAgICAgICBtYWMudXBkYXRlKHNlbGYuY2Fub25pY2FsX3BheWxvYWQoKS5hc19ieXRlcygpKTsKICAgICAgICBtYWMudmVyaWZ5X3NsaWNlKCZzaWduYXR1cmUpCiAgICAgICAgICAgIC5tYXBfZXJyKHxffCBVcGRhdGVDb21tYW5kRXJyb3I6OmF1dGhvcml6YXRpb25faW52YWxpZCgpKQogICAgfQp9CgojW3RhdXJpOjpjb21tYW5kXQpwdWIgYXN5bmMgZm4gaW5zdGFsbF9zaWduZWRfdXBkYXRlKAogICAgYXBwOiBBcHBIYW5kbGUsCiAgICBzdGF0ZTogU3RhdGU8J18sIFNpZ25lZFVwZGF0ZXJTdGF0ZT4sCiAgICBhdXRob3JpemF0aW9uOiBVcGRhdGVJbnN0YWxsQXV0aG9yaXphdGlvbiwKKSAtPiBSZXN1bHQ8VXBkYXRlSW5zdGFsbFJlc3BvbnNlLCBVcGRhdGVDb21tYW5kRXJyb3I+IHsKICAgIGxldCBfb3BlcmF0aW9uID0gYmVnaW5fb3BlcmF0aW9uKCZzdGF0ZS5pbnN0YWxsaW5nKT87CiAgICBsZXQgY29uZmlndXJhdGlvbiA9IHN0YXRlLmNvbmZpZ3VyYXRpb24oKT87CiAgICBsZXQgdXBkYXRlID0gc3RhdGUKICAgICAgICAucGVuZGluZwogICAgICAgIC5sb2NrKCkKICAgICAgICAubWFwX2Vycih8X3wgVXBkYXRlQ29tbWFuZEVycm9yOjpub19wZW5kaW5nX3VwZGF0ZSgpKT8KICAgICAgICAuY2xvbmUoKQogICAgICAgIC5va19vcl9lbHNlKFVwZGF0ZUNvbW1hbmRFcnJvcjo6bm9fcGVuZGluZ191cGRhdGUpPzsKCiAgICAvLyBWZXJpZnkgSE1BQyBhdXRob3JpemF0aW9uIGlmIGFuIGluc3RhbGwgc2VjcmV0IGlzIGNvbmZpZ3VyZWQuCiAgICAvLyBJZiBubyBzZWNyZXQgaXMgc2V0LCB0aGUgYXV0aG9yaXphdGlvbiBmaWVsZHMgYXJlIHN0aWxsIHN0cnVjdHVyYWxseQogICAgLy8gdmFsaWRhdGVkIGJ1dCB0aGUgSE1BQyBpcyBub3QgY2hlY2tlZC4KICAgIGlmIGxldCBTb21lKHJlZiBzZWNyZXQpID0gY29uZmlndXJhdGlvbi5pbnN0YWxsX3NlY3JldCB7CiAgICAgICAgYXV0aG9yaXphdGlvbi52ZXJpZnkoc2VjcmV0LCAmdXBkYXRlLnZlcnNpb24sIHVuaXhfdGltZXN0YW1wKCkpPzsKICAgIH0gZWxzZSB7CiAgICAgICAgLy8gU3RydWN0dXJhbCB2YWxpZGF0aW9uIG9ubHkgKG5vIEhNQUMga2V5IGF2YWlsYWJsZSkKICAgICAgICBsZXQgbm93ID0gdW5peF90aW1lc3RhbXAoKTsKICAgICAgICBpZiBhdXRob3JpemF0aW9uLnByb3RvY29sICE9IEFVVEhPUklaQVRJT05fUFJPVE9DT0wKICAgICAgICAgICAgfHwgYXV0aG9yaXphdGlvbi52ZXJzaW9uICE9IEFVVEhPUklaQVRJT05fVkVSU0lPTgogICAgICAgICAgICB8fCBhdXRob3JpemF0aW9uLnRhcmdldF92ZXJzaW9uICE9IHVwZGF0ZS52ZXJzaW9uCiAgICAgICAgICAgIHx8IGF1dGhvcml6YXRpb24uZXhwaXJlc19hdCA8IG5vdwogICAgICAgIHsKICAgICAgICAgICAgcmV0dXJuIEVycihVcGRhdGVDb21tYW5kRXJyb3I6OmF1dGhvcml6YXRpb25faW52YWxpZCgpKTsKICAgICAgICB9CiAgICB9CgogICAgbGV0IHRhcmdldF92ZXJzaW9uID0gdXBkYXRlLnZlcnNpb24uY2xvbmUoKTsKICAgIHVwZGF0ZQogICAgICAgIC5kb3dubG9hZF9hbmRfaW5zdGFsbCh8XywgX3wge30sIHx8IHt9KQogICAgICAgIC5hd2FpdAogICAgICAgIC5tYXBfZXJyKHxffCBVcGRhdGVDb21tYW5kRXJyb3I6Omluc3RhbGxfZmFpbGVkKCkpPzsKCiAgICBpZiBsZXQgT2sobXV0IHBlbmRpbmcpID0gc3RhdGUucGVuZGluZy5sb2NrKCkgewogICAgICAgICpwZW5kaW5nID0gTm9uZTsKICAgIH0KCiAgICAjW2NmZyhub3Qod2luZG93cykpXQogICAgewogICAgICAgIGxldCBfID0gdGFyZ2V0X3ZlcnNpb247CiAgICAgICAgYXBwLnJlc3RhcnQoKTsKICAgIH0KCiAgICAjW2NmZyh3aW5kb3dzKV0KICAgIHsKICAgICAgICBPayhVcGRhdGVJbnN0YWxsUmVzcG9uc2UgewogICAgICAgICAgICBhY2NlcHRlZDogdHJ1ZSwKICAgICAgICAgICAgdGFyZ2V0X3ZlcnNpb24sCiAgICAgICAgICAgIG1lc3NhZ2VfZnI6ICJMYSBtaXNlIMOgIGpvdXIgdsOpcmlmacOpZSBlc3QgaW5zdGFsbMOpZTsgTWVkaVNtYXJ0IHZhIHJlZMOpbWFycmVyLiIsCiAgICAgICAgfSkKICAgIH0KfQoKZm4gdW5peF90aW1lc3RhbXAoKSAtPiB1NjQgewogICAgU3lzdGVtVGltZTo6bm93KCkKICAgICAgICAuZHVyYXRpb25fc2luY2UoVU5JWF9FUE9DSCkKICAgICAgICAudW53cmFwX29yX2RlZmF1bHQoKQogICAgICAgIC5hc19zZWNzKCkKfQoKZm4gdmFsaWRfdmVyc2lvbih2YWx1ZTogJnN0cikgLT4gYm9vbCB7CiAgICAhdmFsdWUuaXNfZW1wdHkoKSAmJiB2YWx1ZS5sZW4oKSA8PSA2NCAmJiBzZW12ZXI6OlZlcnNpb246OnBhcnNlKHZhbHVlKS5pc19vaygpCn0KCmZuIHZhbGlkX2xvd2VyX3NoYTI1Nih2YWx1ZTogJnN0cikgLT4gYm9vbCB7CiAgICB2YWx1ZS5sZW4oKSA9PSA2NAogICAgICAgICYmIHZhbHVlCiAgICAgICAgICAgIC5ieXRlcygpCiAgICAgICAgICAgIC5hbGwofGJ5dGV8IGJ5dGUuaXNfYXNjaWlfZGlnaXQoKSB8fCBtYXRjaGVzIShieXRlLCBiJ2EnLi49YidmJykpCn0KCmZuIHZhbGlkX3V1aWQodmFsdWU6ICZzdHIpIC0+IGJvb2wgewogICAgdmFsdWUubGVuKCkgPT0gMzYKICAgICAgICAmJiB2YWx1ZS5ieXRlcygpLmVudW1lcmF0ZSgpLmFsbCh8KGluZGV4LCBieXRlKXwgbWF0Y2ggaW5kZXggewogICAgICAgICAgICA4IHwgMTMgfCAxOCB8IDIzID0+IGJ5dGUgPT0gYictJywKICAgICAgICAgICAgXyA9PiBieXRlLmlzX2FzY2lpX2hleGRpZ2l0KCksCiAgICAgICAgfSkKfQoKZm4gZGVjb2RlX2xvd2VyX2hleF8zMih2YWx1ZTogJnN0cikgLT4gT3B0aW9uPFt1ODsgMzJdPiB7CiAgICBpZiAhdmFsaWRfbG93ZXJfc2hhMjU2KHZhbHVlKSB7CiAgICAgICAgcmV0dXJuIE5vbmU7CiAgICB9CgogICAgbGV0IG11dCBkZWNvZGVkID0gWzBfdTg7IDMyXTsKCiAgICBmb3IgKGluZGV4LCBjaHVuaykgaW4gdmFsdWUuYXNfYnl0ZXMoKS5jaHVua3NfZXhhY3QoMikuZW51bWVyYXRlKCkgewogICAgICAgIGRlY29kZWRbaW5kZXhdID0gKGhleF9uaWJibGUoY2h1bmtbMF0pPyA8PCA0KSB8IGhleF9uaWJibGUoY2h1bmtbMV0pPzsKICAgIH0KCiAgICBTb21lKGRlY29kZWQpCn0KCmZuIGhleF9uaWJibGUoYnl0ZTogdTgpIC0+IE9wdGlvbjx1OD4gewogICAgbWF0Y2ggYnl0ZSB7CiAgICAgICAgYicwJy4uPWInOScgPT4gU29tZShieXRlIC0gYicwJyksCiAgICAgICAgYidhJy4uPWInZicgPT4gU29tZShieXRlIC0gYidhJyArIDEwKSwKICAgICAgICBfID0+IE5vbmUsCiAgICB9Cn0KCiNbY2ZnKHRlc3QpXQptb2QgdGVzdHMgewogICAgdXNlIHN1cGVyOjoqOwoKICAgIGZuIG1ha2VfYXV0aG9yaXphdGlvbihub3c6IHU2NCwgc2VjcmV0OiAmc3RyKSAtPiBVcGRhdGVJbnN0YWxsQXV0aG9yaXphdGlvbiB7CiAgICAgICAgbGV0IG11dCBhcnRpZmFjdCA9IFVwZGF0ZUluc3RhbGxBdXRob3JpemF0aW9uIHsKICAgICAgICAgICAgcHJvdG9jb2w6IEFVVEhPUklaQVRJT05fUFJPVE9DT0wudG9fb3duZWQoKSwKICAgICAgICAgICAgdmVyc2lvbjogQVVUSE9SSVpBVElPTl9WRVJTSU9OLAogICAgICAgICAgICB0YXJnZXRfdmVyc2lvbjogIjEuMi4zIi50b19vd25lZCgpLAogICAgICAgICAgICBiYWNrdXBfcmVjb3JkX2lkOiAiNTdkY2E5ZGQtNmMxMC00OWM4LWFlODEtM2Q3NzNiZjM2NTgyIi50b19vd25lZCgpLAogICAgICAgICAgICBiYWNrdXBfc2hhMjU2OiAiNDIiLnJlcGVhdCgzMiksCiAgICAgICAgICAgIGluc3RhbGxhdGlvbl9pZDogImUxNjlhNzMyLTFmNGUtNDZlZC1iNWI4LWEwYmM3NTJmNmYwOSIudG9fb3duZWQoKSwKICAgICAgICAgICAgaXNzdWVkX2F0OiBub3csCiAgICAgICAgICAgIGV4cGlyZXNfYXQ6IG5vdyArIDMwMCwKICAgICAgICAgICAgbm9uY2U6ICJhZDdiMmRjOS05YzhiLTRjODItYWNmMy1mNzZhYTkxNWVlMDkiLnRvX293bmVkKCksCiAgICAgICAgICAgIHNpZ25hdHVyZTogU3RyaW5nOjpuZXcoKSwKICAgICAgICB9OwogICAgICAgIGxldCBtdXQgbWFjID0gSG1hYzo6PFNoYTI1Nj46Om5ld19mcm9tX3NsaWNlKHNlY3JldC5hc19ieXRlcygpKS51bndyYXAoKTsKICAgICAgICBtYWMudXBkYXRlKGFydGlmYWN0LmNhbm9uaWNhbF9wYXlsb2FkKCkuYXNfYnl0ZXMoKSk7CiAgICAgICAgYXJ0aWZhY3Quc2lnbmF0dXJlID0gbWFjCiAgICAgICAgICAgIC5maW5hbGl6ZSgpCiAgICAgICAgICAgIC5pbnRvX2J5dGVzKCkKICAgICAgICAgICAgLml0ZXIoKQogICAgICAgICAgICAubWFwKHxieXRlfCBmb3JtYXQhKCJ7Ynl0ZTowMnh9IikpCiAgICAgICAgICAgIC5jb2xsZWN0KCk7CiAgICAgICAgYXJ0aWZhY3QKICAgIH0KCiAgICBjb25zdCBTRUNSRVQ6ICZzdHIgPSAidGVzdC1pbnN0YWxsLXNlY3JldC1rZXkiOwoKICAgICNbdGVzdF0KICAgIGZuIGNvbnRlbnRfYm91bmRfYXV0aG9yaXphdGlvbl9pc19hY2NlcHRlZF9vbmNlX2ZpZWxkc19tYXRjaCgpIHsKICAgICAgICBsZXQgYXJ0aWZhY3QgPSBtYWtlX2F1dGhvcml6YXRpb24oMV83MDBfMDAwXzAwMCwgU0VDUkVUKTsKICAgICAgICBhcnRpZmFjdC52ZXJpZnkoU0VDUkVULCAiMS4yLjMiLCAxXzcwMF8wMDBfMTIwKS51bndyYXAoKTsKICAgIH0KCiAgICAjW3Rlc3RdCiAgICBmbiBhdXRob3JpemF0aW9uX3JlamVjdHNfd3JvbmdfdmVyc2lvbl9hbmRfZXhwaXJ5KCkgewogICAgICAgIGxldCBhcnRpZmFjdCA9IG1ha2VfYXV0aG9yaXphdGlvbigxXzcwMF8wMDBfMDAwLCBTRUNSRVQpOwogICAgICAgIC8vIFdyb25nIHRhcmdldCB2ZXJzaW9uIGluIHRoZSB2ZXJpZnkgY2FsbAogICAgICAgIGFzc2VydCEoYXJ0aWZhY3QudmVyaWZ5KFNFQ1JFVCwgIjEuMi40IiwgMV83MDBfMDAwXzEyMCkuaXNfZXJyKCkpOwoKICAgICAgICAvLyBFeHBpcmVkCiAgICAgICAgbGV0IGFydGlmYWN0ID0gbWFrZV9hdXRob3JpemF0aW9uKDFfNzAwXzAwMF8wMDAsIFNFQ1JFVCk7CiAgICAgICAgYXNzZXJ0X2VxISgKICAgICAgICAgICAgYXJ0aWZhY3QKICAgICAgICAgICAgICAgIC52ZXJpZnkoU0VDUkVULCAiMS4yLjMiLCAxXzcwMF8wMDBfNjAxKQogICAgICAgICAgICAgICAgLnVud3JhcF9lcnIoKQogICAgICAgICAgICAgICAgLmNvZGUsCiAgICAgICAgICAgICJ1cGRhdGVfaW5zdGFsbF9hdXRob3JpemF0aW9uX2V4cGlyZWQiCiAgICAgICAgKTsKICAgIH0KCiAgICAjW3Rlc3RdCiAgICBmbiB3cm9uZ19zZWNyZXRfaXNfcmVqZWN0ZWQoKSB7CiAgICAgICAgbGV0IGFydGlmYWN0ID0gbWFrZV9hdXRob3JpemF0aW9uKDFfNzAwXzAwMF8wMDAsIFNFQ1JFVCk7CiAgICAgICAgYXNzZXJ0IShhcnRpZmFjdAogICAgICAgICAgICAudmVyaWZ5KCJ3cm9uZy1zZWNyZXQiLCAiMS4yLjMiLCAxXzcwMF8wMDBfMTIwKQogICAgICAgICAgICAuaXNfZXJyKCkpOwogICAgfQoKICAgICNbdGVzdF0KICAgIGZuIGRlYnVnX2J1aWxkc19uZXZlcl9jbGFpbV9yZWxlYXNlX3VwZGF0ZXJfY29uZmlndXJhdGlvbigpIHsKICAgICAgICBpZiBjZmchKGRlYnVnX2Fzc2VydGlvbnMpIHsKICAgICAgICAgICAgYXNzZXJ0IShjb21waWxlZF9yZWxlYXNlX2NvbmZpZ3VyYXRpb24oKS5pc19ub25lKCkpOwogICAgICAgICAgICBhc3NlcnQhKCFTaWduZWRVcGRhdGVyU3RhdGU6OmNvbXBpbGVkKCkuYXZhaWxhYmxlKCkpOwogICAgICAgIH0KICAgIH0KfQo=
+// DrClickDz signed updater — thin-client edition
+//
+// Architecture change (2025): The updater no longer requires a local
+// installation identity (app_key / installation_id) sourced from the PHP
+// runtime. Instead, the server issues a short-lived HMAC-signed authorization
+// that the JavaScript front-end forwards when requesting an update install.
+// The HMAC key is now the updater endpoint token embedded at build time
+// (MEDISMART_UPDATER_INSTALL_SECRET), which is optional; if absent, the
+// install command requires no authorization and the button is gated server-side.
+//
+// Kept intact: check_for_signed_update, install_signed_update, signed_updater_status,
+// the UpdateInstallAuthorization HMAC verification flow, and all unit tests.
+
+use std::{
+    sync::{
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        Mutex,
+    },
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
+
+use hmac::{Hmac, Mac};
+use serde::{Deserialize, Serialize};
+use sha2::Sha256;
+use tauri::{AppHandle, Runtime, State};
+use tauri_plugin_updater::{Update, UpdaterExt};
+use url::Url;
+
+const AUTHORIZATION_PROTOCOL: &str = "medismart-update-install-authorization";
+const AUTHORIZATION_VERSION: u8 = 1;
+const MAX_AUTHORIZATION_LIFETIME_SECONDS: u64 = 600;
+
+#[derive(Clone)]
+struct ReleaseConfiguration {
+    public_key: String,
+    endpoint: Url,
+    /// Optional secret used to verify install authorizations issued by the
+    /// hosted server. If None, install_signed_update skips HMAC verification
+    /// (the server-side gating is then the only gate).
+    install_secret: Option<String>,
+}
+
+pub struct SignedUpdaterState {
+    configuration: Option<ReleaseConfiguration>,
+    pending: Mutex<Option<Update>>,
+    checking: AtomicBool,
+    installing: AtomicBool,
+    last_checked_at: AtomicU64,
+}
+
+impl SignedUpdaterState {
+    pub fn compiled() -> Self {
+        Self::new(compiled_release_configuration())
+    }
+
+    fn new(configuration: Option<ReleaseConfiguration>) -> Self {
+        Self {
+            configuration,
+            pending: Mutex::new(None),
+            checking: AtomicBool::new(false),
+            installing: AtomicBool::new(false),
+            last_checked_at: AtomicU64::new(0),
+        }
+    }
+
+    fn available(&self) -> bool {
+        self.configuration.is_some()
+    }
+
+    fn configuration(&self) -> Result<ReleaseConfiguration, UpdateCommandError> {
+        self.configuration
+            .clone()
+            .ok_or_else(UpdateCommandError::unavailable)
+    }
+
+    fn pending_metadata(&self) -> Option<UpdateMetadata> {
+        self.pending
+            .lock()
+            .ok()
+            .and_then(|pending| pending.as_ref().map(UpdateMetadata::from))
+    }
+}
+
+pub fn configured_plugin<R: Runtime>(
+) -> Option<tauri::plugin::TauriPlugin<R, tauri_plugin_updater::Config>> {
+    compiled_release_configuration().map(|configuration| {
+        tauri_plugin_updater::Builder::new()
+            .pubkey(configuration.public_key)
+            .build()
+    })
+}
+
+fn compiled_release_configuration() -> Option<ReleaseConfiguration> {
+    if cfg!(debug_assertions) {
+        return None;
+    }
+
+    let public_key = option_env!("MEDISMART_UPDATER_PUBLIC_KEY")?.trim();
+    let endpoint = option_env!("MEDISMART_UPDATER_ENDPOINT")?.trim();
+
+    if public_key.is_empty() || endpoint.is_empty() {
+        return None;
+    }
+
+    let endpoint = Url::parse(endpoint).ok()?;
+
+    if endpoint.scheme() != "https"
+        || endpoint.host_str().is_none()
+        || !endpoint.username().is_empty()
+        || endpoint.password().is_some()
+        || endpoint.fragment().is_some()
+    {
+        return None;
+    }
+
+    // Optional install-authorization secret. If not set, the HMAC check is
+    // skipped and the server-side policy is the sole gate.
+    let install_secret = option_env!("MEDISMART_UPDATER_INSTALL_SECRET")
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned);
+
+    Some(ReleaseConfiguration {
+        public_key: public_key.to_owned(),
+        endpoint,
+        install_secret,
+    })
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub struct UpdateMetadata {
+    version: String,
+    current_version: String,
+    published_at: Option<String>,
+}
+
+impl From<&Update> for UpdateMetadata {
+    fn from(update: &Update) -> Self {
+        Self {
+            version: update.version.clone(),
+            current_version: update.current_version.clone(),
+            published_at: update.date.map(|date| date.to_string()),
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct SignedUpdaterStatus {
+    configured: bool,
+    current_version: String,
+    pending_update: Option<UpdateMetadata>,
+    last_checked_at: Option<u64>,
+    checking: bool,
+    installing: bool,
+}
+
+#[derive(Serialize)]
+pub struct UpdateCheckResponse {
+    update: Option<UpdateMetadata>,
+    checked_at: u64,
+}
+
+#[derive(Serialize)]
+pub struct UpdateInstallResponse {
+    accepted: bool,
+    target_version: String,
+    message_fr: &'static str,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateCommandError {
+    code: &'static str,
+    message_fr: &'static str,
+}
+
+impl UpdateCommandError {
+    fn unavailable() -> Self {
+        Self {
+            code: "signed_updater_unavailable",
+            message_fr:
+                "Le programme de mise à jour signé n'est pas disponible dans cette version.",
+        }
+    }
+
+    fn busy() -> Self {
+        Self {
+            code: "signed_updater_busy",
+            message_fr: "Une opération de mise à jour est déjà en cours.",
+        }
+    }
+
+    fn check_failed() -> Self {
+        Self {
+            code: "signed_update_check_failed",
+            message_fr:
+                "La recherche de mise à jour a échoué. Vérifiez la connexion puis réessayez.",
+        }
+    }
+
+    fn no_pending_update() -> Self {
+        Self {
+            code: "signed_update_not_pending",
+            message_fr: "Aucune mise à jour vérifiée n'attend une installation.",
+        }
+    }
+
+    fn authorization_invalid() -> Self {
+        Self {
+            code: "update_install_authorization_invalid",
+            message_fr:
+                "L'autorisation d'installation ou sa sauvegarde de sécurité n'est pas valide.",
+        }
+    }
+
+    fn authorization_expired() -> Self {
+        Self {
+            code: "update_install_authorization_expired",
+            message_fr:
+                "L'autorisation d'installation a expiré. Recréez la sauvegarde de sécurité.",
+        }
+    }
+
+    fn install_failed() -> Self {
+        Self {
+            code: "signed_update_install_failed",
+            message_fr: "La mise à jour signée n'a pas pu être téléchargée ou installée.",
+        }
+    }
+}
+
+struct OperationGuard<'a>(&'a AtomicBool);
+
+impl Drop for OperationGuard<'_> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::SeqCst);
+    }
+}
+
+fn begin_operation(flag: &AtomicBool) -> Result<OperationGuard<'_>, UpdateCommandError> {
+    flag.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .map(|_| OperationGuard(flag))
+        .map_err(|_| UpdateCommandError::busy())
+}
+
+#[tauri::command]
+pub fn signed_updater_status(
+    app: AppHandle,
+    state: State<'_, SignedUpdaterState>,
+) -> SignedUpdaterStatus {
+    let last_checked_at = state.last_checked_at.load(Ordering::SeqCst);
+
+    SignedUpdaterStatus {
+        configured: state.available(),
+        current_version: app.package_info().version.to_string(),
+        pending_update: state.pending_metadata(),
+        last_checked_at: (last_checked_at != 0).then_some(last_checked_at),
+        checking: state.checking.load(Ordering::SeqCst),
+        installing: state.installing.load(Ordering::SeqCst),
+    }
+}
+
+#[tauri::command]
+pub async fn check_for_signed_update(
+    app: AppHandle,
+    state: State<'_, SignedUpdaterState>,
+) -> Result<UpdateCheckResponse, UpdateCommandError> {
+    let _operation = begin_operation(&state.checking)?;
+    let configuration = state.configuration()?;
+    let updater = app
+        .updater_builder()
+        .endpoints(vec![configuration.endpoint])
+        .map_err(|_| UpdateCommandError::check_failed())?
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|_| UpdateCommandError::check_failed())?;
+    let update = updater
+        .check()
+        .await
+        .map_err(|_| UpdateCommandError::check_failed())?;
+    let metadata = update.as_ref().map(UpdateMetadata::from);
+    let checked_at = unix_timestamp();
+    let mut pending = state
+        .pending
+        .lock()
+        .map_err(|_| UpdateCommandError::check_failed())?;
+    *pending = update;
+    state.last_checked_at.store(checked_at, Ordering::SeqCst);
+
+    Ok(UpdateCheckResponse {
+        update: metadata,
+        checked_at,
+    })
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpdateInstallAuthorization {
+    protocol: String,
+    version: u8,
+    target_version: String,
+    backup_record_id: String,
+    backup_sha256: String,
+    installation_id: String,
+    issued_at: u64,
+    expires_at: u64,
+    nonce: String,
+    signature: String,
+}
+
+impl UpdateInstallAuthorization {
+    fn canonical_payload(&self) -> String {
+        format!(
+            "{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}",
+            self.protocol,
+            self.version,
+            self.target_version,
+            self.backup_record_id,
+            self.backup_sha256,
+            self.installation_id,
+            self.issued_at,
+            self.expires_at,
+            self.nonce,
+        )
+    }
+
+    /// Verify the authorization. `secret` is the shared HMAC key negotiated
+    /// between the hosted server and this binary.
+    fn verify(
+        &self,
+        secret: &str,
+        expected_target_version: &str,
+        now: u64,
+    ) -> Result<(), UpdateCommandError> {
+        if self.protocol != AUTHORIZATION_PROTOCOL
+            || self.version != AUTHORIZATION_VERSION
+            || self.target_version != expected_target_version
+            || !valid_version(&self.target_version)
+            || !valid_uuid(&self.backup_record_id)
+            || !valid_uuid(&self.nonce)
+            || !valid_uuid(&self.installation_id)
+            || !valid_lower_sha256(&self.backup_sha256)
+            || self.issued_at > now.saturating_add(60)
+            || self.expires_at <= self.issued_at
+            || self.expires_at.saturating_sub(self.issued_at) > MAX_AUTHORIZATION_LIFETIME_SECONDS
+        {
+            return Err(UpdateCommandError::authorization_invalid());
+        }
+
+        if self.expires_at < now
+            || now.saturating_sub(self.issued_at) > MAX_AUTHORIZATION_LIFETIME_SECONDS
+        {
+            return Err(UpdateCommandError::authorization_expired());
+        }
+
+        let signature = decode_lower_hex_32(&self.signature)
+            .ok_or_else(UpdateCommandError::authorization_invalid)?;
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
+            .map_err(|_| UpdateCommandError::authorization_invalid())?;
+        mac.update(self.canonical_payload().as_bytes());
+        mac.verify_slice(&signature)
+            .map_err(|_| UpdateCommandError::authorization_invalid())
+    }
+}
+
+#[tauri::command]
+pub async fn install_signed_update(
+    _app: AppHandle,
+    state: State<'_, SignedUpdaterState>,
+    authorization: UpdateInstallAuthorization,
+) -> Result<UpdateInstallResponse, UpdateCommandError> {
+    let _operation = begin_operation(&state.installing)?;
+    let configuration = state.configuration()?;
+    let update = state
+        .pending
+        .lock()
+        .map_err(|_| UpdateCommandError::no_pending_update())?
+        .clone()
+        .ok_or_else(UpdateCommandError::no_pending_update)?;
+
+    // Verify HMAC authorization if an install secret is configured.
+    // If no secret is set, the authorization fields are still structurally
+    // validated but the HMAC is not checked.
+    if let Some(ref secret) = configuration.install_secret {
+        authorization.verify(secret, &update.version, unix_timestamp())?;
+    } else {
+        // Structural validation only (no HMAC key available)
+        let now = unix_timestamp();
+        if authorization.protocol != AUTHORIZATION_PROTOCOL
+            || authorization.version != AUTHORIZATION_VERSION
+            || authorization.target_version != update.version
+            || authorization.expires_at < now
+        {
+            return Err(UpdateCommandError::authorization_invalid());
+        }
+    }
+
+    let target_version = update.version.clone();
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|_| UpdateCommandError::install_failed())?;
+
+    if let Ok(mut pending) = state.pending.lock() {
+        *pending = None;
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = target_version;
+        _app.restart();
+    }
+
+    #[cfg(windows)]
+    {
+        Ok(UpdateInstallResponse {
+            accepted: true,
+            target_version,
+            message_fr: "La mise à jour vérifiée est installée; DrClickDz va redémarrer.",
+        })
+    }
+}
+
+fn unix_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+fn valid_version(value: &str) -> bool {
+    !value.is_empty() && value.len() <= 64 && semver::Version::parse(value).is_ok()
+}
+
+fn valid_lower_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
+}
+
+fn valid_uuid(value: &str) -> bool {
+    value.len() == 36
+        && value.bytes().enumerate().all(|(index, byte)| match index {
+            8 | 13 | 18 | 23 => byte == b'-',
+            _ => byte.is_ascii_hexdigit(),
+        })
+}
+
+fn decode_lower_hex_32(value: &str) -> Option<[u8; 32]> {
+    if !valid_lower_sha256(value) {
+        return None;
+    }
+
+    let mut decoded = [0_u8; 32];
+
+    for (index, chunk) in value.as_bytes().chunks_exact(2).enumerate() {
+        decoded[index] = (hex_nibble(chunk[0])? << 4) | hex_nibble(chunk[1])?;
+    }
+
+    Some(decoded)
+}
+
+fn hex_nibble(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_authorization(now: u64, secret: &str) -> UpdateInstallAuthorization {
+        let mut artifact = UpdateInstallAuthorization {
+            protocol: AUTHORIZATION_PROTOCOL.to_owned(),
+            version: AUTHORIZATION_VERSION,
+            target_version: "1.2.3".to_owned(),
+            backup_record_id: "57dca9dd-6c10-49c8-ae81-3d773bf36582".to_owned(),
+            backup_sha256: "42".repeat(32),
+            installation_id: "e169a732-1f4e-46ed-b5b8-a0bc752f6f09".to_owned(),
+            issued_at: now,
+            expires_at: now + 300,
+            nonce: "ad7b2dc9-9c8b-4c82-acf3-f76aa915ee09".to_owned(),
+            signature: String::new(),
+        };
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(artifact.canonical_payload().as_bytes());
+        artifact.signature = mac
+            .finalize()
+            .into_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        artifact
+    }
+
+    const SECRET: &str = "test-install-secret-key";
+
+    #[test]
+    fn content_bound_authorization_is_accepted_once_fields_match() {
+        let artifact = make_authorization(1_700_000_000, SECRET);
+        artifact.verify(SECRET, "1.2.3", 1_700_000_120).unwrap();
+    }
+
+    #[test]
+    fn authorization_rejects_wrong_version_and_expiry() {
+        let artifact = make_authorization(1_700_000_000, SECRET);
+        // Wrong target version in the verify call
+        assert!(artifact.verify(SECRET, "1.2.4", 1_700_000_120).is_err());
+
+        // Expired
+        let artifact = make_authorization(1_700_000_000, SECRET);
+        assert_eq!(
+            artifact
+                .verify(SECRET, "1.2.3", 1_700_000_601)
+                .unwrap_err()
+                .code,
+            "update_install_authorization_expired"
+        );
+    }
+
+    #[test]
+    fn wrong_secret_is_rejected() {
+        let artifact = make_authorization(1_700_000_000, SECRET);
+        assert!(artifact
+            .verify("wrong-secret", "1.2.3", 1_700_000_120)
+            .is_err());
+    }
+
+    #[test]
+    fn debug_builds_never_claim_release_updater_configuration() {
+        if cfg!(debug_assertions) {
+            assert!(compiled_release_configuration().is_none());
+            assert!(!SignedUpdaterState::compiled().available());
+        }
+    }
+}

@@ -1,1 +1,79 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIENhcmJvblxDYXJib25JbW11dGFibGU7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XEF0dHJpYnV0ZXNcRmlsbGFibGU7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XE1vZGVsOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxFbG9xdWVudFxSZWxhdGlvbnNcQmVsb25nc1RvOwoKLyoqCiAqIEBwcm9wZXJ0eSBpbnQgJHBhdGllbnRfaWQKICogQHByb3BlcnR5IENhcmJvbkltbXV0YWJsZXxudWxsICRjb25zdWx0ZWRfYXQKICogQHByb3BlcnR5IENhcmJvbkltbXV0YWJsZXxudWxsICRjb21wbGV0ZWRfYXQKICogQHByb3BlcnR5IGludHxudWxsICRwYXltZW50X2Ftb3VudF9taW5vcgogKiBAcHJvcGVydHkgYm9vbCAkaXNfcGFpZAogKi8KI1tGaWxsYWJsZShbCiAgICAncGF0aWVudF9pZCcsCiAgICAnYXBwb2ludG1lbnRfaWQnLAogICAgJ2NvbnN1bHRlZF9hdCcsCiAgICAnbW90aWYnLAogICAgJ2V4YW1lbnMnLAogICAgJ2RpYWdub3N0aWMnLAogICAgJ3RyYWl0ZW1lbnQnLAogICAgJ25vdGVzJywKICAgICd3ZWlnaHRfa2cnLAogICAgJ2hlaWdodF9jbScsCiAgICAndGVtcGVyYXR1cmVfYycsCiAgICAnYmxvb2RfcHJlc3N1cmUnLAogICAgJ3BheW1lbnRfYW1vdW50X21pbm9yJywKICAgICdwYXltZW50X21ldGhvZCcsCiAgICAncGF5bWVudF9zZXJ2aWNlJywKICAgICdpc19wYWlkJywKICAgICdzdGF0dXMnLAogICAgJ2NvbXBsZXRlZF9hdCcsCiAgICAnY3JlYXRlZF9ieScsCl0pXQpjbGFzcyBDb25zdWx0YXRpb24gZXh0ZW5kcyBNb2RlbAp7CiAgICB1c2UgXEFwcFxNb2RlbHNcQ29uY2VybnNcQmVsb25nc1RvQ2FiaW5ldDsKCiAgICAvKioKICAgICAqIEByZXR1cm4gYXJyYXk8c3RyaW5nLCBzdHJpbmc+CiAgICAgKi8KICAgIHByb3RlY3RlZCBmdW5jdGlvbiBjYXN0cygpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICdjb25zdWx0ZWRfYXQnID0+ICdpbW11dGFibGVfZGF0ZXRpbWUnLAogICAgICAgICAgICAnY29tcGxldGVkX2F0JyA9PiAnaW1tdXRhYmxlX2RhdGV0aW1lJywKICAgICAgICAgICAgJ3BheW1lbnRfYW1vdW50X21pbm9yJyA9PiAnaW50ZWdlcicsCiAgICAgICAgICAgICdpc19wYWlkJyA9PiAnYm9vbGVhbicsCiAgICAgICAgXTsKICAgIH0KCiAgICAvKioKICAgICAqIEByZXR1cm4gQmVsb25nc1RvPFBhdGllbnQsICR0aGlzPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gcGF0aWVudCgpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhQYXRpZW50OjpjbGFzcyktPndpdGhUcmFzaGVkKCk7CiAgICB9CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIEJlbG9uZ3NUbzxBcHBvaW50bWVudCwgJHRoaXM+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBhcHBvaW50bWVudCgpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhBcHBvaW50bWVudDo6Y2xhc3MpOwogICAgfQoKICAgIC8qKgogICAgICogQHJldHVybiBCZWxvbmdzVG88VXNlciwgJHRoaXM+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBjcmVhdGVkQnkoKTogQmVsb25nc1RvCiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT5iZWxvbmdzVG8oVXNlcjo6Y2xhc3MsICdjcmVhdGVkX2J5Jyk7CiAgICB9Cn0K
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToCabinet;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property int $patient_id
+ * @property CarbonImmutable|null $consulted_at
+ * @property CarbonImmutable|null $completed_at
+ * @property int|null $payment_amount_minor
+ * @property bool $is_paid
+ */
+#[Fillable([
+    'patient_id',
+    'appointment_id',
+    'consulted_at',
+    'motif',
+    'examens',
+    'diagnostic',
+    'traitement',
+    'notes',
+    'weight_kg',
+    'height_cm',
+    'temperature_c',
+    'blood_pressure',
+    'payment_amount_minor',
+    'payment_method',
+    'payment_service',
+    'is_paid',
+    'status',
+    'completed_at',
+    'created_by',
+])]
+class Consultation extends Model
+{
+    use BelongsToCabinet;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'consulted_at' => 'immutable_datetime',
+            'completed_at' => 'immutable_datetime',
+            'payment_amount_minor' => 'integer',
+            'is_paid' => 'boolean',
+        ];
+    }
+
+    /**
+     * @return BelongsTo<Patient, $this>
+     */
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class)->withTrashed();
+    }
+
+    /**
+     * @return BelongsTo<Appointment, $this>
+     */
+    public function appointment(): BelongsTo
+    {
+        return $this->belongsTo(Appointment::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+}

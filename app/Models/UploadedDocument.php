@@ -1,1 +1,82 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIENhcmJvblxDYXJib25JbW11dGFibGU7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XEF0dHJpYnV0ZXNcRmlsbGFibGU7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XENvbmNlcm5zXEhhc1V1aWRzOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxFbG9xdWVudFxNb2RlbDsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcUmVsYXRpb25zXEJlbG9uZ3NUbzsKCi8qKgogKiBAcHJvcGVydHkgaW50fG51bGwgJHBhdGllbnRfaWQKICogQHByb3BlcnR5IHN0cmluZyAkdXBsb2FkX3Nlc3Npb25faWQKICogQHByb3BlcnR5IHN0cmluZyAkb3JpZ2luYWxfbmFtZQogKiBAcHJvcGVydHkgc3RyaW5nICRzdG9yZWRfbmFtZQogKiBAcHJvcGVydHkgc3RyaW5nICRkaXNrCiAqIEBwcm9wZXJ0eSBzdHJpbmcgJHBhdGgKICogQHByb3BlcnR5IGludCAkc2l6ZQogKiBAcHJvcGVydHkgQ2FyYm9uSW1tdXRhYmxlfG51bGwgJHVwbG9hZGVkX2F0CiAqLwojW0ZpbGxhYmxlKFsKICAgICd1cGxvYWRfc2Vzc2lvbl9pZCcsCiAgICAncGF0aWVudF9pZCcsCiAgICAnZG9jdW1lbnRfaWQnLAogICAgJ29yaWdpbmFsX25hbWUnLAogICAgJ3N0b3JlZF9uYW1lJywKICAgICdkaXNrJywKICAgICdwYXRoJywKICAgICdtaW1lX3R5cGUnLAogICAgJ3NpemUnLAogICAgJ3NoYTI1NicsCiAgICAnc3RhdHVzJywKICAgICd1cGxvYWRlZF9hdCcsCiAgICAncmV2aWV3ZWRfYnknLAogICAgJ3Jldmlld2VkX2F0JywKXSldCmNsYXNzIFVwbG9hZGVkRG9jdW1lbnQgZXh0ZW5kcyBNb2RlbAp7CiAgICB1c2UgXEFwcFxNb2RlbHNcQ29uY2VybnNcQmVsb25nc1RvQ2FiaW5ldCwgSGFzVXVpZHM7CgogICAgcHVibGljIGNvbnN0IFNUQVRVU19RVUFSQU5USU5FRCA9ICdxdWFyYW50aW5lZCc7CgogICAgcHVibGljIGNvbnN0IFNUQVRVU19QRU5ESU5HX1JFVklFVyA9ICdwZW5kaW5nX3Jldmlldyc7CgogICAgcHVibGljIGNvbnN0IFNUQVRVU19BQ0NFUFRFRCA9ICdhY2NlcHRlZCc7CgogICAgcHVibGljIGNvbnN0IFNUQVRVU19SRUpFQ1RFRCA9ICdyZWplY3RlZCc7CgogICAgcHJvdGVjdGVkIGZ1bmN0aW9uIGNhc3RzKCk6IGFycmF5CiAgICB7CiAgICAgICAgcmV0dXJuIFsKICAgICAgICAgICAgJ3NpemUnID0+ICdpbnRlZ2VyJywKICAgICAgICAgICAgJ3VwbG9hZGVkX2F0JyA9PiAnaW1tdXRhYmxlX2RhdGV0aW1lJywKICAgICAgICAgICAgJ3Jldmlld2VkX2F0JyA9PiAnaW1tdXRhYmxlX2RhdGV0aW1lJywKICAgICAgICBdOwogICAgfQoKICAgIC8qKiBAcmV0dXJuIEJlbG9uZ3NUbzxVcGxvYWRTZXNzaW9uLCAkdGhpcz4gKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB1cGxvYWRTZXNzaW9uKCk6IEJlbG9uZ3NUbwogICAgewogICAgICAgIHJldHVybiAkdGhpcy0+YmVsb25nc1RvKFVwbG9hZFNlc3Npb246OmNsYXNzKTsKICAgIH0KCiAgICAvKiogQHJldHVybiBCZWxvbmdzVG88UGF0aWVudCwgJHRoaXM+ICovCiAgICBwdWJsaWMgZnVuY3Rpb24gcGF0aWVudCgpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhQYXRpZW50OjpjbGFzcyk7CiAgICB9CgogICAgLyoqIEByZXR1cm4gQmVsb25nc1RvPERvY3VtZW50LCAkdGhpcz4gKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBkb2N1bWVudCgpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhEb2N1bWVudDo6Y2xhc3MpOwogICAgfQoKICAgIC8qKiBAcmV0dXJuIEJlbG9uZ3NUbzxVc2VyLCAkdGhpcz4gKi8KICAgIHB1YmxpYyBmdW5jdGlvbiByZXZpZXdlcigpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhVc2VyOjpjbGFzcywgJ3Jldmlld2VkX2J5Jyk7CiAgICB9Cn0K
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToCabinet;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property int|null $patient_id
+ * @property string $upload_session_id
+ * @property string $original_name
+ * @property string $stored_name
+ * @property string $disk
+ * @property string $path
+ * @property int $size
+ * @property CarbonImmutable|null $uploaded_at
+ */
+#[Fillable([
+    'upload_session_id',
+    'patient_id',
+    'document_id',
+    'original_name',
+    'stored_name',
+    'disk',
+    'path',
+    'mime_type',
+    'size',
+    'sha256',
+    'status',
+    'uploaded_at',
+    'reviewed_by',
+    'reviewed_at',
+])]
+class UploadedDocument extends Model
+{
+    use BelongsToCabinet, HasUuids;
+
+    public const STATUS_QUARANTINED = 'quarantined';
+
+    public const STATUS_PENDING_REVIEW = 'pending_review';
+
+    public const STATUS_ACCEPTED = 'accepted';
+
+    public const STATUS_REJECTED = 'rejected';
+
+    protected function casts(): array
+    {
+        return [
+            'size' => 'integer',
+            'uploaded_at' => 'immutable_datetime',
+            'reviewed_at' => 'immutable_datetime',
+        ];
+    }
+
+    /** @return BelongsTo<UploadSession, $this> */
+    public function uploadSession(): BelongsTo
+    {
+        return $this->belongsTo(UploadSession::class);
+    }
+
+    /** @return BelongsTo<Patient, $this> */
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    /** @return BelongsTo<Document, $this> */
+    public function document(): BelongsTo
+    {
+        return $this->belongsTo(Document::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+}

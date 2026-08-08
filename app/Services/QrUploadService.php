@@ -45,6 +45,14 @@ final class QrUploadService
             throw new InvalidArgumentException('Unsupported upload mode.');
         }
 
+        if ($creator->cabinet_id !== null
+            && $patient?->cabinet_id !== null
+            && (int) $creator->cabinet_id !== (int) $patient->cabinet_id) {
+            throw new InvalidArgumentException('The patient does not belong to the creator cabinet.');
+        }
+
+        $cabinetId = $creator->cabinet_id ?? $patient?->cabinet_id;
+
         [$selector, $verifier, $token] = $this->newToken();
         $expiresAfter = max(1, min(30, (int) ($options['expires_after_minutes']
             ?? $this->settings->get(ApplicationSettingRegistry::UPLOAD_SESSION_TTL_MINUTES))));
@@ -95,6 +103,7 @@ final class QrUploadService
             $mode,
             $creator,
             $patient,
+            $cabinetId,
             $purpose,
             $selector,
             $token,
@@ -104,7 +113,7 @@ final class QrUploadService
             $maximumTotalBytes,
             $allowedMimeTypes,
         ): UploadSession {
-            $session = UploadSession::query()->create([
+            $session = new UploadSession([
                 'public_selector' => $selector,
                 'public_token_hash' => $this->hashToken($token),
                 'mode' => $mode,
@@ -118,6 +127,7 @@ final class QrUploadService
                 'allowed_mime_types' => $allowedMimeTypes,
                 'status' => UploadSession::STATUS_PENDING,
             ]);
+            $session->forceFill(['cabinet_id' => $cabinetId])->save();
 
             AuditLog::record('upload_session.created', $session, [
                 'mode' => $mode,

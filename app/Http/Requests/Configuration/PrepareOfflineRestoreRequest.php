@@ -7,6 +7,7 @@ use App\Backups\BackupArchivePath;
 use App\Enums\PermissionName;
 use App\Enums\RoleName;
 use App\Models\User;
+use App\Services\InstallationMaintenanceAccessService;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -28,6 +29,7 @@ final class PrepareOfflineRestoreRequest extends FormRequest
         $actor = $this->user();
 
         return $actor instanceof User
+            && app(InstallationMaintenanceAccessService::class)->allows($actor)
             && $actor->hasAnyRole([
                 RoleName::SUPER_ADMINISTRATOR->value,
                 RoleName::ADMINISTRATOR->value,

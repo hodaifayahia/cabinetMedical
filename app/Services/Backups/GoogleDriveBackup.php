@@ -670,7 +670,7 @@ final class GoogleDriveBackup
                 'name' => $artifact['filename'],
                 'parents' => [$folderId],
                 'mimeType' => self::ENCRYPTED_BACKUP_MIME,
-                'description' => 'MediSmart encrypted backup v2',
+                'description' => 'DrClickDz encrypted backup v2',
                 'appProperties' => [
                     'medismart_backup_record_id' => $artifact['backup_record_id'],
                     'medismart_format' => $artifact['format'],
@@ -926,7 +926,7 @@ final class GoogleDriveBackup
             : null;
 
         if ($metadata === null || ! hash_equals($fileId, $metadata['id'])) {
-            throw new RuntimeException('The selected Google Drive file is not a managed MediSmart backup.');
+            throw new RuntimeException('The selected Google Drive file is not a managed DrClickDz backup.');
         }
 
         return $metadata;

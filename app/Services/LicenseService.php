@@ -242,7 +242,10 @@ final class LicenseService
      */
     private function trustedState(): array
     {
-        $license = License::query()->latest('id')->first();
+        $license = License::query()
+            ->whereNull('plan')
+            ->latest('id')
+            ->first();
 
         if ($license === null) {
             return $this->emptyState('not_activated');
@@ -385,7 +388,11 @@ final class LicenseService
             $auditAction,
             $expectedLicenseId,
         ): License {
-            $current = License::query()->latest('id')->lockForUpdate()->first();
+            $current = License::query()
+                ->whereNull('plan')
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
 
             if ($current === null && $expectedLicenseId !== null) {
                 throw new RuntimeException('The license being refreshed is no longer active.');
@@ -421,7 +428,7 @@ final class LicenseService
 
             $this->clock->recordServerTime($issuedAt);
 
-            $license = License::query()->updateOrCreate(
+            $license = License::query()->whereNull('plan')->updateOrCreate(
                 ['license_id' => $payload['license_id']],
                 [
                     'product' => $payload['product'],
@@ -442,7 +449,10 @@ final class LicenseService
 
             // A desktop installation has one effective certificate. Keeping an
             // older signed row would otherwise resurrect it after deactivation.
-            License::query()->whereKeyNot($license->getKey())->delete();
+            License::query()
+                ->whereNull('plan')
+                ->whereKeyNot($license->getKey())
+                ->delete();
 
             $device = $this->fingerprint->registerDevice();
             $activation = LicenseActivation::query()->firstOrNew([

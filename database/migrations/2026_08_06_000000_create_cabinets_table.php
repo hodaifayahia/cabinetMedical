@@ -1,1 +1,35 @@
-PD9waHAKCnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXE1pZ3JhdGlvbnNcTWlncmF0aW9uOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxTY2hlbWFcQmx1ZXByaW50Owp1c2UgSWxsdW1pbmF0ZVxTdXBwb3J0XEZhY2FkZXNcU2NoZW1hOwoKcmV0dXJuIG5ldyBjbGFzcyBleHRlbmRzIE1pZ3JhdGlvbgp7CiAgICAvKioKICAgICAqIFRoZSBjZW50cmFsIHRlbmFudCByZWNvcmQuIEVhY2ggY2FiaW5ldCBncm91cHMgb25lIGNsaW5pYydzIHVzZXJzIGFuZAogICAgICogZG9tYWluIGRhdGEuIENhYmluZXRzIGFyZSBwcm92aXNpb25lZCBpbiBhIHBlbmRpbmcgc3RhdGUgYW5kIGFjdGl2YXRlZAogICAgICogYnkgcGxhdGZvcm0gc3RhZmYgdGhyb3VnaCB0aGUgRmlsYW1lbnQgZnVsZmlsbG1lbnQgcGFuZWwuCiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB1cCgpOiB2b2lkCiAgICB7CiAgICAgICAgU2NoZW1hOjpjcmVhdGUoJ2NhYmluZXRzJywgZnVuY3Rpb24gKEJsdWVwcmludCAkdGFibGUpOiB2b2lkIHsKICAgICAgICAgICAgJHRhYmxlLT5pZCgpOwogICAgICAgICAgICAkdGFibGUtPnN0cmluZygnbmFtZScpOwogICAgICAgICAgICAkdGFibGUtPnN0cmluZygnc3RhdHVzJywgMjApLT5kZWZhdWx0KCdwZW5kaW5nJyktPmluZGV4KCk7CiAgICAgICAgICAgICR0YWJsZS0+c3RyaW5nKCdzcGVjaWFsaXphdGlvbicpLT5udWxsYWJsZSgpOwogICAgICAgICAgICAkdGFibGUtPnVuc2lnbmVkVGlueUludGVnZXIoJ3dpbGF5YV9jb2RlJyktPm51bGxhYmxlKCk7CiAgICAgICAgICAgICR0YWJsZS0+Zm9yZWlnbklkKCdvd25lcl91c2VyX2lkJyktPm51bGxhYmxlKCktPmNvbnN0cmFpbmVkKCd1c2VycycpLT5udWxsT25EZWxldGUoKTsKICAgICAgICAgICAgJHRhYmxlLT50aW1lc3RhbXAoJ2FjdGl2YXRlZF9hdCcpLT5udWxsYWJsZSgpOwogICAgICAgICAgICAkdGFibGUtPmZvcmVpZ25JZCgnbGljZW5zZV9pZCcpLT5udWxsYWJsZSgpLT5jb25zdHJhaW5lZCgnbGljZW5zZXMnKS0+bnVsbE9uRGVsZXRlKCk7CiAgICAgICAgICAgICR0YWJsZS0+dGltZXN0YW1wcygpOwoKICAgICAgICAgICAgJHRhYmxlLT5pbmRleChbJ3N0YXR1cycsICdjcmVhdGVkX2F0J10pOwogICAgICAgIH0pOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiBkb3duKCk6IHZvaWQKICAgIHsKICAgICAgICBTY2hlbWE6OmRyb3BJZkV4aXN0cygnY2FiaW5ldHMnKTsKICAgIH0KfTsK
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * The central tenant record. Each cabinet groups one clinic's users and
+     * domain data. Cabinets are provisioned in a pending state and activated
+     * by platform staff through the Filament fulfillment panel.
+     */
+    public function up(): void
+    {
+        Schema::create('cabinets', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('status', 20)->default('pending')->index();
+            $table->string('specialization')->nullable();
+            $table->unsignedTinyInteger('wilaya_code')->nullable();
+            $table->foreignId('owner_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('activated_at')->nullable();
+            $table->foreignId('license_id')->nullable()->constrained('licenses')->nullOnDelete();
+            $table->timestamps();
+
+            $table->index(['status', 'created_at']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('cabinets');
+    }
+};

@@ -1,1 +1,137 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIEFwcFxFbnVtc1xFbmNvdW50ZXJTdGF0dXM7CnVzZSBDYXJib25cQ2FyYm9uSW1tdXRhYmxlOwp1c2UgRGF0YWJhc2VcRmFjdG9yaWVzXEVuY291bnRlckZhY3Rvcnk7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XEZhY3Rvcmllc1xIYXNGYWN0b3J5Owp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxFbG9xdWVudFxNb2RlbDsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcUmVsYXRpb25zXEJlbG9uZ3NUbzsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcUmVsYXRpb25zXEhhc01hbnk7CgovKioKICogQHByb3BlcnR5IEVuY291bnRlclN0YXR1cyAkc3RhdHVzCiAqIEBwcm9wZXJ0eSBDYXJib25JbW11dGFibGV8bnVsbCAkb2NjdXJyZWRfYXQKICogQHByb3BlcnR5IENhcmJvbkltbXV0YWJsZXxudWxsICRzdGFydGVkX2F0CiAqIEBwcm9wZXJ0eSBDYXJib25JbW11dGFibGV8bnVsbCAkc2lnbmVkX2F0CiAqLwpjbGFzcyBFbmNvdW50ZXIgZXh0ZW5kcyBNb2RlbAp7CiAgICAvKiogQHVzZSBIYXNGYWN0b3J5PEVuY291bnRlckZhY3Rvcnk+ICovCiAgICB1c2UgXEFwcFxNb2RlbHNcQ29uY2VybnNcQmVsb25nc1RvQ2FiaW5ldCwgSGFzRmFjdG9yeTsKCiAgICBwcm90ZWN0ZWQgJGZpbGxhYmxlID0gWwogICAgICAgICdwYXRpZW50X2lkJywKICAgICAgICAnYXBwb2ludG1lbnRfaWQnLAogICAgICAgICdwcm92aWRlcl9pZCcsCiAgICAgICAgJ3N0YXR1cycsCiAgICAgICAgJ29jY3VycmVkX2F0JywKICAgICAgICAnc3RhcnRlZF9hdCcsCiAgICAgICAgJ3NpZ25lZF9hdCcsCiAgICAgICAgJ3NpZ25lZF9ieScsCiAgICAgICAgJ3JldmlzaW9uX251bWJlcicsCiAgICAgICAgJ2FtZW5kc19lbmNvdW50ZXJfaWQnLAogICAgICAgICdhbWVuZG1lbnRfcmVhc29uJywKICAgICAgICAnY29udGVudF9oYXNoJywKICAgICAgICAnbG9ja192ZXJzaW9uJywKICAgIF07CgogICAgcHJvdGVjdGVkICRjYXN0cyA9IFsKICAgICAgICAnc3RhdHVzJyA9PiBFbmNvdW50ZXJTdGF0dXM6OmNsYXNzLAogICAgICAgICdvY2N1cnJlZF9hdCcgPT4gJ2RhdGV0aW1lJywKICAgICAgICAnc3RhcnRlZF9hdCcgPT4gJ2RhdGV0aW1lJywKICAgICAgICAnc2lnbmVkX2F0JyA9PiAnZGF0ZXRpbWUnLAogICAgXTsKCiAgICAvKioKICAgICAqIEByZXR1cm4gQmVsb25nc1RvPFBhdGllbnQsICR0aGlzPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gcGF0aWVudCgpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhQYXRpZW50OjpjbGFzcyk7CiAgICB9CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIEJlbG9uZ3NUbzxBcHBvaW50bWVudCwgJHRoaXM+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBhcHBvaW50bWVudCgpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhBcHBvaW50bWVudDo6Y2xhc3MpLT53aGVyZU51bGwoJ2RlbGV0ZWRfYXQnKTsKICAgIH0KCiAgICAvKioKICAgICAqIEByZXR1cm4gQmVsb25nc1RvPFVzZXIsICR0aGlzPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gcHJvdmlkZXIoKTogQmVsb25nc1RvCiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT5iZWxvbmdzVG8oVXNlcjo6Y2xhc3MsICdwcm92aWRlcl9pZCcpOwogICAgfQoKICAgIC8qKgogICAgICogQHJldHVybiBCZWxvbmdzVG88VXNlciwgJHRoaXM+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBzaWduZWRCeSgpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhVc2VyOjpjbGFzcywgJ3NpZ25lZF9ieScpOwogICAgfQoKICAgIC8qKgogICAgICogQHJldHVybiBCZWxvbmdzVG88RW5jb3VudGVyLCAkdGhpcz4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIGFtZW5kc0VuY291bnRlcigpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhFbmNvdW50ZXI6OmNsYXNzLCAnYW1lbmRzX2VuY291bnRlcl9pZCcpOwogICAgfQoKICAgIC8qKgogICAgICogQHJldHVybiBIYXNNYW55PEVuY291bnRlck5vdGUsICR0aGlzPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gbm90ZXMoKTogSGFzTWFueQogICAgewogICAgICAgIHJldHVybiAkdGhpcy0+aGFzTWFueShFbmNvdW50ZXJOb3RlOjpjbGFzcyk7CiAgICB9CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIEhhc01hbnk8RGlhZ25vc2lzLCAkdGhpcz4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIGRpYWdub3NlcygpOiBIYXNNYW55CiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT5oYXNNYW55KERpYWdub3Npczo6Y2xhc3MpOwogICAgfQoKICAgIC8qKgogICAgICogQHJldHVybiBIYXNNYW55PENsaW5pY2FsT2JzZXJ2YXRpb24sICR0aGlzPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gb2JzZXJ2YXRpb25zKCk6IEhhc01hbnkKICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmhhc01hbnkoQ2xpbmljYWxPYnNlcnZhdGlvbjo6Y2xhc3MpOwogICAgfQoKICAgIC8qKgogICAgICogQHJldHVybiBIYXNNYW55PEVuY291bnRlciwgJHRoaXM+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBhbWVuZG1lbnRzKCk6IEhhc01hbnkKICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmhhc01hbnkoRW5jb3VudGVyOjpjbGFzcywgJ2FtZW5kc19lbmNvdW50ZXJfaWQnKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gaXNTaWduZWQoKTogYm9vbAogICAgewogICAgICAgIHJldHVybiAkdGhpcy0+c3RhdHVzID09PSBFbmNvdW50ZXJTdGF0dXM6OlNpZ25lZDsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gaXNEcmFmdCgpOiBib29sCiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT5zdGF0dXMgPT09IEVuY291bnRlclN0YXR1czo6RHJhZnQ7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIGNhbkJlU2lnbmVkKCk6IGJvb2wKICAgIHsKICAgICAgICByZXR1cm4gaW5fYXJyYXkoJHRoaXMtPnN0YXR1cywgWwogICAgICAgICAgICBFbmNvdW50ZXJTdGF0dXM6OkRyYWZ0LAogICAgICAgICAgICBFbmNvdW50ZXJTdGF0dXM6OkluUHJvZ3Jlc3MsCiAgICAgICAgXSk7CiAgICB9Cn0K
+<?php
+
+namespace App\Models;
+
+use App\Enums\EncounterStatus;
+use App\Models\Concerns\BelongsToCabinet;
+use Carbon\CarbonImmutable;
+use Database\Factories\EncounterFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+/**
+ * @property EncounterStatus $status
+ * @property CarbonImmutable|null $occurred_at
+ * @property CarbonImmutable|null $started_at
+ * @property CarbonImmutable|null $signed_at
+ */
+class Encounter extends Model
+{
+    /** @use HasFactory<EncounterFactory> */
+    use BelongsToCabinet, HasFactory;
+
+    protected $fillable = [
+        'patient_id',
+        'appointment_id',
+        'provider_id',
+        'status',
+        'occurred_at',
+        'started_at',
+        'signed_at',
+        'signed_by',
+        'revision_number',
+        'amends_encounter_id',
+        'amendment_reason',
+        'content_hash',
+        'lock_version',
+    ];
+
+    protected $casts = [
+        'status' => EncounterStatus::class,
+        'occurred_at' => 'datetime',
+        'started_at' => 'datetime',
+        'signed_at' => 'datetime',
+    ];
+
+    /**
+     * @return BelongsTo<Patient, $this>
+     */
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    /**
+     * @return BelongsTo<Appointment, $this>
+     */
+    public function appointment(): BelongsTo
+    {
+        return $this->belongsTo(Appointment::class)->whereNull('deleted_at');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function provider(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'provider_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function signedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'signed_by');
+    }
+
+    /**
+     * @return BelongsTo<Encounter, $this>
+     */
+    public function amendsEncounter(): BelongsTo
+    {
+        return $this->belongsTo(Encounter::class, 'amends_encounter_id');
+    }
+
+    /**
+     * @return HasMany<EncounterNote, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(EncounterNote::class);
+    }
+
+    /**
+     * @return HasMany<Diagnosis, $this>
+     */
+    public function diagnoses(): HasMany
+    {
+        return $this->hasMany(Diagnosis::class);
+    }
+
+    /**
+     * @return HasMany<ClinicalObservation, $this>
+     */
+    public function observations(): HasMany
+    {
+        return $this->hasMany(ClinicalObservation::class);
+    }
+
+    /**
+     * @return HasMany<Encounter, $this>
+     */
+    public function amendments(): HasMany
+    {
+        return $this->hasMany(Encounter::class, 'amends_encounter_id');
+    }
+
+    public function isSigned(): bool
+    {
+        return $this->status === EncounterStatus::Signed;
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === EncounterStatus::Draft;
+    }
+
+    public function canBeSigned(): bool
+    {
+        return in_array($this->status, [
+            EncounterStatus::Draft,
+            EncounterStatus::InProgress,
+        ]);
+    }
+}

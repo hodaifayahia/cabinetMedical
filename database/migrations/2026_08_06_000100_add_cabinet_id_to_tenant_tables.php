@@ -1,1 +1,74 @@
-PD9waHAKCnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXE1pZ3JhdGlvbnNcTWlncmF0aW9uOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxTY2hlbWFcQmx1ZXByaW50Owp1c2UgSWxsdW1pbmF0ZVxTdXBwb3J0XEZhY2FkZXNcU2NoZW1hOwoKcmV0dXJuIG5ldyBjbGFzcyBleHRlbmRzIE1pZ3JhdGlvbgp7CiAgICAvKioKICAgICAqIENhYmluZXQtc2NvcGVkIHRhYmxlcyByZWNlaXZlIGEgbnVsbGFibGUsIGluZGV4ZWQgY2FiaW5ldF9pZCBmb3JlaWduIGtleS4KICAgICAqIE51bGxhYmxlIGlzIGRlbGliZXJhdGU6IGNvbnNvbGUvc2VlZGVyIGNyZWF0ZWQgcm93cyBhbmQgdGhlIHBsYXRmb3JtCiAgICAgKiAoY3Jvc3MtY2FiaW5ldCkgY29udGV4dCBtYXkgbGVnaXRpbWF0ZWx5IHByb2R1Y2UgdW5zY29wZWQgcmVjb3JkcywgYW5kIGEKICAgICAqIGxhdGVyIGJhY2tmaWxsIG1pZ3JhdGlvbiBhdHRhY2hlcyBleGlzdGluZyBzaW5nbGUtY2FiaW5ldCBkYXRhLgogICAgICoKICAgICAqIEB2YXIgbGlzdDxzdHJpbmc+CiAgICAgKi8KICAgIHByaXZhdGUgYXJyYXkgJHRhYmxlcyA9IFsKICAgICAgICAncGF0aWVudHMnLAogICAgICAgICdhcHBvaW50bWVudHMnLAogICAgICAgICdkb2N0b3JfcHJvZmlsZXMnLAogICAgICAgICdkb2N0b3Jfc2NoZWR1bGVzJywKICAgICAgICAnZG9jdG9yX29wZW5fbW9udGhzJywKICAgICAgICAnZG9jdG9yX3RpbWVfb2ZmJywKICAgICAgICAnZW5jb3VudGVycycsCiAgICAgICAgJ2VuY291bnRlcl9ub3RlcycsCiAgICAgICAgJ2RpYWdub3NlcycsCiAgICAgICAgJ2NsaW5pY2FsX29ic2VydmF0aW9ucycsCiAgICAgICAgJ3BhdGllbnRfYW50ZWNlZGVudHMnLAogICAgICAgICdwYXRpZW50X21lYXN1cmVtZW50cycsCiAgICAgICAgJ2NvbnN1bHRhdGlvbnMnLAogICAgICAgICdwcmVzY3JpcHRpb25zJywKICAgICAgICAnbWVkaWNhdGlvbnMnLAogICAgICAgICdhY3RzJywKICAgICAgICAnZXhhbXMnLAogICAgICAgICdiaWxhbl90eXBlcycsCiAgICAgICAgJ2NvbnN1bHRhdGlvbl9mZWVzJywKICAgICAgICAncGF5bWVudF9tZXRob2RzJywKICAgICAgICAncHJhY3RpdGlvbmVycycsCiAgICAgICAgJ2RvY3VtZW50cycsCiAgICAgICAgJ3VwbG9hZGVkX2RvY3VtZW50cycsCiAgICAgICAgJ3VwbG9hZF9zZXNzaW9ucycsCiAgICAgICAgJ2F1ZGl0X2xvZ3MnLAogICAgXTsKCiAgICBwdWJsaWMgZnVuY3Rpb24gdXAoKTogdm9pZAogICAgewogICAgICAgIGZvcmVhY2ggKCR0aGlzLT50YWJsZXMgYXMgJHRhYmxlKSB7CiAgICAgICAgICAgIGlmICghIFNjaGVtYTo6aGFzVGFibGUoJHRhYmxlKSB8fCBTY2hlbWE6Omhhc0NvbHVtbigkdGFibGUsICdjYWJpbmV0X2lkJykpIHsKICAgICAgICAgICAgICAgIGNvbnRpbnVlOwogICAgICAgICAgICB9CgogICAgICAgICAgICBTY2hlbWE6OnRhYmxlKCR0YWJsZSwgZnVuY3Rpb24gKEJsdWVwcmludCAkYmx1ZXByaW50KTogdm9pZCB7CiAgICAgICAgICAgICAgICAkYmx1ZXByaW50LT5mb3JlaWduSWQoJ2NhYmluZXRfaWQnKQogICAgICAgICAgICAgICAgICAgIC0+bnVsbGFibGUoKQogICAgICAgICAgICAgICAgICAgIC0+YWZ0ZXIoJ2lkJykKICAgICAgICAgICAgICAgICAgICAtPmNvbnN0cmFpbmVkKCdjYWJpbmV0cycpCiAgICAgICAgICAgICAgICAgICAgLT5udWxsT25EZWxldGUoKTsKICAgICAgICAgICAgfSk7CiAgICAgICAgfQogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiBkb3duKCk6IHZvaWQKICAgIHsKICAgICAgICBmb3JlYWNoICgkdGhpcy0+dGFibGVzIGFzICR0YWJsZSkgewogICAgICAgICAgICBpZiAoISBTY2hlbWE6Omhhc1RhYmxlKCR0YWJsZSkgfHwgISBTY2hlbWE6Omhhc0NvbHVtbigkdGFibGUsICdjYWJpbmV0X2lkJykpIHsKICAgICAgICAgICAgICAgIGNvbnRpbnVlOwogICAgICAgICAgICB9CgogICAgICAgICAgICBTY2hlbWE6OnRhYmxlKCR0YWJsZSwgZnVuY3Rpb24gKEJsdWVwcmludCAkYmx1ZXByaW50KTogdm9pZCB7CiAgICAgICAgICAgICAgICAkYmx1ZXByaW50LT5kcm9wQ29uc3RyYWluZWRGb3JlaWduSWQoJ2NhYmluZXRfaWQnKTsKICAgICAgICAgICAgfSk7CiAgICAgICAgfQogICAgfQp9Owo=
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Cabinet-scoped tables receive a nullable, indexed cabinet_id foreign key.
+     * Nullable is deliberate: console/seeder created rows and the platform
+     * (cross-cabinet) context may legitimately produce unscoped records, and a
+     * later backfill migration attaches existing single-cabinet data.
+     *
+     * @var list<string>
+     */
+    private array $tables = [
+        'patients',
+        'appointments',
+        'doctor_profiles',
+        'doctor_schedules',
+        'doctor_open_months',
+        'doctor_time_off',
+        'encounters',
+        'encounter_notes',
+        'diagnoses',
+        'clinical_observations',
+        'patient_antecedents',
+        'patient_measurements',
+        'consultations',
+        'prescriptions',
+        'medications',
+        'acts',
+        'exams',
+        'bilan_types',
+        'consultation_fees',
+        'payment_methods',
+        'practitioners',
+        'documents',
+        'uploaded_documents',
+        'upload_sessions',
+        'audit_logs',
+    ];
+
+    public function up(): void
+    {
+        foreach ($this->tables as $table) {
+            if (! Schema::hasTable($table) || Schema::hasColumn($table, 'cabinet_id')) {
+                continue;
+            }
+
+            Schema::table($table, function (Blueprint $blueprint): void {
+                $blueprint->foreignId('cabinet_id')
+                    ->nullable()
+                    ->after('id')
+                    ->constrained('cabinets')
+                    ->nullOnDelete();
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        foreach ($this->tables as $table) {
+            if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'cabinet_id')) {
+                continue;
+            }
+
+            Schema::table($table, function (Blueprint $blueprint): void {
+                $blueprint->dropConstrainedForeignId('cabinet_id');
+            });
+        }
+    }
+};

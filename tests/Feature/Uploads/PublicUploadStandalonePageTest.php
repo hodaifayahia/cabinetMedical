@@ -3,6 +3,8 @@
 namespace Tests\Feature\Uploads;
 
 use App\Configuration\ApplicationSettingRegistry;
+use App\Enums\CabinetStatus;
+use App\Models\Cabinet;
 use App\Models\CabinetSetting;
 use App\Models\Patient;
 use App\Models\UploadSession;
@@ -147,6 +149,48 @@ final class PublicUploadStandalonePageTest extends TestCase
         $this->assertStringNotContainsString($verifier, $html);
 
         $this->assertInlineElementsUseTheResponseNonce($response, $html);
+    }
+
+    public function test_public_page_uses_only_the_upload_sessions_cabinet_identity(): void
+    {
+        $firstCabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Alpha',
+            'status' => CabinetStatus::ACTIVE,
+        ]);
+        CabinetSetting::query()->create([
+            'cabinet_id' => $firstCabinet->getKey(),
+            'name' => 'Cabinet Alpha priv\u00e9',
+            'phone' => '0555 11 11 11',
+            'city' => 'Alger',
+        ]);
+        $firstOwner = User::factory()->create(['cabinet_id' => $firstCabinet->getKey()]);
+        app(QrUploadService::class)->create('local', $firstOwner);
+
+        $secondCabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Beta',
+            'status' => CabinetStatus::ACTIVE,
+        ]);
+        CabinetSetting::query()->create([
+            'cabinet_id' => $secondCabinet->getKey(),
+            'name' => 'Cabinet Beta invit\u00e9',
+            'phone' => '0666 22 22 22',
+            'city' => 'Oran',
+        ]);
+        $secondOwner = User::factory()->create(['cabinet_id' => $secondCabinet->getKey()]);
+        $secondUpload = app(QrUploadService::class)->create('local', $secondOwner);
+        [$secondSelector] = $this->credentials($secondUpload['token']);
+
+        $this->get(route('upload.show', ['selector' => $secondSelector]))
+            ->assertOk()
+            ->assertSeeText('Cabinet Beta invit\u00e9')
+            ->assertSeeText('0666 22 22 22')
+            ->assertSeeText('Oran')
+            ->assertDontSeeText('Cabinet Alpha priv\u00e9')
+            ->assertDontSeeText('0555 11 11 11')
+            ->assertDontSeeText('Alger');
+
+        $this->get(route('upload.show', ['selector' => str_repeat('x', 22)]))
+            ->assertNotFound();
     }
 
     public function test_fetch_workflow_receives_json_for_authorize_upload_and_complete(): void

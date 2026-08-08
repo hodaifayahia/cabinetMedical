@@ -43,17 +43,11 @@ import {
 import {
     googleOAuthErrorMessage,
     isGoogleAuthorizationUrl,
+    openGoogleAuthorization,
 } from '@/pages/configuration/googleOAuthContract';
 import {
-    isNativeLanProvisioningState,
-    nativeLanCommandFailure,
-    normalizeNativeLanConfigurationResult,
-} from '@/pages/configuration/lanConfigurationContract';
-import {
-    nativeRestoreRuntimeState,
     normalizeOfflineRestorePreparation,
     offlineRestoreComponentLabel,
-    offlineRestoreNativeErrorMessage,
     offlineRestorePreparationErrorMessage,
 } from '@/pages/configuration/restoreContract';
 import {
@@ -69,8 +63,6 @@ import type {
     ConfigurationCapability,
     ConnectivityBackupPageProps,
     ConnectivityBackupSettings,
-    NativeLanConfigurationResult,
-    NativeLanProvisioningState,
     OfflineRestoreApplyResult,
     OfflineRestorePreparation,
     OfflineRestoreRuntimeState,
@@ -161,6 +153,7 @@ const copiedUrl = ref(false);
 const copiedTechnicalInfo = ref(false);
 const browserOnline = ref(true);
 const runtimeRefreshInFlight = ref(false);
+const settingsNotice = ref<string | null>(null);
 const canManageConfiguration = computed(
     () =>
         props.permissions.manage_settings ||
@@ -175,14 +168,11 @@ const needsSensitiveConfirmation = computed(
             props.permissions.manage_settings ||
             props.permissions.manage_restore ||
             props.permissions.manage_drive ||
-            props.permissions.manage_license) &&
+            (props.permissions.manage_license &&
+                props.hostedEntitlement === null)) &&
         !props.permissions.sensitive_actions_confirmed,
 );
 const desktopShell = isTauri();
-const nativeLanState = ref<NativeLanProvisioningState | null>(null);
-const nativeLanError = ref<string | null>(null);
-const nativeLanNotice = ref<string | null>(null);
-const nativeLanApplying = ref(false);
 const nativeUpdaterStatus = ref<NativeUpdaterStatus | null>(null);
 const updateChecking = ref(false);
 const updateInstalling = ref(false);
@@ -480,69 +470,7 @@ const preferredPort = computed<string | number>({
         form.connectivity.preferred_port = value === '' ? null : Number(value);
     },
 });
-const adapterOptions = computed(() =>
-    nativeLanState.value
-        ? nativeLanState.value.adapters.map((adapter) => ({
-              id: adapter.id,
-              label: adapter.label,
-              address: adapter.address,
-              connected: true,
-          }))
-        : props.adapters,
-);
-const nativeLanStatusClass = computed(() => {
-    if (nativeLanState.value?.verified) {
-        return 'border-emerald-200 bg-emerald-50/70 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/25 dark:text-emerald-100';
-    }
-
-    if (
-        nativeLanError.value ||
-        nativeLanPreferenceDrift.value ||
-        nativeLanState.value?.phase === 'unavailable'
-    ) {
-        return 'border-red-200 bg-red-50/70 text-red-900 dark:border-red-900 dark:bg-red-950/25 dark:text-red-100';
-    }
-
-    return 'border-amber-200 bg-amber-50/70 text-amber-900 dark:border-amber-900 dark:bg-amber-950/25 dark:text-amber-100';
-});
-const nativeLanPreferenceDrift = computed(() => {
-    const state = nativeLanState.value;
-
-    if (!state) {
-        return false;
-    }
-
-    return (
-        state.requested_enabled !== form.connectivity.lan_enabled ||
-        state.requested_adapter_id !== form.connectivity.selected_adapter_id ||
-        state.requested_preferred_port !== form.connectivity.preferred_port ||
-        state.diagnostics_requested !==
-            form.connectivity.firewall_diagnostics_enabled
-    );
-});
-const nativeLanActionableMessage = computed(() => {
-    if (nativeLanError.value) {
-        return nativeLanError.value;
-    }
-
-    if (nativeLanPreferenceDrift.value) {
-        return 'La préférence enregistrée dans le dossier médical et la configuration native diffèrent. Enregistrez de nouveau ces réglages pour les resynchroniser.';
-    }
-
-    switch (nativeLanState.value?.error_code) {
-        case 'lan_adapter_unavailable':
-            return 'La carte sélectionnée n’a plus d’adresse IPv4 privée active. Choisissez une carte disponible.';
-        case 'lan_bind_failed':
-            return 'L’adresse ou le port ne peut pas être réservé. Choisissez un autre port ou vérifiez la carte réseau.';
-        case 'lan_configuration_invalid':
-        case 'lan_configuration_write_unavailable':
-            return 'La configuration native est invalide ou non inscriptible. Le listener reste fermé.';
-        case 'lan_adapter_discovery_failed':
-            return 'Windows n’a pas permis d’inspecter les cartes réseau. Reconnectez la carte puis réessayez.';
-        default:
-            return null;
-    }
-});
+const adapterOptions = computed(() => props.adapters);
 const maximumStorageMiB = computed<string | number>({
     get: () =>
         form.backups.maximum_storage_bytes === null
@@ -607,6 +535,7 @@ const offlineRestoreRecoveryRequired = computed(
 );
 const canPrepareOfflineRestore = computed(
     () =>
+        !desktopShell &&
         props.permissions.manage_restore &&
         props.permissions.sensitive_actions_confirmed &&
         props.capabilities.offline_restore.available &&
@@ -619,6 +548,7 @@ const canPrepareOfflineRestore = computed(
 );
 const canApplyOfflineRestore = computed(
     () =>
+        !desktopShell &&
         props.permissions.manage_restore &&
         props.permissions.sensitive_actions_confirmed &&
         props.capabilities.offline_restore.available &&
@@ -720,9 +650,7 @@ const technicalDetails = computed(() => [
     },
     {
         label: 'Exécutable tunnel vérifié',
-        value: props.runtime.tunnel.service_installed
-            ? 'Oui'
-            : 'Non',
+        value: props.runtime.tunnel.service_installed ? 'Oui' : 'Non',
     },
     {
         label: 'Version cloudflared',
@@ -864,7 +792,6 @@ const refreshRuntimeState = () => {
         ],
         onFinish: () => {
             runtimeRefreshInFlight.value = false;
-            void refreshNativeLanState();
             void refreshSignedUpdaterStatus();
         },
     });
@@ -874,35 +801,6 @@ const updateBrowserState = () => {
     browserOnline.value = navigator.onLine;
     refreshRuntimeState();
 };
-const refreshNativeLanState = async () => {
-    if (!desktopShell || nativeLanApplying.value) {
-        return;
-    }
-
-    try {
-        const state =
-            await invoke<NativeLanProvisioningState>('list_lan_adapters');
-
-        if (!isNativeLanProvisioningState(state)) {
-            throw new Error('invalid_lan_runtime_state');
-        }
-
-        nativeLanState.value = state;
-        nativeLanError.value = null;
-
-        if (state.verified || state.phase === 'disabled') {
-            nativeLanNotice.value = null;
-        }
-    } catch (error) {
-        const failure = nativeLanCommandFailure(error);
-        nativeLanError.value = failure.message;
-
-        if (failure.state) {
-            nativeLanState.value = failure.state;
-        }
-    }
-};
-
 const refreshSignedUpdaterStatus =
     async (): Promise<NativeUpdaterStatus | null> => {
         if (!desktopShell) {
@@ -985,7 +883,7 @@ const checkForSignedUpdate = async (manual = true) => {
 
         updateNotice.value = result.update
             ? `La version ${result.update.version} est disponible sur le canal approuvé.`
-            : 'MediSmart est à jour.';
+            : 'DrClickDz est à jour.';
         await refreshSignedUpdaterStatus();
     } catch (error) {
         updateError.value = signedUpdaterErrorMessage(error);
@@ -1017,7 +915,7 @@ const installPendingSignedUpdate = async () => {
 
     if (
         !window.confirm(
-            `Installer MediSmart ${pending.version} ? Une sauvegarde locale vérifiée sera créée avant le téléchargement. L’application redémarrera pendant l’installation.`,
+            `Installer DrClickDz ${pending.version} ? Une sauvegarde locale vérifiée sera créée avant le téléchargement. L’application redémarrera pendant l’installation.`,
         )
     ) {
         return;
@@ -1073,7 +971,6 @@ onMounted(() => {
         }
     }, 1000);
     runtimePollingTimer = window.setInterval(refreshRuntimeState, 10_000);
-    void refreshNativeLanState();
     void refreshSignedUpdaterStatus().then((status) => {
         if (status && shouldAutomaticallyCheckForUpdates(status)) {
             void checkForSignedUpdate(false);
@@ -1186,62 +1083,13 @@ const rejectPendingUpload = (id: string) => {
 };
 
 const submitSettings = () => {
-    nativeLanError.value = null;
-    nativeLanNotice.value = null;
+    settingsNotice.value = null;
     form.put(settingsUrl, {
         preserveScroll: true,
         onSuccess: () => {
             form.defaults();
-
-            if (!props.permissions.manage_settings || !desktopShell) {
-                nativeLanNotice.value = 'Préférences enregistrées.';
-
-                return;
-            }
-
-            nativeLanApplying.value = true;
-            void invoke<NativeLanConfigurationResult>(
-                'apply_lan_listener_configuration',
-                {
-                    configuration: {
-                        schema_version: 1,
-                        enabled: form.connectivity.lan_enabled,
-                        selected_adapter_id:
-                            form.connectivity.selected_adapter_id,
-                        preferred_port: form.connectivity.preferred_port,
-                        firewall_diagnostics_enabled:
-                            form.connectivity.firewall_diagnostics_enabled,
-                    },
-                },
-            )
-                .then((rawResult) => {
-                    const result =
-                        normalizeNativeLanConfigurationResult(rawResult);
-
-                    if (!result) {
-                        throw new Error('invalid_lan_configuration_result');
-                    }
-
-                    nativeLanState.value = result.state;
-                    nativeLanNotice.value = result.message_fr;
-                    nativeLanError.value = null;
-                    window.setTimeout(() => {
-                        void refreshNativeLanState();
-                        refreshRuntimeState();
-                    }, 1000);
-                })
-                .catch((error: unknown) => {
-                    const failure = nativeLanCommandFailure(error);
-                    nativeLanError.value = failure.message;
-                    nativeLanNotice.value = null;
-
-                    if (failure.state) {
-                        nativeLanState.value = failure.state;
-                    }
-                })
-                .finally(() => {
-                    nativeLanApplying.value = false;
-                });
+            settingsNotice.value =
+                'Préférences enregistrées sur le serveur DrClickDz.';
         },
     });
 };
@@ -1366,7 +1214,7 @@ const chooseOfflineRestoreArchive = (event: Event) => {
         /[/\\<>:"|?*\u0000-\u001f\u007f]/.test(file.name)
     ) {
         offlineRestoreError.value =
-            'Choisissez une archive MediSmart portant l’extension .msbackup.';
+            'Choisissez une archive DrClickDz portant l’extension .msbackup.';
 
         return;
     }
@@ -1438,7 +1286,7 @@ const prepareOfflineRestore = async () => {
         offlineRestorePreparing.value = false;
     }
 };
-const applyOfflineRestore = async () => {
+const applyOfflineRestore = () => {
     if (
         !canApplyOfflineRestore.value ||
         offlineRestorePreparation.value === null
@@ -1446,73 +1294,8 @@ const applyOfflineRestore = async () => {
         return;
     }
 
-    if (!isTauri()) {
-        offlineRestoreError.value =
-            'L’application de la restauration est disponible uniquement dans l’application de bureau supervisée.';
-
-        return;
-    }
-
-    if (
-        !window.confirm(
-            'Appliquer cette restauration ? MediSmart va arrêter ses services, créer une sauvegarde de sécurité, remplacer les données vérifiées puis redémarrer.',
-        )
-    ) {
-        return;
-    }
-
-    const authorization = offlineRestorePreparation.value.authorization;
-    let keepBlockingOverlay = false;
-    offlineRestoreApplying.value = true;
-    offlineRestoreError.value = null;
-    offlineRestoreApplyMessage.value =
-        'Restauration en cours. N’éteignez pas cet ordinateur.';
-    offlineRestoreApplyStatus.value = null;
-
-    try {
-        const result = await invoke<OfflineRestoreApplyResult>(
-            'apply_prepared_offline_restore',
-            { authorization },
-        );
-        const statuses: OfflineRestoreApplyResult['status'][] = [
-            'applied_pending_restart',
-            'rolled_back',
-            'refused_no_mutation',
-            'manual_recovery_required',
-        ];
-
-        if (
-            !isRecord(result) ||
-            !statuses.includes(
-                result.status as OfflineRestoreApplyResult['status'],
-            ) ||
-            typeof result.message_fr !== 'string' ||
-            result.message_fr.trim() === '' ||
-            (result.runtime_state !== 'verified_running' &&
-                result.runtime_state !== 'offline_recovery_required')
-        ) {
-            throw new Error('invalid_offline_restore_result');
-        }
-
-        offlineRestoreApplyStatus.value = result.status;
-        offlineRestoreApplyMessage.value = result.message_fr;
-        offlineRestoreRuntimeState.value = result.runtime_state;
-        keepBlockingOverlay = result.status === 'applied_pending_restart';
-
-        if (!keepBlockingOverlay) {
-            offlineRestorePreparation.value = null;
-            offlineRestoreConfirmed.value = false;
-        }
-    } catch (error) {
-        offlineRestoreApplyMessage.value = null;
-        offlineRestoreApplyStatus.value = null;
-        offlineRestoreRuntimeState.value = nativeRestoreRuntimeState(error);
-        offlineRestoreError.value = offlineRestoreNativeErrorMessage(error);
-    } finally {
-        if (!keepBlockingOverlay) {
-            offlineRestoreApplying.value = false;
-        }
-    }
+    offlineRestoreError.value =
+        'L’application locale d’une archive n’est pas disponible dans le client hébergé. Contactez le support DrClickDz pour une restauration gérée côté serveur.';
 };
 const chooseLocalBackup = (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0] ?? null;
@@ -1590,20 +1373,11 @@ const connectDrive = async () => {
             throw new Error('invalid_google_authorization_url');
         }
 
-        if (desktopRuntime) {
-            const opened = await invoke<{ opened: true }>(
-                'open_google_oauth_authorization',
-                { authorizationUrl: prepared.authorization_url },
-            );
-
-            if (opened.opened !== true) {
-                throw new Error('google_authorization_not_opened');
-            }
-        } else if (browserAuthorizationWindow !== null) {
-            browserAuthorizationWindow.location.replace(
-                prepared.authorization_url,
-            );
-        }
+        openGoogleAuthorization(
+            prepared.authorization_url,
+            desktopRuntime,
+            browserAuthorizationWindow,
+        );
 
         driveConnectNotice.value =
             'Google a été ouvert dans le navigateur système. Terminez l’autorisation ; cet écran détectera ensuite la connexion automatiquement.';
@@ -1757,22 +1531,14 @@ const testDriveConnection = () => {
                 v-if="permissions.manage_settings || permissions.manage_backups"
                 type="submit"
                 form="connectivity-settings-form"
-                :disabled="
-                    form.processing || nativeLanApplying || !form.isDirty
-                "
+                :disabled="form.processing || !form.isDirty"
             >
                 <LoaderCircle
-                    v-if="form.processing || nativeLanApplying"
+                    v-if="form.processing"
                     class="size-4 animate-spin"
                 />
                 <Save v-else class="size-4" />
-                {{
-                    form.processing
-                        ? 'Enregistrement…'
-                        : nativeLanApplying
-                          ? 'Application locale…'
-                          : 'Enregistrer'
-                }}
+                {{ form.processing ? 'Enregistrement…' : 'Enregistrer' }}
             </Button>
         </div>
 
@@ -2112,8 +1878,8 @@ const testDriveConnection = () => {
                             Réseau local
                         </h2>
                         <p class="mt-1 text-sm text-muted-foreground">
-                            Expose uniquement la réception de fichiers sur le
-                            réseau du cabinet.
+                            Ces préférences sont enregistrées et appliquées par
+                            le serveur DrClickDz.
                         </p>
                     </div>
                     <span
@@ -2220,8 +1986,8 @@ const testDriveConnection = () => {
                             "
                         />
                         <p class="text-xs text-muted-foreground">
-                            Le lanceur choisit toujours un port sûr et
-                            disponible.
+                            Le serveur choisit un port sûr et disponible si
+                            aucun port n’est imposé.
                         </p>
                         <InputError
                             :message="fieldError('connectivity.preferred_port')"
@@ -2230,51 +1996,18 @@ const testDriveConnection = () => {
                 </div>
 
                 <div
-                    v-if="desktopShell && (nativeLanState || nativeLanError)"
-                    class="mt-5 rounded-xl border p-4 text-sm"
-                    :class="nativeLanStatusClass"
+                    v-if="desktopShell"
+                    class="mt-5 flex gap-3 rounded-xl border border-blue-200 bg-blue-50/70 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/25 dark:text-blue-100"
                 >
-                    <p class="font-semibold">
-                        <template v-if="nativeLanState?.verified">
-                            Listener natif vérifié
-                        </template>
-                        <template
-                            v-else-if="
-                                nativeLanState?.phase === 'pending_attestation'
-                            "
-                        >
-                            Préférence enregistrée, vérification en cours
-                        </template>
-                        <template
-                            v-else-if="nativeLanState?.phase === 'disabled'"
-                        >
-                            Réception LAN désactivée
-                        </template>
-                        <template v-else>Listener natif fermé</template>
-                    </p>
-                    <p v-if="nativeLanActionableMessage" class="mt-1">
-                        {{ nativeLanActionableMessage }}
-                    </p>
-                    <p v-else-if="nativeLanNotice" class="mt-1">
-                        {{ nativeLanNotice }}
-                    </p>
-                    <p
-                        v-if="nativeLanState?.verified_origin"
-                        class="mt-2 font-mono text-xs break-all"
-                    >
-                        {{ nativeLanState.verified_origin }}
-                    </p>
-                    <p
-                        v-if="
-                            nativeLanState?.diagnostics_requested &&
-                            nativeLanState.local_reachability === 'passed'
-                        "
-                        class="mt-2 text-xs"
-                    >
-                        Le test local borné a réussi. Il ne prouve pas qu’un
-                        téléphone peut traverser le pare-feu Windows ; aucune
-                        règle n’a été modifiée.
-                    </p>
+                    <Cloud class="mt-0.5 size-5 shrink-0" />
+                    <div>
+                        <p class="font-semibold">Configuration hébergée</p>
+                        <p class="mt-1">
+                            Le client de bureau enregistre ces préférences sur
+                            le serveur DrClickDz. Il n’exécute aucun listener
+                            LAN et ne modifie pas le pare-feu Windows.
+                        </p>
+                    </div>
                 </div>
 
                 <label
@@ -2797,6 +2530,13 @@ const testDriveConnection = () => {
                 class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end"
             >
                 <p
+                    v-if="settingsNotice && !form.isDirty"
+                    class="text-sm text-emerald-700 dark:text-emerald-300"
+                    role="status"
+                >
+                    {{ settingsNotice }}
+                </p>
+                <p
                     v-if="form.isDirty"
                     class="text-sm text-amber-700 dark:text-amber-300"
                 >
@@ -2804,21 +2544,17 @@ const testDriveConnection = () => {
                 </p>
                 <Button
                     type="submit"
-                    :disabled="
-                        form.processing || nativeLanApplying || !form.isDirty
-                    "
+                    :disabled="form.processing || !form.isDirty"
                 >
                     <LoaderCircle
-                        v-if="form.processing || nativeLanApplying"
+                        v-if="form.processing"
                         class="size-4 animate-spin"
                     />
                     <Save v-else class="size-4" />
                     {{
                         form.processing
                             ? 'Enregistrement…'
-                            : nativeLanApplying
-                              ? 'Application locale…'
-                              : 'Enregistrer les réglages'
+                            : 'Enregistrer les réglages'
                     }}
                 </Button>
             </div>
@@ -2956,8 +2692,7 @@ const testDriveConnection = () => {
                             type="button"
                             variant="outline"
                             :disabled="
-                                activeUploadExpired ||
-                                testingUploadId !== null
+                                activeUploadExpired || testingUploadId !== null
                             "
                             @click="testUploadSession(activeUpload.id)"
                         >
@@ -3252,14 +2987,80 @@ const testDriveConnection = () => {
             </div>
         </section>
 
-        <section v-if="permissions.manage_license" class="med-panel p-6">
+        <section v-if="hostedEntitlement" class="med-panel p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2
                         class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
                     >
                         <ShieldCheck class="size-5 text-emerald-600" />
-                        Licence MediSmart
+                        Licence du cabinet
+                    </h2>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        Cette licence est attribuée et gérée par la plateforme
+                        DrClickDz.
+                    </p>
+                </div>
+                <span
+                    class="rounded-full border px-2.5 py-1 text-xs font-semibold"
+                    :class="
+                        hostedEntitlement.status === 'active'
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200'
+                            : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200'
+                    "
+                >
+                    {{ hostedEntitlement.status_label }}
+                </span>
+            </div>
+
+            <div class="mt-6 grid gap-4 sm:grid-cols-2">
+                <div
+                    class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
+                >
+                    <p class="text-xs font-medium text-muted-foreground">
+                        Type de licence
+                    </p>
+                    <p
+                        class="mt-1 text-lg font-bold text-slate-900 dark:text-white"
+                    >
+                        {{ hostedEntitlement.plan_label ?? '—' }}
+                    </p>
+                </div>
+                <div
+                    class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
+                >
+                    <p class="text-xs font-medium text-muted-foreground">
+                        Validité
+                    </p>
+                    <p
+                        class="mt-1 text-lg font-bold text-slate-900 dark:text-white"
+                    >
+                        {{
+                            hostedEntitlement.expires_at
+                                ? formatDate(hostedEntitlement.expires_at)
+                                : 'À vie'
+                        }}
+                    </p>
+                </div>
+            </div>
+
+            <p
+                class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200"
+            >
+                Aucun numéro de série ni certificat machine n’est requis. Pour
+                renouveler un essai ou passer à une licence à vie, contactez
+                l’administration DrClickDz.
+            </p>
+        </section>
+
+        <section v-else-if="permissions.manage_license" class="med-panel p-6">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2
+                        class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
+                    >
+                        <ShieldCheck class="size-5 text-emerald-600" />
+                        Licence DrClickDz
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
                         La licence signe les fonctions commerciales sans jamais
@@ -3485,7 +3286,7 @@ const testDriveConnection = () => {
                     <div class="flex items-start justify-between gap-3">
                         <h3 class="flex items-center gap-2 font-semibold">
                             <HardDrive class="size-4 text-blue-600" />
-                            Archive MediSmart (.msbackup)
+                            Archive DrClickDz (.msbackup)
                         </h3>
                         <span
                             class="rounded-full border px-2 py-0.5 text-xs font-semibold"
@@ -3556,7 +3357,7 @@ const testDriveConnection = () => {
                         </div>
                         <p class="text-xs text-amber-800 dark:text-amber-300">
                             Cette phrase n’est ni stockée ni récupérable par
-                            MediSmart. Conservez-la séparément : elle sera
+                            DrClickDz. Conservez-la séparément : elle sera
                             obligatoire pour restaurer l’archive.
                         </p>
                         <InputError :message="encryptedBackupError" />
@@ -3918,7 +3719,7 @@ const testDriveConnection = () => {
                         class="mt-4 border-t border-emerald-200 pt-4 dark:border-emerald-900"
                     >
                         <p class="mb-2 text-xs font-semibold">
-                            Archives MediSmart reconnues sur Drive ({{
+                            Archives DrClickDz reconnues sur Drive ({{
                                 remoteDriveBackups.length
                             }})
                         </p>
@@ -3926,7 +3727,7 @@ const testDriveConnection = () => {
                             v-if="remoteDriveBackups.length === 0"
                             class="text-xs text-muted-foreground"
                         >
-                            Aucune archive chiffrée MediSmart v2 dans ce
+                            Aucune archive chiffrée DrClickDz v2 dans ce
                             dossier.
                         </p>
                         <div
@@ -4091,6 +3892,21 @@ const testDriveConnection = () => {
             </p>
 
             <div
+                v-if="desktopShell && capabilities.offline_restore.available"
+                class="mt-4 flex gap-3 rounded-xl border border-blue-200 bg-blue-50/70 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/25 dark:text-blue-100"
+            >
+                <Cloud class="mt-0.5 size-5 shrink-0" />
+                <div>
+                    <p class="font-semibold">Restauration gérée côté serveur</p>
+                    <p class="mt-1">
+                        Le client hébergé n’applique aucune archive locale.
+                        Contactez le support DrClickDz pour organiser une
+                        restauration supervisée sur le serveur.
+                    </p>
+                </div>
+            </div>
+
+            <div
                 v-else-if="offlineRestoreRecoveryRequired"
                 class="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
                 role="alert"
@@ -4103,7 +3919,7 @@ const testDriveConnection = () => {
                     Les actions de restauration restent bloquées pour éviter une
                     nouvelle modification. Conservez l’ordinateur allumé et
                     suivez le diagnostic fourni par le superviseur ou le support
-                    MediSmart.
+                    DrClickDz.
                 </p>
             </div>
 
@@ -4124,6 +3940,7 @@ const testDriveConnection = () => {
             <div
                 v-if="
                     capabilities.offline_restore.available &&
+                    !desktopShell &&
                     !offlineRestoreRecoveryRequired &&
                     offlineRestorePreparation === null
                 "
@@ -4131,7 +3948,7 @@ const testDriveConnection = () => {
             >
                 <div class="grid gap-2">
                     <Label for="offline-restore-backup">
-                        Archive MediSmart chiffrée
+                        Archive DrClickDz chiffrée
                     </Label>
                     <label
                         for="offline-restore-backup"
@@ -4238,7 +4055,7 @@ const testDriveConnection = () => {
                     </div>
                     <div>
                         <dt class="text-xs text-muted-foreground">
-                            Version MediSmart
+                            Version DrClickDz
                         </dt>
                         <dd class="mt-1 text-sm font-semibold">
                             {{
@@ -4313,7 +4130,7 @@ const testDriveConnection = () => {
                 >
                     <p class="flex items-start gap-2 font-semibold">
                         <AlertTriangle class="mt-0.5 size-4 shrink-0" />
-                        Cette opération arrête temporairement MediSmart et
+                        Cette opération arrête temporairement DrClickDz et
                         remplace la base, les documents gérés et le logo par le
                         contenu vérifié ci-dessus.
                     </p>
@@ -4350,7 +4167,7 @@ const testDriveConnection = () => {
                             class="size-4 animate-spin"
                         />
                         <RefreshCw v-else class="size-4" />
-                        Appliquer et redémarrer MediSmart
+                        Appliquer et redémarrer DrClickDz
                     </Button>
                     <Button
                         type="button"
@@ -4625,7 +4442,7 @@ const testDriveConnection = () => {
                 >
                     {{
                         offlineRestoreApplyMessage ??
-                        'MediSmart vérifie la sauvegarde de sécurité, remplace les données et redémarre ses services. N’éteignez pas cet ordinateur et ne fermez pas l’application.'
+                        'DrClickDz vérifie la sauvegarde de sécurité, remplace les données et redémarre ses services. N’éteignez pas cet ordinateur et ne fermez pas l’application.'
                     }}
                 </p>
                 <p class="mt-3 text-xs text-slate-400">

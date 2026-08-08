@@ -1,1 +1,284 @@
-PHNjcmlwdCBzZXR1cCBsYW5nPSJ0cyI+CmltcG9ydCB7IEZvcm0sIEhlYWQgfSBmcm9tICdAaW5lcnRpYWpzL3Z1ZTMnOwppbXBvcnQgSW5wdXRFcnJvciBmcm9tICdAL2NvbXBvbmVudHMvSW5wdXRFcnJvci52dWUnOwppbXBvcnQgUGFzc3dvcmRJbnB1dCBmcm9tICdAL2NvbXBvbmVudHMvUGFzc3dvcmRJbnB1dC52dWUnOwppbXBvcnQgVGV4dExpbmsgZnJvbSAnQC9jb21wb25lbnRzL1RleHRMaW5rLnZ1ZSc7CmltcG9ydCB7IEJ1dHRvbiB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9idXR0b24nOwppbXBvcnQgeyBJbnB1dCB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9pbnB1dCc7CmltcG9ydCB7IExhYmVsIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2xhYmVsJzsKaW1wb3J0IHsgU3Bpbm5lciB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9zcGlubmVyJzsKaW1wb3J0IHsgbG9naW4gfSBmcm9tICdAL3JvdXRlcyc7CgpkZWZpbmVPcHRpb25zKHsKICAgIGxheW91dDogewogICAgICAgIHRpdGxlOiAnUmVqb2luZHJlIHVuIGNhYmluZXQnLAogICAgICAgIGRlc2NyaXB0aW9uOgogICAgICAgICAgICAnRGVtYW5kZXogbOKAmWFjY8OocyBhdSBjYWJpbmV0IGRlIHZvdHJlIGNvbmZyw6hyZSBlbiBpbmRpcXVhbnQgc29uIGFkcmVzc2UgZS1tYWlsLicsCiAgICB9LAp9KTsKPC9zY3JpcHQ+Cgo8dGVtcGxhdGU+CiAgICA8SGVhZCB0aXRsZT0iUmVqb2luZHJlIHVuIGNhYmluZXQiIC8+CgogICAgPEZvcm0KICAgICAgICBhY3Rpb249Ii9qb2luIgogICAgICAgIG1ldGhvZD0icG9zdCIKICAgICAgICA6cmVzZXQtb24tc3VjY2Vzcz0iWydwYXNzd29yZCcsICdwYXNzd29yZF9jb25maXJtYXRpb24nXSIKICAgICAgICB2LXNsb3Q9InsgZXJyb3JzLCBwcm9jZXNzaW5nIH0iCiAgICAgICAgY2xhc3M9ImZsZXggZmxleC1jb2wgZ2FwLTYiCiAgICA+CiAgICAgICAgPGRpdiBjbGFzcz0iZ3JpZCBnYXAtNiI+CiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImdyaWQgZ2FwLTIiPgogICAgICAgICAgICAgICAgPExhYmVsIGZvcj0ibmFtZSI+Vm90cmUgbm9tIGNvbXBsZXQ8L0xhYmVsPgogICAgICAgICAgICAgICAgPElucHV0CiAgICAgICAgICAgICAgICAgICAgaWQ9Im5hbWUiCiAgICAgICAgICAgICAgICAgICAgdHlwZT0idGV4dCIKICAgICAgICAgICAgICAgICAgICByZXF1aXJlZAogICAgICAgICAgICAgICAgICAgIGF1dG9mb2N1cwogICAgICAgICAgICAgICAgICAgIDp0YWJpbmRleD0iMSIKICAgICAgICAgICAgICAgICAgICBhdXRvY29tcGxldGU9Im5hbWUiCiAgICAgICAgICAgICAgICAgICAgbmFtZT0ibmFtZSIKICAgICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj0iRHIgS2FyaW0gSGFkZGFkIgogICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgIDxJbnB1dEVycm9yIDptZXNzYWdlPSJlcnJvcnMubmFtZSIgLz4KICAgICAgICAgICAgPC9kaXY+CgogICAgICAgICAgICA8ZGl2IGNsYXNzPSJncmlkIGdhcC0yIj4KICAgICAgICAgICAgICAgIDxMYWJlbCBmb3I9ImVtYWlsIj5Wb3RyZSBhZHJlc3NlIGUtbWFpbDwvTGFiZWw+CiAgICAgICAgICAgICAgICA8SW5wdXQKICAgICAgICAgICAgICAgICAgICBpZD0iZW1haWwiCiAgICAgICAgICAgICAgICAgICAgdHlwZT0iZW1haWwiCiAgICAgICAgICAgICAgICAgICAgcmVxdWlyZWQKICAgICAgICAgICAgICAgICAgICA6dGFiaW5kZXg9IjIiCiAgICAgICAgICAgICAgICAgICAgYXV0b2NvbXBsZXRlPSJlbWFpbCIKICAgICAgICAgICAgICAgICAgICBuYW1lPSJlbWFpbCIKICAgICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj0idm91c0BleGFtcGxlLmNvbSIKICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICA8SW5wdXRFcnJvciA6bWVzc2FnZT0iZXJyb3JzLmVtYWlsIiAvPgogICAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImdyaWQgZ2FwLTIiPgogICAgICAgICAgICAgICAgPExhYmVsIGZvcj0ib3duZXJfZW1haWwiPgogICAgICAgICAgICAgICAgICAgIEUtbWFpbCBkdSBwcm9wcmnDqXRhaXJlIGR1IGNhYmluZXQKICAgICAgICAgICAgICAgIDwvTGFiZWw+CiAgICAgICAgICAgICAgICA8SW5wdXQKICAgICAgICAgICAgICAgICAgICBpZD0ib3duZXJfZW1haWwiCiAgICAgICAgICAgICAgICAgICAgdHlwZT0iZW1haWwiCiAgICAgICAgICAgICAgICAgICAgcmVxdWlyZWQKICAgICAgICAgICAgICAgICAgICA6dGFiaW5kZXg9IjMiCiAgICAgICAgICAgICAgICAgICAgbmFtZT0ib3duZXJfZW1haWwiCiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9InByb3ByaWV0YWlyZUBleGFtcGxlLmNvbSIKICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICA8cCBjbGFzcz0idGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICAgICAgICAgIEwnYWRyZXNzZSBlLW1haWwgZGUgbCdhZG1pbmlzdHJhdGV1ciBxdWkgYSBjcsOpw6kgbGUgY2FiaW5ldC4KICAgICAgICAgICAgICAgIDwvcD4KICAgICAgICAgICAgICAgIDxJbnB1dEVycm9yIDptZXNzYWdlPSJlcnJvcnMub3duZXJfZW1haWwiIC8+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgPGRpdiBjbGFzcz0iZ3JpZCBnYXAtMiI+CiAgICAgICAgICAgICAgICA8TGFiZWwgZm9yPSJwYXNzd29yZCI+TW90IGRlIHBhc3NlPC9MYWJlbD4KICAgICAgICAgICAgICAgIDxQYXNzd29yZElucHV0CiAgICAgICAgICAgICAgICAgICAgaWQ9InBhc3N3b3JkIgogICAgICAgICAgICAgICAgICAgIHJlcXVpcmVkCiAgICAgICAgICAgICAgICAgICAgOnRhYmluZGV4PSI0IgogICAgICAgICAgICAgICAgICAgIGF1dG9jb21wbGV0ZT0ibmV3LXBhc3N3b3JkIgogICAgICAgICAgICAgICAgICAgIG5hbWU9InBhc3N3b3JkIgogICAgICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPSJNb3QgZGUgcGFzc2UiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPElucHV0RXJyb3IgOm1lc3NhZ2U9ImVycm9ycy5wYXNzd29yZCIgLz4KICAgICAgICAgICAgPC9kaXY+CgogICAgICAgICAgICA8ZGl2IGNsYXNzPSJncmlkIGdhcC0yIj4KICAgICAgICAgICAgICAgIDxMYWJlbCBmb3I9InBhc3N3b3JkX2NvbmZpcm1hdGlvbiI+CiAgICAgICAgICAgICAgICAgICAgQ29uZmlybWVyIGxlIG1vdCBkZSBwYXNzZQogICAgICAgICAgICAgICAgPC9MYWJlbD4KICAgICAgICAgICAgICAgIDxQYXNzd29yZElucHV0CiAgICAgICAgICAgICAgICAgICAgaWQ9InBhc3N3b3JkX2NvbmZpcm1hdGlvbiIKICAgICAgICAgICAgICAgICAgICByZXF1aXJlZAogICAgICAgICAgICAgICAgICAgIDp0YWJpbmRleD0iNSIKICAgICAgICAgICAgICAgICAgICBhdXRvY29tcGxldGU9Im5ldy1wYXNzd29yZCIKICAgICAgICAgICAgICAgICAgICBuYW1lPSJwYXNzd29yZF9jb25maXJtYXRpb24iCiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9IkNvbmZpcm1lciBsZSBtb3QgZGUgcGFzc2UiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPElucHV0RXJyb3IgOm1lc3NhZ2U9ImVycm9ycy5wYXNzd29yZF9jb25maXJtYXRpb24iIC8+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgPEJ1dHRvbgogICAgICAgICAgICAgICAgdHlwZT0ic3VibWl0IgogICAgICAgICAgICAgICAgY2xhc3M9Im10LTIgdy1mdWxsIgogICAgICAgICAgICAgICAgdGFiaW5kZXg9IjYiCiAgICAgICAgICAgICAgICA6ZGlzYWJsZWQ9InByb2Nlc3NpbmciCiAgICAgICAgICAgICAgICBkYXRhLXRlc3Q9ImpvaW4tY2FiaW5ldC1idXR0b24iCiAgICAgICAgICAgID4KICAgICAgICAgICAgICAgIDxTcGlubmVyIHYtaWY9InByb2Nlc3NpbmciIC8+CiAgICAgICAgICAgICAgICBFbnZveWVyIG1hIGRlbWFuZGUKICAgICAgICAgICAgPC9CdXR0b24+CiAgICAgICAgPC9kaXY+CgogICAgICAgIDxkaXYgY2xhc3M9InRleHQtY2VudGVyIHRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgVm91cyBhdmV6IGTDqWrDoCB1biBjb21wdGUgPwogICAgICAgICAgICA8VGV4dExpbmsKICAgICAgICAgICAgICAgIDpocmVmPSJsb2dpbigpIgogICAgICAgICAgICAgICAgY2xhc3M9InVuZGVybGluZSB1bmRlcmxpbmUtb2Zmc2V0LTQiCiAgICAgICAgICAgICAgICA6dGFiaW5kZXg9IjciCiAgICAgICAgICAgICAgICA+U2UgY29ubmVjdGVyPC9UZXh0TGluawogICAgICAgICAgICA+CiAgICAgICAgPC9kaXY+CiAgICA8L0Zvcm0+CjwvdGVtcGxhdGU+Cg==
+<script setup lang="ts">
+import { Form, Head } from '@inertiajs/vue3';
+import {
+    ArrowRight,
+    Building2,
+    Info,
+    LockKeyhole,
+    UserRound,
+    UsersRound,
+} from '@lucide/vue';
+import AuthBackLink from '@/components/auth/AuthBackLink.vue';
+import InputError from '@/components/InputError.vue';
+import PasswordInput from '@/components/PasswordInput.vue';
+import TextLink from '@/components/TextLink.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { markDesktopOnboardingComplete } from '@/lib/desktopOnboarding';
+import { login } from '@/routes';
+
+defineOptions({
+    layout: {
+        title: 'Rejoindre un cabinet',
+        description:
+            'Créez votre accès collaborateur. Le responsable du cabinet devra ensuite approuver votre demande.',
+    },
+});
+</script>
+
+<template>
+    <Head title="Rejoindre un cabinet" />
+
+    <AuthBackLink :href="login()" label="Retour à la connexion" />
+
+    <div
+        class="mb-7 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/35 dark:text-amber-100"
+        role="note"
+    >
+        <Info
+            class="mt-0.5 size-5 shrink-0 text-amber-600"
+            aria-hidden="true"
+        />
+        <p class="leading-6">
+            Demandez au propriétaire l’adresse e-mail utilisée lors de la
+            création du cabinet. Chaque cabinet peut accueillir jusqu’à trois
+            utilisateurs.
+        </p>
+    </div>
+
+    <Form
+        action="/join"
+        method="post"
+        :reset-on-success="['password', 'password_confirmation']"
+        v-slot="{ errors, processing }"
+        class="flex flex-col gap-6"
+        @success="markDesktopOnboardingComplete"
+    >
+        <fieldset
+            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
+        >
+            <legend class="sr-only">Vos informations</legend>
+            <div class="mb-5 flex items-center gap-3">
+                <span
+                    class="flex size-9 items-center justify-center rounded-xl bg-sky-100 text-[#1268a5] dark:bg-sky-950 dark:text-sky-300"
+                >
+                    <UserRound class="size-4.5" aria-hidden="true" />
+                </span>
+                <div>
+                    <p
+                        class="text-sm font-extrabold text-slate-900 dark:text-white"
+                    >
+                        Votre profil
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Les informations visibles par votre responsable
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div class="grid gap-2">
+                    <Label for="name" class="font-semibold">Nom complet</Label>
+                    <Input
+                        id="name"
+                        type="text"
+                        required
+                        autofocus
+                        :tabindex="1"
+                        autocomplete="name"
+                        name="name"
+                        placeholder="Dr Karim Haddad"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.name)"
+                        :aria-describedby="
+                            errors.name ? 'name-error' : undefined
+                        "
+                    />
+                    <InputError id="name-error" :message="errors.name" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="email" class="font-semibold"
+                        >Votre e-mail</Label
+                    >
+                    <Input
+                        id="email"
+                        type="email"
+                        required
+                        :tabindex="2"
+                        autocomplete="email"
+                        inputmode="email"
+                        name="email"
+                        placeholder="vous@cabinet.dz"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.email)"
+                        :aria-describedby="
+                            errors.email ? 'email-error' : undefined
+                        "
+                    />
+                    <InputError id="email-error" :message="errors.email" />
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset
+            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
+        >
+            <legend class="sr-only">Cabinet à rejoindre</legend>
+            <div class="mb-5 flex items-center gap-3">
+                <span
+                    class="flex size-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"
+                >
+                    <Building2 class="size-4.5" aria-hidden="true" />
+                </span>
+                <div>
+                    <p
+                        class="text-sm font-extrabold text-slate-900 dark:text-white"
+                    >
+                        Cabinet à rejoindre
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Identifiez-le grâce au compte propriétaire
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="owner_email" class="font-semibold">
+                    E-mail du propriétaire du cabinet
+                </Label>
+                <Input
+                    id="owner_email"
+                    type="email"
+                    required
+                    :tabindex="3"
+                    inputmode="email"
+                    name="owner_email"
+                    placeholder="proprietaire@cabinet.dz"
+                    class="h-11"
+                    :aria-invalid="Boolean(errors.owner_email)"
+                    :aria-describedby="
+                        errors.owner_email
+                            ? 'owner-email-help owner-email-error'
+                            : 'owner-email-help'
+                    "
+                />
+                <p
+                    id="owner-email-help"
+                    class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"
+                >
+                    <UsersRound class="size-3.5" aria-hidden="true" />
+                    Votre demande sera envoyée à cette personne.
+                </p>
+                <InputError
+                    id="owner-email-error"
+                    :message="errors.owner_email"
+                />
+            </div>
+        </fieldset>
+
+        <fieldset
+            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
+        >
+            <legend class="sr-only">Sécurisation du compte</legend>
+            <div class="mb-5 flex items-center gap-3">
+                <span
+                    class="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                >
+                    <LockKeyhole class="size-4.5" aria-hidden="true" />
+                </span>
+                <div>
+                    <p
+                        class="text-sm font-extrabold text-slate-900 dark:text-white"
+                    >
+                        Votre mot de passe
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Il protège votre accès personnel
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div class="grid gap-2">
+                    <Label for="password" class="font-semibold"
+                        >Mot de passe</Label
+                    >
+                    <PasswordInput
+                        id="password"
+                        required
+                        :tabindex="4"
+                        autocomplete="new-password"
+                        name="password"
+                        placeholder="8 caractères minimum"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.password)"
+                        :aria-describedby="
+                            errors.password ? 'password-error' : undefined
+                        "
+                    />
+                    <InputError
+                        id="password-error"
+                        :message="errors.password"
+                    />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="password_confirmation" class="font-semibold">
+                        Confirmer le mot de passe
+                    </Label>
+                    <PasswordInput
+                        id="password_confirmation"
+                        required
+                        :tabindex="5"
+                        autocomplete="new-password"
+                        name="password_confirmation"
+                        placeholder="Saisissez-le à nouveau"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.password_confirmation)"
+                        :aria-describedby="
+                            errors.password_confirmation
+                                ? 'password-confirmation-error'
+                                : undefined
+                        "
+                    />
+                    <InputError
+                        id="password-confirmation-error"
+                        :message="errors.password_confirmation"
+                    />
+                </div>
+            </div>
+        </fieldset>
+
+        <Button
+            type="submit"
+            size="lg"
+            class="h-12 w-full bg-[#1268a5] text-white shadow-lg shadow-sky-800/15 hover:bg-[#0d578b]"
+            tabindex="6"
+            :disabled="processing"
+            data-test="join-cabinet-button"
+        >
+            <Spinner v-if="processing" />
+            <UsersRound v-else class="size-4" aria-hidden="true" />
+            {{ processing ? 'Envoi en cours…' : 'Envoyer ma demande' }}
+            <ArrowRight
+                v-if="!processing"
+                class="ml-auto size-4"
+                aria-hidden="true"
+            />
+        </Button>
+    </Form>
+
+    <p class="mt-7 text-center text-sm text-slate-500 dark:text-slate-400">
+        Vous avez déjà un compte ?
+        <TextLink
+            :href="login()"
+            class="font-bold text-[#1268a5]"
+            :tabindex="7"
+        >
+            Se connecter
+        </TextLink>
+    </p>
+</template>

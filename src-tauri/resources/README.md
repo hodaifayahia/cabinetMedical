@@ -18,7 +18,7 @@ have been prepared:
   `Backups/OfflineRestoreExecutor.php`, `PreparedRestore.php`, and
   `SupervisorOfflineRestoreGuard.php` bridge classes.
 - `php/`: the reviewed Windows PHP runtime headed by `php.exe`, with only the
-  extensions required by MediSmart.
+  extensions required by DrClickDz.
 - `cloudflared/`: an approved official Windows `cloudflared.exe` and
   `cloudflared.manifest.json`. The strict manifest contains `schema_version: 1`,
   the exact reported `version`, and the lowercase SHA-256 of the executable.

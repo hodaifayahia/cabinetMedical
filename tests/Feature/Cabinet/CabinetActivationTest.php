@@ -1,1 +1,403 @@
-PD9waHAKCm5hbWVzcGFjZSBUZXN0c1xGZWF0dXJlXENhYmluZXQ7Cgp1c2UgQXBwXEVudW1zXENhYmluZXRTdGF0dXM7CnVzZSBBcHBcTWFpbFxDYWJpbmV0QWN0aXZhdGVkTWFpbDsKdXNlIEFwcFxNb2RlbHNcQ2FiaW5ldDsKdXNlIEFwcFxNb2RlbHNcTGljZW5zZTsKdXNlIEFwcFxNb2RlbHNcVXNlcjsKdXNlIEFwcFxTZXJ2aWNlc1xDYWJpbmV0RnVsZmlsbG1lbnRTZXJ2aWNlOwp1c2UgRGF0YWJhc2VcU2VlZGVyc1xSb2xlc0FuZFBlcm1pc3Npb25zU2VlZGVyOwp1c2UgSWxsdW1pbmF0ZVxGb3VuZGF0aW9uXFRlc3RpbmdcUmVmcmVzaERhdGFiYXNlOwp1c2UgSWxsdW1pbmF0ZVxTdXBwb3J0XEZhY2FkZXNcTWFpbDsKdXNlIFRlc3RzXFRlc3RDYXNlOwoKY2xhc3MgQ2FiaW5ldEFjdGl2YXRpb25UZXN0IGV4dGVuZHMgVGVzdENhc2UKewogICAgdXNlIFJlZnJlc2hEYXRhYmFzZTsKCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gc2V0VXAoKTogdm9pZAogICAgewogICAgICAgIHBhcmVudDo6c2V0VXAoKTsKICAgICAgICAkdGhpcy0+c2VlZChSb2xlc0FuZFBlcm1pc3Npb25zU2VlZGVyOjpjbGFzcyk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfYWN0aXZhdGlvbl9pc3N1ZXNfYV9wZXJwZXR1YWxfbGljZW5zZV9hbmRfbm90aWZpZXNfb3duZXIoKTogdm9pZAogICAgewogICAgICAgIE1haWw6OmZha2UoKTsKCiAgICAgICAgJG93bmVyID0gVXNlcjo6ZmFjdG9yeSgpLT5jcmVhdGUoWydlbWFpbCcgPT4gJ293bmVyQGV4YW1wbGUuY29tJ10pOwogICAgICAgICRjYWJpbmV0ID0gQ2FiaW5ldDo6cXVlcnkoKS0+Y3JlYXRlKFsKICAgICAgICAgICAgJ25hbWUnID0+ICdDYWJpbmV0IFBlbmRpbmcnLAogICAgICAgICAgICAnc3RhdHVzJyA9PiBDYWJpbmV0U3RhdHVzOjpQRU5ESU5HLAogICAgICAgICAgICAnb3duZXJfdXNlcl9pZCcgPT4gJG93bmVyLT5nZXRLZXkoKSwKICAgICAgICBdKTsKICAgICAgICAkb3duZXItPmZvcmNlRmlsbChbJ2NhYmluZXRfaWQnID0+ICRjYWJpbmV0LT5nZXRLZXkoKV0pLT5zYXZlKCk7CgogICAgICAgICRzZXJ2aWNlID0gYXBwKENhYmluZXRGdWxmaWxsbWVudFNlcnZpY2U6OmNsYXNzKTsKICAgICAgICAkc2VydmljZS0+YWN0aXZhdGUoJGNhYmluZXQtPmZyZXNoKCkpOwoKICAgICAgICAkY2FiaW5ldC0+cmVmcmVzaCgpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKENhYmluZXRTdGF0dXM6OkFDVElWRSwgJGNhYmluZXQtPnN0YXR1cyk7CiAgICAgICAgJHRoaXMtPmFzc2VydE5vdE51bGwoJGNhYmluZXQtPmFjdGl2YXRlZF9hdCk7CiAgICAgICAgJHRoaXMtPmFzc2VydE5vdE51bGwoJGNhYmluZXQtPmxpY2Vuc2VfaWQpOwoKICAgICAgICAkbGljZW5zZSA9IExpY2Vuc2U6OnF1ZXJ5KCktPmZpbmRPckZhaWwoJGNhYmluZXQtPmxpY2Vuc2VfaWQpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKCdhY3RpdmUnLCAkbGljZW5zZS0+c3RhdHVzKTsKICAgICAgICAkdGhpcy0+YXNzZXJ0TnVsbCgkbGljZW5zZS0+ZXhwaXJlc19hdCwgJ0EgaG9zdGVkIGxpY2Vuc2UgaXMgcGVycGV0dWFsLicpOwoKICAgICAgICAvLyBDYWJpbmV0QWN0aXZhdGVkTWFpbCBpbXBsZW1lbnRzIFNob3VsZFF1ZXVlLCBzbyB1bmRlciBNYWlsOjpmYWtlKCkKICAgICAgICAvLyBpdCBpcyByZWNvcmRlZCBhcyBxdWV1ZWQgcmF0aGVyIHRoYW4gc2VudC4KICAgICAgICBNYWlsOjphc3NlcnRRdWV1ZWQoQ2FiaW5ldEFjdGl2YXRlZE1haWw6OmNsYXNzKTsKCiAgICAgICAgJHRoaXMtPmFzc2VydERhdGFiYXNlSGFzKCdhdWRpdF9sb2dzJywgWydhY3Rpb24nID0+ICdjYWJpbmV0LmFjdGl2YXRlZCddKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9zdXNwZW5kX2FuZF9yZWFjdGl2YXRlX3RyYW5zaXRpb25zKCk6IHZvaWQKICAgIHsKICAgICAgICAkY2FiaW5ldCA9IENhYmluZXQ6OnF1ZXJ5KCktPmNyZWF0ZShbCiAgICAgICAgICAgICduYW1lJyA9PiAnQ2FiaW5ldCcsCiAgICAgICAgICAgICdzdGF0dXMnID0+IENhYmluZXRTdGF0dXM6OkFDVElWRSwKICAgICAgICAgICAgJ2FjdGl2YXRlZF9hdCcgPT4gbm93KCksCiAgICAgICAgXSk7CgogICAgICAgICRzZXJ2aWNlID0gYXBwKENhYmluZXRGdWxmaWxsbWVudFNlcnZpY2U6OmNsYXNzKTsKCiAgICAgICAgJHNlcnZpY2UtPnN1c3BlbmQoJGNhYmluZXQpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKENhYmluZXRTdGF0dXM6OlNVU1BFTkRFRCwgJGNhYmluZXQtPmZyZXNoKCktPnN0YXR1cyk7CgogICAgICAgICRzZXJ2aWNlLT5yZWFjdGl2YXRlKCRjYWJpbmV0LT5mcmVzaCgpKTsKICAgICAgICAkdGhpcy0+YXNzZXJ0U2FtZShDYWJpbmV0U3RhdHVzOjpBQ1RJVkUsICRjYWJpbmV0LT5mcmVzaCgpLT5zdGF0dXMpOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiB0ZXN0X29ubHlfcGxhdGZvcm1fYWRtaW5zX3JlYWNoX3RoZV9maWxhbWVudF9jYWJpbmV0c19wYWdlKCk6IHZvaWQKICAgIHsKICAgICAgICAkcmVndWxhciA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKFsnaXNfcGxhdGZvcm1fYWRtaW4nID0+IGZhbHNlXSk7CiAgICAgICAgJHRoaXMtPmFjdGluZ0FzKCRyZWd1bGFyKQogICAgICAgICAgICAtPmdldCgnL2FkbWluL2NhYmluZXRzJykKICAgICAgICAgICAgLT5hc3NlcnRGb3JiaWRkZW4oKTsKCiAgICAgICAgJHBsYXRmb3JtID0gVXNlcjo6ZmFjdG9yeSgpLT5jcmVhdGUoWydpc19wbGF0Zm9ybV9hZG1pbicgPT4gdHJ1ZV0pOwogICAgICAgICR0aGlzLT5hY3RpbmdBcygkcGxhdGZvcm0pCiAgICAgICAgICAgIC0+Z2V0KCcvYWRtaW4vY2FiaW5ldHMnKQogICAgICAgICAgICAtPmFzc2VydFN1Y2Nlc3NmdWwoKTsKICAgIH0KfQo=
+<?php
+
+namespace Tests\Feature\Cabinet;
+
+use App\Enums\CabinetStatus;
+use App\Enums\LicensePlan;
+use App\Filament\Resources\Cabinets\Pages\ListCabinets;
+use App\Filament\Resources\Licenses\LicenseResource as FilamentLicenseResource;
+use App\Mail\CabinetActivatedMail;
+use App\Mail\CabinetLicenseCodeIssuedMail;
+use App\Mail\CabinetLicenseUpdatedMail;
+use App\Models\Cabinet;
+use App\Models\License;
+use App\Models\User;
+use App\Services\Cabinet\CabinetAccessService;
+use App\Services\CabinetFulfillmentService;
+use Carbon\CarbonImmutable;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Inertia\Testing\AssertableInertia as Assert;
+use Livewire\Livewire;
+use LogicException;
+use Tests\TestCase;
+
+class CabinetActivationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
+
+    public function test_activation_issues_a_perpetual_license_and_notifies_owner(): void
+    {
+        Mail::fake();
+
+        $owner = User::factory()->create(['email' => 'owner@example.com']);
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Pending',
+            'status' => CabinetStatus::PENDING,
+            'owner_user_id' => $owner->getKey(),
+        ]);
+        $owner->forceFill(['cabinet_id' => $cabinet->getKey()])->save();
+
+        $service = app(CabinetFulfillmentService::class);
+        $service->activate($cabinet->fresh());
+
+        $cabinet->refresh();
+        $this->assertSame(CabinetStatus::ACTIVE, $cabinet->status);
+        $this->assertNotNull($cabinet->activated_at);
+        $this->assertNotNull($cabinet->license_id);
+
+        $license = License::query()->findOrFail($cabinet->license_id);
+        $this->assertSame('active', $license->status);
+        $this->assertSame(LicensePlan::LIFETIME, $license->plan);
+        $this->assertNull($license->expires_at, 'A hosted license is perpetual.');
+
+        // CabinetActivatedMail implements ShouldQueue, so under Mail::fake()
+        // it is recorded as queued rather than sent.
+        Mail::assertQueued(CabinetActivatedMail::class);
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'cabinet.activated']);
+    }
+
+    public function test_trial_activation_expires_at_the_exact_seven_day_boundary(): void
+    {
+        Mail::fake();
+        $startsAt = CarbonImmutable::parse('2026-08-08 10:00:00', config('app.timezone'));
+        $this->travelTo($startsAt);
+
+        $owner = User::factory()->create([
+            'email' => 'trial-owner@example.com',
+            'approved_at' => now(),
+        ]);
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Trial',
+            'status' => CabinetStatus::PENDING,
+            'owner_user_id' => $owner->getKey(),
+        ]);
+        $owner->forceFill(['cabinet_id' => $cabinet->getKey()])->save();
+
+        app(CabinetFulfillmentService::class)->activate($cabinet, LicensePlan::TRIAL);
+
+        $cabinet->refresh();
+        $license = $cabinet->license;
+        $this->assertNotNull($license);
+        $this->assertSame(LicensePlan::TRIAL, $license->plan);
+        $this->assertTrue($license->expires_at?->equalTo($startsAt->addDays(7)) === true);
+
+        $this->travelTo($startsAt->addDays(7)->subSecond());
+        $this->assertTrue(app(CabinetAccessService::class)->isEligible($owner->fresh()));
+
+        $this->travelTo($startsAt->addDays(7));
+        $owner = $owner->fresh();
+        $this->assertSame(
+            CabinetAccessService::REASON_LICENSE_EXPIRED,
+            app(CabinetAccessService::class)->denialReason($owner),
+        );
+
+        $this->actingAs($owner)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('cabinet.pending'));
+
+        $this->get(route('cabinet.pending'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('auth/PendingActivation')
+                ->where('cabinet.access_status', 'expired')
+                ->where('cabinet.access_reason', 'license_expired')
+                ->where('cabinet.license.plan', 'trial')
+                ->where('cabinet.license.status', 'expired'));
+    }
+
+    public function test_an_expired_trial_can_be_renewed_without_a_second_activation_or_license(): void
+    {
+        Mail::fake();
+        $startsAt = CarbonImmutable::parse('2026-08-08 10:00:00', config('app.timezone'));
+        $this->travelTo($startsAt);
+
+        $owner = User::factory()->create([
+            'email' => 'renew-owner@example.com',
+            'approved_at' => now(),
+        ]);
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Renew',
+            'status' => CabinetStatus::PENDING,
+            'owner_user_id' => $owner->getKey(),
+        ]);
+        $owner->forceFill(['cabinet_id' => $cabinet->getKey()])->save();
+
+        $service = app(CabinetFulfillmentService::class);
+        $service->activate($cabinet, LicensePlan::TRIAL);
+        $cabinet = $cabinet->fresh();
+        $licenseId = $cabinet->license_id;
+        $activatedAt = $cabinet->activated_at;
+
+        $renewedAt = $startsAt->addDays(8);
+        $this->travelTo($renewedAt);
+        $this->assertSame(
+            CabinetAccessService::REASON_LICENSE_EXPIRED,
+            app(CabinetAccessService::class)->denialReason($owner->fresh()),
+        );
+
+        $service->renewTrial($cabinet, LicensePlan::TRIAL);
+        $cabinet->refresh();
+        $license = $cabinet->license;
+
+        $this->assertSame($licenseId, $cabinet->license_id);
+        $this->assertTrue($cabinet->activated_at?->equalTo($activatedAt) === true);
+        $this->assertDatabaseCount('licenses', 1);
+        $this->assertSame(LicensePlan::TRIAL, $license?->plan);
+        $this->assertTrue($license?->expires_at?->equalTo($renewedAt->addDays(7)) === true);
+        $this->assertTrue(app(CabinetAccessService::class)->isEligible($owner->fresh()));
+        $this->assertDatabaseHas('audit_logs', ['action' => 'cabinet.license_renewed']);
+        Mail::assertQueued(CabinetLicenseUpdatedMail::class);
+    }
+
+    public function test_a_trial_can_be_upgraded_to_lifetime_without_changing_its_license_id(): void
+    {
+        Mail::fake();
+
+        $owner = User::factory()->create(['email' => 'upgrade-owner@example.com']);
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Upgrade',
+            'status' => CabinetStatus::PENDING,
+            'owner_user_id' => $owner->getKey(),
+        ]);
+        $owner->forceFill(['cabinet_id' => $cabinet->getKey()])->save();
+
+        $service = app(CabinetFulfillmentService::class);
+        $service->activate($cabinet, LicensePlan::TRIAL);
+        $cabinet = $cabinet->fresh();
+        $licenseId = $cabinet->license_id;
+
+        $service->renewTrial($cabinet, LicensePlan::LIFETIME);
+        $cabinet->refresh();
+
+        $this->assertSame($licenseId, $cabinet->license_id);
+        $this->assertDatabaseCount('licenses', 1);
+        $this->assertSame(LicensePlan::LIFETIME, $cabinet->license?->plan);
+        $this->assertNull($cabinet->license?->expires_at);
+    }
+
+    public function test_suspend_and_reactivate_transitions(): void
+    {
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet',
+            'status' => CabinetStatus::ACTIVE,
+            'activated_at' => now(),
+        ]);
+
+        $service = app(CabinetFulfillmentService::class);
+
+        $service->suspend($cabinet);
+        $this->assertSame(CabinetStatus::SUSPENDED, $cabinet->fresh()->status);
+
+        $service->reactivate($cabinet->fresh());
+        $this->assertSame(CabinetStatus::ACTIVE, $cabinet->fresh()->status);
+    }
+
+    public function test_suspend_and_reactivate_keep_the_linked_plan_and_original_trial_expiry(): void
+    {
+        $startsAt = CarbonImmutable::parse('2026-08-08 10:00:00', config('app.timezone'));
+        $this->travelTo($startsAt);
+
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Suspended Trial',
+            'status' => CabinetStatus::PENDING,
+        ]);
+        $service = app(CabinetFulfillmentService::class);
+        $service->activate($cabinet, LicensePlan::TRIAL);
+        $cabinet = $cabinet->fresh();
+        $expiresAt = $cabinet->license?->expires_at;
+
+        $this->travelTo($startsAt->addDays(2));
+        $service->suspend($cabinet);
+        $cabinet->refresh();
+        $this->assertSame(CabinetStatus::SUSPENDED, $cabinet->status);
+        $this->assertSame('suspended', $cabinet->license?->status);
+
+        $this->travelTo($startsAt->addDays(3));
+        $service->reactivate($cabinet);
+        $cabinet->refresh();
+        $this->assertSame(CabinetStatus::ACTIVE, $cabinet->status);
+        $this->assertSame('active', $cabinet->license?->status);
+        $this->assertSame(LicensePlan::TRIAL, $cabinet->license?->plan);
+        $this->assertTrue($cabinet->license?->expires_at?->equalTo($expiresAt) === true);
+    }
+
+    public function test_reactivation_does_not_revive_an_expired_trial_but_renewal_does(): void
+    {
+        Mail::fake();
+        $startsAt = CarbonImmutable::parse('2026-08-08 10:00:00', config('app.timezone'));
+        $this->travelTo($startsAt);
+
+        $owner = User::factory()->create([
+            'email' => 'expired-suspended@example.com',
+            'approved_at' => now(),
+        ]);
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Expired Suspended',
+            'status' => CabinetStatus::PENDING,
+            'owner_user_id' => $owner->getKey(),
+        ]);
+        $owner->forceFill(['cabinet_id' => $cabinet->getKey()])->save();
+
+        $service = app(CabinetFulfillmentService::class);
+        $service->activate($cabinet, LicensePlan::TRIAL);
+        $this->travelTo($startsAt->addDays(8));
+
+        $service->suspend($cabinet->fresh());
+        $service->reactivate($cabinet->fresh());
+        $this->assertSame('expired', $cabinet->fresh()->license?->status);
+        $this->assertSame(
+            CabinetAccessService::REASON_LICENSE_EXPIRED,
+            app(CabinetAccessService::class)->denialReason($owner->fresh()),
+        );
+
+        $service->renewTrial($cabinet->fresh(), LicensePlan::TRIAL);
+        $this->assertTrue(app(CabinetAccessService::class)->isEligible($owner->fresh()));
+    }
+
+    public function test_hosted_entitlements_are_excluded_from_the_legacy_license_resource(): void
+    {
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Hosted',
+            'status' => CabinetStatus::PENDING,
+        ]);
+        app(CabinetFulfillmentService::class)->activate($cabinet, LicensePlan::LIFETIME);
+        $hostedLicenseId = $cabinet->fresh()->license_id;
+
+        $legacy = License::query()->create([
+            'license_id' => 'LEGACY-LOCAL-001',
+            'product' => 'DrClickDz',
+            'edition' => 'professional',
+            'plan' => null,
+            'status' => 'active',
+            'issued_at' => now(),
+        ]);
+
+        $visibleIds = FilamentLicenseResource::getEloquentQuery()->pluck('id');
+
+        $this->assertTrue($visibleIds->contains($legacy->getKey()));
+        $this->assertFalse($visibleIds->contains($hostedLicenseId));
+    }
+
+    public function test_platform_admin_issues_codes_and_owner_activates_then_upgrades_from_the_cabinets_table(): void
+    {
+        Mail::fake();
+        $platform = User::factory()->create(['is_platform_admin' => true]);
+        $owner = User::factory()->create(['email' => 'filament-plan@example.com']);
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Filament Plan',
+            'status' => CabinetStatus::PENDING,
+            'owner_user_id' => $owner->getKey(),
+        ]);
+        $owner->forceFill(['cabinet_id' => $cabinet->getKey()])->save();
+        $this->actingAs($platform);
+
+        Livewire::test(ListCabinets::class)
+            ->callTableAction('issueLicenseCode', $cabinet, [
+                'plan' => LicensePlan::TRIAL->value,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $codes = [];
+        Mail::assertSent(CabinetLicenseCodeIssuedMail::class, function (CabinetLicenseCodeIssuedMail $mail) use (&$codes): bool {
+            $codes[] = $mail->licenseCode;
+
+            return true;
+        });
+
+        $cabinet->refresh();
+        $this->assertSame(CabinetStatus::PENDING, $cabinet->status);
+        $this->assertNull($cabinet->license_id);
+
+        $this->actingAs($owner)
+            ->post(route('cabinet.license.redeem'), ['license_code' => $codes[0]])
+            ->assertRedirect(route('dashboard'));
+
+        $cabinet->refresh();
+        $this->assertSame(LicensePlan::TRIAL, $cabinet->license?->plan);
+
+        $this->actingAs($platform);
+        Livewire::test(ListCabinets::class)
+            ->callTableAction('issueLicenseCode', $cabinet, [
+                'plan' => LicensePlan::LIFETIME->value,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $codes = [];
+        Mail::assertSent(CabinetLicenseCodeIssuedMail::class, function (CabinetLicenseCodeIssuedMail $mail) use (&$codes): bool {
+            $codes[] = $mail->licenseCode;
+
+            return true;
+        });
+
+        $this->actingAs($owner)
+            ->post(route('cabinet.license.redeem'), ['license_code' => $codes[1]])
+            ->assertRedirect(route('dashboard'));
+
+        $cabinet->refresh();
+        $this->assertSame(LicensePlan::LIFETIME, $cabinet->license?->plan);
+        $this->assertNull($cabinet->license?->expires_at);
+    }
+
+    public function test_activation_is_idempotent_and_attributes_the_audit_to_the_platform_actor(): void
+    {
+        Mail::fake();
+
+        $platform = User::factory()->create(['is_platform_admin' => true]);
+        $owner = User::factory()->create(['email' => 'idempotent-owner@example.com']);
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Idempotent',
+            'status' => CabinetStatus::PENDING,
+            'owner_user_id' => $owner->getKey(),
+        ]);
+        $owner->forceFill(['cabinet_id' => $cabinet->getKey()])->save();
+        $this->actingAs($platform);
+
+        $service = app(CabinetFulfillmentService::class);
+        $service->activate($cabinet);
+        $service->activate($cabinet);
+
+        $this->assertDatabaseCount('licenses', 1);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'cabinet.activated',
+            'user_id' => $platform->getKey(),
+            'cabinet_id' => $cabinet->getKey(),
+        ]);
+        $this->assertDatabaseCount('audit_logs', 1);
+        Mail::assertQueued(CabinetActivatedMail::class, 1);
+    }
+
+    public function test_suspended_cabinet_cannot_be_activated_as_a_new_fulfillment(): void
+    {
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Suspended',
+            'status' => CabinetStatus::SUSPENDED,
+        ]);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Only a pending cabinet may be activated.');
+
+        app(CabinetFulfillmentService::class)->activate($cabinet);
+    }
+
+    public function test_only_platform_admins_reach_the_filament_cabinets_page(): void
+    {
+        $regular = User::factory()->create(['is_platform_admin' => false]);
+        $this->actingAs($regular)
+            ->get('/admin/cabinets')
+            ->assertForbidden();
+
+        $platform = User::factory()->create(['is_platform_admin' => true]);
+        $this->actingAs($platform)
+            ->get('/admin/cabinets')
+            ->assertSuccessful();
+    }
+}

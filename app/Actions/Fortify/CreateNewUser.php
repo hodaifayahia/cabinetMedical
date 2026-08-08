@@ -1,1 +1,28 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcQWN0aW9uc1xGb3J0aWZ5OwoKdXNlIEFwcFxNb2RlbHNcVXNlcjsKdXNlIExhcmF2ZWxcRm9ydGlmeVxDb250cmFjdHNcQ3JlYXRlc05ld1VzZXJzOwoKY2xhc3MgQ3JlYXRlTmV3VXNlciBpbXBsZW1lbnRzIENyZWF0ZXNOZXdVc2Vycwp7CiAgICBwdWJsaWMgZnVuY3Rpb24gX19jb25zdHJ1Y3QoCiAgICAgICAgcHJpdmF0ZSByZWFkb25seSBSZWdpc3RlckNhYmluZXRBY3Rpb24gJHJlZ2lzdGVyQ2FiaW5ldCwKICAgICkge30KCiAgICAvKioKICAgICAqIFZhbGlkYXRlIGFuZCBjcmVhdGUgYSBuZXdseSByZWdpc3RlcmVkIGNhYmluZXQgb3duZXIuCiAgICAgKgogICAgICogUmVnaXN0cmF0aW9uIG5vdyBwcm92aXNpb25zIGEgYnJhbmQtbmV3IGNhYmluZXQgKGluIHRoZSBwZW5kaW5nIHN0YXRlKQogICAgICogcmF0aGVyIHRoYW4gZ2F0aW5nIG9uIGEgZmlyc3QtcnVuIHNpbmdsZXRvbi4gVGhlIG93bmVyIGlzIGNyZWF0ZWQgYnV0IGlzCiAgICAgKiBoZWxkIG91dCBvZiB0aGUgYXBwbGljYXRpb24gYnkgdGhlIEVuc3VyZUNhYmluZXRJc0FjdGl2ZSBtaWRkbGV3YXJlIHVudGlsCiAgICAgKiBwbGF0Zm9ybSBzdGFmZiBhY3RpdmF0ZSB0aGUgY2FiaW5ldC4KICAgICAqCiAgICAgKiBAcGFyYW0gIGFycmF5PHN0cmluZywgc3RyaW5nPiAgJGlucHV0CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBjcmVhdGUoYXJyYXkgJGlucHV0KTogVXNlcgogICAgewogICAgICAgIHJldHVybiAkdGhpcy0+cmVnaXN0ZXJDYWJpbmV0LT5leGVjdXRlKCRpbnB1dCk7CiAgICB9Cn0K
+<?php
+
+namespace App\Actions\Fortify;
+
+use App\Models\User;
+use Laravel\Fortify\Contracts\CreatesNewUsers;
+
+class CreateNewUser implements CreatesNewUsers
+{
+    public function __construct(
+        private readonly RegisterCabinetAction $registerCabinet,
+    ) {}
+
+    /**
+     * Validate and create a newly registered cabinet owner.
+     *
+     * Registration now provisions a brand-new cabinet (in the pending state)
+     * rather than gating on a first-run singleton. The owner is created but is
+     * held out of the application by the EnsureCabinetIsActive middleware until
+     * platform staff activate the cabinet.
+     *
+     * @param  array<string, string>  $input
+     */
+    public function create(array $input): User
+    {
+        return $this->registerCabinet->execute($input);
+    }
+}

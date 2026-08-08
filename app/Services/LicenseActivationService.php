@@ -100,7 +100,10 @@ final class LicenseActivationService
             throw new RuntimeException('The license refresh provider is unavailable.');
         }
 
-        $current = License::query()->latest('id')->first();
+        $current = License::query()
+            ->whereNull('plan')
+            ->latest('id')
+            ->first();
 
         if ($current === null) {
             throw new RuntimeException('No activated license is available to refresh.');
@@ -153,7 +156,10 @@ final class LicenseActivationService
             throw new RuntimeException('The license deactivation provider is unavailable.');
         }
 
-        $current = License::query()->latest('id')->first();
+        $current = License::query()
+            ->whereNull('plan')
+            ->latest('id')
+            ->first();
 
         if ($current === null) {
             throw new RuntimeException('No activated license is available to deactivate.');

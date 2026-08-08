@@ -187,7 +187,7 @@ final class UploadDocumentService
                 $documents = [];
 
                 foreach ($prepared as $preparedFile) {
-                    $document = $lockedSession->documents()->create([
+                    $document = $lockedSession->documents()->make([
                         'patient_id' => $lockedSession->patient_id,
                         'original_name' => $preparedFile['original_name'],
                         'stored_name' => $preparedFile['stored_name'],
@@ -199,6 +199,9 @@ final class UploadDocumentService
                         'status' => UploadedDocument::STATUS_PENDING_REVIEW,
                         'uploaded_at' => now(),
                     ]);
+                    $document->forceFill([
+                        'cabinet_id' => $lockedSession->cabinet_id,
+                    ])->save();
 
                     AuditLog::record('upload.received', $document, [
                         'upload_session_id' => $lockedSession->getKey(),

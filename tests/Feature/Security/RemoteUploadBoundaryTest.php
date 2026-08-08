@@ -100,7 +100,8 @@ class RemoteUploadBoundaryTest extends TestCase
 
     public function test_remote_upload_responses_use_https_redirects_and_secure_cookies(): void
     {
-        $selector = str_repeat('a', 22);
+        $created = app(QrUploadService::class)->create('remote', User::factory()->create());
+        [$selector] = $this->credentials($created['token']);
         $page = $this->remote('GET', '/upload/'.$selector)->assertOk();
         $this->assertSecureCookies($page);
 

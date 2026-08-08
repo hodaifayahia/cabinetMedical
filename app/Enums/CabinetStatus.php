@@ -1,1 +1,42 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcRW51bXM7CgplbnVtIENhYmluZXRTdGF0dXM6IHN0cmluZwp7CiAgICBjYXNlIFBFTkRJTkcgPSAncGVuZGluZyc7CiAgICBjYXNlIEFDVElWRSA9ICdhY3RpdmUnOwogICAgY2FzZSBTVVNQRU5ERUQgPSAnc3VzcGVuZGVkJzsKCiAgICAvKioKICAgICAqIEByZXR1cm4gbGlzdDxzdHJpbmc+CiAgICAgKi8KICAgIHB1YmxpYyBzdGF0aWMgZnVuY3Rpb24gdmFsdWVzKCk6IGFycmF5CiAgICB7CiAgICAgICAgcmV0dXJuIGFycmF5X21hcCgKICAgICAgICAgICAgc3RhdGljIGZuIChzZWxmICRzdGF0dXMpOiBzdHJpbmcgPT4gJHN0YXR1cy0+dmFsdWUsCiAgICAgICAgICAgIHNlbGY6OmNhc2VzKCksCiAgICAgICAgKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gbGFiZWwoKTogc3RyaW5nCiAgICB7CiAgICAgICAgcmV0dXJuIG1hdGNoICgkdGhpcykgewogICAgICAgICAgICBzZWxmOjpQRU5ESU5HID0+ICdFbiBhdHRlbnRlJywKICAgICAgICAgICAgc2VsZjo6QUNUSVZFID0+ICdBY3RpZicsCiAgICAgICAgICAgIHNlbGY6OlNVU1BFTkRFRCA9PiAnU3VzcGVuZHUnLAogICAgICAgIH07CiAgICB9CgogICAgLyoqCiAgICAgKiBDb2xvdXIgdG9rZW4gdW5kZXJzdG9vZCBieSBGaWxhbWVudCBiYWRnZXMgLyBJbmVydGlhIFVJLgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gY29sb3IoKTogc3RyaW5nCiAgICB7CiAgICAgICAgcmV0dXJuIG1hdGNoICgkdGhpcykgewogICAgICAgICAgICBzZWxmOjpQRU5ESU5HID0+ICd3YXJuaW5nJywKICAgICAgICAgICAgc2VsZjo6QUNUSVZFID0+ICdzdWNjZXNzJywKICAgICAgICAgICAgc2VsZjo6U1VTUEVOREVEID0+ICdkYW5nZXInLAogICAgICAgIH07CiAgICB9Cn0K
+<?php
+
+namespace App\Enums;
+
+enum CabinetStatus: string
+{
+    case PENDING = 'pending';
+    case ACTIVE = 'active';
+    case SUSPENDED = 'suspended';
+
+    /**
+     * @return list<string>
+     */
+    public static function values(): array
+    {
+        return array_map(
+            static fn (self $status): string => $status->value,
+            self::cases(),
+        );
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::PENDING => 'En attente',
+            self::ACTIVE => 'Actif',
+            self::SUSPENDED => 'Suspendu',
+        };
+    }
+
+    /**
+     * Colour token understood by Filament badges / Inertia UI.
+     */
+    public function color(): string
+    {
+        return match ($this) {
+            self::PENDING => 'warning',
+            self::ACTIVE => 'success',
+            self::SUSPENDED => 'danger',
+        };
+    }
+}

@@ -1,1 +1,37 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxSZXNvdXJjZXM7Cgp1c2UgQXBwXE1vZGVsc1xQYXRpZW50Owp1c2UgSWxsdW1pbmF0ZVxIdHRwXFJlcXVlc3Q7CnVzZSBJbGx1bWluYXRlXEh0dHBcUmVzb3VyY2VzXEpzb25cSnNvblJlc291cmNlOwoKLyoqCiAqIEBtaXhpbiBQYXRpZW50CiAqLwpjbGFzcyBQYXRpZW50UmVzb3VyY2UgZXh0ZW5kcyBKc29uUmVzb3VyY2UKewogICAgLyoqCiAgICAgKiBAcmV0dXJuIGFycmF5PHN0cmluZywgbWl4ZWQ+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB0b0FycmF5KFJlcXVlc3QgJHJlcXVlc3QpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICdpZCcgPT4gJHRoaXMtPmlkLAogICAgICAgICAgICAncGF0aWVudF9udW1iZXInID0+ICR0aGlzLT5wYXRpZW50X251bWJlciwKICAgICAgICAgICAgJ2ZpcnN0X25hbWUnID0+ICR0aGlzLT5maXJzdF9uYW1lLAogICAgICAgICAgICAnbGFzdF9uYW1lJyA9PiAkdGhpcy0+bGFzdF9uYW1lLAogICAgICAgICAgICAnZnVsbF9uYW1lJyA9PiAkdGhpcy0+ZnVsbF9uYW1lLAogICAgICAgICAgICAnZGF0ZV9vZl9iaXJ0aCcgPT4gJHRoaXMtPmRhdGVfb2ZfYmlydGg/LT50b0RhdGVTdHJpbmcoKSwKICAgICAgICAgICAgJ2dlbmRlcicgPT4gJHRoaXMtPmdlbmRlcj8tPnZhbHVlLAogICAgICAgICAgICAnYmxvb2RfZ3JvdXAnID0+ICR0aGlzLT5ibG9vZF9ncm91cD8tPnZhbHVlLAogICAgICAgICAgICAncGhvbmUnID0+ICR0aGlzLT5waG9uZSwKICAgICAgICAgICAgJ3NlY29uZGFyeV9waG9uZScgPT4gJHRoaXMtPnNlY29uZGFyeV9waG9uZSwKICAgICAgICAgICAgJ2VtYWlsJyA9PiAkdGhpcy0+ZW1haWwsCiAgICAgICAgICAgICdhZGRyZXNzJyA9PiAkdGhpcy0+YWRkcmVzcywKICAgICAgICAgICAgJ2NpdHknID0+ICR0aGlzLT5jaXR5LAogICAgICAgICAgICAnY3JlYXRlZF9hdCcgPT4gJHRoaXMtPmNyZWF0ZWRfYXQ/LT50b0lzbzg2MDFTdHJpbmcoKSwKICAgICAgICAgICAgJ3VwZGF0ZWRfYXQnID0+ICR0aGlzLT51cGRhdGVkX2F0Py0+dG9Jc284NjAxU3RyaW5nKCksCiAgICAgICAgXTsKICAgIH0KfQo=
+<?php
+
+namespace App\Http\Resources;
+
+use App\Models\Patient;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * @mixin Patient
+ */
+class PatientResource extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'patient_number' => $this->patient_number,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
+            'full_name' => $this->full_name,
+            'date_of_birth' => $this->date_of_birth?->toDateString(),
+            'gender' => $this->gender?->value,
+            'blood_group' => $this->blood_group?->value,
+            'phone' => $this->phone,
+            'secondary_phone' => $this->secondary_phone,
+            'email' => $this->email,
+            'address' => $this->address,
+            'city' => $this->city,
+            'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
+        ];
+    }
+}

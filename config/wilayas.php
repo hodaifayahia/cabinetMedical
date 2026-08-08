@@ -1,1 +1,76 @@
-PD9waHAKCi8qCnwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQp8IEFsZ2VyaWFuIFdpbGF5YXMgKFByb3ZpbmNlcykKfC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCnwKfCBUaGUgb2ZmaWNpYWwgNTggd2lsYXlhcyBvZiBBbGdlcmlhLCBrZXllZCBieSB0aGVpciB0d28tZGlnaXQgY29kZS4gVGhpcwp8IGluY2x1ZGVzIHRoZSB0ZW4gd2lsYXlhcyBwcm9tb3RlZCBmcm9tIGTDqWzDqWdhdGlvbnMgaW4gdGhlIDIwMTkvMjAyMQp8IGFkbWluaXN0cmF0aXZlIHJlZm9ybSAoY29kZXMgNDkgdGhyb3VnaCA1OCkuCnwKfCBDb2RlcyBhcmUgc3RvcmVkIGFzIHplcm8tcGFkZGVkIHN0cmluZ3Mgc28gdGhlIG5hdHVyYWwgb3JkZXJpbmcgbWF0Y2hlcwp8IHRoZSBvZmZpY2lhbCBudW1iZXJpbmc7IHRoZSB1bmRlcmx5aW5nIHBlcnNpc3RlZCB2YWx1ZSBpcyB0aGUgaW50ZWdlci4KfAoqLwoKcmV0dXJuIFsKICAgICcwMScgPT4gJ0FkcmFyJywKICAgICcwMicgPT4gJ0NobGVmJywKICAgICcwMycgPT4gJ0xhZ2hvdWF0JywKICAgICcwNCcgPT4gJ091bSBFbCBCb3VhZ2hpJywKICAgICcwNScgPT4gJ0JhdG5hJywKICAgICcwNicgPT4gJ0LDqWphw69hJywKICAgICcwNycgPT4gJ0Jpc2tyYScsCiAgICAnMDgnID0+ICdCw6ljaGFyJywKICAgICcwOScgPT4gJ0JsaWRhJywKICAgICcxMCcgPT4gJ0JvdWlyYScsCiAgICAnMTEnID0+ICdUYW1hbnJhc3NldCcsCiAgICAnMTInID0+ICdUw6liZXNzYScsCiAgICAnMTMnID0+ICdUbGVtY2VuJywKICAgICcxNCcgPT4gJ1RpYXJldCcsCiAgICAnMTUnID0+ICdUaXppIE91em91JywKICAgICcxNicgPT4gJ0FsZ2VyJywKICAgICcxNycgPT4gJ0RqZWxmYScsCiAgICAnMTgnID0+ICdKaWplbCcsCiAgICAnMTknID0+ICdTw6l0aWYnLAogICAgJzIwJyA9PiAnU2HDr2RhJywKICAgICcyMScgPT4gJ1NraWtkYScsCiAgICAnMjInID0+ICdTaWRpIEJlbCBBYmLDqHMnLAogICAgJzIzJyA9PiAnQW5uYWJhJywKICAgICcyNCcgPT4gJ0d1ZWxtYScsCiAgICAnMjUnID0+ICdDb25zdGFudGluZScsCiAgICAnMjYnID0+ICdNw6lkw6lhJywKICAgICcyNycgPT4gJ01vc3RhZ2FuZW0nLAogICAgJzI4JyA9PiAiTSdTaWxhIiwKICAgICcyOScgPT4gJ01hc2NhcmEnLAogICAgJzMwJyA9PiAnT3VhcmdsYScsCiAgICAnMzEnID0+ICdPcmFuJywKICAgICczMicgPT4gJ0VsIEJheWFkaCcsCiAgICAnMzMnID0+ICdJbGxpemknLAogICAgJzM0JyA9PiAnQm9yZGogQm91IEFycsOpcmlkaicsCiAgICAnMzUnID0+ICdCb3VtZXJkw6hzJywKICAgICczNicgPT4gJ0VsIFRhcmYnLAogICAgJzM3JyA9PiAnVGluZG91ZicsCiAgICAnMzgnID0+ICdUaXNzZW1zaWx0JywKICAgICczOScgPT4gJ0VsIE91ZWQnLAogICAgJzQwJyA9PiAnS2hlbmNoZWxhJywKICAgICc0MScgPT4gJ1NvdWsgQWhyYXMnLAogICAgJzQyJyA9PiAnVGlwYXphJywKICAgICc0MycgPT4gJ01pbGEnLAogICAgJzQ0JyA9PiAnQcOvbiBEZWZsYScsCiAgICAnNDUnID0+ICdOYcOibWEnLAogICAgJzQ2JyA9PiAnQcOvbiBUw6ltb3VjaGVudCcsCiAgICAnNDcnID0+ICdHaGFyZGHDr2EnLAogICAgJzQ4JyA9PiAnUmVsaXphbmUnLAogICAgJzQ5JyA9PiAnVGltaW1vdW4nLAogICAgJzUwJyA9PiAnQm9yZGogQmFkamkgTW9raHRhcicsCiAgICAnNTEnID0+ICdPdWxlZCBEamVsbGFsJywKICAgICc1MicgPT4gJ0LDqW5pIEFiYsOocycsCiAgICAnNTMnID0+ICdJbiBTYWxhaCcsCiAgICAnNTQnID0+ICdJbiBHdWV6emFtJywKICAgICc1NScgPT4gJ1RvdWdnb3VydCcsCiAgICAnNTYnID0+ICdEamFuZXQnLAogICAgJzU3JyA9PiAiRWwgTSdHaGFpciIsCiAgICAnNTgnID0+ICdFbCBNZW5pYWEnLApdOwo=
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Algerian Wilayas (Provinces)
+|--------------------------------------------------------------------------
+|
+| The official 58 wilayas of Algeria, keyed by their two-digit code. This
+| includes the ten wilayas promoted from délégations in the 2019/2021
+| administrative reform (codes 49 through 58).
+|
+| Codes are stored as zero-padded strings so the natural ordering matches
+| the official numbering; the underlying persisted value is the integer.
+|
+*/
+
+return [
+    '01' => 'Adrar',
+    '02' => 'Chlef',
+    '03' => 'Laghouat',
+    '04' => 'Oum El Bouaghi',
+    '05' => 'Batna',
+    '06' => 'Béjaïa',
+    '07' => 'Biskra',
+    '08' => 'Béchar',
+    '09' => 'Blida',
+    '10' => 'Bouira',
+    '11' => 'Tamanrasset',
+    '12' => 'Tébessa',
+    '13' => 'Tlemcen',
+    '14' => 'Tiaret',
+    '15' => 'Tizi Ouzou',
+    '16' => 'Alger',
+    '17' => 'Djelfa',
+    '18' => 'Jijel',
+    '19' => 'Sétif',
+    '20' => 'Saïda',
+    '21' => 'Skikda',
+    '22' => 'Sidi Bel Abbès',
+    '23' => 'Annaba',
+    '24' => 'Guelma',
+    '25' => 'Constantine',
+    '26' => 'Médéa',
+    '27' => 'Mostaganem',
+    '28' => "M'Sila",
+    '29' => 'Mascara',
+    '30' => 'Ouargla',
+    '31' => 'Oran',
+    '32' => 'El Bayadh',
+    '33' => 'Illizi',
+    '34' => 'Bordj Bou Arréridj',
+    '35' => 'Boumerdès',
+    '36' => 'El Tarf',
+    '37' => 'Tindouf',
+    '38' => 'Tissemsilt',
+    '39' => 'El Oued',
+    '40' => 'Khenchela',
+    '41' => 'Souk Ahras',
+    '42' => 'Tipaza',
+    '43' => 'Mila',
+    '44' => 'Aïn Defla',
+    '45' => 'Naâma',
+    '46' => 'Aïn Témouchent',
+    '47' => 'Ghardaïa',
+    '48' => 'Relizane',
+    '49' => 'Timimoun',
+    '50' => 'Bordj Badji Mokhtar',
+    '51' => 'Ouled Djellal',
+    '52' => 'Béni Abbès',
+    '53' => 'In Salah',
+    '54' => 'In Guezzam',
+    '55' => 'Touggourt',
+    '56' => 'Djanet',
+    '57' => "El M'Ghair",
+    '58' => 'El Meniaa',
+];

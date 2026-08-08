@@ -1,1 +1,79 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcU3VwcG9ydDsKCi8qKgogKiBSZWFkLW9ubHkgaGVscGVyIGFyb3VuZCB0aGUgb2ZmaWNpYWwgQWxnZXJpYW4gd2lsYXlhIGNhdGFsb2d1ZSBkZWZpbmVkIGluCiAqIGNvbmZpZy93aWxheWFzLnBocC4gQ29kZXMgcmFuZ2UgZnJvbSAxIHRvIDU4LgogKi8KZmluYWwgY2xhc3MgV2lsYXlhcwp7CiAgICBwdWJsaWMgY29uc3QgTUlOID0gMTsKCiAgICBwdWJsaWMgY29uc3QgTUFYID0gNTg7CgogICAgLyoqCiAgICAgKiBUaGUgd2lsYXlhIGNhdGFsb2d1ZSBrZXllZCBieSBpbnRlZ2VyIGNvZGUuCiAgICAgKgogICAgICogQHJldHVybiBhcnJheTxpbnQsIHN0cmluZz4KICAgICAqLwogICAgcHVibGljIHN0YXRpYyBmdW5jdGlvbiBhbGwoKTogYXJyYXkKICAgIHsKICAgICAgICAkY2F0YWxvZ3VlID0gW107CgogICAgICAgIGZvcmVhY2ggKChhcnJheSkgY29uZmlnKCd3aWxheWFzJywgW10pIGFzICRjb2RlID0+ICRuYW1lKSB7CiAgICAgICAgICAgICRjYXRhbG9ndWVbKGludCkgJGNvZGVdID0gKHN0cmluZykgJG5hbWU7CiAgICAgICAgfQoKICAgICAgICByZXR1cm4gJGNhdGFsb2d1ZTsKICAgIH0KCiAgICAvKioKICAgICAqIFdpbGF5YSBvcHRpb25zIHNoYXBlZCBmb3IgYSBzZWxlY3QgY29udHJvbCBmZWQgdG8gdGhlIGZyb250LWVuZC4KICAgICAqCiAgICAgKiBAcmV0dXJuIGxpc3Q8YXJyYXl7Y29kZTogaW50LCBuYW1lOiBzdHJpbmd9PgogICAgICovCiAgICBwdWJsaWMgc3RhdGljIGZ1bmN0aW9uIG9wdGlvbnMoKTogYXJyYXkKICAgIHsKICAgICAgICAkb3B0aW9ucyA9IFtdOwoKICAgICAgICBmb3JlYWNoIChzZWxmOjphbGwoKSBhcyAkY29kZSA9PiAkbmFtZSkgewogICAgICAgICAgICAkb3B0aW9uc1tdID0gWydjb2RlJyA9PiAkY29kZSwgJ25hbWUnID0+ICRuYW1lXTsKICAgICAgICB9CgogICAgICAgIHJldHVybiAkb3B0aW9uczsKICAgIH0KCiAgICBwdWJsaWMgc3RhdGljIGZ1bmN0aW9uIGV4aXN0cyg/aW50ICRjb2RlKTogYm9vbAogICAgewogICAgICAgIHJldHVybiAkY29kZSAhPT0gbnVsbCAmJiBhcnJheV9rZXlfZXhpc3RzKCRjb2RlLCBzZWxmOjphbGwoKSk7CiAgICB9CgogICAgcHVibGljIHN0YXRpYyBmdW5jdGlvbiBuYW1lKD9pbnQgJGNvZGUpOiA/c3RyaW5nCiAgICB7CiAgICAgICAgaWYgKCRjb2RlID09PSBudWxsKSB7CiAgICAgICAgICAgIHJldHVybiBudWxsOwogICAgICAgIH0KCiAgICAgICAgcmV0dXJuIHNlbGY6OmFsbCgpWyRjb2RlXSA/PyBudWxsOwogICAgfQoKICAgIC8qKgogICAgICogSHVtYW4tcmVhZGFibGUgbGFiZWwgY29tYmluaW5nIHRoZSBwYWRkZWQgY29kZSBhbmQgdGhlIG5hbWUsIGUuZy4KICAgICAqICIxNiAtIEFsZ2VyIi4gRmFsbHMgYmFjayB0byB0aGUgcmF3IGNvZGUgd2hlbiB1bmtub3duLgogICAgICovCiAgICBwdWJsaWMgc3RhdGljIGZ1bmN0aW9uIGxhYmVsKD9pbnQgJGNvZGUpOiA/c3RyaW5nCiAgICB7CiAgICAgICAgaWYgKCRjb2RlID09PSBudWxsKSB7CiAgICAgICAgICAgIHJldHVybiBudWxsOwogICAgICAgIH0KCiAgICAgICAgJG5hbWUgPSBzZWxmOjpuYW1lKCRjb2RlKTsKCiAgICAgICAgaWYgKCRuYW1lID09PSBudWxsKSB7CiAgICAgICAgICAgIHJldHVybiAoc3RyaW5nKSAkY29kZTsKICAgICAgICB9CgogICAgICAgIHJldHVybiBzcHJpbnRmKCclMDJkIC0gJXMnLCAkY29kZSwgJG5hbWUpOwogICAgfQp9Cg==
+<?php
+
+namespace App\Support;
+
+/**
+ * Read-only helper around the official Algerian wilaya catalogue defined in
+ * config/wilayas.php. Codes range from 1 to 58.
+ */
+final class Wilayas
+{
+    public const MIN = 1;
+
+    public const MAX = 58;
+
+    /**
+     * The wilaya catalogue keyed by integer code.
+     *
+     * @return array<int, string>
+     */
+    public static function all(): array
+    {
+        $catalogue = [];
+
+        foreach ((array) config('wilayas', []) as $code => $name) {
+            $catalogue[(int) $code] = (string) $name;
+        }
+
+        return $catalogue;
+    }
+
+    /**
+     * Wilaya options shaped for a select control fed to the front-end.
+     *
+     * @return list<array{code: int, name: string}>
+     */
+    public static function options(): array
+    {
+        $options = [];
+
+        foreach (self::all() as $code => $name) {
+            $options[] = ['code' => $code, 'name' => $name];
+        }
+
+        return $options;
+    }
+
+    public static function exists(?int $code): bool
+    {
+        return $code !== null && array_key_exists($code, self::all());
+    }
+
+    public static function name(?int $code): ?string
+    {
+        if ($code === null) {
+            return null;
+        }
+
+        return self::all()[$code] ?? null;
+    }
+
+    /**
+     * Human-readable label combining the padded code and the name, e.g.
+     * "16 - Alger". Falls back to the raw code when unknown.
+     */
+    public static function label(?int $code): ?string
+    {
+        if ($code === null) {
+            return null;
+        }
+
+        $name = self::name($code);
+
+        if ($name === null) {
+            return (string) $code;
+        }
+
+        return sprintf('%02d - %s', $code, $name);
+    }
+}

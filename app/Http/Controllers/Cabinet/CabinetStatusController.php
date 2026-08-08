@@ -1,1 +1,102 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxDb250cm9sbGVyc1xDYWJpbmV0OwoKdXNlIEFwcFxIdHRwXENvbnRyb2xsZXJzXENvbnRyb2xsZXI7CnVzZSBBcHBcTW9kZWxzXFVzZXI7CnVzZSBJbGx1bWluYXRlXEh0dHBcUmVxdWVzdDsKdXNlIElsbHVtaW5hdGVcSHR0cFxSZWRpcmVjdFJlc3BvbnNlOwp1c2UgSW5lcnRpYVxJbmVydGlhOwp1c2UgSW5lcnRpYVxSZXNwb25zZTsKCmNsYXNzIENhYmluZXRTdGF0dXNDb250cm9sbGVyIGV4dGVuZHMgQ29udHJvbGxlcgp7CiAgICAvKioKICAgICAqICJQZW5kaW5nIGFjdGl2YXRpb24iIHNjcmVlbiBzaG93biB0byBvd25lcnMgb2YgYSBjYWJpbmV0IHRoYXQgaGFzIG5vdAogICAgICogeWV0IGJlZW4gYWN0aXZhdGVkIChvciBoYXMgYmVlbiBzdXNwZW5kZWQpIGJ5IHBsYXRmb3JtIHN0YWZmLgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gcGVuZGluZyhSZXF1ZXN0ICRyZXF1ZXN0KTogUmVzcG9uc2V8UmVkaXJlY3RSZXNwb25zZQogICAgewogICAgICAgICR1c2VyID0gJHJlcXVlc3QtPnVzZXIoKTsKCiAgICAgICAgaWYgKCEgJHVzZXIgaW5zdGFuY2VvZiBVc2VyIHx8ICR1c2VyLT5jYWJpbmV0Py0+aXNBY3RpdmUoKSA9PT0gdHJ1ZSkgewogICAgICAgICAgICByZXR1cm4gcmVkaXJlY3QoKS0+cm91dGUoJ2Rhc2hib2FyZCcpOwogICAgICAgIH0KCiAgICAgICAgJGNhYmluZXQgPSAkdXNlci0+Y2FiaW5ldDsKCiAgICAgICAgcmV0dXJuIEluZXJ0aWE6OnJlbmRlcignYXV0aC9QZW5kaW5nQWN0aXZhdGlvbicsIFsKICAgICAgICAgICAgJ2NhYmluZXQnID0+ICRjYWJpbmV0ID09PSBudWxsID8gbnVsbCA6IFsKICAgICAgICAgICAgICAgICduYW1lJyA9PiAkY2FiaW5ldC0+bmFtZSwKICAgICAgICAgICAgICAgICdzdGF0dXMnID0+ICRjYWJpbmV0LT5zdGF0dXMtPnZhbHVlLAogICAgICAgICAgICBdLAogICAgICAgIF0pOwogICAgfQoKICAgIC8qKgogICAgICogIkF3YWl0aW5nIGFwcHJvdmFsIiBzY3JlZW4gc2hvd24gdG8gbWVtYmVycyB3aG8gam9pbmVkIGFuIGV4aXN0aW5nCiAgICAgKiBjYWJpbmV0IGFuZCBhcmUgd2FpdGluZyBmb3IgdGhlIG93bmVyIHRvIGFwcHJvdmUgdGhlaXIgYWNjb3VudC4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIGF3YWl0aW5nQXBwcm92YWwoUmVxdWVzdCAkcmVxdWVzdCk6IFJlc3BvbnNlfFJlZGlyZWN0UmVzcG9uc2UKICAgIHsKICAgICAgICAkdXNlciA9ICRyZXF1ZXN0LT51c2VyKCk7CgogICAgICAgIGlmICghICR1c2VyIGluc3RhbmNlb2YgVXNlciB8fCAhICR1c2VyLT5pc1BlbmRpbmdBcHByb3ZhbCgpKSB7CiAgICAgICAgICAgIHJldHVybiByZWRpcmVjdCgpLT5yb3V0ZSgnZGFzaGJvYXJkJyk7CiAgICAgICAgfQoKICAgICAgICAkY2FiaW5ldCA9ICR1c2VyLT5jYWJpbmV0OwoKICAgICAgICByZXR1cm4gSW5lcnRpYTo6cmVuZGVyKCdhdXRoL0F3YWl0aW5nQXBwcm92YWwnLCBbCiAgICAgICAgICAgICdjYWJpbmV0JyA9PiAkY2FiaW5ldCA9PT0gbnVsbCA/IG51bGwgOiBbCiAgICAgICAgICAgICAgICAnbmFtZScgPT4gJGNhYmluZXQtPm5hbWUsCiAgICAgICAgICAgIF0sCiAgICAgICAgXSk7CiAgICB9Cn0K
+<?php
+
+namespace App\Http\Controllers\Cabinet;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\Cabinet\CabinetAccessService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class CabinetStatusController extends Controller
+{
+    public function __construct(
+        private readonly CabinetAccessService $access,
+    ) {}
+
+    /**
+     * "Pending activation" screen shown to owners of a cabinet that has not
+     * yet been activated (or has been suspended) by platform staff.
+     */
+    public function pending(Request $request): Response|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return redirect()->route('dashboard');
+        }
+
+        $cabinet = $user->cabinet;
+        $reason = $this->access->denialReason($user);
+        $cabinet?->loadMissing('license');
+        $license = $cabinet?->license;
+        $isOwner = $cabinet !== null && $cabinet->owner_user_id === $user->getKey();
+        $outstandingGrant = $isOwner
+            ? $cabinet->hostedLicenseGrants()->outstanding()->latest()->first()
+            : null;
+        $isActiveTrialUpgrade = $reason === null
+            && $outstandingGrant !== null
+            && $cabinet?->isActive() === true
+            && $license?->plan?->value === 'trial';
+
+        if (($reason === null && ! $isActiveTrialUpgrade)
+            || $reason === CabinetAccessService::REASON_AWAITING_APPROVAL) {
+            return redirect()->route('dashboard');
+        }
+
+        $canRedeemLicense = $isOwner
+            && ($cabinet->isPending()
+                || ($cabinet->isActive() && $license?->plan?->value === 'trial'));
+
+        return Inertia::render('auth/PendingActivation', [
+            'can_redeem_license' => $canRedeemLicense,
+            'pending_license_grant' => $outstandingGrant === null ? null : [
+                'plan' => $outstandingGrant->plan->value,
+                'plan_label' => $outstandingGrant->plan->label(),
+                'issued_at' => $outstandingGrant->created_at?->toIso8601String(),
+                'code_suffix' => $outstandingGrant->code_suffix,
+            ],
+            'cabinet' => $cabinet === null ? null : [
+                'name' => $cabinet->name,
+                'status' => $cabinet->status->value,
+                'access_status' => $isActiveTrialUpgrade
+                    ? 'upgrade'
+                    : $this->access->denialStatus($user),
+                'access_reason' => $reason,
+                'message' => $isActiveTrialUpgrade
+                    ? 'Votre cabinet reste accessible. Saisissez ce code pour appliquer immédiatement la nouvelle licence.'
+                    : $this->access->denialMessage($user),
+                'license' => $license === null ? null : [
+                    'plan' => $license->plan?->value,
+                    'plan_label' => $license->plan?->label(),
+                    'status' => $license->effectiveStatus(),
+                    'status_label' => $license->effectiveStatusLabel(),
+                    'expires_at' => $license->expires_at?->toIso8601String(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * "Awaiting approval" screen shown to members who joined an existing
+     * cabinet and are waiting for the owner to approve their account.
+     */
+    public function awaitingApproval(Request $request): Response|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User || ! $user->isPendingApproval()) {
+            return redirect()->route('dashboard');
+        }
+
+        $cabinet = $user->cabinet;
+
+        return Inertia::render('auth/AwaitingApproval', [
+            'cabinet' => $cabinet === null ? null : [
+                'name' => $cabinet->name,
+            ],
+        ]);
+    }
+}

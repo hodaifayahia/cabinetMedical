@@ -15,7 +15,7 @@ final class RunGoogleDriveBackupRetention extends Command
     protected $signature = 'medismart:backup:drive-retention
         {--force : Exécute la rétention même hors du scheduler desktop ou si elle est désactivée}';
 
-    protected $description = 'Applique la rétention sécurisée aux sauvegardes MediSmart vérifiées sur Google Drive';
+    protected $description = 'Applique la rétention sécurisée aux sauvegardes DrClickDz vérifiées sur Google Drive';
 
     public function handle(RemoteBackupRetentionManager $retention): int
     {

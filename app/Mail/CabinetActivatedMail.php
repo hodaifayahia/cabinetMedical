@@ -1,1 +1,57 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTWFpbDsKCnVzZSBBcHBcTW9kZWxzXENhYmluZXQ7CnVzZSBJbGx1bWluYXRlXEJ1c1xRdWV1ZWFibGU7CnVzZSBJbGx1bWluYXRlXENvbnRyYWN0c1xRdWV1ZVxTaG91bGRRdWV1ZTsKdXNlIElsbHVtaW5hdGVcTWFpbFxNYWlsYWJsZTsKdXNlIElsbHVtaW5hdGVcTWFpbFxNYWlsYWJsZXNcQ29udGVudDsKdXNlIElsbHVtaW5hdGVcTWFpbFxNYWlsYWJsZXNcRW52ZWxvcGU7CnVzZSBJbGx1bWluYXRlXFF1ZXVlXFNlcmlhbGl6ZXNNb2RlbHM7CgovKioKICogTm90aWZpZXMgYSBjYWJpbmV0IG93bmVyIHRoYXQgdGhlaXIgY2FiaW5ldCBoYXMgYmVlbiBhY3RpdmF0ZWQuIEltcGxlbWVudHMKICogU2hvdWxkUXVldWUgc28gZGVsaXZlcnkgaXMgb2ZmbG9hZGVkIHRvIHRoZSBxdWV1ZSB3aGVuIG9uZSBpcyBjb25maWd1cmVkOwogKiB3aXRoIHRoZSBkZWZhdWx0IHN5bmMgcXVldWUgaXQgc2VuZHMgaW5saW5lLgogKi8KY2xhc3MgQ2FiaW5ldEFjdGl2YXRlZE1haWwgZXh0ZW5kcyBNYWlsYWJsZSBpbXBsZW1lbnRzIFNob3VsZFF1ZXVlCnsKICAgIHVzZSBRdWV1ZWFibGUsIFNlcmlhbGl6ZXNNb2RlbHM7CgogICAgcHVibGljIGZ1bmN0aW9uIF9fY29uc3RydWN0KAogICAgICAgIHB1YmxpYyByZWFkb25seSBDYWJpbmV0ICRjYWJpbmV0LAogICAgICAgIHB1YmxpYyByZWFkb25seSBzdHJpbmcgJG93bmVyTmFtZSwKICAgICkge30KCiAgICBwdWJsaWMgZnVuY3Rpb24gZW52ZWxvcGUoKTogRW52ZWxvcGUKICAgIHsKICAgICAgICByZXR1cm4gbmV3IEVudmVsb3BlKAogICAgICAgICAgICBzdWJqZWN0OiAnVm90cmUgY2FiaW5ldCBlc3QgbWFpbnRlbmFudCBhY3RpZicsCiAgICAgICAgKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gY29udGVudCgpOiBDb250ZW50CiAgICB7CiAgICAgICAgcmV0dXJuIG5ldyBDb250ZW50KAogICAgICAgICAgICBtYXJrZG93bjogJ2VtYWlscy5jYWJpbmV0LWFjdGl2YXRlZCcsCiAgICAgICAgICAgIHdpdGg6IFsKICAgICAgICAgICAgICAgICdjYWJpbmV0TmFtZScgPT4gJHRoaXMtPmNhYmluZXQtPm5hbWUsCiAgICAgICAgICAgICAgICAnb3duZXJOYW1lJyA9PiAkdGhpcy0+b3duZXJOYW1lLAogICAgICAgICAgICAgICAgJ2xvZ2luVXJsJyA9PiByb3V0ZSgnbG9naW4nKSwKICAgICAgICAgICAgXSwKICAgICAgICApOwogICAgfQoKICAgIC8qKgogICAgICogQHJldHVybiBhcnJheTxpbnQsIG1peGVkPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gYXR0YWNobWVudHMoKTogYXJyYXkKICAgIHsKICAgICAgICByZXR1cm4gW107CiAgICB9Cn0K
+<?php
+
+namespace App\Mail;
+
+use App\Models\Cabinet;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
+
+/**
+ * Notifies a cabinet owner that their cabinet has been activated. Implements
+ * ShouldQueue so delivery is offloaded to the queue when one is configured;
+ * with the default sync queue it sends inline.
+ */
+class CabinetActivatedMail extends Mailable implements ShouldQueue
+{
+    use Queueable, SerializesModels;
+
+    public function __construct(
+        public readonly Cabinet $cabinet,
+        public readonly string $ownerName,
+    ) {}
+
+    public function envelope(): Envelope
+    {
+        return new Envelope(
+            subject: 'Votre cabinet est maintenant actif',
+        );
+    }
+
+    public function content(): Content
+    {
+        $this->cabinet->loadMissing('license');
+
+        return new Content(
+            markdown: 'emails.cabinet-activated',
+            with: [
+                'cabinetName' => $this->cabinet->name,
+                'ownerName' => $this->ownerName,
+                'licensePlan' => $this->cabinet->license?->plan?->label(),
+                'expiresAt' => $this->cabinet->license?->expires_at,
+                'loginUrl' => route('login'),
+            ],
+        );
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    public function attachments(): array
+    {
+        return [];
+    }
+}

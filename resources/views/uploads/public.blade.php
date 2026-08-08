@@ -410,7 +410,7 @@
             <header class="clinic-header">
                 <div class="clinic-mark" aria-hidden="true">+</div>
                 <div class="clinic-copy">
-                    <h1>{{ $clinic['name'] !== '' ? $clinic['name'] : 'MediSmart' }}</h1>
+                    <h1>{{ $clinic['name'] !== '' ? $clinic['name'] : 'DrClickDz' }}</h1>
                     @if ($clinic['phone'] !== '' || $clinic['city'] !== '')
                         <p>
                             @if ($clinic['phone'] !== '')

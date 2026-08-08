@@ -1,0 +1,182 @@
+name: desktop-installer-windows
+
+# Builds the DrClickDz Windows desktop installer (.msi + .exe NSIS)
+# and uploads it as a workflow artifact. On tags (v*), it also attaches
+# the installers to a GitHub Release.
+
+on:
+  push:
+    branches:
+      - main
+      - feature/hosted-multi-cabinet-desktop
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-installer-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-installer:
+    name: Build Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate release tag matches desktop version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tauriConfig = Get-Content -Raw 'src-tauri/tauri.conf.json' | ConvertFrom-Json
+          $desktopVersion = [string] $tauriConfig.version
+
+          if ([string]::IsNullOrWhiteSpace($desktopVersion)) {
+            throw 'src-tauri/tauri.conf.json must contain a nonempty version.'
+          }
+
+          $expectedTag = "v$desktopVersion"
+          if ($env:GITHUB_REF_NAME -cne $expectedTag) {
+            throw "Release tag '$env:GITHUB_REF_NAME' must exactly match desktop version '$expectedTag'."
+          }
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: cargo-win-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Build signed installer
+        shell: pwsh
+        env:
+          IS_TAG_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          MEDISMART_UPDATER_PUBLIC_KEY: ${{ secrets.MEDISMART_UPDATER_PUBLIC_KEY }}
+          MEDISMART_UPDATER_ENDPOINT: ${{ secrets.MEDISMART_UPDATER_ENDPOINT }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ephemeralKeyPath = $null
+
+          try {
+            $hasCompleteSigningSecrets =
+              -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY) -and
+              -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) -and
+              -not [string]::IsNullOrWhiteSpace($env:MEDISMART_UPDATER_PUBLIC_KEY)
+
+            if (-not $hasCompleteSigningSecrets) {
+              if ($env:IS_TAG_RELEASE -eq 'true') {
+                throw 'Tagged releases require TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD, and MEDISMART_UPDATER_PUBLIC_KEY secrets.'
+              }
+
+              Write-Warning 'Complete updater signing secrets are not configured. Generating an ephemeral keypair for this validation build only.'
+              $ephemeralKeyPath = Join-Path $env:RUNNER_TEMP "medismart-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.key"
+              $privateKeyPassword = [guid]::NewGuid().ToString('N')
+
+              npx --no-install tauri signer generate `
+                --write-keys $ephemeralKeyPath `
+                --password $privateKeyPassword `
+                --ci
+              if ($LASTEXITCODE -ne 0) {
+                throw "Tauri updater key generation failed with exit code $LASTEXITCODE."
+              }
+
+              $privateKey = (Get-Content -Raw $ephemeralKeyPath).Trim()
+              $publicKey = (Get-Content -Raw "$ephemeralKeyPath.pub").Trim()
+            } else {
+              $privateKey = $env:TAURI_SIGNING_PRIVATE_KEY.Trim()
+              $privateKeyPassword = $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+              $publicKey = $env:MEDISMART_UPDATER_PUBLIC_KEY.Trim()
+            }
+
+            if ([string]::IsNullOrWhiteSpace($privateKeyPassword)) {
+              throw 'TAURI_SIGNING_PRIVATE_KEY_PASSWORD must be nonempty for release builds.'
+            }
+            if ($publicKey.Length -lt 80 -or $publicKey -notmatch '^[A-Za-z0-9+/=]+$') {
+              throw 'MEDISMART_UPDATER_PUBLIC_KEY must be a single-line base64 Tauri updater public key.'
+            }
+
+            Write-Output "::add-mask::$privateKey"
+            Write-Output "::add-mask::$privateKeyPassword"
+
+            $env:TAURI_SIGNING_PRIVATE_KEY = $privateKey
+            $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = $privateKeyPassword
+            $env:MEDISMART_UPDATER_PUBLIC_KEY = $publicKey
+
+            npm run desktop:build
+            if ($LASTEXITCODE -ne 0) {
+              throw "Tauri installer build failed with exit code $LASTEXITCODE."
+            }
+          } finally {
+            Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY -ErrorAction SilentlyContinue
+            Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD -ErrorAction SilentlyContinue
+
+            if ($null -ne $ephemeralKeyPath) {
+              Remove-Item -LiteralPath $ephemeralKeyPath -Force -ErrorAction SilentlyContinue
+              Remove-Item -LiteralPath "$ephemeralKeyPath.pub" -Force -ErrorAction SilentlyContinue
+            }
+          }
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: drclickdz-windows-installer
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/msi/*.sig
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/*.sig
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish tagged Windows release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-installer
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: drclickdz-windows-installer
+          path: release-artifacts
+
+      - name: Attach installers to release
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            release-artifacts/msi/*.msi
+            release-artifacts/msi/*.sig
+            release-artifacts/nsis/*.exe
+            release-artifacts/nsis/*.sig

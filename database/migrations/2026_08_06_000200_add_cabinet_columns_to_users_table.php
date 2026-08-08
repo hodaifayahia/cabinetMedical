@@ -1,1 +1,49 @@
-PD9waHAKCnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXE1pZ3JhdGlvbnNcTWlncmF0aW9uOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxTY2hlbWFcQmx1ZXByaW50Owp1c2UgSWxsdW1pbmF0ZVxTdXBwb3J0XEZhY2FkZXNcU2NoZW1hOwoKcmV0dXJuIG5ldyBjbGFzcyBleHRlbmRzIE1pZ3JhdGlvbgp7CiAgICBwdWJsaWMgZnVuY3Rpb24gdXAoKTogdm9pZAogICAgewogICAgICAgIFNjaGVtYTo6dGFibGUoJ3VzZXJzJywgZnVuY3Rpb24gKEJsdWVwcmludCAkdGFibGUpOiB2b2lkIHsKICAgICAgICAgICAgaWYgKCEgU2NoZW1hOjpoYXNDb2x1bW4oJ3VzZXJzJywgJ2NhYmluZXRfaWQnKSkgewogICAgICAgICAgICAgICAgJHRhYmxlLT5mb3JlaWduSWQoJ2NhYmluZXRfaWQnKQogICAgICAgICAgICAgICAgICAgIC0+bnVsbGFibGUoKQogICAgICAgICAgICAgICAgICAgIC0+YWZ0ZXIoJ2NhYmluZXRfc2V0dGluZ19pZCcpCiAgICAgICAgICAgICAgICAgICAgLT5jb25zdHJhaW5lZCgnY2FiaW5ldHMnKQogICAgICAgICAgICAgICAgICAgIC0+bnVsbE9uRGVsZXRlKCk7CiAgICAgICAgICAgICAgICAkdGFibGUtPmluZGV4KCdjYWJpbmV0X2lkJyk7CiAgICAgICAgICAgIH0KCiAgICAgICAgICAgIGlmICghIFNjaGVtYTo6aGFzQ29sdW1uKCd1c2VycycsICdpc19wbGF0Zm9ybV9hZG1pbicpKSB7CiAgICAgICAgICAgICAgICAkdGFibGUtPmJvb2xlYW4oJ2lzX3BsYXRmb3JtX2FkbWluJyktPmRlZmF1bHQoZmFsc2UpLT5hZnRlcignY2FiaW5ldF9pZCcpOwogICAgICAgICAgICB9CgogICAgICAgICAgICBpZiAoISBTY2hlbWE6Omhhc0NvbHVtbigndXNlcnMnLCAnYXBwcm92ZWRfYXQnKSkgewogICAgICAgICAgICAgICAgLy8gTnVsbCBtZWFucyB0aGUgbWVtYmVyIGlzIGF3YWl0aW5nIG93bmVyIGFwcHJvdmFsLiBPd25lcnMgYW5kCiAgICAgICAgICAgICAgICAvLyBsZWdhY3kgYWNjb3VudHMgYXJlIGFwcHJvdmVkIGF0IGNyZWF0aW9uIC8gYmFja2ZpbGwgdGltZS4KICAgICAgICAgICAgICAgICR0YWJsZS0+dGltZXN0YW1wKCdhcHByb3ZlZF9hdCcpLT5udWxsYWJsZSgpLT5hZnRlcignaXNfcGxhdGZvcm1fYWRtaW4nKTsKICAgICAgICAgICAgfQogICAgICAgIH0pOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiBkb3duKCk6IHZvaWQKICAgIHsKICAgICAgICBTY2hlbWE6OnRhYmxlKCd1c2VycycsIGZ1bmN0aW9uIChCbHVlcHJpbnQgJHRhYmxlKTogdm9pZCB7CiAgICAgICAgICAgIGlmIChTY2hlbWE6Omhhc0NvbHVtbigndXNlcnMnLCAnYXBwcm92ZWRfYXQnKSkgewogICAgICAgICAgICAgICAgJHRhYmxlLT5kcm9wQ29sdW1uKCdhcHByb3ZlZF9hdCcpOwogICAgICAgICAgICB9CgogICAgICAgICAgICBpZiAoU2NoZW1hOjpoYXNDb2x1bW4oJ3VzZXJzJywgJ2lzX3BsYXRmb3JtX2FkbWluJykpIHsKICAgICAgICAgICAgICAgICR0YWJsZS0+ZHJvcENvbHVtbignaXNfcGxhdGZvcm1fYWRtaW4nKTsKICAgICAgICAgICAgfQoKICAgICAgICAgICAgaWYgKFNjaGVtYTo6aGFzQ29sdW1uKCd1c2VycycsICdjYWJpbmV0X2lkJykpIHsKICAgICAgICAgICAgICAgICR0YWJsZS0+ZHJvcENvbnN0cmFpbmVkRm9yZWlnbklkKCdjYWJpbmV0X2lkJyk7CiAgICAgICAgICAgIH0KICAgICAgICB9KTsKICAgIH0KfTsK
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table): void {
+            if (! Schema::hasColumn('users', 'cabinet_id')) {
+                $table->foreignId('cabinet_id')
+                    ->nullable()
+                    ->after('cabinet_setting_id')
+                    ->constrained('cabinets')
+                    ->nullOnDelete();
+                $table->index('cabinet_id');
+            }
+
+            if (! Schema::hasColumn('users', 'is_platform_admin')) {
+                $table->boolean('is_platform_admin')->default(false)->after('cabinet_id');
+            }
+
+            if (! Schema::hasColumn('users', 'approved_at')) {
+                // Null means the member is awaiting owner approval. Owners and
+                // legacy accounts are approved at creation / backfill time.
+                $table->timestamp('approved_at')->nullable()->after('is_platform_admin');
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table): void {
+            if (Schema::hasColumn('users', 'approved_at')) {
+                $table->dropColumn('approved_at');
+            }
+
+            if (Schema::hasColumn('users', 'is_platform_admin')) {
+                $table->dropColumn('is_platform_admin');
+            }
+
+            if (Schema::hasColumn('users', 'cabinet_id')) {
+                $table->dropConstrainedForeignId('cabinet_id');
+            }
+        });
+    }
+};

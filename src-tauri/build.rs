@@ -1,1 +1,104 @@
-Ly8gTWVkaVNtYXJ0IERlc2t0b3Ag4oCUIGJ1aWxkIHNjcmlwdCAodGhpbi1jbGllbnQgZWRpdGlvbikKLy8KLy8gUmVtb3ZlZCAoMjAyNSk6IGJ1bmRsZWQgcmVzb3VyY2UgZXhpc3RlbmNlIGNoZWNrcywgY2xvdWRmbGFyZWQgbWFuaWZlc3QKLy8gdmVyaWZpY2F0aW9uLCBQSFAvTGFyYXZlbC9taWdyYXRpb24gcmVzb3VyY2UgU0hBIGluamVjdGlvbi4gVGhlc2Ugd2VyZSBvbmx5Ci8vIG5lZWRlZCBmb3IgdGhlIGVtYmVkZGVkIGxvY2FsIHJ1bnRpbWUgd2hpY2ggaGFzIGJlZW4gcmV0aXJlZC4KLy8KLy8gS2VwdDogdXBkYXRlciBrZXkvZW5kcG9pbnQgdmFsaWRhdGlvbiBhbmQgdGhlIFRhdXJpIGFwcC1tYW5pZmVzdCBnZW5lcmF0aW9uLgoKdXNlIHN0ZDo6ZW52OwoKdXNlIHVybDo6VXJsOwoKZm4gbWFpbigpIHsKICAgIC8vIEdlbmVyYXRlIHRoZSBUYXVyaSBhcHBsaWNhdGlvbiBtYW5pZmVzdCAocGVybWlzc2lvbnMvY2FwYWJpbGl0aWVzKS4KICAgIC8vIENvbW1hbmRzIGxpc3QgaXMgdHJpbW1lZCB0byBvbmx5IHdoYXQgdGhlIHRoaW4gY2xpZW50IGV4cG9zZXMuCiAgICB0YXVyaV9idWlsZDo6dHJ5X2J1aWxkKHRhdXJpX2J1aWxkOjpBdHRyaWJ1dGVzOjpuZXcoKS5hcHBfbWFuaWZlc3QoCiAgICAgICAgdGF1cmlfYnVpbGQ6OkFwcE1hbmlmZXN0OjpuZXcoKS5jb21tYW5kcygmWwogICAgICAgICAgICAic2lnbmVkX3VwZGF0ZXJfc3RhdHVzIiwKICAgICAgICAgICAgImNoZWNrX2Zvcl9zaWduZWRfdXBkYXRlIiwKICAgICAgICAgICAgImluc3RhbGxfc2lnbmVkX3VwZGF0ZSIsCiAgICAgICAgXSksCiAgICApKQogICAgLmV4cGVjdCgiZmFpbGVkIHRvIGJ1aWxkIHRoZSBNZWRpU21hcnQgVGF1cmkgYXBwbGljYXRpb24gbWFuaWZlc3QiKTsKCiAgICAvLyBSZWJ1aWxkIHRyaWdnZXJzCiAgICBwcmludGxuISgiY2FyZ286cmVydW4taWYtZW52LWNoYW5nZWQ9UFJPRklMRSIpOwogICAgcHJpbnRsbiEoImNhcmdvOnJlcnVuLWlmLWVudi1jaGFuZ2VkPU1FRElTTUFSVF9VUERBVEVSX1BVQkxJQ19LRVkiKTsKICAgIHByaW50bG4hKCJjYXJnbzpyZXJ1bi1pZi1lbnYtY2hhbmdlZD1NRURJU01BUlRfVVBEQVRFUl9FTkRQT0lOVCIpOwogICAgcHJpbnRsbiEoImNhcmdvOnJlcnVuLWlmLWVudi1jaGFuZ2VkPU1FRElTTUFSVF9VUERBVEVSX0lOU1RBTExfU0VDUkVUIik7CiAgICBwcmludGxuISgiY2FyZ286cmVydW4taWYtZW52LWNoYW5nZWQ9VEFVUklfU0lHTklOR19QUklWQVRFX0tFWSIpOwogICAgcHJpbnRsbiEoImNhcmdvOnJlcnVuLWlmLWVudi1jaGFuZ2VkPVRBVVJJX1NJR05JTkdfUFJJVkFURV9LRVlfUEFTU1dPUkQiKTsKCiAgICBpZiBlbnY6OnZhcigiUFJPRklMRSIpLmFzX2RlcmVmKCkgIT0gT2soInJlbGVhc2UiKSB7CiAgICAgICAgcmV0dXJuOwogICAgfQoKICAgIC8vIFJlbGVhc2UgYnVpbGRzIHJlcXVpcmUgYSBzaWduZWQgdXBkYXRlci4gVmFsaWRhdGUgYW5kIGVtYmVkIHRoZSBrZXlzLgogICAgbGV0IHVwZGF0ZXJfcHVibGljX2tleSA9IHJlcXVpcmVkX3JlbGVhc2VfZW52aXJvbm1lbnQoIk1FRElTTUFSVF9VUERBVEVSX1BVQkxJQ19LRVkiKTsKICAgIGxldCB1cGRhdGVyX2VuZHBvaW50ID0gcmVxdWlyZWRfcmVsZWFzZV9lbnZpcm9ubWVudCgiTUVESVNNQVJUX1VQREFURVJfRU5EUE9JTlQiKTsKICAgIGxldCBfc2lnbmluZ19wcml2YXRlX2tleSA9IHJlcXVpcmVkX3JlbGVhc2VfZW52aXJvbm1lbnQoIlRBVVJJX1NJR05JTkdfUFJJVkFURV9LRVkiKTsKICAgIGxldCBfc2lnbmluZ19wcml2YXRlX2tleV9wYXNzd29yZCA9CiAgICAgICAgcmVxdWlyZWRfcmVsZWFzZV9lbnZpcm9ubWVudCgiVEFVUklfU0lHTklOR19QUklWQVRFX0tFWV9QQVNTV09SRCIpOwoKICAgIHZhbGlkYXRlX3VwZGF0ZXJfcHVibGljX2tleSgmdXBkYXRlcl9wdWJsaWNfa2V5KTsKICAgIHZhbGlkYXRlX3VwZGF0ZXJfZW5kcG9pbnQoJnVwZGF0ZXJfZW5kcG9pbnQpOwoKICAgIHByaW50bG4hKCJjYXJnbzpydXN0Yy1lbnY9TUVESVNNQVJUX1VQREFURVJfUFVCTElDX0tFWT17dXBkYXRlcl9wdWJsaWNfa2V5fSIpOwogICAgcHJpbnRsbiEoImNhcmdvOnJ1c3RjLWVudj1NRURJU01BUlRfVVBEQVRFUl9FTkRQT0lOVD17dXBkYXRlcl9lbmRwb2ludH0iKTsKCiAgICAvLyBPcHRpb25hbDogaW5zdGFsbC1hdXRob3JpemF0aW9uIEhNQUMgc2VjcmV0LiBWYWxpZGF0ZWQgYnV0IG5vdCByZXF1aXJlZC4KICAgIGlmIGxldCBPayhzZWNyZXQpID0gZW52Ojp2YXIoIk1FRElTTUFSVF9VUERBVEVSX0lOU1RBTExfU0VDUkVUIikgewogICAgICAgIGxldCBzZWNyZXQgPSBzZWNyZXQudHJpbSgpLnRvX293bmVkKCk7CiAgICAgICAgaWYgIXNlY3JldC5pc19lbXB0eSgpIHsKICAgICAgICAgICAgcHJpbnRsbiEoImNhcmdvOnJ1c3RjLWVudj1NRURJU01BUlRfVVBEQVRFUl9JTlNUQUxMX1NFQ1JFVD17c2VjcmV0fSIpOwogICAgICAgIH0KICAgIH0KfQoKZm4gcmVxdWlyZWRfcmVsZWFzZV9lbnZpcm9ubWVudChuYW1lOiAmc3RyKSAtPiBTdHJpbmcgewogICAgZW52Ojp2YXIobmFtZSkKICAgICAgICAub2soKQogICAgICAgIC5maWx0ZXIofHZhbHVlfCAhdmFsdWUudHJpbSgpLmlzX2VtcHR5KCkpCiAgICAgICAgLnVud3JhcF9vcl9lbHNlKHx8IHsKICAgICAgICAgICAgcGFuaWMhKAogICAgICAgICAgICAgICAgImRlc2t0b3AgcmVsZWFzZSBidWlsZHMgcmVxdWlyZSB7bmFtZX07IHNpZ25lZCB1cGRhdGVyIGNyZWRlbnRpYWxzIG11c3QgYmUgc3VwcGxpZWQgYnkgdGhlIHByb3RlY3RlZCByZWxlYXNlIGVudmlyb25tZW50IgogICAgICAgICAgICApCiAgICAgICAgfSkKfQoKZm4gdmFsaWRhdGVfdXBkYXRlcl9wdWJsaWNfa2V5KHZhbHVlOiAmc3RyKSB7CiAgICBpZiB2YWx1ZS5sZW4oKSA8IDgwCiAgICAgICAgfHwgdmFsdWUubGVuKCkgPiA0MDk2CiAgICAgICAgfHwgIXZhbHVlCiAgICAgICAgICAgIC5ieXRlcygpCiAgICAgICAgICAgIC5hbGwofGJ5dGV8IGJ5dGUuaXNfYXNjaWlfYWxwaGFudW1lcmljKCkgfHwgbWF0Y2hlcyEoYnl0ZSwgYicrJyB8IGInLycgfCBiJz0nKSkKICAgIHsKICAgICAgICBwYW5pYyEoCiAgICAgICAgICAgICJNRURJU01BUlRfVVBEQVRFUl9QVUJMSUNfS0VZIG11c3QgYmUgdGhlIHNpbmdsZS1saW5lIGJhc2U2NCBUYXVyaSB1cGRhdGVyIHB1YmxpYyBrZXkiCiAgICAgICAgKTsKICAgIH0KfQoKZm4gdmFsaWRhdGVfdXBkYXRlcl9lbmRwb2ludCh2YWx1ZTogJnN0cikgewogICAgbGV0IHByb2JlID0gdmFsdWUKICAgICAgICAucmVwbGFjZSgie3tjdXJyZW50X3ZlcnNpb259fSIsICIwLjEuMCIpCiAgICAgICAgLnJlcGxhY2UoInt7dGFyZ2V0fX0iLCAid2luZG93cyIpCiAgICAgICAgLnJlcGxhY2UoInt7YXJjaH19IiwgIng4Nl82NCIpOwoKICAgIGlmIHByb2JlLmNvbnRhaW5zKCd7JykgfHwgcHJvYmUuY29udGFpbnMoJ30nKSB7CiAgICAgICAgcGFuaWMhKCJNRURJU01BUlRfVVBEQVRFUl9FTkRQT0lOVCBjb250YWlucyBhbiB1bnN1cHBvcnRlZCB0ZW1wbGF0ZSB2YXJpYWJsZSIpOwogICAgfQoKICAgIGxldCBlbmRwb2ludCA9IFVybDo6cGFyc2UoJnByb2JlKQogICAgICAgIC51bndyYXBfb3JfZWxzZSh8X3wgcGFuaWMhKCJNRURJU01BUlRfVVBEQVRFUl9FTkRQT0lOVCBtdXN0IGJlIGEgdmFsaWQgSFRUUFMgVVJMIikpOwoKICAgIGlmIGVuZHBvaW50LnNjaGVtZSgpICE9ICJodHRwcyIKICAgICAgICB8fCBlbmRwb2ludC5ob3N0X3N0cigpLmlzX25vbmUoKQogICAgICAgIHx8ICFlbmRwb2ludC51c2VybmFtZSgpLmlzX2VtcHR5KCkKICAgICAgICB8fCBlbmRwb2ludC5wYXNzd29yZCgpLmlzX3NvbWUoKQogICAgICAgIHx8IGVuZHBvaW50LmZyYWdtZW50KCkuaXNfc29tZSgpCiAgICB7CiAgICAgICAgcGFuaWMhKCJNRURJU01BUlRfVVBEQVRFUl9FTkRQT0lOVCBtdXN0IGJlIEhUVFBTIHdpdGhvdXQgY3JlZGVudGlhbHMgb3IgYSBmcmFnbWVudCIpOwogICAgfQp9Cg==
+// DrClickDz Desktop — build script (thin-client edition)
+//
+// Removed (2025): bundled resource existence checks, cloudflared manifest
+// verification, PHP/Laravel/migration resource SHA injection. These were only
+// needed for the embedded local runtime which has been retired.
+//
+// Kept: updater key/endpoint validation and the Tauri app-manifest generation.
+
+use std::env;
+
+use url::Url;
+
+fn main() {
+    // Generate the Tauri application manifest (permissions/capabilities).
+    // Commands list is trimmed to only what the thin client exposes.
+    tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
+        tauri_build::AppManifest::new().commands(&[
+            "signed_updater_status",
+            "check_for_signed_update",
+            "install_signed_update",
+        ]),
+    ))
+    .expect("failed to build the DrClickDz Tauri application manifest");
+
+    // Rebuild triggers
+    println!("cargo:rerun-if-env-changed=PROFILE");
+    println!("cargo:rerun-if-env-changed=MEDISMART_UPDATER_PUBLIC_KEY");
+    println!("cargo:rerun-if-env-changed=MEDISMART_UPDATER_ENDPOINT");
+    println!("cargo:rerun-if-env-changed=MEDISMART_UPDATER_INSTALL_SECRET");
+    println!("cargo:rerun-if-env-changed=TAURI_SIGNING_PRIVATE_KEY");
+    println!("cargo:rerun-if-env-changed=TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
+
+    if env::var("PROFILE").as_deref() != Ok("release") {
+        return;
+    }
+
+    // Release builds require a signed updater. Validate and embed the keys.
+    let updater_public_key = required_release_environment("MEDISMART_UPDATER_PUBLIC_KEY");
+    let updater_endpoint = required_release_environment("MEDISMART_UPDATER_ENDPOINT");
+    let _signing_private_key = required_release_environment("TAURI_SIGNING_PRIVATE_KEY");
+    let _signing_private_key_password =
+        required_release_environment("TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
+
+    validate_updater_public_key(&updater_public_key);
+    validate_updater_endpoint(&updater_endpoint);
+
+    println!("cargo:rustc-env=MEDISMART_UPDATER_PUBLIC_KEY={updater_public_key}");
+    println!("cargo:rustc-env=MEDISMART_UPDATER_ENDPOINT={updater_endpoint}");
+
+    // Optional: install-authorization HMAC secret. Validated but not required.
+    if let Ok(secret) = env::var("MEDISMART_UPDATER_INSTALL_SECRET") {
+        let secret = secret.trim().to_owned();
+        if !secret.is_empty() {
+            println!("cargo:rustc-env=MEDISMART_UPDATER_INSTALL_SECRET={secret}");
+        }
+    }
+}
+
+fn required_release_environment(name: &str) -> String {
+    env::var(name)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| {
+            panic!(
+                "desktop release builds require {name}; signed updater credentials must be supplied by the protected release environment"
+            )
+        })
+}
+
+fn validate_updater_public_key(value: &str) {
+    if value.len() < 80
+        || value.len() > 4096
+        || !value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'+' | b'/' | b'='))
+    {
+        panic!(
+            "MEDISMART_UPDATER_PUBLIC_KEY must be the single-line base64 Tauri updater public key"
+        );
+    }
+}
+
+fn validate_updater_endpoint(value: &str) {
+    let probe = value
+        .replace("{{current_version}}", "0.1.0")
+        .replace("{{target}}", "windows")
+        .replace("{{arch}}", "x86_64");
+
+    if probe.contains('{') || probe.contains('}') {
+        panic!("MEDISMART_UPDATER_ENDPOINT contains an unsupported template variable");
+    }
+
+    let endpoint = Url::parse(&probe)
+        .unwrap_or_else(|_| panic!("MEDISMART_UPDATER_ENDPOINT must be a valid HTTPS URL"));
+
+    if endpoint.scheme() != "https"
+        || endpoint.host_str().is_none()
+        || !endpoint.username().is_empty()
+        || endpoint.password().is_some()
+        || endpoint.fragment().is_some()
+    {
+        panic!("MEDISMART_UPDATER_ENDPOINT must be HTTPS without credentials or a fragment");
+    }
+}

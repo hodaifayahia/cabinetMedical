@@ -1,1 +1,113 @@
-PD9waHAKCm5hbWVzcGFjZSBUZXN0c1xGZWF0dXJlXENhYmluZXQ7Cgp1c2UgQXBwXEVudW1zXENhYmluZXRTdGF0dXM7CnVzZSBBcHBcRW51bXNcUm9sZU5hbWU7CnVzZSBBcHBcTW9kZWxzXENhYmluZXQ7CnVzZSBBcHBcTW9kZWxzXFBhdGllbnQ7CnVzZSBBcHBcTW9kZWxzXFVzZXI7CnVzZSBEYXRhYmFzZVxTZWVkZXJzXFJvbGVzQW5kUGVybWlzc2lvbnNTZWVkZXI7CnVzZSBJbGx1bWluYXRlXEZvdW5kYXRpb25cVGVzdGluZ1xSZWZyZXNoRGF0YWJhc2U7CnVzZSBUZXN0c1xUZXN0Q2FzZTsKCmNsYXNzIFRlbmFuY3lJc29sYXRpb25UZXN0IGV4dGVuZHMgVGVzdENhc2UKewogICAgdXNlIFJlZnJlc2hEYXRhYmFzZTsKCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gc2V0VXAoKTogdm9pZAogICAgewogICAgICAgIHBhcmVudDo6c2V0VXAoKTsKICAgICAgICAkdGhpcy0+c2VlZChSb2xlc0FuZFBlcm1pc3Npb25zU2VlZGVyOjpjbGFzcyk7CiAgICB9CgogICAgcHJpdmF0ZSBmdW5jdGlvbiBtYWtlQ2FiaW5ldFdpdGhVc2VyKHN0cmluZyAkZW1haWwpOiBhcnJheQogICAgewogICAgICAgICRjYWJpbmV0ID0gQ2FiaW5ldDo6cXVlcnkoKS0+Y3JlYXRlKFsKICAgICAgICAgICAgJ25hbWUnID0+ICdDYWJpbmV0ICcuJGVtYWlsLAogICAgICAgICAgICAnc3RhdHVzJyA9PiBDYWJpbmV0U3RhdHVzOjpBQ1RJVkUsCiAgICAgICAgICAgICdhY3RpdmF0ZWRfYXQnID0+IG5vdygpLAogICAgICAgIF0pOwoKICAgICAgICAkdXNlciA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKFsKICAgICAgICAgICAgJ2VtYWlsJyA9PiAkZW1haWwsCiAgICAgICAgICAgICdjYWJpbmV0X2lkJyA9PiAkY2FiaW5ldC0+Z2V0S2V5KCksCiAgICAgICAgICAgICdhcHByb3ZlZF9hdCcgPT4gbm93KCksCiAgICAgICAgXSk7CiAgICAgICAgJHVzZXItPmFzc2lnblJvbGUoUm9sZU5hbWU6OkFETUlOSVNUUkFUT1ItPnZhbHVlKTsKCiAgICAgICAgcmV0dXJuIFskY2FiaW5ldCwgJHVzZXJdOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiB0ZXN0X3VzZXJzX29ubHlfc2VlX3RoZWlyX293bl9jYWJpbmV0X3BhdGllbnRzKCk6IHZvaWQKICAgIHsKICAgICAgICBbJGNhYmluZXRBLCAkdXNlckFdID0gJHRoaXMtPm1ha2VDYWJpbmV0V2l0aFVzZXIoJ2FAZXhhbXBsZS5jb20nKTsKICAgICAgICBbJGNhYmluZXRCLCAkdXNlckJdID0gJHRoaXMtPm1ha2VDYWJpbmV0V2l0aFVzZXIoJ2JAZXhhbXBsZS5jb20nKTsKCiAgICAgICAgLy8gQ3JlYXRlIG9uZSBwYXRpZW50IGluIGVhY2ggY2FiaW5ldCBieSBhY3RpbmcgYXMgZWFjaCBvd25lci4KICAgICAgICAkdGhpcy0+YWN0aW5nQXMoJHVzZXJBKTsKICAgICAgICAkcGF0aWVudEEgPSBQYXRpZW50OjpmYWN0b3J5KCktPmNyZWF0ZShbJ2ZpcnN0X25hbWUnID0+ICdBbGljZSddKTsKICAgICAgICAkdGhpcy0+YXNzZXJ0U2FtZSgkY2FiaW5ldEEtPmdldEtleSgpLCAkcGF0aWVudEEtPmNhYmluZXRfaWQpOwoKICAgICAgICAkdGhpcy0+YWN0aW5nQXMoJHVzZXJCKTsKICAgICAgICAkcGF0aWVudEIgPSBQYXRpZW50OjpmYWN0b3J5KCktPmNyZWF0ZShbJ2ZpcnN0X25hbWUnID0+ICdCb2InXSk7CiAgICAgICAgJHRoaXMtPmFzc2VydFNhbWUoJGNhYmluZXRCLT5nZXRLZXkoKSwgJHBhdGllbnRCLT5jYWJpbmV0X2lkKTsKCiAgICAgICAgLy8gVXNlciBBIG11c3Qgb25seSBzZWUgcGF0aWVudCBBLgogICAgICAgICR0aGlzLT5hY3RpbmdBcygkdXNlckEpOwogICAgICAgICR2aXNpYmxlID0gUGF0aWVudDo6cXVlcnkoKS0+cGx1Y2soJ2lkJyktPmFsbCgpOwogICAgICAgICR0aGlzLT5hc3NlcnRDb250YWlucygkcGF0aWVudEEtPmlkLCAkdmlzaWJsZSk7CiAgICAgICAgJHRoaXMtPmFzc2VydE5vdENvbnRhaW5zKCRwYXRpZW50Qi0+aWQsICR2aXNpYmxlKTsKCiAgICAgICAgLy8gVGhlIGVzY2FwZSBoYXRjaCByZXZlYWxzIGV2ZXJ5IHBhdGllbnQgcmVnYXJkbGVzcyBvZiB0ZW5hbnQuCiAgICAgICAgJHRoaXMtPmFzc2VydFNhbWUoMiwgUGF0aWVudDo6d2l0aG91dENhYmluZXRTY29wZSgpLT5jb3VudCgpKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9hdXRvX2ZpbGxfYXNzaWduc190aGVfY3VycmVudF9jYWJpbmV0X29uX2NyZWF0ZSgpOiB2b2lkCiAgICB7CiAgICAgICAgWyRjYWJpbmV0LCAkdXNlcl0gPSAkdGhpcy0+bWFrZUNhYmluZXRXaXRoVXNlcignb3duZXJAZXhhbXBsZS5jb20nKTsKCiAgICAgICAgJHRoaXMtPmFjdGluZ0FzKCR1c2VyKTsKICAgICAgICAkcGF0aWVudCA9IFBhdGllbnQ6OmZhY3RvcnkoKS0+Y3JlYXRlKCk7CgogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKCRjYWJpbmV0LT5nZXRLZXkoKSwgJHBhdGllbnQtPmNhYmluZXRfaWQpOwogICAgfQp9Cg==
+<?php
+
+namespace Tests\Feature\Cabinet;
+
+use App\Enums\CabinetStatus;
+use App\Enums\RoleName;
+use App\Models\Cabinet;
+use App\Models\Patient;
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class TenancyIsolationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
+
+    private function makeCabinetWithUser(string $email): array
+    {
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet '.$email,
+            'status' => CabinetStatus::ACTIVE,
+            'activated_at' => now(),
+        ]);
+
+        $user = User::factory()->create([
+            'email' => $email,
+            'cabinet_id' => $cabinet->getKey(),
+            'approved_at' => now(),
+        ]);
+        $user->assignRole(RoleName::ADMINISTRATOR->value);
+
+        return [$cabinet, $user];
+    }
+
+    public function test_users_only_see_their_own_cabinet_patients(): void
+    {
+        [$cabinetA, $userA] = $this->makeCabinetWithUser('a@example.com');
+        [$cabinetB, $userB] = $this->makeCabinetWithUser('b@example.com');
+
+        // Create one patient in each cabinet by acting as each owner.
+        $this->actingAs($userA);
+        $patientA = Patient::factory()->create(['first_name' => 'Alice']);
+        $this->assertSame($cabinetA->getKey(), $patientA->cabinet_id);
+
+        $this->actingAs($userB);
+        $patientB = Patient::factory()->create(['first_name' => 'Bob']);
+        $this->assertSame($cabinetB->getKey(), $patientB->cabinet_id);
+
+        // User A must only see patient A.
+        $this->actingAs($userA);
+        $visible = Patient::query()->pluck('id')->all();
+        $this->assertContains($patientA->id, $visible);
+        $this->assertNotContains($patientB->id, $visible);
+
+        // The escape hatch reveals every patient regardless of tenant.
+        $this->assertSame(2, Patient::withoutCabinetScope()->count());
+    }
+
+    public function test_auto_fill_assigns_the_current_cabinet_on_create(): void
+    {
+        [$cabinet, $user] = $this->makeCabinetWithUser('owner@example.com');
+
+        $this->actingAs($user);
+        $patient = Patient::factory()->create();
+
+        $this->assertSame($cabinet->getKey(), $patient->cabinet_id);
+    }
+
+    public function test_platform_admin_bypasses_the_scope_even_when_attached_to_a_cabinet(): void
+    {
+        [$cabinetA, $userA] = $this->makeCabinetWithUser('first@example.com');
+        [$cabinetB, $userB] = $this->makeCabinetWithUser('second@example.com');
+
+        $this->actingAs($userA);
+        Patient::factory()->create(['first_name' => 'First']);
+        $this->actingAs($userB);
+        Patient::factory()->create(['first_name' => 'Second']);
+
+        $platform = User::factory()->create([
+            'cabinet_id' => $cabinetA->getKey(),
+            'is_platform_admin' => true,
+        ]);
+        $this->actingAs($platform);
+
+        $this->assertSame(2, Patient::query()->count());
+
+        $unscoped = Patient::factory()->create(['first_name' => 'Platform']);
+        $this->assertNull($unscoped->cabinet_id);
+        $this->assertSame(3, Patient::query()->count());
+        $this->assertNotSame($cabinetB->getKey(), $unscoped->cabinet_id);
+    }
+
+    public function test_an_explicit_cabinet_is_preserved_and_the_relation_resolves(): void
+    {
+        [, $userA] = $this->makeCabinetWithUser('explicit-a@example.com');
+        [$cabinetB] = $this->makeCabinetWithUser('explicit-b@example.com');
+
+        $this->actingAs($userA);
+        $patient = Patient::factory()->create([
+            'cabinet_id' => $cabinetB->getKey(),
+        ]);
+
+        $this->assertSame($cabinetB->getKey(), $patient->cabinet_id);
+        $this->assertTrue($patient->cabinet->is($cabinetB));
+    }
+}

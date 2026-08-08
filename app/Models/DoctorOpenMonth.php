@@ -1,1 +1,53 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIERhdGFiYXNlXEZhY3Rvcmllc1xEb2N0b3JPcGVuTW9udGhGYWN0b3J5Owp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxFbG9xdWVudFxBdHRyaWJ1dGVzXEZpbGxhYmxlOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxFbG9xdWVudFxGYWN0b3JpZXNcSGFzRmFjdG9yeTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcTW9kZWw7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XFJlbGF0aW9uc1xCZWxvbmdzVG87CgovKioKICogQHByb3BlcnR5IGludCAkeWVhcgogKiBAcHJvcGVydHkgaW50ICRtb250aAogKiBAcHJvcGVydHkgYm9vbCAkaXNfb3BlbgogKi8KI1tGaWxsYWJsZShbCiAgICAnZG9jdG9yX2lkJywKICAgICd5ZWFyJywKICAgICdtb250aCcsCiAgICAnaXNfb3BlbicsCiAgICAnbm90ZScsCl0pXQpjbGFzcyBEb2N0b3JPcGVuTW9udGggZXh0ZW5kcyBNb2RlbAp7CiAgICAvKiogQHVzZSBIYXNGYWN0b3J5PERvY3Rvck9wZW5Nb250aEZhY3Rvcnk+ICovCiAgICB1c2UgXEFwcFxNb2RlbHNcQ29uY2VybnNcQmVsb25nc1RvQ2FiaW5ldCwgSGFzRmFjdG9yeTsKCiAgICAvKioKICAgICAqIEByZXR1cm4gYXJyYXk8c3RyaW5nLCBzdHJpbmc+CiAgICAgKi8KICAgIHByb3RlY3RlZCBmdW5jdGlvbiBjYXN0cygpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICd5ZWFyJyA9PiAnaW50ZWdlcicsCiAgICAgICAgICAgICdtb250aCcgPT4gJ2ludGVnZXInLAogICAgICAgICAgICAnaXNfb3BlbicgPT4gJ2Jvb2xlYW4nLAogICAgICAgIF07CiAgICB9CgogICAgcHJvdGVjdGVkIHN0YXRpYyBmdW5jdGlvbiBuZXdGYWN0b3J5KCk6IERvY3Rvck9wZW5Nb250aEZhY3RvcnkKICAgIHsKICAgICAgICByZXR1cm4gRG9jdG9yT3Blbk1vbnRoRmFjdG9yeTo6bmV3KCk7CiAgICB9CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIEJlbG9uZ3NUbzxEb2N0b3JQcm9maWxlLCAkdGhpcz4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIGRvY3RvcigpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhEb2N0b3JQcm9maWxlOjpjbGFzcywgJ2RvY3Rvcl9pZCcpOwogICAgfQp9Cg==
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToCabinet;
+use Database\Factories\DoctorOpenMonthFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property int $year
+ * @property int $month
+ * @property bool $is_open
+ */
+#[Fillable([
+    'doctor_id',
+    'year',
+    'month',
+    'is_open',
+    'note',
+])]
+class DoctorOpenMonth extends Model
+{
+    /** @use HasFactory<DoctorOpenMonthFactory> */
+    use BelongsToCabinet, HasFactory;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'year' => 'integer',
+            'month' => 'integer',
+            'is_open' => 'boolean',
+        ];
+    }
+
+    protected static function newFactory(): DoctorOpenMonthFactory
+    {
+        return DoctorOpenMonthFactory::new();
+    }
+
+    /**
+     * @return BelongsTo<DoctorProfile, $this>
+     */
+    public function doctor(): BelongsTo
+    {
+        return $this->belongsTo(DoctorProfile::class, 'doctor_id');
+    }
+}

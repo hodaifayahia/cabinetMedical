@@ -7,8 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\CabinetSetting;
 use App\Models\DoctorProfile;
+use App\Services\Cabinet\CabinetEntitlementService;
 use App\Services\DocumentBrandingService;
-use App\Services\LicenseService;
 use App\Support\MedicalSpecialtyCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +23,7 @@ class ClinicIdentityController extends Controller
     public function edit(
         Request $request,
         DocumentBrandingService $branding,
-        LicenseService $licenses,
+        CabinetEntitlementService $entitlements,
         MedicalSpecialtyCatalog $specialties,
     ): Response {
         $cabinet = CabinetSetting::current();
@@ -46,7 +46,7 @@ class ClinicIdentityController extends Controller
                     : null,
             ],
             'specialtySuggestions' => $specialties->labels(),
-            'customBrandingCapability' => $this->customBrandingCapability($licenses),
+            'customBrandingCapability' => $this->customBrandingCapability($request, $entitlements),
             'permissions' => [
                 'can_correct_specialty' => $request->user()?->hasRole(RoleName::SUPER_ADMINISTRATOR->value) ?? false,
                 'sensitive_actions_confirmed' => $this->recentPasswordConfirmation($request),
@@ -113,11 +113,14 @@ class ClinicIdentityController extends Controller
     public function update(
         Request $request,
         DocumentBrandingService $branding,
-        LicenseService $licenses,
+        CabinetEntitlementService $entitlements,
     ): RedirectResponse {
         $cabinet = CabinetSetting::current();
         $doctor = DoctorProfile::query()->with('user')->active()->first();
-        $customBrandingEnabled = $licenses->featureEnabled('custom_branding');
+        $customBrandingEnabled = $entitlements->featureEnabled(
+            $request->user(),
+            'custom_branding',
+        );
         $currentFooterLine = $branding->identity($doctor, $cabinet)['footer_extra_line'];
 
         $data = $request->validate([
@@ -240,10 +243,12 @@ class ClinicIdentityController extends Controller
         return back();
     }
 
-    public function destroyLogo(Request $request, LicenseService $licenses): RedirectResponse
-    {
+    public function destroyLogo(
+        Request $request,
+        CabinetEntitlementService $entitlements,
+    ): RedirectResponse {
         abort_unless(
-            $licenses->featureEnabled('custom_branding'),
+            $entitlements->featureEnabled($request->user(), 'custom_branding'),
             403,
             'La licence active n’autorise pas la modification du logo du cabinet.',
         );
@@ -284,9 +289,14 @@ class ClinicIdentityController extends Controller
     }
 
     /** @return array{available: bool, reason: string|null} */
-    private function customBrandingCapability(LicenseService $licenses): array
-    {
-        $available = $licenses->featureEnabled('custom_branding');
+    private function customBrandingCapability(
+        Request $request,
+        CabinetEntitlementService $entitlements,
+    ): array {
+        $available = $entitlements->featureEnabled(
+            $request->user(),
+            'custom_branding',
+        );
 
         return [
             'available' => $available,

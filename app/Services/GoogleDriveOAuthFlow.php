@@ -20,6 +20,7 @@ final class GoogleDriveOAuthFlow
     public function __construct(
         private readonly GoogleDriveBackup $drive,
         private readonly GoogleOAuthLoopbackOrigin $origin,
+        private readonly InstallationMaintenanceAccessService $installationMaintenance,
     ) {}
 
     public function available(): bool
@@ -30,6 +31,10 @@ final class GoogleDriveOAuthFlow
     /** @return array{authorization_url: string} */
     public function prepare(CabinetSetting $cabinet, User $actor): array
     {
+        if (! $this->installationMaintenance->allows($actor)) {
+            throw new GoogleDriveOAuthException('installation_maintenance_forbidden');
+        }
+
         if (! $this->available()) {
             throw new GoogleDriveOAuthException('oauth_configuration_unavailable');
         }
@@ -93,6 +98,7 @@ final class GoogleDriveOAuthFlow
 
             if (! $actor instanceof User
                 || ! $cabinet instanceof CabinetSetting
+                || ! $this->installationMaintenance->allows($actor)
                 || ! $actor->can(PermissionName::CONFIGURATION_MANAGE->value)
                 || ! $actor->can(PermissionName::SETTINGS_MANAGE->value)
                 || ($actor->cabinet_setting_id !== null

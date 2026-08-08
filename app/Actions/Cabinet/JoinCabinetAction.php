@@ -1,1 +1,79 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcQWN0aW9uc1xDYWJpbmV0OwoKdXNlIEFwcFxNb2RlbHNcQXVkaXRMb2c7CnVzZSBBcHBcTW9kZWxzXENhYmluZXQ7CnVzZSBBcHBcTW9kZWxzXFVzZXI7CnVzZSBJbGx1bWluYXRlXFN1cHBvcnRcRmFjYWRlc1xEQjsKdXNlIElsbHVtaW5hdGVcVmFsaWRhdGlvblxWYWxpZGF0aW9uRXhjZXB0aW9uOwoKLyoqCiAqIFJlZ2lzdGVycyBhIHByb3NwZWN0aXZlIHN0YWZmIG1lbWJlciBhZ2FpbnN0IGFuIGV4aXN0aW5nIGFjdGl2ZSBjYWJpbmV0LAogKiBpZGVudGlmaWVkIGJ5IGl0cyBvd25lcidzIGUtbWFpbCBhZGRyZXNzLiBUaGUgbmV3IG1lbWJlciBpcyBjcmVhdGVkIGluIHRoZQogKiBwZW5kaW5nLWFwcHJvdmFsIHN0YXRlIChubyByb2xlLCBhcHByb3ZlZF9hdCBudWxsKSBhbmQgcmVzZXJ2ZXMgYSBzZWF0LgogKgogKiBTaGFyZWQgYnkgdGhlIHdlYiBKb2luQ2FiaW5ldENvbnRyb2xsZXIgYW5kIHRoZSBTYW5jdHVtIEFQSSBzbyB0aGUgc2VhdC1saW1pdAogKiBhbmQgZWxpZ2liaWxpdHkgcnVsZXMgbmV2ZXIgZGl2ZXJnZS4KICovCmNsYXNzIEpvaW5DYWJpbmV0QWN0aW9uCnsKICAgIC8qKgogICAgICogQHBhcmFtICBhcnJheXtuYW1lOiBzdHJpbmcsIGVtYWlsOiBzdHJpbmcsIHBhc3N3b3JkOiBzdHJpbmcsIG93bmVyX2VtYWlsOiBzdHJpbmd9ICAkZGF0YQogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gZXhlY3V0ZShhcnJheSAkZGF0YSk6IFVzZXIKICAgIHsKICAgICAgICAkb3duZXIgPSBVc2VyOjpxdWVyeSgpCiAgICAgICAgICAgIC0+d2hlcmVIYXMoJ2NhYmluZXQnLCBmbiAoJHF1ZXJ5KSA9PiAkcXVlcnktPndoZXJlKCdzdGF0dXMnLCAnYWN0aXZlJykpCiAgICAgICAgICAgIC0+d2hlcmUoJ2VtYWlsJywgJGRhdGFbJ293bmVyX2VtYWlsJ10pCiAgICAgICAgICAgIC0+Zmlyc3QoKTsKCiAgICAgICAgJGNhYmluZXQgPSAkb3duZXI/LT5jYWJpbmV0OwoKICAgICAgICBpZiAoJG93bmVyID09PSBudWxsIHx8ICRjYWJpbmV0ID09PSBudWxsIHx8ICEgJGNhYmluZXQtPmlzQWN0aXZlKCkpIHsKICAgICAgICAgICAgdGhyb3cgVmFsaWRhdGlvbkV4Y2VwdGlvbjo6d2l0aE1lc3NhZ2VzKFsKICAgICAgICAgICAgICAgICdvd25lcl9lbWFpbCcgPT4gIkF1Y3VuIGNhYmluZXQgYWN0aWYgbidhIMOpdMOpIHRyb3V2w6kgcG91ciBjZXR0ZSBhZHJlc3NlIGUtbWFpbC4iLAogICAgICAgICAgICBdKTsKICAgICAgICB9CgogICAgICAgIC8vIFNlYXRzIGluY2x1ZGUgYm90aCBhcHByb3ZlZCBhbmQgcGVuZGluZyBtZW1iZXJzLgogICAgICAgIGlmICghICRjYWJpbmV0LT5oYXNBdmFpbGFibGVTZWF0KCkpIHsKICAgICAgICAgICAgdGhyb3cgVmFsaWRhdGlvbkV4Y2VwdGlvbjo6d2l0aE1lc3NhZ2VzKFsKICAgICAgICAgICAgICAgICdvd25lcl9lbWFpbCcgPT4gJ0NlIGNhYmluZXQgYSBhdHRlaW50IHNhIGxpbWl0ZSBkZSAnLkNhYmluZXQ6Ok1BWF9TRUFUUy4nIHV0aWxpc2F0ZXVycy4nLAogICAgICAgICAgICBdKTsKICAgICAgICB9CgogICAgICAgIHJldHVybiBEQjo6dHJhbnNhY3Rpb24oZnVuY3Rpb24gKCkgdXNlICgkZGF0YSwgJGNhYmluZXQpOiBVc2VyIHsKICAgICAgICAgICAgJG1lbWJlciA9IFVzZXI6OnF1ZXJ5KCktPmNyZWF0ZShbCiAgICAgICAgICAgICAgICAnbmFtZScgPT4gJGRhdGFbJ25hbWUnXSwKICAgICAgICAgICAgICAgICdlbWFpbCcgPT4gJGRhdGFbJ2VtYWlsJ10sCiAgICAgICAgICAgICAgICAncGFzc3dvcmQnID0+ICRkYXRhWydwYXNzd29yZCddLAogICAgICAgICAgICAgICAgJ2NhYmluZXRfaWQnID0+ICRjYWJpbmV0LT5nZXRLZXkoKSwKICAgICAgICAgICAgXSk7CiAgICAgICAgICAgICRtZW1iZXItPmZvcmNlRmlsbChbCiAgICAgICAgICAgICAgICAnZW1haWxfdmVyaWZpZWRfYXQnID0+IG5vdygpLAogICAgICAgICAgICAgICAgJ2FwcHJvdmVkX2F0JyA9PiBudWxsLAogICAgICAgICAgICBdKS0+c2F2ZSgpOwoKICAgICAgICAgICAgQXVkaXRMb2c6OnJlY29yZCgnY2FiaW5ldC5qb2luX3JlcXVlc3RlZCcsICRtZW1iZXIsIFsKICAgICAgICAgICAgICAgICdjYWJpbmV0X2lkJyA9PiAkY2FiaW5ldC0+Z2V0S2V5KCksCiAgICAgICAgICAgIF0sICRtZW1iZXItPmdldEtleSgpKTsKCiAgICAgICAgICAgIHJldHVybiAkbWVtYmVyOwogICAgICAgIH0pOwogICAgfQp9Cg==
+<?php
+
+namespace App\Actions\Cabinet;
+
+use App\Models\AuditLog;
+use App\Models\Cabinet;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Registers a prospective staff member against an existing active cabinet,
+ * identified by its owner's e-mail address. The new member is created in the
+ * pending-approval state (no role, approved_at null) and reserves a seat.
+ *
+ * Shared by the web JoinCabinetController and the Sanctum API so the seat-limit
+ * and eligibility rules never diverge.
+ */
+class JoinCabinetAction
+{
+    /**
+     * @param  array{name: string, email: string, password: string, owner_email: string}  $data
+     */
+    public function execute(array $data): User
+    {
+        $cabinetId = Cabinet::query()
+            ->whereHas('owner', fn ($query) => $query->where('email', $data['owner_email']))
+            ->where('status', 'active')
+            ->value('id');
+
+        if ($cabinetId === null) {
+            throw ValidationException::withMessages([
+                'owner_email' => "Aucun cabinet actif n'a été trouvé pour cette adresse e-mail.",
+            ]);
+        }
+
+        return DB::transaction(function () use ($data, $cabinetId): User {
+            $cabinet = Cabinet::query()
+                ->whereKey($cabinetId)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                $cabinet === null
+                || ! $cabinet->isActive()
+                || ! $cabinet->owner()->where('email', $data['owner_email'])->exists()
+            ) {
+                throw ValidationException::withMessages([
+                    'owner_email' => "Aucun cabinet actif n'a été trouvé pour cette adresse e-mail.",
+                ]);
+            }
+
+            // Count every occupant while holding the cabinet lock so pending
+            // requests reserve seats and concurrent joins cannot over-allocate.
+            if (! $cabinet->hasAvailableSeat()) {
+                throw ValidationException::withMessages([
+                    'owner_email' => 'Ce cabinet a atteint sa limite de '.Cabinet::MAX_SEATS.' utilisateurs.',
+                ]);
+            }
+
+            $member = User::query()->create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'cabinet_id' => $cabinet->getKey(),
+            ]);
+            $member->forceFill([
+                'email_verified_at' => now(),
+                'approved_at' => null,
+            ])->save();
+
+            AuditLog::record('cabinet.join_requested', $member, [
+                'cabinet_id' => $cabinet->getKey(),
+            ], $member->getKey());
+
+            return $member;
+        });
+    }
+}

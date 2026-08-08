@@ -48,15 +48,15 @@ final class MsBackupArchiveCreator
         ?string $backupId = null,
     ): array {
         if (! class_exists(ZipArchive::class)) {
-            throw new BackupArchiveException('The ZIP extension is required to create MediSmart backups.');
+            throw new BackupArchiveException('The ZIP extension is required to create DrClickDz backups.');
         }
 
         if (config('database.default') !== 'sqlite') {
-            throw new BackupArchiveException('MediSmart archives currently require an SQLite database.');
+            throw new BackupArchiveException('DrClickDz archives currently require an SQLite database.');
         }
 
         if (PHP_INT_SIZE < 8) {
-            throw new BackupArchiveException('MediSmart archives require a 64-bit PHP runtime.');
+            throw new BackupArchiveException('DrClickDz archives require a 64-bit PHP runtime.');
         }
 
         $destination = $this->writableDestination(

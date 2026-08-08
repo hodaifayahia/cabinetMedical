@@ -3,8 +3,6 @@
 namespace App\Filament\Resources\Users;
 
 use App\Enums\PermissionName;
-use App\Filament\Resources\Users\Pages\CreateUser;
-use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Pages\ViewUser;
 use App\Filament\Resources\Users\Schemas\UserForm;
@@ -16,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class UserResource extends Resource
@@ -50,6 +49,31 @@ class UserResource extends Resource
         return (bool) auth()->user()?->can(PermissionName::STAFF_MANAGE->value);
     }
 
+    /**
+     * The platform panel is deliberately read-only for tenant identities.
+     * Cabinet staff must be provisioned through the seat-aware staff flow,
+     * while platform accounts are created by the guarded console command.
+     */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return UserForm::configure($schema);
@@ -76,9 +100,7 @@ class UserResource extends Resource
     {
         return [
             'index' => ListUsers::route('/'),
-            'create' => CreateUser::route('/create'),
             'view' => ViewUser::route('/{record}'),
-            'edit' => EditUser::route('/{record}/edit'),
         ];
     }
 }

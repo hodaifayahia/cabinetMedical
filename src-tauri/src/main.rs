@@ -1,1 +1,7 @@
-Ly8gU3VwcHJlc3MgdGhlIGNvbnNvbGUgd2luZG93IG9uIFdpbmRvd3MgaW4gcmVsZWFzZSBidWlsZHMuCi8vIFdpdGhvdXQgdGhpcyBhdHRyaWJ1dGUsIFdpbmRvd3Mgd291bGQgb3BlbiBhIHRlcm1pbmFsIHdpbmRvdyBhbG9uZ3NpZGUgdGhlIGFwcC4KIyFbY2ZnX2F0dHIobm90KGRlYnVnX2Fzc2VydGlvbnMpLCB3aW5kb3dzX3N1YnN5c3RlbSA9ICJ3aW5kb3dzIildCgpmbiBtYWluKCkgewogICAgbWVkaXNtYXJ0X2Rlc2t0b3A6OnJ1bigpOwp9Cg==
+// DrClickDz is always a GUI application on Windows, including local debug runs.
+// This prevents a terminal window from opening alongside the desktop shell.
+#![cfg_attr(windows, windows_subsystem = "windows")]
+
+fn main() {
+    drclickdz_desktop::run();
+}

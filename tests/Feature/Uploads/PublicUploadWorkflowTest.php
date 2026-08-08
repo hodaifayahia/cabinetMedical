@@ -3,7 +3,10 @@
 namespace Tests\Feature\Uploads;
 
 use App\Configuration\ApplicationSettingRegistry;
+use App\Enums\CabinetStatus;
 use App\Enums\RoleName;
+use App\Models\AuditLog;
+use App\Models\Cabinet;
 use App\Models\Document;
 use App\Models\Patient;
 use App\Models\UploadedDocument;
@@ -68,7 +71,11 @@ class PublicUploadWorkflowTest extends TestCase
 
     public function test_a_valid_pdf_is_stored_privately_and_waits_for_desktop_review(): void
     {
-        $user = User::factory()->create();
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Atlas',
+            'status' => CabinetStatus::ACTIVE,
+        ]);
+        $user = User::factory()->create(['cabinet_id' => $cabinet->getKey()]);
         $created = app(QrUploadService::class)->create('local', $user);
         [$selector, $verifier] = $this->credentials($created);
 
@@ -78,11 +85,20 @@ class PublicUploadWorkflowTest extends TestCase
         ])->assertRedirect(route('upload.show', ['selector' => $selector]));
 
         $uploaded = UploadedDocument::query()->sole();
+        $this->assertSame($cabinet->getKey(), $created['session']->cabinet_id);
+        $this->assertSame($cabinet->getKey(), $uploaded->cabinet_id);
         $this->assertSame(UploadedDocument::STATUS_PENDING_REVIEW, $uploaded->status);
         $this->assertSame('application/pdf', $uploaded->mime_type);
         $this->assertStringStartsWith('upload-quarantine/', $uploaded->path);
         Storage::disk('local')->assertExists($uploaded->path);
         $this->assertSame(UploadSession::STATUS_UPLOADING, $created['session']->refresh()->status);
+        $this->assertSame(
+            $cabinet->getKey(),
+            AuditLog::withoutCabinetScope()
+                ->where('action', 'upload.received')
+                ->sole()
+                ->cabinet_id,
+        );
     }
 
     public function test_mime_extension_mismatches_and_executables_are_rejected(): void

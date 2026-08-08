@@ -1,1 +1,150 @@
-PD9waHAKCm5hbWVzcGFjZSBUZXN0c1xGZWF0dXJlXEF1dGg7Cgp1c2UgQXBwXEVudW1zXENhYmluZXRTdGF0dXM7CnVzZSBBcHBcRW51bXNcUm9sZU5hbWU7CnVzZSBBcHBcTW9kZWxzXENhYmluZXQ7CnVzZSBBcHBcTW9kZWxzXFVzZXI7CnVzZSBEYXRhYmFzZVxTZWVkZXJzXFJvbGVzQW5kUGVybWlzc2lvbnNTZWVkZXI7CnVzZSBJbGx1bWluYXRlXEZvdW5kYXRpb25cVGVzdGluZ1xSZWZyZXNoRGF0YWJhc2U7CnVzZSBJbmVydGlhXFRlc3RpbmdcQXNzZXJ0YWJsZUluZXJ0aWEgYXMgQXNzZXJ0Owp1c2UgTGFyYXZlbFxGb3J0aWZ5XEZlYXR1cmVzOwp1c2UgVGVzdHNcVGVzdENhc2U7CgpjbGFzcyBSZWdpc3RyYXRpb25UZXN0IGV4dGVuZHMgVGVzdENhc2UKewogICAgdXNlIFJlZnJlc2hEYXRhYmFzZTsKCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gc2V0VXAoKTogdm9pZAogICAgewogICAgICAgIHBhcmVudDo6c2V0VXAoKTsKCiAgICAgICAgJHRoaXMtPnNraXBVbmxlc3NGb3J0aWZ5SGFzKEZlYXR1cmVzOjpyZWdpc3RyYXRpb24oKSk7CiAgICAgICAgJHRoaXMtPnNlZWQoUm9sZXNBbmRQZXJtaXNzaW9uc1NlZWRlcjo6Y2xhc3MpOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiB0ZXN0X3JlZ2lzdHJhdGlvbl9zY3JlZW5fY2FuX2JlX3JlbmRlcmVkKCk6IHZvaWQKICAgIHsKICAgICAgICAkcmVzcG9uc2UgPSAkdGhpcy0+Z2V0KHJvdXRlKCdyZWdpc3RlcicpKTsKCiAgICAgICAgJHJlc3BvbnNlLT5hc3NlcnRPaygpCiAgICAgICAgICAgIC0+YXNzZXJ0SW5lcnRpYShmbiAoQXNzZXJ0ICRwYWdlKSA9PiAkcGFnZQogICAgICAgICAgICAgICAgLT5jb21wb25lbnQoJ2F1dGgvUmVnaXN0ZXInKQogICAgICAgICAgICAgICAgLT5oYXMoJ3NwZWNpYWx0eVN1Z2dlc3Rpb25zJykKICAgICAgICAgICAgICAgIC0+aGFzKCd3aWxheWFzJywgNTgpKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9yZWdpc3RyYXRpb25fc2NyZWVuX2lzX2F2YWlsYWJsZV9ldmVuX2FmdGVyX2FjY291bnRzX2V4aXN0KCk6IHZvaWQKICAgIHsKICAgICAgICBVc2VyOjpmYWN0b3J5KCktPmNyZWF0ZSgpOwoKICAgICAgICAkdGhpcy0+Z2V0KHJvdXRlKCdyZWdpc3RlcicpKS0+YXNzZXJ0T2soKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9yZWdpc3RlcmluZ19jcmVhdGVzX2FfcGVuZGluZ19jYWJpbmV0X3dpdGhfYW5fb3duZXIoKTogdm9pZAogICAgewogICAgICAgICRyZXNwb25zZSA9ICR0aGlzLT5wb3N0KHJvdXRlKCdyZWdpc3Rlci5zdG9yZScpLCBbCiAgICAgICAgICAgICduYW1lJyA9PiAnVGVzdCBPd25lcicsCiAgICAgICAgICAgICdjYWJpbmV0X25hbWUnID0+ICdDYWJpbmV0IFRlc3QnLAogICAgICAgICAgICAnc3BlY2lhbGl6YXRpb24nID0+ICdQw6lkaWF0cmllJywKICAgICAgICAgICAgJ2VtYWlsJyA9PiAnb3duZXJAZXhhbXBsZS5jb20nLAogICAgICAgICAgICAnd2lsYXlhJyA9PiAxNiwKICAgICAgICAgICAgJ3Bhc3N3b3JkJyA9PiAncGFzc3dvcmQnLAogICAgICAgICAgICAncGFzc3dvcmRfY29uZmlybWF0aW9uJyA9PiAncGFzc3dvcmQnLAogICAgICAgIF0pOwoKICAgICAgICAvLyBUaGUgb3duZXIgaXMgYXV0aGVudGljYXRlZCBidXQgaGVsZCBvdXQgb2YgdGhlIGFwcCB1bnRpbCBhY3RpdmF0aW9uLgogICAgICAgICR0aGlzLT5hc3NlcnRBdXRoZW50aWNhdGVkKCk7CiAgICAgICAgJHJlc3BvbnNlLT5hc3NlcnRSZWRpcmVjdCgpOwoKICAgICAgICAkb3duZXIgPSBVc2VyOjpxdWVyeSgpLT53aGVyZSgnZW1haWwnLCAnb3duZXJAZXhhbXBsZS5jb20nKS0+c29sZSgpOwogICAgICAgICR0aGlzLT5hc3NlcnROb3ROdWxsKCRvd25lci0+Y2FiaW5ldF9pZCk7CiAgICAgICAgJHRoaXMtPmFzc2VydE5vdE51bGwoJG93bmVyLT5hcHByb3ZlZF9hdCk7CiAgICAgICAgJHRoaXMtPmFzc2VydFRydWUoJG93bmVyLT5oYXNSb2xlKFJvbGVOYW1lOjpBRE1JTklTVFJBVE9SLT52YWx1ZSkpOwoKICAgICAgICAkY2FiaW5ldCA9IENhYmluZXQ6OnF1ZXJ5KCktPnNvbGUoKTsKICAgICAgICAkdGhpcy0+YXNzZXJ0U2FtZSgnQ2FiaW5ldCBUZXN0JywgJGNhYmluZXQtPm5hbWUpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKENhYmluZXRTdGF0dXM6OlBFTkRJTkcsICRjYWJpbmV0LT5zdGF0dXMpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKDE2LCAkY2FiaW5ldC0+d2lsYXlhX2NvZGUpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKCRvd25lci0+Z2V0S2V5KCksICRjYWJpbmV0LT5vd25lcl91c2VyX2lkKTsKCiAgICAgICAgJHByb2ZpbGUgPSAkb3duZXItPmRvY3RvclByb2ZpbGU7CiAgICAgICAgJHRoaXMtPmFzc2VydE5vdE51bGwoJHByb2ZpbGUpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKCdQw6lkaWF0cmllJywgJHByb2ZpbGUtPnNwZWNpYWx0eSk7CiAgICAgICAgJHRoaXMtPmFzc2VydFNhbWUoNSwgJHByb2ZpbGUtPnNjaGVkdWxlcygpLT5jb3VudCgpKTsKCiAgICAgICAgJHRoaXMtPmFzc2VydERhdGFiYXNlSGFzKCdhdWRpdF9sb2dzJywgWwogICAgICAgICAgICAnYWN0aW9uJyA9PiAnY2FiaW5ldC5yZWdpc3RlcmVkJywKICAgICAgICBdKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9hX3BlbmRpbmdfY2FiaW5ldF9vd25lcl9pc19yZWRpcmVjdGVkX3RvX3RoZV9wZW5kaW5nX3BhZ2UoKTogdm9pZAogICAgewogICAgICAgICR0aGlzLT5wb3N0KHJvdXRlKCdyZWdpc3Rlci5zdG9yZScpLCBbCiAgICAgICAgICAgICduYW1lJyA9PiAnUGVuZGluZyBPd25lcicsCiAgICAgICAgICAgICdjYWJpbmV0X25hbWUnID0+ICdDYWJpbmV0IFBlbmRpbmcnLAogICAgICAgICAgICAnc3BlY2lhbGl6YXRpb24nID0+ICdDYXJkaW9sb2dpZScsCiAgICAgICAgICAgICdlbWFpbCcgPT4gJ3BlbmRpbmdAZXhhbXBsZS5jb20nLAogICAgICAgICAgICAnd2lsYXlhJyA9PiAzMSwKICAgICAgICAgICAgJ3Bhc3N3b3JkJyA9PiAncGFzc3dvcmQnLAogICAgICAgICAgICAncGFzc3dvcmRfY29uZmlybWF0aW9uJyA9PiAncGFzc3dvcmQnLAogICAgICAgIF0pOwoKICAgICAgICAkdGhpcy0+Z2V0KHJvdXRlKCdkYXNoYm9hcmQnKSktPmFzc2VydFJlZGlyZWN0KHJvdXRlKCdjYWJpbmV0LnBlbmRpbmcnKSk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfcmVnaXN0cmF0aW9uX3JlcXVpcmVzX2FfdmFsaWRfd2lsYXlhKCk6IHZvaWQKICAgIHsKICAgICAgICAkdGhpcy0+cG9zdChyb3V0ZSgncmVnaXN0ZXIuc3RvcmUnKSwgWwogICAgICAgICAgICAnbmFtZScgPT4gJ0JhZCBXaWxheWEnLAogICAgICAgICAgICAnY2FiaW5ldF9uYW1lJyA9PiAnQ2FiaW5ldCBYJywKICAgICAgICAgICAgJ3NwZWNpYWxpemF0aW9uJyA9PiAnQ2FyZGlvbG9naWUnLAogICAgICAgICAgICAnZW1haWwnID0+ICdiYWRAZXhhbXBsZS5jb20nLAogICAgICAgICAgICAnd2lsYXlhJyA9PiA5OSwKICAgICAgICAgICAgJ3Bhc3N3b3JkJyA9PiAncGFzc3dvcmQnLAogICAgICAgICAgICAncGFzc3dvcmRfY29uZmlybWF0aW9uJyA9PiAncGFzc3dvcmQnLAogICAgICAgIF0pLT5hc3NlcnRTZXNzaW9uSGFzRXJyb3JzKCd3aWxheWEnKTsKCiAgICAgICAgJHRoaXMtPmFzc2VydEd1ZXN0KCk7CiAgICAgICAgJHRoaXMtPmFzc2VydERhdGFiYXNlQ291bnQoJ2NhYmluZXRzJywgMCk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfcmVnaXN0cmF0aW9uX3JlcXVpcmVzX2FfY2FiaW5ldF9uYW1lX2FuZF9zcGVjaWFsaXphdGlvbigpOiB2b2lkCiAgICB7CiAgICAgICAgJHRoaXMtPnBvc3Qocm91dGUoJ3JlZ2lzdGVyLnN0b3JlJyksIFsKICAgICAgICAgICAgJ25hbWUnID0+ICdPd25lcicsCiAgICAgICAgICAgICdlbWFpbCcgPT4gJ293bmVyMkBleGFtcGxlLmNvbScsCiAgICAgICAgICAgICd3aWxheWEnID0+IDE2LAogICAgICAgICAgICAncGFzc3dvcmQnID0+ICdwYXNzd29yZCcsCiAgICAgICAgICAgICdwYXNzd29yZF9jb25maXJtYXRpb24nID0+ICdwYXNzd29yZCcsCiAgICAgICAgXSktPmFzc2VydFNlc3Npb25IYXNFcnJvcnMoWydjYWJpbmV0X25hbWUnLCAnc3BlY2lhbGl6YXRpb24nXSk7CgogICAgICAgICR0aGlzLT5hc3NlcnRHdWVzdCgpOwogICAgICAgICR0aGlzLT5hc3NlcnREYXRhYmFzZUNvdW50KCd1c2VycycsIDApOwogICAgfQp9Cg==
+<?php
+
+namespace Tests\Feature\Auth;
+
+use App\Enums\CabinetStatus;
+use App\Enums\RoleName;
+use App\Models\Cabinet;
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Fortify\Features;
+use Tests\TestCase;
+
+class RegistrationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->skipUnlessFortifyHas(Features::registration());
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
+
+    public function test_registration_screen_can_be_rendered(): void
+    {
+        $response = $this->get(route('register'));
+
+        $response->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('auth/Register')
+                ->has('specialtySuggestions')
+                ->has('wilayas', 58));
+    }
+
+    public function test_registration_screen_is_available_even_after_accounts_exist(): void
+    {
+        User::factory()->create();
+
+        $this->get(route('register'))->assertOk();
+    }
+
+    public function test_registering_creates_a_pending_cabinet_with_an_owner(): void
+    {
+        $response = $this->post(route('register.store'), [
+            'name' => 'Test Owner',
+            'cabinet_name' => 'Cabinet Test',
+            'specialization' => 'Pédiatrie',
+            'phone' => '+213 555 12 34 56',
+            'email' => 'owner@example.com',
+            'wilaya' => 16,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        // The owner is authenticated but held out of the app until activation.
+        $this->assertAuthenticated();
+        $response->assertRedirect();
+
+        $owner = User::query()->where('email', 'owner@example.com')->sole();
+        $this->assertNotNull($owner->cabinet_id);
+        $this->assertNotNull($owner->approved_at);
+        $this->assertTrue($owner->hasRole(RoleName::ADMINISTRATOR->value));
+
+        $cabinet = Cabinet::query()->sole();
+        $this->assertSame('Cabinet Test', $cabinet->name);
+        $this->assertSame(CabinetStatus::PENDING, $cabinet->status);
+        $this->assertSame(16, $cabinet->wilaya_code);
+        $this->assertSame($owner->getKey(), $cabinet->owner_user_id);
+
+        $profile = $owner->doctorProfile;
+        $this->assertNotNull($profile);
+        $this->assertSame('Pédiatrie', $profile->specialty);
+        $this->assertSame('+213 555 12 34 56', $profile->phone);
+        $this->assertSame('owner@example.com', $profile->email);
+        $this->assertSame(5, $profile->schedules()->count());
+        $this->assertSame('+213 555 12 34 56', $cabinet->settings?->phone);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'cabinet.registered',
+        ]);
+    }
+
+    public function test_a_pending_cabinet_owner_is_redirected_to_the_pending_page(): void
+    {
+        $this->post(route('register.store'), [
+            'name' => 'Pending Owner',
+            'cabinet_name' => 'Cabinet Pending',
+            'specialization' => 'Cardiologie',
+            'phone' => '0555 00 00 01',
+            'email' => 'pending@example.com',
+            'wilaya' => 31,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $this->get(route('dashboard'))->assertRedirect(route('cabinet.pending'));
+    }
+
+    public function test_registration_requires_a_valid_wilaya(): void
+    {
+        $this->post(route('register.store'), [
+            'name' => 'Bad Wilaya',
+            'cabinet_name' => 'Cabinet X',
+            'specialization' => 'Cardiologie',
+            'phone' => '0555 00 00 02',
+            'email' => 'bad@example.com',
+            'wilaya' => 99,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasErrors('wilaya');
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('cabinets', 0);
+    }
+
+    public function test_registration_requires_a_cabinet_name_and_specialization(): void
+    {
+        $this->post(route('register.store'), [
+            'name' => 'Owner',
+            'phone' => '0555 00 00 03',
+            'email' => 'owner2@example.com',
+            'wilaya' => 16,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasErrors(['cabinet_name', 'specialization']);
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_registration_requires_a_valid_phone_number(): void
+    {
+        $this->post(route('register.store'), [
+            'name' => 'Owner',
+            'cabinet_name' => 'Cabinet Contact',
+            'specialization' => 'Cardiologie',
+            'phone' => 'not-a-phone',
+            'email' => 'contact@example.com',
+            'wilaya' => 16,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasErrors('phone');
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('cabinets', 0);
+    }
+}

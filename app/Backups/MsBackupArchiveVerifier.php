@@ -32,11 +32,11 @@ final class MsBackupArchiveVerifier implements BackupArchiveVerifier
     public function verify(string $path): array
     {
         if (! class_exists(ZipArchive::class)) {
-            throw new BackupArchiveException('The ZIP extension is required to verify MediSmart backups.');
+            throw new BackupArchiveException('The ZIP extension is required to verify DrClickDz backups.');
         }
 
         if (! is_file($path) || ! is_readable($path) || Str::lower(pathinfo($path, PATHINFO_EXTENSION)) !== 'msbackup') {
-            throw new BackupArchiveException('The selected file is not a readable MediSmart backup.');
+            throw new BackupArchiveException('The selected file is not a readable DrClickDz backup.');
         }
 
         $archiveSize = filesize($path);

@@ -7,6 +7,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { markDesktopOnboardingComplete } from '@/lib/desktopOnboarding';
 
 type Props = {
     routes?: {
@@ -30,7 +31,21 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
           }
         : {}),
     onSuccess: (response) => {
-        router.visit(response.redirect ?? '/dashboard');
+        markDesktopOnboardingComplete();
+        const destination = response.redirect ?? '/dashboard';
+        const target = new URL(destination, window.location.origin);
+
+        if (
+            target.origin === window.location.origin &&
+            (target.pathname === '/admin' ||
+                target.pathname.startsWith('/admin/'))
+        ) {
+            window.location.assign(target.href);
+
+            return;
+        }
+
+        router.visit(destination);
     },
 });
 </script>

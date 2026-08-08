@@ -1,5 +1,6 @@
 import type { Auth, SessionLockState } from '@/types/auth';
 import type { Cabinet } from '@/types/cabinet';
+import type { DesktopDownload } from '@/types/desktop';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -15,13 +16,6 @@ declare module 'vite/client' {
 }
 
 declare module '@inertiajs/core' {
-    type DesktopDownload = {
-        available: boolean;
-        url: string | null;
-        label: string;
-        reason: string | null;
-    };
-
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;

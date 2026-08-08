@@ -1,1 +1,87 @@
-PD9waHAKCnVzZSBBcHBcSHR0cFxDb250cm9sbGVyc1xIZWFsdGhDb250cm9sbGVyOwp1c2UgQXBwXEh0dHBcTWlkZGxld2FyZVxFbmZvcmNlUmVtb3RlVXBsb2FkQm91bmRhcnk7CnVzZSBBcHBcSHR0cFxNaWRkbGV3YXJlXEVuZm9yY2VTZXNzaW9uTG9jazsKdXNlIEFwcFxIdHRwXE1pZGRsZXdhcmVcRW5zdXJlQXBpQ2FiaW5ldElzQWN0aXZlOwp1c2UgQXBwXEh0dHBcTWlkZGxld2FyZVxFbnN1cmVDYWJpbmV0SXNBY3RpdmU7CnVzZSBBcHBcSHR0cFxNaWRkbGV3YXJlXEhhbmRsZUFwcGVhcmFuY2U7CnVzZSBBcHBcSHR0cFxNaWRkbGV3YXJlXEhhbmRsZUluZXJ0aWFSZXF1ZXN0czsKdXNlIEFwcFxIdHRwXE1pZGRsZXdhcmVcU2VjdXJlUmVzcG9uc2VIZWFkZXJzOwp1c2UgSWxsdW1pbmF0ZVxGb3VuZGF0aW9uXEFwcGxpY2F0aW9uOwp1c2UgSWxsdW1pbmF0ZVxGb3VuZGF0aW9uXENvbmZpZ3VyYXRpb25cRXhjZXB0aW9uczsKdXNlIElsbHVtaW5hdGVcRm91bmRhdGlvblxDb25maWd1cmF0aW9uXE1pZGRsZXdhcmU7CnVzZSBJbGx1bWluYXRlXEh0dHBcTWlkZGxld2FyZVxBZGRMaW5rSGVhZGVyc0ZvclByZWxvYWRlZEFzc2V0czsKdXNlIElsbHVtaW5hdGVcSHR0cFxNaWRkbGV3YXJlXFRydXN0UHJveGllczsKdXNlIElsbHVtaW5hdGVcSHR0cFxSZXF1ZXN0Owp1c2UgSWxsdW1pbmF0ZVxTdXBwb3J0XEZhY2FkZXNcUm91dGU7CnVzZSBTcGF0aWVcUGVybWlzc2lvblxNaWRkbGV3YXJlXFBlcm1pc3Npb25NaWRkbGV3YXJlOwp1c2UgU3BhdGllXFBlcm1pc3Npb25cTWlkZGxld2FyZVxSb2xlTWlkZGxld2FyZTsKdXNlIFNwYXRpZVxQZXJtaXNzaW9uXE1pZGRsZXdhcmVcUm9sZU9yUGVybWlzc2lvbk1pZGRsZXdhcmU7CgpyZXR1cm4gQXBwbGljYXRpb246OmNvbmZpZ3VyZShiYXNlUGF0aDogZGlybmFtZShfX0RJUl9fKSkKICAgIC0+d2l0aFJvdXRpbmcoCiAgICAgICAgd2ViOiBfX0RJUl9fLicvLi4vcm91dGVzL3dlYi5waHAnLAogICAgICAgIGFwaTogX19ESVJfXy4nLy4uL3JvdXRlcy9hcGkucGhwJywKICAgICAgICBhcGlQcmVmaXg6ICdhcGknLAogICAgICAgIGNvbW1hbmRzOiBfX0RJUl9fLicvLi4vcm91dGVzL2NvbnNvbGUucGhwJywKICAgICAgICBoZWFsdGg6ICcvdXAnLAogICAgICAgIHRoZW46IGZ1bmN0aW9uICgpOiB2b2lkIHsKICAgICAgICAgICAgUm91dGU6OmdldCgnL2hlYWx0aCcsIEhlYWx0aENvbnRyb2xsZXI6OmNsYXNzKS0+bmFtZSgnaGVhbHRoJyk7CiAgICAgICAgfSwKICAgICkKICAgIC0+d2l0aE1pZGRsZXdhcmUoZnVuY3Rpb24gKE1pZGRsZXdhcmUgJG1pZGRsZXdhcmUpOiB2b2lkIHsKICAgICAgICAkbWlkZGxld2FyZS0+YXBwZW5kKFNlY3VyZVJlc3BvbnNlSGVhZGVyczo6Y2xhc3MpOwogICAgICAgICRtaWRkbGV3YXJlLT50cnVzdFByb3hpZXMoCiAgICAgICAgICAgIGF0OiBbJzEyNy4wLjAuMScsICc6OjEnXSwKICAgICAgICAgICAgaGVhZGVyczogUmVxdWVzdDo6SEVBREVSX1hfRk9SV0FSREVEX0ZPUiB8IFJlcXVlc3Q6OkhFQURFUl9YX0ZPUldBUkRFRF9QUk9UTywKICAgICAgICApOwogICAgICAgIC8vIFJlcGxhY2UgTGFyYXZlbCdzIHByb3h5IHNsb3Qgc28gbm9ybWFsaXphdGlvbiBhbmQgdGhlIGhvc3Qvcm91dGUKICAgICAgICAvLyBib3VuZGFyeSBydW4gdG9nZXRoZXIgYmVmb3JlIENPUlMsIHJvdXRpbmcsIHNlc3Npb25zLCBvciBhdXRoLgogICAgICAgICRtaWRkbGV3YXJlLT5yZXBsYWNlKFRydXN0UHJveGllczo6Y2xhc3MsIEVuZm9yY2VSZW1vdGVVcGxvYWRCb3VuZGFyeTo6Y2xhc3MpOwoKICAgICAgICAkbWlkZGxld2FyZS0+ZW5jcnlwdENvb2tpZXMoZXhjZXB0OiBbJ2FwcGVhcmFuY2UnLCAnc2lkZWJhcl9zdGF0ZSddKTsKCiAgICAgICAgJG1pZGRsZXdhcmUtPnZhbGlkYXRlQ3NyZlRva2VucyhleGNlcHQ6IFsKICAgICAgICAgICAgJ2FwcC9jb25maWd1cmF0aW9uL21vZGVscy8qL2NhbGxiYWNrJywKICAgICAgICAgICAgJ2FwcC9jbGluaWNhbC1kb2N1bWVudHMvKi9jYWxsYmFjaycsCiAgICAgICAgXSk7CgogICAgICAgICRtaWRkbGV3YXJlLT5hbGlhcyhbCiAgICAgICAgICAgICdyb2xlJyA9PiBSb2xlTWlkZGxld2FyZTo6Y2xhc3MsCiAgICAgICAgICAgICdwZXJtaXNzaW9uJyA9PiBQZXJtaXNzaW9uTWlkZGxld2FyZTo6Y2xhc3MsCiAgICAgICAgICAgICdyb2xlX29yX3Blcm1pc3Npb24nID0+IFJvbGVPclBlcm1pc3Npb25NaWRkbGV3YXJlOjpjbGFzcywKICAgICAgICAgICAgJ2NhYmluZXQuYWN0aXZlLmFwaScgPT4gRW5zdXJlQXBpQ2FiaW5ldElzQWN0aXZlOjpjbGFzcywKICAgICAgICBdKTsKCiAgICAgICAgJG1pZGRsZXdhcmUtPndlYihhcHBlbmQ6IFsKICAgICAgICAgICAgSGFuZGxlQXBwZWFyYW5jZTo6Y2xhc3MsCiAgICAgICAgICAgIEVuZm9yY2VTZXNzaW9uTG9jazo6Y2xhc3MsCiAgICAgICAgICAgIEVuc3VyZUNhYmluZXRJc0FjdGl2ZTo6Y2xhc3MsCiAgICAgICAgICAgIEhhbmRsZUluZXJ0aWFSZXF1ZXN0czo6Y2xhc3MsCiAgICAgICAgICAgIEFkZExpbmtIZWFkZXJzRm9yUHJlbG9hZGVkQXNzZXRzOjpjbGFzcywKICAgICAgICBdKTsKICAgIH0pCiAgICAtPndpdGhFeGNlcHRpb25zKGZ1bmN0aW9uIChFeGNlcHRpb25zICRleGNlcHRpb25zKTogdm9pZCB7CiAgICAgICAgJGV4Y2VwdGlvbnMtPmRvbnRGbGFzaChbCiAgICAgICAgICAgICdjdXJyZW50X3Bhc3N3b3JkJywKICAgICAgICAgICAgJ3Bhc3N3b3JkJywKICAgICAgICAgICAgJ3Bhc3N3b3JkX2NvbmZpcm1hdGlvbicsCiAgICAgICAgICAgICdwaW4nLAogICAgICAgICAgICAncGluX2NvbmZpcm1hdGlvbicsCiAgICAgICAgICAgICdwYXNzcGhyYXNlJywKICAgICAgICAgICAgJ3Bhc3NwaHJhc2VfY29uZmlybWF0aW9uJywKICAgICAgICAgICAgJ3NlcmlhbCcsCiAgICAgICAgICAgICdsaWNlbnNlX2NlcnRpZmljYXRlJywKICAgICAgICAgICAgJ21hY2hpbmVfZmluZ2VycHJpbnRfaGFzaCcsCiAgICAgICAgXSk7CiAgICAgICAgJGV4Y2VwdGlvbnMtPnNob3VsZFJlbmRlckpzb25XaGVuKAogICAgICAgICAgICBmbiAoUmVxdWVzdCAkcmVxdWVzdCkgPT4gJHJlcXVlc3QtPmlzKCdhcGkvKicpIHx8ICRyZXF1ZXN0LT5leHBlY3RzSnNvbigpLAogICAgICAgICk7CiAgICB9KS0+Y3JlYXRlKCk7Cg==
+<?php
+
+use App\Http\Controllers\HealthController;
+use App\Http\Middleware\EnforceRemoteUploadBoundary;
+use App\Http\Middleware\EnforceSessionLock;
+use App\Http\Middleware\EnsureApiCabinetIsActive;
+use App\Http\Middleware\EnsureCabinetIsActive;
+use App\Http\Middleware\HandleAppearance;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SecureResponseHeaders;
+use App\Support\PostLoginDestination;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        apiPrefix: 'api',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+        then: function (): void {
+            Route::get('/health', HealthController::class)->name('health');
+        },
+    )
+    ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectUsersTo(
+            fn (Request $request): string => PostLoginDestination::for($request->user()),
+        );
+        $middleware->append(SecureResponseHeaders::class);
+        $middleware->trustProxies(
+            at: ['127.0.0.1', '::1'],
+            headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
+        );
+        // Replace Laravel's proxy slot so normalization and the host/route
+        // boundary run together before CORS, routing, sessions, or auth.
+        $middleware->replace(TrustProxies::class, EnforceRemoteUploadBoundary::class);
+
+        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        $middleware->validateCsrfTokens(except: [
+            'app/configuration/models/*/callback',
+            'app/clinical-documents/*/callback',
+        ]);
+
+        $middleware->alias([
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
+            'cabinet.active.api' => EnsureApiCabinetIsActive::class,
+        ]);
+
+        $middleware->web(append: [
+            HandleAppearance::class,
+            EnforceSessionLock::class,
+            EnsureCabinetIsActive::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
+        ]);
+    })
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontFlash([
+            'current_password',
+            'password',
+            'password_confirmation',
+            'pin',
+            'pin_confirmation',
+            'device_token',
+            'passphrase',
+            'passphrase_confirmation',
+            'serial',
+            'license_certificate',
+            'license_code',
+            'machine_fingerprint_hash',
+        ]);
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+        );
+    })->create();

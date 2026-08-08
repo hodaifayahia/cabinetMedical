@@ -17,12 +17,12 @@
 <main>
     @if ($success)
         <h1>Google Drive est connect&eacute;</h1>
-        <p>La connexion a &eacute;t&eacute; enregistr&eacute;e dans MediSmart.</p>
+        <p>La connexion a &eacute;t&eacute; enregistr&eacute;e dans DrClickDz.</p>
     @else
         <h1>Connexion Google Drive non termin&eacute;e</h1>
         <p>La demande a expir&eacute;, a d&eacute;j&agrave; &eacute;t&eacute; utilis&eacute;e ou n&rsquo;a pas pu &ecirc;tre valid&eacute;e.</p>
     @endif
-    <p>Vous pouvez fermer cet onglet et revenir &agrave; MediSmart.</p>
+    <p>Vous pouvez fermer cet onglet et revenir &agrave; DrClickDz.</p>
 </main>
 </body>
 </html>

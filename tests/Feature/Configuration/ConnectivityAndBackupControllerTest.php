@@ -3,16 +3,20 @@
 namespace Tests\Feature\Configuration;
 
 use App\Configuration\ApplicationSettingRegistry;
+use App\Enums\CabinetStatus;
+use App\Enums\LicensePlan;
 use App\Enums\PermissionName;
 use App\Enums\RoleName;
+use App\Models\ApplicationSetting;
 use App\Models\BackupRecord;
+use App\Models\Cabinet;
 use App\Models\CabinetSetting;
 use App\Models\DriveBackupConnection;
-use App\Models\ApplicationSetting;
 use App\Models\Patient;
 use App\Models\UploadSession;
 use App\Models\User;
 use App\Services\ApplicationSettingService;
+use App\Services\CabinetFulfillmentService;
 use App\Services\QrUploadService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,6 +75,43 @@ class ConnectivityAndBackupControllerTest extends TestCase
                 ->missing('health_key'));
     }
 
+    public function test_hosted_cabinet_sees_its_plan_without_machine_license_controls(): void
+    {
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Hosted Configuration Cabinet',
+            'status' => CabinetStatus::PENDING,
+        ]);
+        CabinetSetting::current($cabinet);
+        $administrator = User::factory()->create([
+            'cabinet_id' => $cabinet->getKey(),
+            'approved_at' => now(),
+        ]);
+        $administrator->assignRole(RoleName::ADMINISTRATOR->value);
+        $cabinet->forceFill(['owner_user_id' => $administrator->getKey()])->save();
+        app(CabinetFulfillmentService::class)->activate($cabinet, LicensePlan::TRIAL);
+
+        $this->actingAs($administrator)
+            ->get(route('app.configuration.connectivity-backup.edit'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('hostedEntitlement.plan', 'trial')
+                ->where('hostedEntitlement.plan_label', 'Essai de 7 jours')
+                ->where('hostedEntitlement.status', 'active')
+                ->where('license.state', 'not_activated')
+                ->where('licenseActivation.configured', false)
+                ->where('licenseActivation.refresh_configured', false)
+                ->where('licenseActivation.deactivation_configured', false)
+                ->where('licenseActivation.reason', 'La licence de ce cabinet est gérée par la plateforme DrClickDz.')
+                ->where('capabilities.remote_upload.available', false)
+                ->where('capabilities.google_drive.available', false));
+
+        $this->withSession(['auth.password_confirmed_at' => time()])
+            ->post(route('app.configuration.license.activate'), [
+                'serial' => 'TEST-1234-5678-9012',
+            ])
+            ->assertForbidden();
+    }
+
     public function test_sensitive_action_confirmation_returns_to_configuration(): void
     {
         $administrator = User::factory()->create();
@@ -108,6 +149,10 @@ class ConnectivityAndBackupControllerTest extends TestCase
         $this->actingAs($administrator)
             ->put(route('app.configuration.connectivity-backup.update'), $payload)
             ->assertRedirect()
+            ->assertSessionHas(
+                'inertia.flash_data.toast.message',
+                'Préférences enregistrées sur le serveur DrClickDz.',
+            )
             ->assertSessionHasNoErrors();
 
         $settings = app(ApplicationSettingService::class);
@@ -358,7 +403,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('activeUpload.id', $created['session']->getKey())
                 ->where('activeUpload.reachability.state', 'verified')
-                ->where('activeUpload.reachability.message', 'Le portail de téléversement MediSmart répond à cette adresse.')
+                ->where('activeUpload.reachability.message', 'Le portail de téléversement DrClickDz répond à cette adresse.')
                 ->missing('activeUpload.public_selector')
                 ->missing('activeUpload.public_token_hash'));
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Configuration;
 use App\Backups\AutomaticBackupCreator;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Services\InstallationMaintenanceAccessService;
 use App\Services\MachineFingerprintService;
 use App\Updates\UpdateInstallAuthorization;
 use Illuminate\Http\JsonResponse;
@@ -16,9 +17,12 @@ final class PrepareUpdateInstallController extends Controller
     public function __invoke(
         Request $request,
         AutomaticBackupCreator $backups,
+        InstallationMaintenanceAccessService $installationMaintenance,
         MachineFingerprintService $machine,
         UpdateInstallAuthorization $authorization,
     ): JsonResponse {
+        $installationMaintenance->authorize($request->user());
+
         abort_unless(
             (bool) config('medismart.runtime.desktop_supervised', false)
                 && (bool) config('medismart.updates.signed_updater_configured', false),

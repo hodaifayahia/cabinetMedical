@@ -63,7 +63,7 @@ describe('signed updater native contracts', () => {
             accepted: true,
             target_version: '1.2.3',
             message_fr:
-                'La mise à jour vérifiée est installée; MediSmart va redémarrer.',
+                'La mise à jour vérifiée est installée; DrClickDz va redémarrer.',
         };
 
         expect(normalizeNativeUpdateInstallResponse(result)).not.toBeNull();

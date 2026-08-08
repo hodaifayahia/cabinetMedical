@@ -1,1 +1,67 @@
-PD9waHAKCm5hbWVzcGFjZSBUZXN0c1xGZWF0dXJlXEF1dGg7Cgp1c2UgQXBwXE1vZGVsc1xVc2VyOwp1c2UgSWxsdW1pbmF0ZVxGb3VuZGF0aW9uXFRlc3RpbmdcUmVmcmVzaERhdGFiYXNlOwp1c2UgSW5lcnRpYVxUZXN0aW5nXEFzc2VydGFibGVJbmVydGlhIGFzIEFzc2VydDsKdXNlIFRlc3RzXFRlc3RDYXNlOwoKY2xhc3MgV2VsY29tZVRlc3QgZXh0ZW5kcyBUZXN0Q2FzZQp7CiAgICB1c2UgUmVmcmVzaERhdGFiYXNlOwoKICAgIHB1YmxpYyBmdW5jdGlvbiB0ZXN0X2xhbmRpbmdfcGFnZV9vZmZlcnNfY2FiaW5ldF9yZWdpc3RyYXRpb24oKTogdm9pZAogICAgewogICAgICAgICR0aGlzLT5nZXQocm91dGUoJ2hvbWUnKSkKICAgICAgICAgICAgLT5hc3NlcnRPaygpCiAgICAgICAgICAgIC0+YXNzZXJ0SW5lcnRpYShmbiAoQXNzZXJ0ICRwYWdlKSA9PiAkcGFnZQogICAgICAgICAgICAgICAgLT5jb21wb25lbnQoJ1dlbGNvbWUnKQogICAgICAgICAgICAgICAgLT53aGVyZSgnY2FuUmVnaXN0ZXInLCB0cnVlKSk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfcmVnaXN0cmF0aW9uX3JlbWFpbnNfYXZhaWxhYmxlX3doZW5fYWNjb3VudHNfZXhpc3QoKTogdm9pZAogICAgewogICAgICAgIFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKCk7CgogICAgICAgIC8vIE11bHRpLWNhYmluZXQ6IHJlZ2lzdHJhdGlvbiBpcyBhbHdheXMgb3BlbiBzbyBuZXcgY2FiaW5ldHMgY2FuIHNpZ24gdXAuCiAgICAgICAgJHRoaXMtPmdldChyb3V0ZSgnaG9tZScpKQogICAgICAgICAgICAtPmFzc2VydE9rKCkKICAgICAgICAgICAgLT5hc3NlcnRJbmVydGlhKGZuIChBc3NlcnQgJHBhZ2UpID0+ICRwYWdlCiAgICAgICAgICAgICAgICAtPmNvbXBvbmVudCgnV2VsY29tZScpCiAgICAgICAgICAgICAgICAtPndoZXJlKCdjYW5SZWdpc3RlcicsIHRydWUpKTsKICAgIH0KfQo=
+<?php
+
+namespace Tests\Feature\Auth;
+
+use App\Enums\CabinetStatus;
+use App\Models\Cabinet;
+use App\Models\CabinetSetting;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
+
+class WelcomeTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_landing_page_offers_cabinet_registration(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Welcome')
+                ->where('canRegister', true));
+    }
+
+    public function test_registration_remains_available_when_accounts_exist(): void
+    {
+        User::factory()->create();
+
+        // Multi-cabinet: registration is always open so new cabinets can sign up.
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Welcome')
+                ->where('canRegister', true));
+    }
+
+    public function test_guest_landing_page_never_exposes_an_existing_cabinets_identity(): void
+    {
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet priv\u00e9 Atlas',
+            'status' => CabinetStatus::ACTIVE,
+        ]);
+        CabinetSetting::query()->create([
+            'cabinet_id' => $cabinet->getKey(),
+            'name' => 'Cabinet priv\u00e9 Atlas',
+            'phone' => '0555 00 00 00',
+            'email' => 'secret@example.test',
+            'logo_path' => 'cabinet/secret-logo.png',
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Welcome')
+                ->where('name', (string) config('app.name', 'DrClickDz'))
+                ->where('cabinet.name', (string) config('app.name', 'DrClickDz'))
+                ->where('cabinet.phone', null)
+                ->where('cabinet.email', null)
+                ->where('cabinet.address', null)
+                ->where('cabinet.city', null)
+                ->where('cabinet.logo_path', null)
+                ->where('cabinet.logo_url', null));
+
+        $this->assertDatabaseCount('cabinet_settings', 1);
+    }
+}

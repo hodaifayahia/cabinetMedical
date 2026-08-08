@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Configuration;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\InstallationMaintenanceAccessService;
 use App\Services\LicenseActivationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,17 +13,21 @@ use Throwable;
 
 final class LicenseController extends Controller
 {
+    public function __construct(
+        private readonly InstallationMaintenanceAccessService $installationMaintenance,
+    ) {}
+
     public function store(
         Request $request,
         LicenseActivationService $activation,
     ): RedirectResponse {
+        /** @var User $user */
+        $user = $request->user();
+        $this->installationMaintenance->authorize($user);
         abort_unless($activation->status()['configured'], 503, 'License activation is not configured.');
         $data = $request->validate([
             'serial' => ['required', 'string', 'min:14', 'max:64'],
         ]);
-
-        /** @var User $user */
-        $user = $request->user();
 
         try {
             $activation->activate($data['serial'], $user);
@@ -44,10 +49,10 @@ final class LicenseController extends Controller
         Request $request,
         LicenseActivationService $activation,
     ): RedirectResponse {
-        abort_unless($activation->status()['refresh_configured'], 503, 'License refresh is not configured.');
-
         /** @var User $user */
         $user = $request->user();
+        $this->installationMaintenance->authorize($user);
+        abort_unless($activation->status()['refresh_configured'], 503, 'License refresh is not configured.');
 
         try {
             $activation->refresh($user);
@@ -69,10 +74,10 @@ final class LicenseController extends Controller
         Request $request,
         LicenseActivationService $activation,
     ): RedirectResponse {
-        abort_unless($activation->status()['deactivation_configured'], 503, 'License deactivation is not configured.');
-
         /** @var User $user */
         $user = $request->user();
+        $this->installationMaintenance->authorize($user);
+        abort_unless($activation->status()['deactivation_configured'], 503, 'License deactivation is not configured.');
 
         try {
             $activation->deactivate($user);

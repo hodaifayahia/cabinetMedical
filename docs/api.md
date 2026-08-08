@@ -1,1 +1,474 @@
-IyBNZWRpU21hcnQg4oCUIEFQSSB2MQoKUkVTVCBBUEkgdXNlZCBieSB0aGUgZGVza3RvcCAvIGNvbXBhbmlvbiBjbGllbnRzLiBBbGwgcm91dGVzIGFyZSBwcmVmaXhlZCB3aXRoCmAvYXBpL3YxYCBhbmQgcmV0dXJuIEpTT04uIEF1dGhlbnRpY2F0aW9uIHVzZXMgKipMYXJhdmVsIFNhbmN0dW0gcGVyc29uYWwKYWNjZXNzIHRva2VucyoqIChwbGFpbi10ZXh0IGJlYXJlciB0b2tlbnMpLCBub3QgZmlyc3QtcGFydHkgY29va2llcy4KCi0gQmFzZSBVUkw6IGBodHRwczovLzxob3N0Pi9hcGkvdjFgCi0gQ29udGVudCB0eXBlOiBgYXBwbGljYXRpb24vanNvbmAgKHNlbmQgYEFjY2VwdDogYXBwbGljYXRpb24vanNvbmApCi0gQXV0aCBoZWFkZXIgKHByb3RlY3RlZCByb3V0ZXMpOiBgQXV0aG9yaXphdGlvbjogQmVhcmVyIDx0b2tlbj5gCi0gTGFuZ3VhZ2U6IHVzZXItZmFjaW5nIG1lc3NhZ2VzIGFyZSBpbiBGcmVuY2guCgojIyBBdXRoZW50aWNhdGlvbiBtb2RlbAoKMS4gQSBjbGllbnQgb2J0YWlucyBhIHRva2VuIHdpdGggYFBPU1QgL2F1dGgvdG9rZW5gIChlbWFpbCArIHBhc3N3b3JkICsKICAgZGV2aWNlIG5hbWUpLgoyLiBUaGUgdG9rZW4gaXMgcmV0dXJuZWQgKipvbmNlKiogaW4gcGxhaW4gdGV4dCDigJQgc3RvcmUgaXQgc2VjdXJlbHkuCjMuIFNlbmQgaXQgYXMgYEF1dGhvcml6YXRpb246IEJlYXJlciA8dG9rZW4+YCBvbiBldmVyeSBwcm90ZWN0ZWQgcmVxdWVzdC4KNC4gYFBPU1QgL2F1dGgvbG9nb3V0YCByZXZva2VzIHRoZSB0b2tlbiB1c2VkIGZvciB0aGUgY3VycmVudCByZXF1ZXN0LgoKVHdvIG1pZGRsZXdhcmUgbGF5ZXJzIHByb3RlY3QgdGhlIHJvdXRlczoKCnwgTGF5ZXIgfCBNaWRkbGV3YXJlIHwgRWZmZWN0IHwKfCAtLS0gfCAtLS0gfCAtLS0gfAp8IEF1dGhlbnRpY2F0ZWQgfCBgYXV0aDpzYW5jdHVtYCB8IE1pc3NpbmcvaW52YWxpZCB0b2tlbiDihpIgYDQwMSBVbmF1dGhlbnRpY2F0ZWRgLiB8CnwgQWN0aXZlIGNhYmluZXQgfCBgY2FiaW5ldC5hY3RpdmUuYXBpYCAoYEVuc3VyZUFwaUNhYmluZXRJc0FjdGl2ZWApIHwgQmxvY2tlZCBtZW1iZXIg4oaSIGA0MDNgIHdpdGggYSBgcmVhc29uYCBjb2RlIChzZWUgYmVsb3cpLiB8CgojIyMgQ2FiaW5ldCAvIG1lbWJlciBlbGlnaWJpbGl0eSByZWFzb25zCgpgUE9TVCAvYXV0aC90b2tlbmAgYW5kIHRoZSBgY2FiaW5ldC5hY3RpdmUuYXBpYCBnYXRlIHNoYXJlIHRoZSBzYW1lIGVsaWdpYmlsaXR5CnJ1bGVzICh2aWEgYENhYmluZXRBY2Nlc3NTZXJ2aWNlYCkuIFdoZW4gYWNjZXNzIGlzIGRlbmllZCB0aGV5IGFuc3dlciBgNDAzYAp3aXRoIGEgbWFjaGluZS1yZWFkYWJsZSBgcmVhc29uYDoKCnwgYHJlYXNvbmAgfCBNZWFuaW5nIHwgYG1lc3NhZ2VgIChmcikgfAp8IC0tLSB8IC0tLSB8IC0tLSB8CnwgYGNhYmluZXRfcGVuZGluZ2AgfCBDYWJpbmV0IG5vdCB5ZXQgYWN0aXZhdGVkIGJ5IE1lZGlTbWFydC4gfCAiVm90cmUgY2FiaW5ldCBlc3QgZW4gYXR0ZW50ZSBkJ2FjdGl2YXRpb24gcGFyIGwnw6lxdWlwZSBNZWRpU21hcnQuIiB8CnwgYGNhYmluZXRfc3VzcGVuZGVkYCB8IENhYmluZXQgc3VzcGVuZGVkLiB8ICJWb3RyZSBjYWJpbmV0IGVzdCBhY3R1ZWxsZW1lbnQgc3VzcGVuZHUuIENvbnRhY3RleiBsZSBzdXBwb3J0IE1lZGlTbWFydC4iIHwKfCBgYXdhaXRpbmdfYXBwcm92YWxgIHwgTWVtYmVyIGFjY291bnQgbm90IHlldCBhcHByb3ZlZCBieSB0aGUgY2FiaW5ldCBvd25lci4gfCAiVm90cmUgY29tcHRlIGVzdCBlbiBhdHRlbnRlIGQnYXBwcm9iYXRpb24gcGFyIGxlIHByb3ByacOpdGFpcmUgZHUgY2FiaW5ldC4iIHwKCiMjIFJhdGUgbGltaXRpbmcKClB1YmxpYyBvbmJvYXJkaW5nL2F1dGggcm91dGVzIGFyZSB0aHJvdHRsZWQgKHBlciBlbWFpbCArIElQIHVubGVzcyBub3RlZCk6Cgp8IFJvdXRlIHwgTGltaXRlciB8IExpbWl0IHwKfCAtLS0gfCAtLS0gfCAtLS0gfAp8IGBQT1NUIC9hdXRoL3Rva2VuYCB8IGBsb2dpbmAgfCA1IC8gbWludXRlIChwZXIgdXNlcm5hbWUgKyBJUCkgfAp8IGBQT1NUIC9jYWJpbmV0cy9yZWdpc3RlcmAgfCBgcmVnaXN0cmF0aW9uYCB8IDUgLyAxMCBtaW51dGVzIHwKfCBgUE9TVCAvY2FiaW5ldHMvam9pbmAgfCBgY2FiaW5ldC1qb2luYCB8IDggLyAxMCBtaW51dGVzIHwKCkV4Y2VlZGluZyBhIGxpbWl0IHJldHVybnMgYDQyOSBUb28gTWFueSBSZXF1ZXN0c2AuCgojIyBDb21tb24gZXJyb3Igc2hhcGVzCgp8IFN0YXR1cyB8IFdoZW4gfCBCb2R5IHwKfCAtLS0gfCAtLS0gfCAtLS0gfAp8IGA0MDFgIHwgTm8vaW52YWxpZCB0b2tlbiBvbiBhIHByb3RlY3RlZCByb3V0ZS4gfCBgeyAibWVzc2FnZSI6ICJVbmF1dGhlbnRpY2F0ZWQuIiB9YCB8CnwgYDQwM2AgfCBJbmVsaWdpYmxlIGNhYmluZXQvbWVtYmVyLiB8IGB7ICJtZXNzYWdlIjogIjxmcj4iLCAicmVhc29uIjogIjxjb2RlPiIgfWAgfAp8IGA0MDRgIHwgUmVzb3VyY2Ugbm90IGZvdW5kIChvciBiZWxvbmdzIHRvIGFub3RoZXIgY2FiaW5ldCDigJQgdGVuYW50IHNjb3BlZCkuIHwgYHsgIm1lc3NhZ2UiOiAiLi4uIiB9YCB8CnwgYDQyMmAgfCBWYWxpZGF0aW9uIGZhaWx1cmUuIHwgYHsgIm1lc3NhZ2UiOiAiLi4uIiwgImVycm9ycyI6IHsgIjxmaWVsZD4iOiBbIi4uLiJdIH0gfWAgfAp8IGA0MjlgIHwgUmF0ZSBsaW1pdCBleGNlZWRlZC4gfCBgeyAibWVzc2FnZSI6ICJUb28gTWFueSBBdHRlbXB0cy4iIH1gIHwKCkFsbCByZXNvdXJjZSByb3V0ZXMgYXJlICoqY2FiaW5ldC1zY29wZWQqKjogYSB0b2tlbiBvbmx5IGV2ZXIgc2VlcyBkYXRhIG9mIGl0cwpvd24gY2FiaW5ldC4gUmVxdWVzdGluZyBhbm90aGVyIGNhYmluZXQncyByZWNvcmQgcmV0dXJucyBgNDA0YC4KCi0tLQoKIyMgRW5kcG9pbnRzCgojIyMgMS4gSXNzdWUgYSB0b2tlbiDigJQgYFBPU1QgL2FwaS92MS9hdXRoL3Rva2VuYAoKQXV0aGVudGljYXRlIGFuZCBtaW50IGEgcGVyc29uYWwgYWNjZXNzIHRva2VuLgoKLSBBdXRoOiBub25lIChwdWJsaWMsIHRocm90dGxlZCBgbG9naW5gKS4KCkJvZHk6Cgp8IEZpZWxkIHwgUnVsZXMgfAp8IC0tLSB8IC0tLSB8CnwgYGVtYWlsYCB8IHJlcXVpcmVkLCBlbWFpbCB8CnwgYHBhc3N3b3JkYCB8IHJlcXVpcmVkLCBzdHJpbmcgfAp8IGBkZXZpY2VfbmFtZWAgfCByZXF1aXJlZCwgc3RyaW5nLCBtYXggMjU1IHwKCkV4YW1wbGUgcmVxdWVzdDoKCmBgYGpzb24KUE9TVCAvYXBpL3YxL2F1dGgvdG9rZW4KewogICJlbWFpbCI6ICJvd25lckBleGFtcGxlLmNvbSIsCiAgInBhc3N3b3JkIjogInNlY3JldC1wYXNzd29yZCIsCiAgImRldmljZV9uYW1lIjogImlQaG9uZSBkdSBEciBCZW5hbGkiCn0KYGBgCgpFeGFtcGxlIHJlc3BvbnNlIGAyMDAgT0tgOgoKYGBganNvbgp7CiAgInRva2VuIjogIjEyfGFiY0RFRi4uLnBsYWluVGV4dFRva2VuIiwKICAidXNlciI6IHsKICAgICJpZCI6IDEsCiAgICAibmFtZSI6ICJEciBCZW5hbGkiLAogICAgImVtYWlsIjogIm93bmVyQGV4YW1wbGUuY29tIiwKICAgICJpc19wbGF0Zm9ybV9hZG1pbiI6IGZhbHNlLAogICAgImFwcHJvdmVkIjogdHJ1ZSwKICAgICJjYWJpbmV0IjogewogICAgICAiaWQiOiAzLAogICAgICAibmFtZSI6ICJDYWJpbmV0IEJlbmFsaSIsCiAgICAgICJzdGF0dXMiOiAiYWN0aXZlIiwKICAgICAgInNwZWNpYWxpemF0aW9uIjogIk3DqWRlY2luZSBnw6luw6lyYWxlIiwKICAgICAgIndpbGF5YSI6IHsgImNvZGUiOiAxNiwgIm5hbWUiOiAiQWxnZXIiIH0KICAgIH0sCiAgICAicm9sZXMiOiBbImFkbWluaXN0cmF0b3IiXSwKICAgICJwZXJtaXNzaW9ucyI6IFsicGF0aWVudHMudmlldyIsICJhcHBvaW50bWVudHMubWFuYWdlIl0KICB9Cn0KYGBgCgpFcnJvcnM6CgotIGA0MjJgIOKAlCBiYWQgY3JlZGVudGlhbHM6IGB7ICJtZXNzYWdlIjogIi4uLiIsICJlcnJvcnMiOiB7ICJlbWFpbCI6IFsiQ2VzIGlkZW50aWZpYW50cyBuZSBjb3JyZXNwb25kZW50IMOgIGF1Y3VuIGNvbXB0ZS4iXSB9IH1gCi0gYDQwM2Ag4oCUIGluZWxpZ2libGUgY2FiaW5ldC9tZW1iZXI6IGB7ICJtZXNzYWdlIjogIjxmcj4iLCAicmVhc29uIjogImNhYmluZXRfcGVuZGluZ3xjYWJpbmV0X3N1c3BlbmRlZHxhd2FpdGluZ19hcHByb3ZhbCIgfWAgKG5vIHRva2VuIGlzIGlzc3VlZCkuCgotLS0KCiMjIyAyLiBSZWdpc3RlciBhIG5ldyBjYWJpbmV0IOKAlCBgUE9TVCAvYXBpL3YxL2NhYmluZXRzL3JlZ2lzdGVyYAoKUHJvdmlzaW9uIGEgYnJhbmQtbmV3IGNhYmluZXQgaW4gdGhlIGBwZW5kaW5nYCBzdGF0ZSB0b2dldGhlciB3aXRoIGl0cyBvd25lcgooYWRtaW5pc3RyYXRvcikgYWNjb3VudC4gTWlycm9ycyB0aGUgd2ViIHJlZ2lzdHJhdGlvbiBmbG93CihgUmVnaXN0ZXJDYWJpbmV0QWN0aW9uYCkuIFRoZSBjYWJpbmV0IG11c3QgYmUgYWN0aXZhdGVkIGJ5IE1lZGlTbWFydCBiZWZvcmUgdGhlCm93bmVyIGNhbiBvYnRhaW4gYSB1c2FibGUgdG9rZW4uCgotIEF1dGg6IG5vbmUgKHB1YmxpYywgdGhyb3R0bGVkIGByZWdpc3RyYXRpb25gKS4KCkJvZHk6Cgp8IEZpZWxkIHwgUnVsZXMgfAp8IC0tLSB8IC0tLSB8CnwgYG5hbWVgIHwgcmVxdWlyZWQsIHN0cmluZyAob3duZXIncyBmdWxsIG5hbWUpIHwKfCBgZW1haWxgIHwgcmVxdWlyZWQsIGVtYWlsLCB1bmlxdWUgYWNyb3NzIHVzZXJzIHwKfCBgcGFzc3dvcmRgIHwgcmVxdWlyZWQsIHN0cmluZywgZGVmYXVsdCBwYXNzd29yZCBwb2xpY3ksIGBjb25maXJtZWRgIHwKfCBgcGFzc3dvcmRfY29uZmlybWF0aW9uYCB8IHJlcXVpcmVkLCBtdXN0IG1hdGNoIGBwYXNzd29yZGAgfAp8IGBjYWJpbmV0X25hbWVgIHwgcmVxdWlyZWQsIHN0cmluZywgMuKAkzE4MCB8CnwgYHNwZWNpYWxpemF0aW9uYCB8IHJlcXVpcmVkLCBzdHJpbmcsIDLigJMxNTAgfAp8IGB3aWxheWFgIHwgcmVxdWlyZWQsIGludGVnZXIgKEFsZ2VyaWFuIHdpbGF5YSBjb2RlLCAx4oCTNTgpIHwKCkV4YW1wbGUgcmVxdWVzdDoKCmBgYGpzb24KUE9TVCAvYXBpL3YxL2NhYmluZXRzL3JlZ2lzdGVyCnsKICAibmFtZSI6ICJEciBCZW5hbGkiLAogICJlbWFpbCI6ICJvd25lckBleGFtcGxlLmNvbSIsCiAgInBhc3N3b3JkIjogInNlY3JldC1wYXNzd29yZCIsCiAgInBhc3N3b3JkX2NvbmZpcm1hdGlvbiI6ICJzZWNyZXQtcGFzc3dvcmQiLAogICJjYWJpbmV0X25hbWUiOiAiQ2FiaW5ldCBCZW5hbGkiLAogICJzcGVjaWFsaXphdGlvbiI6ICJNw6lkZWNpbmUgZ8OpbsOpcmFsZSIsCiAgIndpbGF5YSI6IDE2Cn0KYGBgCgpFeGFtcGxlIHJlc3BvbnNlIGAyMDEgQ3JlYXRlZGA6CgpgYGBqc29uCnsgImNhYmluZXRfaWQiOiAzLCAic3RhdHVzIjogInBlbmRpbmciIH0KYGBgCgpFcnJvcnM6IGA0MjJgIG9uIHZhbGlkYXRpb24gZmFpbHVyZSwgYDQyOWAgd2hlbiB0aHJvdHRsZWQuCgotLS0KCiMjIyAzLiBKb2luIGFuIGV4aXN0aW5nIGNhYmluZXQg4oCUIGBQT1NUIC9hcGkvdjEvY2FiaW5ldHMvam9pbmAKClJlcXVlc3QgbWVtYmVyc2hpcCBvZiBhbiBleGlzdGluZyAqKmFjdGl2ZSoqIGNhYmluZXQuIENyZWF0ZXMgdGhlIGFjY291bnQgaW4gYW4KYGF3YWl0aW5nX2FwcHJvdmFsYCBzdGF0ZTsgbm8gdG9rZW4gaXMgaXNzdWVkIHVudGlsIHRoZSBvd25lciBhcHByb3ZlcyB0aGUKbWVtYmVyIGFuZCB0aGUgY2FiaW5ldCBpcyBhY3RpdmUuCgotIEF1dGg6IG5vbmUgKHB1YmxpYywgdGhyb3R0bGVkIGBjYWJpbmV0LWpvaW5gKS4KCkJvZHk6Cgp8IEZpZWxkIHwgUnVsZXMgfAp8IC0tLSB8IC0tLSB8CnwgYG5hbWVgIHwgcmVxdWlyZWQsIHN0cmluZywgbWF4IDEyMCB8CnwgYGVtYWlsYCB8IHJlcXVpcmVkLCBlbWFpbCwgbWF4IDE5MCwgdW5pcXVlIGFjcm9zcyB1c2VycyB8CnwgYHBhc3N3b3JkYCB8IHJlcXVpcmVkLCBzdHJpbmcsIGRlZmF1bHQgcGFzc3dvcmQgcG9saWN5LCBgY29uZmlybWVkYCB8CnwgYHBhc3N3b3JkX2NvbmZpcm1hdGlvbmAgfCByZXF1aXJlZCwgbXVzdCBtYXRjaCBgcGFzc3dvcmRgIHwKfCBgb3duZXJfZW1haWxgIHwgcmVxdWlyZWQsIGVtYWlsIOKAlCBpZGVudGlmaWVzIHRoZSB0YXJnZXQgY2FiaW5ldCBieSBpdHMgb3duZXIgfAoKRXhhbXBsZSByZXF1ZXN0OgoKYGBganNvbgpQT1NUIC9hcGkvdjEvY2FiaW5ldHMvam9pbgp7CiAgIm5hbWUiOiAiQXNzaXN0YW50ZSBBbWluYSIsCiAgImVtYWlsIjogImFtaW5hQGV4YW1wbGUuY29tIiwKICAicGFzc3dvcmQiOiAic2VjcmV0LXBhc3N3b3JkIiwKICAicGFzc3dvcmRfY29uZmlybWF0aW9uIjogInNlY3JldC1wYXNzd29yZCIsCiAgIm93bmVyX2VtYWlsIjogIm93bmVyQGV4YW1wbGUuY29tIgp9CmBgYAoKRXhhbXBsZSByZXNwb25zZSBgMjAxIENyZWF0ZWRgOgoKYGBganNvbgp7CiAgIm1lc3NhZ2UiOiAiVm90cmUgZGVtYW5kZSBhIMOpdMOpIGVudm95w6llLiBWb3VzIHBvdXJyZXogdm91cyBjb25uZWN0ZXIgdW5lIGZvaXMgYXBwcm91dsOpIHBhciBsZSBwcm9wcmnDqXRhaXJlIGR1IGNhYmluZXQuIiwKICAiY2FiaW5ldF9pZCI6IDMsCiAgInN0YXR1cyI6ICJhd2FpdGluZ19hcHByb3ZhbCIKfQpgYGAKCkVycm9yczogYDQyMmAgb24gdmFsaWRhdGlvbiBmYWlsdXJlIChlLmcuIHVua25vd24gb3duZXIsIGR1cGxpY2F0ZSBlbWFpbCkuCgotLS0KCiMjIyA0LiBSZXZva2UgdGhlIGN1cnJlbnQgdG9rZW4g4oCUIGBQT1NUIC9hcGkvdjEvYXV0aC9sb2dvdXRgCgotIEF1dGg6IGBhdXRoOnNhbmN0dW1gLgoKRGVsZXRlcyB0aGUgcGVyc29uYWwgYWNjZXNzIHRva2VuIHVzZWQgdG8gYXV0aGVudGljYXRlIHRoZSByZXF1ZXN0LiBUaGUgdG9rZW4KY2FuIG5vIGxvbmdlciBiZSB1c2VkIGFmdGVyd2FyZHMuCgpFeGFtcGxlIHJlc3BvbnNlIGAyMDAgT0tgOgoKYGBganNvbgp7ICJtZXNzYWdlIjogIkTDqWNvbm5leGlvbiByw6l1c3NpZS4iIH0KYGBgCgpFcnJvcnM6IGA0MDFgIGlmIG5vIHZhbGlkIHRva2VuIGlzIHN1cHBsaWVkLgoKLS0tCgojIyMgNS4gQ3VycmVudCB1c2VyIOKAlCBgR0VUIC9hcGkvdjEvbWVgCgotIEF1dGg6IGBhdXRoOnNhbmN0dW1gLgoKUmV0dXJucyB0aGUgYXV0aGVudGljYXRlZCB1c2VyIHdpdGggY2FiaW5ldCwgcm9sZXMgYW5kIHBlcm1pc3Npb25zLiBUaGUKcGFzc3dvcmQgaGFzaCBpcyBuZXZlciBleHBvc2VkLgoKRXhhbXBsZSByZXNwb25zZSBgMjAwIE9LYDoKCmBgYGpzb24KewogICJkYXRhIjogewogICAgImlkIjogMSwKICAgICJuYW1lIjogIkRyIEJlbmFsaSIsCiAgICAiZW1haWwiOiAib3duZXJAZXhhbXBsZS5jb20iLAogICAgImlzX3BsYXRmb3JtX2FkbWluIjogZmFsc2UsCiAgICAiYXBwcm92ZWQiOiB0cnVlLAogICAgImNhYmluZXQiOiB7CiAgICAgICJpZCI6IDMsCiAgICAgICJuYW1lIjogIkNhYmluZXQgQmVuYWxpIiwKICAgICAgInN0YXR1cyI6ICJhY3RpdmUiLAogICAgICAic3BlY2lhbGl6YXRpb24iOiAiTcOpZGVjaW5lIGfDqW7DqXJhbGUiLAogICAgICAid2lsYXlhIjogeyAiY29kZSI6IDE2LCAibmFtZSI6ICJBbGdlciIgfQogICAgfSwKICAgICJyb2xlcyI6IFsiYWRtaW5pc3RyYXRvciJdLAogICAgInBlcm1pc3Npb25zIjogWyJwYXRpZW50cy52aWV3IiwgImFwcG9pbnRtZW50cy5tYW5hZ2UiXQogIH0KfQpgYGAKCkVycm9yczogYDQwMWAgd2l0aG91dCBhIHZhbGlkIHRva2VuLgoKLS0tCgpUaGUgZm9sbG93aW5nIHJvdXRlcyBhZGRpdGlvbmFsbHkgcmVxdWlyZSBgY2FiaW5ldC5hY3RpdmUuYXBpYCAoYWN0aXZlIGNhYmluZXQgKwphcHByb3ZlZCBtZW1iZXIpLiBBIGJsb2NrZWQgbWVtYmVyIHJlY2VpdmVzIGA0MDMgeyBtZXNzYWdlLCByZWFzb24gfWAuCgojIyMgNi4gTGlzdCBhcHBvaW50bWVudHMg4oCUIGBHRVQgL2FwaS92MS9hcHBvaW50bWVudHNgCgotIEF1dGg6IGBhdXRoOnNhbmN0dW1gICsgYGNhYmluZXQuYWN0aXZlLmFwaWAuIEFiaWxpdHk6IGB2aWV3QW55YCBBcHBvaW50bWVudC4KClF1ZXJ5IHBhcmFtcyAoYWxsIG9wdGlvbmFsKToKCnwgUGFyYW0gfCBSdWxlcyB8CnwgLS0tIHwgLS0tIHwKfCBgZnJvbWAgfCBkYXRlIOKAlCBmaWx0ZXIgYGFwcG9pbnRtZW50X2RhdGUgPj1gIHwKfCBgdG9gIHwgZGF0ZSDigJQgZmlsdGVyIGBhcHBvaW50bWVudF9kYXRlIDw9YCB8CnwgYHBhdGllbnRfaWRgIHwgaW50ZWdlciB8CnwgYHN0YXR1c2AgfCBzdHJpbmcgKGBzY2hlZHVsZWRgLCBgY29uZmlybWVkYCwgYGNoZWNrZWRfaW5gLCBgaW5fcHJvZ3Jlc3NgLCBgY29tcGxldGVkYCwgYGNhbmNlbGxlZGAsIGBub19zaG93YCkgfAp8IGBwZXJfcGFnZWAgfCBpbnRlZ2VyIDHigJMxMDAgKGRlZmF1bHQgMTUpIHwKClJlc3BvbnNlIGAyMDAgT0tgOiBwYWdpbmF0ZWQgY29sbGVjdGlvbiBvZiBhcHBvaW50bWVudCByZXNvdXJjZXMuCgpgYGBqc29uCnsKICAiZGF0YSI6IFsKICAgIHsKICAgICAgImlkIjogNDIsCiAgICAgICJwYXRpZW50X2lkIjogNywKICAgICAgInBhdGllbnQiOiB7ICJpZCI6IDcsICJmdWxsX25hbWUiOiAiQW1pbmEgS2FjaSIsICIuLi4iOiAiLi4uIiB9LAogICAgICAiYXBwb2ludG1lbnRfZGF0ZSI6ICIyMDI2LTA4LTEyIiwKICAgICAgInN0YXJ0c19hdCI6ICIyMDI2LTA4LTEyVDA5OjAwOjAwKzAxOjAwIiwKICAgICAgImVuZHNfYXQiOiAiMjAyNi0wOC0xMlQwOToxNTowMCswMTowMCIsCiAgICAgICJzdGF0dXMiOiAic2NoZWR1bGVkIiwKICAgICAgInJlYXNvbiI6ICJDb250csO0bGUiLAogICAgICAicHJlc3RhdGlvbiI6ICJDb25zdWx0YXRpb24iLAogICAgICAicmVjZXB0aW9uX25vdGVzIjogbnVsbCwKICAgICAgImNhbmNlbGxhdGlvbl9yZWFzb24iOiBudWxsLAogICAgICAiY2FuX2NvbmZpcm0iOiB0cnVlLAogICAgICAiY2FuX2NoZWNrX2luIjogdHJ1ZSwKICAgICAgImNhbl9jYW5jZWwiOiB0cnVlLAogICAgICAiY29uZmlybWVkX2F0IjogbnVsbCwKICAgICAgImNoZWNrZWRfaW5fYXQiOiBudWxsLAogICAgICAiY3JlYXRlZF9hdCI6ICIyMDI2LTA4LTA3VDEwOjAwOjAwKzAxOjAwIiwKICAgICAgInVwZGF0ZWRfYXQiOiAiMjAyNi0wOC0wN1QxMDowMDowMCswMTowMCIKICAgIH0KICBdLAogICJsaW5rcyI6IHsgImZpcnN0IjogIi4uLiIsICJsYXN0IjogIi4uLiIsICJwcmV2IjogbnVsbCwgIm5leHQiOiAiLi4uIiB9LAogICJtZXRhIjogeyAiY3VycmVudF9wYWdlIjogMSwgInBlcl9wYWdlIjogMTUsICJ0b3RhbCI6IDEsICIuLi4iOiAiLi4uIiB9Cn0KYGBgCgojIyMgNy4gU2hvdyBhcHBvaW50bWVudCDigJQgYEdFVCAvYXBpL3YxL2FwcG9pbnRtZW50cy97YXBwb2ludG1lbnR9YAoKLSBBdXRoOiBgYXV0aDpzYW5jdHVtYCArIGBjYWJpbmV0LmFjdGl2ZS5hcGlgLiBBYmlsaXR5OiBgdmlld2AuCi0gYDIwMCBPS2Ag4oaSIGB7ICJkYXRhIjogeyAuLi5hcHBvaW50bWVudCB9IH1gOyBgNDA0YCBpZiBub3QgaW4gdGhlIGNhYmluZXQuCgojIyMgOC4gQm9vayBhcHBvaW50bWVudCDigJQgYFBPU1QgL2FwaS92MS9hcHBvaW50bWVudHNgCgotIEF1dGg6IGBhdXRoOnNhbmN0dW1gICsgYGNhYmluZXQuYWN0aXZlLmFwaWAuIEFiaWxpdHk6IGBjcmVhdGVgLgotIFJldXNlcyB0aGUgd2ViIGF2YWlsYWJpbGl0eSBjaGVjayArIGBDcmVhdGVBcHBvaW50bWVudEFjdGlvbmAuCgpCb2R5OgoKfCBGaWVsZCB8IFJ1bGVzIHwKfCAtLS0gfCAtLS0gfAp8IGBwYXRpZW50X2lkYCB8IHJlcXVpcmVkLCBpbnRlZ2VyLCBleGlzdHMgaW4gYHBhdGllbnRzYCB8CnwgYHN0YXJ0c19hdGAgfCByZXF1aXJlZCwgZGF0ZSAobXVzdCBtYXRjaCBhbiBhdmFpbGFibGUgc2xvdCkgfAp8IGByZWFzb25gIHwgbnVsbGFibGUsIHN0cmluZywgbWF4IDEwMDAgfAp8IGByZWNlcHRpb25fbm90ZXNgIHwgbnVsbGFibGUsIHN0cmluZywgbWF4IDIwMDAgfAp8IGBwcmVzdGF0aW9uYCB8IG51bGxhYmxlLCBzdHJpbmcsIG1heCAyNTUgfAp8IGBzdGF0dXNgIHwgbnVsbGFibGUsIG9uZSBvZiBgc2NoZWR1bGVkYCwgYGNvbmZpcm1lZGAgfAoKUmVzcG9uc2UgYDIwMSBDcmVhdGVkYCDihpIgYHsgImRhdGEiOiB7IC4uLmFwcG9pbnRtZW50IH0gfWAuCgpFcnJvcnM6Ci0gYDQyMiB7IGVycm9yczogeyBzdGFydHNfYXQ6IFsiQ2UgY3LDqW5lYXUgbidlc3QgcGx1cyBkaXNwb25pYmxlLi4uIl0gfSB9YCDigJQgc2xvdCB0YWtlbi91bmF2YWlsYWJsZS4KLSBgNDIyIHsgZXJyb3JzOiB7IGRvY3RvcjogWyJBdWN1biBtw6lkZWNpbiBhY3RpZiBuJ2VzdCBjb25maWd1csOpIHBvdXIgY2UgY2FiaW5ldC4iXSB9IH1gIOKAlCBubyBhY3RpdmUgZG9jdG9yLgoKIyMjIDkuIFVwZGF0ZSBhcHBvaW50bWVudCDigJQgYFBBVENIIC9hcGkvdjEvYXBwb2ludG1lbnRzL3thcHBvaW50bWVudH1gCgotIEF1dGg6IGBhdXRoOnNhbmN0dW1gICsgYGNhYmluZXQuYWN0aXZlLmFwaWAuIEFiaWxpdHk6IGB1cGRhdGVgLgoKQm9keSAoYWxsIGBzb21ldGltZXNgKToKCnwgRmllbGQgfCBSdWxlcyB8CnwgLS0tIHwgLS0tIHwKfCBgcmVhc29uYCB8IG51bGxhYmxlLCBzdHJpbmcsIG1heCAxMDAwIHwKfCBgcmVjZXB0aW9uX25vdGVzYCB8IG51bGxhYmxlLCBzdHJpbmcsIG1heCAyMDAwIHwKfCBgcHJlc3RhdGlvbmAgfCBudWxsYWJsZSwgc3RyaW5nLCBtYXggMjU1IHwKfCBgc3RhdHVzYCB8IHN0cmluZyDigJQgdHJhbnNpdGlvbiB0YXJnZXQgKGBjb25maXJtZWRgLCBgY2hlY2tlZF9pbmAsIGBjYW5jZWxsZWRgIHN1cHBvcnRlZCkgfAp8IGBjYW5jZWxsYXRpb25fcmVhc29uYCB8IHJlcXVpcmVkIHdoZW4gYHN0YXR1cz1jYW5jZWxsZWRgLCAz4oCTMTAwMCBjaGFycyB8CgpTdGF0dXMgdHJhbnNpdGlvbnMgZW5mb3JjZSB0aGUgc2FtZSBndWFyZCByYWlscyBhcyB0aGUgd2ViIGFwcDoKLSBgY29uZmlybWVkYCBvbmx5IGZyb20gYHNjaGVkdWxlZGAuCi0gYGNoZWNrZWRfaW5gIG9ubHkgZnJvbSBgc2NoZWR1bGVkYCBvciBgY29uZmlybWVkYC4KLSBgY2FuY2VsbGVkYCBub3QgYWxsb3dlZCBmcm9tIGBjb21wbGV0ZWRgLCBgY2FuY2VsbGVkYCBvciBgbm9fc2hvd2AuCgpSZXNwb25zZSBgMjAwIE9LYCDihpIgYHsgImRhdGEiOiB7IC4uLmFwcG9pbnRtZW50IH0gfWAuCkVycm9yczogYDQyMiB7IGVycm9yczogeyBzdGF0dXM6IFsiLi4uIl0gfSB9YCBmb3IgaWxsZWdhbCB0cmFuc2l0aW9ucy4KCiMjIyAxMC4gRGVsZXRlIGFwcG9pbnRtZW50IOKAlCBgREVMRVRFIC9hcGkvdjEvYXBwb2ludG1lbnRzL3thcHBvaW50bWVudH1gCgotIEF1dGg6IGBhdXRoOnNhbmN0dW1gICsgYGNhYmluZXQuYWN0aXZlLmFwaWAuIEFiaWxpdHk6IGBjYW5jZWxgLgotIGAyMDAgT0tgIOKGkiBgeyAibWVzc2FnZSI6ICJSZW5kZXotdm91cyBzdXBwcmltw6kuIiB9YC4KCiMjIyAxMS4gU2NoZWR1bGUg4oCUIGBHRVQgL2FwaS92MS9zY2hlZHVsZWAKCi0gQXV0aDogYGF1dGg6c2FuY3R1bWAgKyBgY2FiaW5ldC5hY3RpdmUuYXBpYC4gQWJpbGl0eTogYHZpZXdBbnlgIEFwcG9pbnRtZW50LgoKUmV0dXJucyB0aGUgY3VycmVudCBkb2N0b3IncyB3ZWVrbHkgc2NoZWR1bGVzLCB0aW1lIG9mZiBhbmQgb3BlbiBtb250aHMuIFdoZW4Kbm8gYWN0aXZlIGRvY3RvciBpcyBjb25maWd1cmVkLCBhbGwgbGlzdHMgYXJlIGVtcHR5IGFuZCBgZG9jdG9yYCBpcyBgbnVsbGAuCgpgYGBqc29uCnsKICAiZG9jdG9yIjogewogICAgImlkIjogMSwKICAgICJkb2N0b3JfbmFtZSI6ICJEciBCZW5hbGkiLAogICAgInNwZWNpYWx0eSI6ICJNw6lkZWNpbmUgZ8OpbsOpcmFsZSIsCiAgICAiY29uc3VsdGF0aW9uX2R1cmF0aW9uIjogMTUKICB9LAogICJzY2hlZHVsZXMiOiBbCiAgICB7ICJpZCI6IDEsICJkYXlfb2Zfd2VlayI6IDEsICJzdGFydHNfYXQiOiAiMDk6MDAiLCAiZW5kc19hdCI6ICIxNjowMCIsICJzbG90X2R1cmF0aW9uIjogMTUsICJpc19hY3RpdmUiOiB0cnVlIH0KICBdLAogICJ0aW1lX29mZiI6IFsKICAgIHsgImlkIjogMSwgInN0YXJ0c19hdCI6ICIyMDI2LTA4LTIwVDAwOjAwOjAwKzAxOjAwIiwgImVuZHNfYXQiOiAiMjAyNi0wOC0yMVQwMDowMDowMCswMTowMCIsICJpc19hbGxfZGF5IjogdHJ1ZSwgInJlYXNvbiI6ICJDb25nw6kiIH0KICBdLAogICJvcGVuX21vbnRocyI6IFsKICAgIHsgImlkIjogMSwgInllYXIiOiAyMDI2LCAibW9udGgiOiA4LCAiaXNfb3BlbiI6IHRydWUsICJub3RlIjogbnVsbCB9CiAgXQp9CmBgYAoKIyMjIDEyLiBMaXN0IHBhdGllbnRzIOKAlCBgR0VUIC9hcGkvdjEvcGF0aWVudHNgCgotIEF1dGg6IGBhdXRoOnNhbmN0dW1gICsgYGNhYmluZXQuYWN0aXZlLmFwaWAuIEFiaWxpdHk6IGB2aWV3QW55YCBQYXRpZW50LgoKUXVlcnkgcGFyYW1zOgoKfCBQYXJhbSB8IFJ1bGVzIHwKfCAtLS0gfCAtLS0gfAp8IGBxYCB8IG51bGxhYmxlLCBzdHJpbmcsIG1heCAxMjAg4oCUIGZ1bGwtdGV4dCBzZWFyY2ggfAp8IGBwZXJfcGFnZWAgfCBpbnRlZ2VyIDHigJMxMDAgKGRlZmF1bHQgMTUpIHwKClJlc3BvbnNlIGAyMDAgT0tgOiBwYWdpbmF0ZWQgY29sbGVjdGlvbiBvZiBwYXRpZW50IHJlc291cmNlcy4KCmBgYGpzb24KewogICJkYXRhIjogWwogICAgewogICAgICAiaWQiOiA3LAogICAgICAicGF0aWVudF9udW1iZXIiOiAiUC0wMDAwMDciLAogICAgICAiZmlyc3RfbmFtZSI6ICJBbWluYSIsCiAgICAgICJsYXN0X25hbWUiOiAiS2FjaSIsCiAgICAgICJmdWxsX25hbWUiOiAiQW1pbmEgS2FjaSIsCiAgICAgICJkYXRlX29mX2JpcnRoIjogIjE5OTAtMDUtMDEiLAogICAgICAiZ2VuZGVyIjogImZlbWFsZSIsCiAgICAgICJibG9vZF9ncm91cCI6ICJPKyIsCiAgICAgICJwaG9uZSI6ICIwNTUwLi4uIiwKICAgICAgInNlY29uZGFyeV9waG9uZSI6IG51bGwsCiAgICAgICJlbWFpbCI6ICJhbWluYUBleGFtcGxlLmNvbSIsCiAgICAgICJhZGRyZXNzIjogIi4uLiIsCiAgICAgICJjaXR5IjogIkFsZ2VyIiwKICAgICAgImNyZWF0ZWRfYXQiOiAiMjAyNi0wOC0wN1QxMDowMDowMCswMTowMCIsCiAgICAgICJ1cGRhdGVkX2F0IjogIjIwMjYtMDgtMDdUMTA6MDA6MDArMDE6MDAiCiAgICB9CiAgXSwKICAibGlua3MiOiB7ICIuLi4iOiAiLi4uIiB9LAogICJtZXRhIjogeyAiLi4uIjogIi4uLiIgfQp9CmBgYAoKIyMjIDEzLiBTaG93IHBhdGllbnQg4oCUIGBHRVQgL2FwaS92MS9wYXRpZW50cy97cGF0aWVudH1gCgotIEF1dGg6IGBhdXRoOnNhbmN0dW1gICsgYGNhYmluZXQuYWN0aXZlLmFwaWAuIEFiaWxpdHk6IGB2aWV3YC4KLSBgMjAwIE9LYCDihpIgYHsgImRhdGEiOiB7IC4uLnBhdGllbnQgfSB9YDsgYDQwNGAgaWYgbm90IGluIHRoZSBjYWJpbmV0LgoKLS0tCgojIyBSZXNvdXJjZSBzY2hlbWFzIChzdW1tYXJ5KQoKKipVc2VyUmVzb3VyY2UqKjogYGlkYCwgYG5hbWVgLCBgZW1haWxgLCBgaXNfcGxhdGZvcm1fYWRtaW5gLCBgYXBwcm92ZWRgLApgY2FiaW5ldGAgKENhYmluZXRSZXNvdXJjZSwgd2hlbiBsb2FkZWQpLCBgcm9sZXNbXWAsIGBwZXJtaXNzaW9uc1tdYC4KCioqQ2FiaW5ldFJlc291cmNlKio6IGBpZGAsIGBuYW1lYCwgYHN0YXR1c2AgKGBwZW5kaW5nfGFjdGl2ZXxzdXNwZW5kZWRgKSwKYHNwZWNpYWxpemF0aW9uYCwgYHdpbGF5YSB7IGNvZGUsIG5hbWUgfWAuCgoqKlBhdGllbnRSZXNvdXJjZSoqOiBgaWRgLCBgcGF0aWVudF9udW1iZXJgLCBgZmlyc3RfbmFtZWAsIGBsYXN0X25hbWVgLApgZnVsbF9uYW1lYCwgYGRhdGVfb2ZfYmlydGhgLCBgZ2VuZGVyYCwgYGJsb29kX2dyb3VwYCwgYHBob25lYCwKYHNlY29uZGFyeV9waG9uZWAsIGBlbWFpbGAsIGBhZGRyZXNzYCwgYGNpdHlgLCBgY3JlYXRlZF9hdGAsIGB1cGRhdGVkX2F0YC4KCioqQXBwb2ludG1lbnRSZXNvdXJjZSoqOiBgaWRgLCBgcGF0aWVudF9pZGAsIGBwYXRpZW50YCAod2hlbiBsb2FkZWQpLApgYXBwb2ludG1lbnRfZGF0ZWAsIGBzdGFydHNfYXRgLCBgZW5kc19hdGAsIGBzdGF0dXNgLCBgcmVhc29uYCwgYHByZXN0YXRpb25gLApgcmVjZXB0aW9uX25vdGVzYCwgYGNhbmNlbGxhdGlvbl9yZWFzb25gLCBgY2FuX2NvbmZpcm1gLCBgY2FuX2NoZWNrX2luYCwKYGNhbl9jYW5jZWxgLCBgY29uZmlybWVkX2F0YCwgYGNoZWNrZWRfaW5fYXRgLCBgY3JlYXRlZF9hdGAsIGB1cGRhdGVkX2F0YC4K
+# MediSmart — API v1
+
+REST API used by the desktop / companion clients. All routes are prefixed with
+`/api/v1` and return JSON. Authentication uses **Laravel Sanctum personal
+access tokens** (plain-text bearer tokens), not first-party cookies.
+
+- Base URL: `https://<host>/api/v1`
+- Content type: `application/json` (send `Accept: application/json`)
+- Auth header (protected routes): `Authorization: Bearer <token>`
+- Language: user-facing messages are in French.
+
+## Authentication model
+
+1. A client obtains a token with `POST /auth/token` (email + password +
+   device name).
+2. The token is returned **once** in plain text — store it securely.
+3. Send it as `Authorization: Bearer <token>` on every protected request.
+4. `POST /auth/logout` revokes the token used for the current request.
+
+Two middleware layers protect the routes:
+
+| Layer | Middleware | Effect |
+| --- | --- | --- |
+| Authenticated | `auth:sanctum` | Missing/invalid token → `401 Unauthenticated`. |
+| Active cabinet | `cabinet.active.api` (`EnsureApiCabinetIsActive`) | Blocked member → `403` with a `reason` code (see below). |
+
+### Cabinet / member eligibility reasons
+
+`POST /auth/token` and the `cabinet.active.api` gate share the same eligibility
+rules (via `CabinetAccessService`). When access is denied they answer `403`
+with a machine-readable `reason`:
+
+| `reason` | Meaning | `message` (fr) |
+| --- | --- | --- |
+| `cabinet_pending` | Cabinet not yet activated by DrClickDz. | "Votre cabinet est en attente d'activation par l'équipe DrClickDz." |
+| `cabinet_suspended` | Cabinet suspended. | "Votre cabinet est actuellement suspendu. Contactez le support DrClickDz." |
+| `license_expired` | The cabinet's 7-day trial reached its exact expiry time. | "Votre essai de 7 jours est expiré. Contactez l'administration DrClickDz pour renouveler votre licence ou passer à une licence à vie." |
+| `license_inactive` | The hosted cabinet licence is inactive or revoked. | "La licence de votre cabinet n'est pas active. Contactez l'administration DrClickDz." |
+| `awaiting_approval` | Member account not yet approved by the cabinet owner. | "Votre compte est en attente d'approbation par le propriétaire du cabinet." |
+
+Hosted cabinet activation is fulfilled once by a platform administrator, who
+chooses either `trial` (expires exactly seven days after activation) or
+`lifetime` (no expiry). An expired trial can be renewed for another seven days
+or upgraded to lifetime; renewal keeps the original cabinet activation and
+licence identifiers.
+
+## Rate limiting
+
+Public onboarding/auth routes are throttled (per email + IP unless noted):
+
+| Route | Limiter | Limit |
+| --- | --- | --- |
+| `POST /auth/token` | `login` | 5 / minute (per username + IP) |
+| `POST /cabinets/register` | `registration` | 5 / 10 minutes |
+| `POST /cabinets/join` | `cabinet-join` | 8 / 10 minutes |
+
+Exceeding a limit returns `429 Too Many Requests`.
+
+## Common error shapes
+
+| Status | When | Body |
+| --- | --- | --- |
+| `401` | No/invalid token on a protected route. | `{ "message": "Unauthenticated." }` |
+| `403` | Ineligible cabinet/member. | `{ "message": "<fr>", "reason": "<code>", "status": "pending|suspended|expired|inactive|awaiting_approval" }` |
+| `404` | Resource not found (or belongs to another cabinet — tenant scoped). | `{ "message": "..." }` |
+| `422` | Validation failure. | `{ "message": "...", "errors": { "<field>": ["..."] } }` |
+| `429` | Rate limit exceeded. | `{ "message": "Too Many Attempts." }` |
+
+All resource routes are **cabinet-scoped**: a token only ever sees data of its
+own cabinet. Requesting another cabinet's record returns `404`.
+
+---
+
+## Endpoints
+
+### 1. Issue a token — `POST /api/v1/auth/token`
+
+Authenticate and mint a personal access token.
+
+- Auth: none (public, throttled `login`).
+
+Body:
+
+| Field | Rules |
+| --- | --- |
+| `email` | required, email |
+| `password` | required, string |
+| `device_name` | required, string, max 255 |
+
+Example request:
+
+```json
+POST /api/v1/auth/token
+{
+  "email": "owner@example.com",
+  "password": "secret-password",
+  "device_name": "iPhone du Dr Benali"
+}
+```
+
+Example response `200 OK`:
+
+```json
+{
+  "token": "12|abcDEF...plainTextToken",
+  "user": {
+    "id": 1,
+    "name": "Dr Benali",
+    "email": "owner@example.com",
+    "is_platform_admin": false,
+    "approved": true,
+    "cabinet": {
+      "id": 3,
+      "name": "Cabinet Benali",
+      "status": "active",
+      "specialization": "Médecine générale",
+      "wilaya": { "code": 16, "name": "Alger" },
+      "license": {
+        "plan": "trial",
+        "plan_label": "Essai de 7 jours",
+        "status": "active",
+        "status_label": "Active",
+        "expires_at": "2026-08-15T10:00:00+01:00"
+      }
+    },
+    "roles": ["administrator"],
+    "permissions": ["patients.view", "appointments.manage"]
+  }
+}
+```
+
+Errors:
+
+- `422` — bad credentials: `{ "message": "...", "errors": { "email": ["Ces identifiants ne correspondent à aucun compte."] } }`
+- `403` — ineligible cabinet/member: `{ "message": "<fr>", "reason": "cabinet_pending|cabinet_suspended|license_expired|license_inactive|awaiting_approval", "status": "<state>" }` (no token is issued).
+
+---
+
+### 2. Register a new cabinet — `POST /api/v1/cabinets/register`
+
+Provision a brand-new cabinet in the `pending` state together with its owner
+(administrator) account. Mirrors the web registration flow
+(`RegisterCabinetAction`). The cabinet must be activated by DrClickDz before the
+owner can obtain a usable token.
+
+- Auth: none (public, throttled `registration`).
+
+Body:
+
+| Field | Rules |
+| --- | --- |
+| `name` | required, string (owner's full name) |
+| `phone` | required, valid phone number, maximum 40 characters |
+| `email` | required, email, unique across users |
+| `password` | required, string, default password policy, `confirmed` |
+| `password_confirmation` | required, must match `password` |
+| `cabinet_name` | required, string, 2–180 |
+| `specialization` | required, string, 2–150 |
+| `wilaya` | required, integer (Algerian wilaya code, 1–58) |
+
+Example request:
+
+```json
+POST /api/v1/cabinets/register
+{
+  "name": "Dr Benali",
+  "phone": "+213 555 12 34 56",
+  "email": "owner@example.com",
+  "password": "secret-password",
+  "password_confirmation": "secret-password",
+  "cabinet_name": "Cabinet Benali",
+  "specialization": "Médecine générale",
+  "wilaya": 16
+}
+```
+
+Example response `201 Created`:
+
+```json
+{ "cabinet_id": 3, "status": "pending" }
+```
+
+Errors: `422` on validation failure, `429` when throttled.
+
+---
+
+### 3. Join an existing cabinet — `POST /api/v1/cabinets/join`
+
+Request membership of an existing **active** cabinet. Creates the account in an
+`awaiting_approval` state; no token is issued until the owner approves the
+member and the cabinet is active.
+
+- Auth: none (public, throttled `cabinet-join`).
+
+Body:
+
+| Field | Rules |
+| --- | --- |
+| `name` | required, string, max 120 |
+| `email` | required, email, max 190, unique across users |
+| `password` | required, string, default password policy, `confirmed` |
+| `password_confirmation` | required, must match `password` |
+| `owner_email` | required, email — identifies the target cabinet by its owner |
+
+Example request:
+
+```json
+POST /api/v1/cabinets/join
+{
+  "name": "Assistante Amina",
+  "email": "amina@example.com",
+  "password": "secret-password",
+  "password_confirmation": "secret-password",
+  "owner_email": "owner@example.com"
+}
+```
+
+Example response `201 Created`:
+
+```json
+{
+  "message": "Votre demande a été envoyée. Vous pourrez vous connecter une fois approuvé par le propriétaire du cabinet.",
+  "cabinet_id": 3,
+  "status": "awaiting_approval"
+}
+```
+
+Errors: `422` on validation failure (e.g. unknown owner, duplicate email).
+
+---
+
+### 4. Revoke the current token — `POST /api/v1/auth/logout`
+
+- Auth: `auth:sanctum`.
+
+Deletes the personal access token used to authenticate the request. The token
+can no longer be used afterwards.
+
+Example response `200 OK`:
+
+```json
+{ "message": "Déconnexion réussie." }
+```
+
+Errors: `401` if no valid token is supplied.
+
+---
+
+### 5. Current user — `GET /api/v1/me`
+
+- Auth: `auth:sanctum`.
+
+Returns the authenticated user with cabinet, roles and permissions. The
+password hash is never exposed.
+
+Example response `200 OK`:
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Dr Benali",
+    "email": "owner@example.com",
+    "is_platform_admin": false,
+    "approved": true,
+    "cabinet": {
+      "id": 3,
+      "name": "Cabinet Benali",
+      "status": "active",
+      "specialization": "Médecine générale",
+      "wilaya": { "code": 16, "name": "Alger" }
+    },
+    "roles": ["administrator"],
+    "permissions": ["patients.view", "appointments.manage"]
+  }
+}
+```
+
+Errors: `401` without a valid token.
+
+---
+
+The following routes additionally require `cabinet.active.api` (active cabinet +
+approved member). A blocked member receives `403 { message, reason }`.
+
+### 6. List appointments — `GET /api/v1/appointments`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `viewAny` Appointment.
+
+Query params (all optional):
+
+| Param | Rules |
+| --- | --- |
+| `from` | date — filter `appointment_date >=` |
+| `to` | date — filter `appointment_date <=` |
+| `patient_id` | integer |
+| `status` | string (`scheduled`, `confirmed`, `checked_in`, `in_progress`, `completed`, `cancelled`, `no_show`) |
+| `per_page` | integer 1–100 (default 15) |
+
+Response `200 OK`: paginated collection of appointment resources.
+
+```json
+{
+  "data": [
+    {
+      "id": 42,
+      "patient_id": 7,
+      "patient": { "id": 7, "full_name": "Amina Kaci", "...": "..." },
+      "appointment_date": "2026-08-12",
+      "starts_at": "2026-08-12T09:00:00+01:00",
+      "ends_at": "2026-08-12T09:15:00+01:00",
+      "status": "scheduled",
+      "reason": "Contrôle",
+      "prestation": "Consultation",
+      "reception_notes": null,
+      "cancellation_reason": null,
+      "can_confirm": true,
+      "can_check_in": true,
+      "can_cancel": true,
+      "confirmed_at": null,
+      "checked_in_at": null,
+      "created_at": "2026-08-07T10:00:00+01:00",
+      "updated_at": "2026-08-07T10:00:00+01:00"
+    }
+  ],
+  "links": { "first": "...", "last": "...", "prev": null, "next": "..." },
+  "meta": { "current_page": 1, "per_page": 15, "total": 1, "...": "..." }
+}
+```
+
+### 7. Show appointment — `GET /api/v1/appointments/{appointment}`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `view`.
+- `200 OK` → `{ "data": { ...appointment } }`; `404` if not in the cabinet.
+
+### 8. Book appointment — `POST /api/v1/appointments`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `create`.
+- Reuses the web availability check + `CreateAppointmentAction`.
+
+Body:
+
+| Field | Rules |
+| --- | --- |
+| `patient_id` | required, integer, exists in `patients` |
+| `starts_at` | required, date (must match an available slot) |
+| `reason` | nullable, string, max 1000 |
+| `reception_notes` | nullable, string, max 2000 |
+| `prestation` | nullable, string, max 255 |
+| `status` | nullable, one of `scheduled`, `confirmed` |
+
+Response `201 Created` → `{ "data": { ...appointment } }`.
+
+Errors:
+- `422 { errors: { starts_at: ["Ce créneau n'est plus disponible..."] } }` — slot taken/unavailable.
+- `422 { errors: { doctor: ["Aucun médecin actif n'est configuré pour ce cabinet."] } }` — no active doctor.
+
+### 9. Update appointment — `PATCH /api/v1/appointments/{appointment}`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `update`.
+
+Body (all `sometimes`):
+
+| Field | Rules |
+| --- | --- |
+| `reason` | nullable, string, max 1000 |
+| `reception_notes` | nullable, string, max 2000 |
+| `prestation` | nullable, string, max 255 |
+| `status` | string — transition target (`confirmed`, `checked_in`, `cancelled` supported) |
+| `cancellation_reason` | required when `status=cancelled`, 3–1000 chars |
+
+Status transitions enforce the same guard rails as the web app:
+- `confirmed` only from `scheduled`.
+- `checked_in` only from `scheduled` or `confirmed`.
+- `cancelled` not allowed from `completed`, `cancelled` or `no_show`.
+
+Response `200 OK` → `{ "data": { ...appointment } }`.
+Errors: `422 { errors: { status: ["..."] } }` for illegal transitions.
+
+### 10. Delete appointment — `DELETE /api/v1/appointments/{appointment}`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `cancel`.
+- `200 OK` → `{ "message": "Rendez-vous supprimé." }`.
+
+### 11. Schedule — `GET /api/v1/schedule`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `viewAny` Appointment.
+
+Returns the current doctor's weekly schedules, time off and open months. When
+no active doctor is configured, all lists are empty and `doctor` is `null`.
+
+```json
+{
+  "doctor": {
+    "id": 1,
+    "doctor_name": "Dr Benali",
+    "specialty": "Médecine générale",
+    "consultation_duration": 15
+  },
+  "schedules": [
+    { "id": 1, "day_of_week": 1, "starts_at": "09:00", "ends_at": "16:00", "slot_duration": 15, "is_active": true }
+  ],
+  "time_off": [
+    { "id": 1, "starts_at": "2026-08-20T00:00:00+01:00", "ends_at": "2026-08-21T00:00:00+01:00", "is_all_day": true, "reason": "Congé" }
+  ],
+  "open_months": [
+    { "id": 1, "year": 2026, "month": 8, "is_open": true, "note": null }
+  ]
+}
+```
+
+### 12. List patients — `GET /api/v1/patients`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `viewAny` Patient.
+
+Query params:
+
+| Param | Rules |
+| --- | --- |
+| `q` | nullable, string, max 120 — full-text search |
+| `per_page` | integer 1–100 (default 15) |
+
+Response `200 OK`: paginated collection of patient resources.
+
+```json
+{
+  "data": [
+    {
+      "id": 7,
+      "patient_number": "P-000007",
+      "first_name": "Amina",
+      "last_name": "Kaci",
+      "full_name": "Amina Kaci",
+      "date_of_birth": "1990-05-01",
+      "gender": "female",
+      "blood_group": "O+",
+      "phone": "0550...",
+      "secondary_phone": null,
+      "email": "amina@example.com",
+      "address": "...",
+      "city": "Alger",
+      "created_at": "2026-08-07T10:00:00+01:00",
+      "updated_at": "2026-08-07T10:00:00+01:00"
+    }
+  ],
+  "links": { "...": "..." },
+  "meta": { "...": "..." }
+}
+```
+
+### 13. Show patient — `GET /api/v1/patients/{patient}`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `view`.
+- `200 OK` → `{ "data": { ...patient } }`; `404` if not in the cabinet.
+
+---
+
+## Resource schemas (summary)
+
+**UserResource**: `id`, `name`, `email`, `is_platform_admin`, `approved`,
+`cabinet` (CabinetResource, when loaded), `roles[]`, `permissions[]`.
+
+**CabinetResource**: `id`, `name`, `status` (`pending|active|suspended`),
+`specialization`, `wilaya { code, name }`, `license` (when loaded):
+`{ plan: trial|lifetime, plan_label, status, status_label, expires_at }`.
+
+**PatientResource**: `id`, `patient_number`, `first_name`, `last_name`,
+`full_name`, `date_of_birth`, `gender`, `blood_group`, `phone`,
+`secondary_phone`, `email`, `address`, `city`, `created_at`, `updated_at`.
+
+**AppointmentResource**: `id`, `patient_id`, `patient` (when loaded),
+`appointment_date`, `starts_at`, `ends_at`, `status`, `reason`, `prestation`,
+`reception_notes`, `cancellation_reason`, `can_confirm`, `can_check_in`,
+`can_cancel`, `confirmed_at`, `checked_in_at`, `created_at`, `updated_at`.

@@ -1,1 +1,44 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxNaWRkbGV3YXJlOwoKdXNlIEFwcFxNb2RlbHNcVXNlcjsKdXNlIEFwcFxTZXJ2aWNlc1xDYWJpbmV0XENhYmluZXRBY2Nlc3NTZXJ2aWNlOwp1c2UgQ2xvc3VyZTsKdXNlIElsbHVtaW5hdGVcSHR0cFxSZXF1ZXN0Owp1c2UgU3ltZm9ueVxDb21wb25lbnRcSHR0cEZvdW5kYXRpb25cUmVzcG9uc2U7CgovKioKICogQVBJIGNvdW50ZXJwYXJ0IG9mIEVuc3VyZUNhYmluZXRJc0FjdGl2ZS4gSW5zdGVhZCBvZiByZWRpcmVjdGluZywgYSBibG9ja2VkCiAqIG1lbWJlciByZWNlaXZlcyBhIDQwMyBKU09OIHJlc3BvbnNlIGNhcnJ5aW5nIGEgRnJlbmNoIGV4cGxhbmF0aW9uIGFuZCBhCiAqIG1hY2hpbmUtcmVhZGFibGUgcmVhc29uIGNvZGUuIFNoYXJlcyBpdHMgZWxpZ2liaWxpdHkgcnVsZXMgd2l0aCB0aGUgd2ViCiAqIG1pZGRsZXdhcmUgdGhyb3VnaCBDYWJpbmV0QWNjZXNzU2VydmljZS4KICovCmNsYXNzIEVuc3VyZUFwaUNhYmluZXRJc0FjdGl2ZQp7CiAgICBwdWJsaWMgZnVuY3Rpb24gX19jb25zdHJ1Y3QoCiAgICAgICAgcHJpdmF0ZSByZWFkb25seSBDYWJpbmV0QWNjZXNzU2VydmljZSAkYWNjZXNzLAogICAgKSB7fQoKICAgIC8qKgogICAgICogQHBhcmFtICBDbG9zdXJlKFJlcXVlc3QpOiBSZXNwb25zZSAgJG5leHQKICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIGhhbmRsZShSZXF1ZXN0ICRyZXF1ZXN0LCBDbG9zdXJlICRuZXh0KTogUmVzcG9uc2UKICAgIHsKICAgICAgICAkdXNlciA9ICRyZXF1ZXN0LT51c2VyKCk7CgogICAgICAgIGlmICgkdXNlciBpbnN0YW5jZW9mIFVzZXIpIHsKICAgICAgICAgICAgJHJlYXNvbiA9ICR0aGlzLT5hY2Nlc3MtPmRlbmlhbFJlYXNvbigkdXNlcik7CgogICAgICAgICAgICBpZiAoJHJlYXNvbiAhPT0gbnVsbCkgewogICAgICAgICAgICAgICAgcmV0dXJuIHJlc3BvbnNlKCktPmpzb24oWwogICAgICAgICAgICAgICAgICAgICdtZXNzYWdlJyA9PiAkdGhpcy0+YWNjZXNzLT5kZW5pYWxNZXNzYWdlKCR1c2VyKSwKICAgICAgICAgICAgICAgICAgICAncmVhc29uJyA9PiAkcmVhc29uLAogICAgICAgICAgICAgICAgXSwgNDAzKTsKICAgICAgICAgICAgfQogICAgICAgIH0KCiAgICAgICAgcmV0dXJuICRuZXh0KCRyZXF1ZXN0KTsKICAgIH0KfQo=
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Models\User;
+use App\Services\Cabinet\CabinetAccessService;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * API counterpart of EnsureCabinetIsActive. Instead of redirecting, a blocked
+ * member receives a 403 JSON response carrying a French explanation and a
+ * machine-readable reason code. Shares its eligibility rules with the web
+ * middleware through CabinetAccessService.
+ */
+class EnsureApiCabinetIsActive
+{
+    public function __construct(
+        private readonly CabinetAccessService $access,
+    ) {}
+
+    /**
+     * @param  Closure(Request): Response  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        $user = $request->user();
+
+        if ($user instanceof User) {
+            $reason = $this->access->denialReason($user);
+
+            if ($reason !== null) {
+                return response()->json([
+                    'message' => $this->access->denialMessage($user),
+                    'reason' => $reason,
+                    'status' => $this->access->denialStatus($user),
+                ], 403);
+            }
+        }
+
+        return $next($request);
+    }
+}

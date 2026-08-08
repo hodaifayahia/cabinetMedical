@@ -1770,7 +1770,7 @@ function databaseEnvironment(databasePath, storageRoot) {
     const framework = path.join(storageRoot, 'framework');
 
     return safeWindowsEnvironment({
-        APP_NAME: 'MediSmart',
+        APP_NAME: 'DrClickDz',
         APP_URL: 'http://127.0.0.1',
         APP_ENV: 'production',
         APP_DEBUG: 'false',
@@ -1783,7 +1783,7 @@ function databaseEnvironment(databasePath, storageRoot) {
         CACHE_STORE: 'array',
         CLINIC_ADDRESS: '',
         CLINIC_EMAIL: '',
-        CLINIC_NAME: 'MediSmart Clinic',
+        CLINIC_NAME: 'DrClickDz Clinic',
         CLINIC_PHONE: '',
         CLINIC_TIMEZONE: 'Africa/Algiers',
         DB_CONNECTION: 'sqlite',

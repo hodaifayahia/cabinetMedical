@@ -1,1 +1,37 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxSZXNvdXJjZXM7Cgp1c2UgQXBwXE1vZGVsc1xDYWJpbmV0Owp1c2UgSWxsdW1pbmF0ZVxIdHRwXFJlcXVlc3Q7CnVzZSBJbGx1bWluYXRlXEh0dHBcUmVzb3VyY2VzXEpzb25cSnNvblJlc291cmNlOwoKLyoqCiAqIEBtaXhpbiBDYWJpbmV0CiAqLwpjbGFzcyBDYWJpbmV0UmVzb3VyY2UgZXh0ZW5kcyBKc29uUmVzb3VyY2UKewogICAgLyoqCiAgICAgKiBAcmV0dXJuIGFycmF5PHN0cmluZywgbWl4ZWQ+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB0b0FycmF5KFJlcXVlc3QgJHJlcXVlc3QpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICdpZCcgPT4gJHRoaXMtPmlkLAogICAgICAgICAgICAnbmFtZScgPT4gJHRoaXMtPm5hbWUsCiAgICAgICAgICAgICdzdGF0dXMnID0+ICR0aGlzLT5zdGF0dXMtPnZhbHVlLAogICAgICAgICAgICAnc3BlY2lhbGl6YXRpb24nID0+ICR0aGlzLT5zcGVjaWFsaXphdGlvbiwKICAgICAgICAgICAgJ3dpbGF5YScgPT4gWwogICAgICAgICAgICAgICAgJ2NvZGUnID0+ICR0aGlzLT53aWxheWFfY29kZSwKICAgICAgICAgICAgICAgICduYW1lJyA9PiAkdGhpcy0+d2lsYXlhX25hbWUsCiAgICAgICAgICAgIF0sCiAgICAgICAgXTsKICAgIH0KfQo=
+<?php
+
+namespace App\Http\Resources;
+
+use App\Models\Cabinet;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * @mixin Cabinet
+ */
+class CabinetResource extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'status' => $this->status->value,
+            'specialization' => $this->specialization,
+            'wilaya' => [
+                'code' => $this->wilaya_code,
+                'name' => $this->wilaya_name,
+            ],
+            'license' => $this->whenLoaded('license', fn (): ?array => $this->license === null ? null : [
+                'plan' => $this->license->plan?->value,
+                'plan_label' => $this->license->plan?->label(),
+                'status' => $this->license->effectiveStatus(),
+                'status_label' => $this->license->effectiveStatusLabel(),
+                'expires_at' => $this->license->expires_at?->toIso8601String(),
+            ]),
+        ];
+    }
+}

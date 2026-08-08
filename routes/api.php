@@ -1,1 +1,52 @@
-PD9waHAKCnVzZSBBcHBcSHR0cFxDb250cm9sbGVyc1xBcGlcVjFcQXBwb2ludG1lbnRDb250cm9sbGVyOwp1c2UgQXBwXEh0dHBcQ29udHJvbGxlcnNcQXBpXFYxXEF1dGhDb250cm9sbGVyOwp1c2UgQXBwXEh0dHBcQ29udHJvbGxlcnNcQXBpXFYxXENhYmluZXRDb250cm9sbGVyOwp1c2UgQXBwXEh0dHBcQ29udHJvbGxlcnNcQXBpXFYxXFBhdGllbnRDb250cm9sbGVyOwp1c2UgQXBwXEh0dHBcQ29udHJvbGxlcnNcQXBpXFYxXFNjaGVkdWxlQ29udHJvbGxlcjsKdXNlIElsbHVtaW5hdGVcU3VwcG9ydFxGYWNhZGVzXFJvdXRlOwoKLyoKfC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCnwgQVBJIHYxIChTYW5jdHVtIHBlcnNvbmFsIGFjY2VzcyB0b2tlbnMpCnwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQp8CnwgVGhlIGRlc2t0b3AvY29tcGFuaW9uIGNsaWVudHMgYXV0aGVudGljYXRlIHdpdGggcGxhaW4tdGV4dCBwZXJzb25hbCBhY2Nlc3MKfCB0b2tlbnMgbWludGVkIGJ5IFBPU1QgL2FwaS92MS9hdXRoL3Rva2VuLiBDYWJpbmV0LXNjb3BlZCByZXNvdXJjZXMgc2l0IGJlaGluZAp8IGJvdGggYXV0aDpzYW5jdHVtIGFuZCB0aGUgY2FiaW5ldC5hY3RpdmUuYXBpIGdhdGUsIHdoaWNoIG1pcnJvcnMgdGhlIHdlYgp8IEVuc3VyZUNhYmluZXRJc0FjdGl2ZSBydWxlcyBidXQgYW5zd2VycyB3aXRoIDQwMyBKU09OIGluc3RlYWQgb2YgcmVkaXJlY3RzLgp8CiovCgpSb3V0ZTo6cHJlZml4KCd2MScpLT5ncm91cChmdW5jdGlvbiAoKTogdm9pZCB7CiAgICAvLyAtLS0gUHVibGljIGF1dGggKyBvbmJvYXJkaW5nIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAgICBSb3V0ZTo6cG9zdCgnYXV0aC90b2tlbicsIFtBdXRoQ29udHJvbGxlcjo6Y2xhc3MsICd0b2tlbiddKQogICAgICAgIC0+bWlkZGxld2FyZSgndGhyb3R0bGU6bG9naW4nKTsKCiAgICBSb3V0ZTo6cG9zdCgnY2FiaW5ldHMvcmVnaXN0ZXInLCBbQ2FiaW5ldENvbnRyb2xsZXI6OmNsYXNzLCAncmVnaXN0ZXInXSkKICAgICAgICAtPm1pZGRsZXdhcmUoJ3Rocm90dGxlOnJlZ2lzdHJhdGlvbicpOwoKICAgIFJvdXRlOjpwb3N0KCdjYWJpbmV0cy9qb2luJywgW0NhYmluZXRDb250cm9sbGVyOjpjbGFzcywgJ2pvaW4nXSkKICAgICAgICAtPm1pZGRsZXdhcmUoJ3Rocm90dGxlOmNhYmluZXQtam9pbicpOwoKICAgIC8vIC0tLSBBdXRoZW50aWNhdGVkICh0b2tlbiBwcmVzZW50KSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KICAgIFJvdXRlOjptaWRkbGV3YXJlKCdhdXRoOnNhbmN0dW0nKS0+Z3JvdXAoZnVuY3Rpb24gKCk6IHZvaWQgewogICAgICAgIFJvdXRlOjpwb3N0KCdhdXRoL2xvZ291dCcsIFtBdXRoQ29udHJvbGxlcjo6Y2xhc3MsICdsb2dvdXQnXSk7CiAgICAgICAgUm91dGU6OmdldCgnbWUnLCBbQXV0aENvbnRyb2xsZXI6OmNsYXNzLCAnbWUnXSk7CgogICAgICAgIC8vIC0tLSBBdXRoZW50aWNhdGVkICsgYWN0aXZlLCBhcHByb3ZlZCBjYWJpbmV0IG1lbWJlciAtLS0tLS0tLS0tLS0tLQogICAgICAgIFJvdXRlOjptaWRkbGV3YXJlKCdjYWJpbmV0LmFjdGl2ZS5hcGknKS0+Z3JvdXAoZnVuY3Rpb24gKCk6IHZvaWQgewogICAgICAgICAgICBSb3V0ZTo6Z2V0KCdhcHBvaW50bWVudHMnLCBbQXBwb2ludG1lbnRDb250cm9sbGVyOjpjbGFzcywgJ2luZGV4J10pOwogICAgICAgICAgICBSb3V0ZTo6cG9zdCgnYXBwb2ludG1lbnRzJywgW0FwcG9pbnRtZW50Q29udHJvbGxlcjo6Y2xhc3MsICdzdG9yZSddKTsKICAgICAgICAgICAgUm91dGU6OmdldCgnYXBwb2ludG1lbnRzL3thcHBvaW50bWVudH0nLCBbQXBwb2ludG1lbnRDb250cm9sbGVyOjpjbGFzcywgJ3Nob3cnXSk7CiAgICAgICAgICAgIFJvdXRlOjpwYXRjaCgnYXBwb2ludG1lbnRzL3thcHBvaW50bWVudH0nLCBbQXBwb2ludG1lbnRDb250cm9sbGVyOjpjbGFzcywgJ3VwZGF0ZSddKTsKICAgICAgICAgICAgUm91dGU6OmRlbGV0ZSgnYXBwb2ludG1lbnRzL3thcHBvaW50bWVudH0nLCBbQXBwb2ludG1lbnRDb250cm9sbGVyOjpjbGFzcywgJ2Rlc3Ryb3knXSk7CgogICAgICAgICAgICBSb3V0ZTo6Z2V0KCdzY2hlZHVsZScsIFtTY2hlZHVsZUNvbnRyb2xsZXI6OmNsYXNzLCAnaW5kZXgnXSk7CgogICAgICAgICAgICBSb3V0ZTo6Z2V0KCdwYXRpZW50cycsIFtQYXRpZW50Q29udHJvbGxlcjo6Y2xhc3MsICdpbmRleCddKTsKICAgICAgICAgICAgUm91dGU6OmdldCgncGF0aWVudHMve3BhdGllbnR9JywgW1BhdGllbnRDb250cm9sbGVyOjpjbGFzcywgJ3Nob3cnXSk7CiAgICAgICAgfSk7CiAgICB9KTsKfSk7Cg==
+<?php
+
+use App\Http\Controllers\Api\V1\AppointmentController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CabinetController;
+use App\Http\Controllers\Api\V1\PatientController;
+use App\Http\Controllers\Api\V1\ScheduleController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| API v1 (Sanctum personal access tokens)
+|--------------------------------------------------------------------------
+|
+| The desktop/companion clients authenticate with plain-text personal access
+| tokens minted by POST /api/v1/auth/token. Cabinet-scoped resources sit behind
+| both auth:sanctum and the cabinet.active.api gate, which mirrors the web
+| EnsureCabinetIsActive rules but answers with 403 JSON instead of redirects.
+|
+*/
+
+Route::prefix('v1')->group(function (): void {
+    // --- Public auth + onboarding -----------------------------------------
+    Route::post('auth/token', [AuthController::class, 'token'])
+        ->middleware('throttle:login');
+
+    Route::post('cabinets/register', [CabinetController::class, 'register'])
+        ->middleware('throttle:registration');
+
+    Route::post('cabinets/join', [CabinetController::class, 'join'])
+        ->middleware('throttle:cabinet-join');
+
+    // --- Authenticated (token present) ------------------------------------
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::post('auth/logout', [AuthController::class, 'logout']);
+        Route::get('me', [AuthController::class, 'me']);
+
+        // --- Authenticated + active, approved cabinet member --------------
+        Route::middleware('cabinet.active.api')->group(function (): void {
+            Route::get('appointments', [AppointmentController::class, 'index']);
+            Route::post('appointments', [AppointmentController::class, 'store']);
+            Route::get('appointments/{appointment}', [AppointmentController::class, 'show']);
+            Route::patch('appointments/{appointment}', [AppointmentController::class, 'update']);
+            Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy']);
+
+            Route::get('schedule', [ScheduleController::class, 'index']);
+
+            Route::get('patients', [PatientController::class, 'index']);
+            Route::get('patients/{patient}', [PatientController::class, 'show']);
+        });
+    });
+});

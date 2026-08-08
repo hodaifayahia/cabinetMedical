@@ -4,12 +4,14 @@ import {
     index as confirmOptions,
     store as confirmStore,
 } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
+import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import InputError from '@/components/InputError.vue';
 import PasskeyVerify from '@/components/PasskeyVerify.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { dashboard } from '@/routes';
 import { store } from '@/routes/password/confirm';
 
 defineOptions({
@@ -23,6 +25,8 @@ defineOptions({
 
 <template>
     <Head title="Confirmer votre identité" />
+
+    <AuthBackLink :href="dashboard()" label="Retour au tableau de bord" />
 
     <PasskeyVerify
         :routes="{

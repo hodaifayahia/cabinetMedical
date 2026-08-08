@@ -1,1 +1,32 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxDb250cm9sbGVyc1xDYWJpbmV0OwoKdXNlIEFwcFxBY3Rpb25zXENhYmluZXRcSm9pbkNhYmluZXRBY3Rpb247CnVzZSBBcHBcSHR0cFxDb250cm9sbGVyc1xDb250cm9sbGVyOwp1c2UgQXBwXEh0dHBcUmVxdWVzdHNcSm9pbkNhYmluZXRSZXF1ZXN0Owp1c2UgSWxsdW1pbmF0ZVxIdHRwXFJlZGlyZWN0UmVzcG9uc2U7CnVzZSBJbmVydGlhXEluZXJ0aWE7CnVzZSBJbmVydGlhXFJlc3BvbnNlOwoKY2xhc3MgSm9pbkNhYmluZXRDb250cm9sbGVyIGV4dGVuZHMgQ29udHJvbGxlcgp7CiAgICAvKioKICAgICAqIFB1YmxpYyBmb3JtIHVzZWQgYnkgYSBwcm9zcGVjdGl2ZSBzdGFmZiBtZW1iZXIgdG8gcmVxdWVzdCBhY2Nlc3MgdG8gYW4KICAgICAqIGV4aXN0aW5nIGNhYmluZXQgYnkgbmFtaW5nIGl0cyBvd25lcidzIGUtbWFpbCBhZGRyZXNzLgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gY3JlYXRlKCk6IFJlc3BvbnNlCiAgICB7CiAgICAgICAgcmV0dXJuIEluZXJ0aWE6OnJlbmRlcignYXV0aC9Kb2luQ2FiaW5ldCcpOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiBzdG9yZShKb2luQ2FiaW5ldFJlcXVlc3QgJHJlcXVlc3QsIEpvaW5DYWJpbmV0QWN0aW9uICRhY3Rpb24pOiBSZWRpcmVjdFJlc3BvbnNlCiAgICB7CiAgICAgICAgJGFjdGlvbi0+ZXhlY3V0ZSgkcmVxdWVzdC0+dmFsaWRhdGVkKCkpOwoKICAgICAgICByZXR1cm4gcmVkaXJlY3QoKS0+cm91dGUoJ2xvZ2luJyktPndpdGgoCiAgICAgICAgICAgICdzdGF0dXMnLAogICAgICAgICAgICAnVm90cmUgZGVtYW5kZSBhIMOpdMOpIGVudm95w6llLiBWb3VzIHBvdXJyZXogdm91cyBjb25uZWN0ZXIgdW5lIGZvaXMgYXBwcm91dsOpIHBhciBsZSBwcm9wcmnDqXRhaXJlIGR1IGNhYmluZXQuJywKICAgICAgICApOwogICAgfQp9Cg==
+<?php
+
+namespace App\Http\Controllers\Cabinet;
+
+use App\Actions\Cabinet\JoinCabinetAction;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\JoinCabinetRequest;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class JoinCabinetController extends Controller
+{
+    /**
+     * Public form used by a prospective staff member to request access to an
+     * existing cabinet by naming its owner's e-mail address.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('auth/JoinCabinet');
+    }
+
+    public function store(JoinCabinetRequest $request, JoinCabinetAction $action): RedirectResponse
+    {
+        $action->execute($request->validated());
+
+        return redirect()->route('login')->with(
+            'status',
+            'Votre demande a été envoyée. Vous pourrez vous connecter une fois approuvé par le propriétaire du cabinet.',
+        );
+    }
+}

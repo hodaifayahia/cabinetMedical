@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('CLINIC_NAME', 'ClickDZ Clinic'),
+    'name' => env('CLINIC_NAME', 'DrClickDz'),
     'address' => env('CLINIC_ADDRESS', ''),
     'phone' => env('CLINIC_PHONE', ''),
     'email' => env('CLINIC_EMAIL', ''),

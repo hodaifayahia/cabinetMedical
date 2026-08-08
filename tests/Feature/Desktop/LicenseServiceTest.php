@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Desktop;
 
+use App\Enums\LicensePlan;
 use App\Models\ApplicationSetting;
+use App\Models\License;
 use App\Services\ApplicationSettingService;
 use App\Services\LicenseService;
 use App\Services\MachineFingerprintService;
@@ -155,6 +157,43 @@ class LicenseServiceTest extends TestCase
 
         $this->assertSame('expired', $service->status()['state']);
         $this->assertFalse($service->featureEnabled('remote_upload'));
+    }
+
+    public function test_hosted_entitlements_never_replace_poison_or_get_deleted_by_the_local_certificate(): void
+    {
+        $hostedBefore = License::query()->create([
+            'license_id' => 'CAB-HOSTED-BEFORE',
+            'product' => 'DrClickDz',
+            'edition' => 'hosted',
+            'plan' => LicensePlan::LIFETIME,
+            'status' => 'active',
+            'issued_at' => now(),
+            'last_verified_at' => now(),
+        ]);
+
+        $service = app(LicenseService::class);
+        $local = $service->activateFromCertificate($this->certificate($this->basePayload([
+            'features' => ['multi_user' => true],
+        ])));
+
+        $this->assertDatabaseHas('licenses', ['id' => $hostedBefore->getKey()]);
+        $this->assertNull($local->plan);
+
+        $hostedAfter = License::query()->create([
+            'license_id' => 'CAB-HOSTED-AFTER',
+            'product' => 'DrClickDz',
+            'edition' => 'hosted',
+            'plan' => LicensePlan::TRIAL,
+            'status' => 'active',
+            'issued_at' => now(),
+            'expires_at' => now()->addDays(7),
+            'last_verified_at' => now(),
+        ]);
+
+        $this->assertGreaterThan($local->getKey(), $hostedAfter->getKey());
+        $this->assertSame('active', $service->status()['state']);
+        $this->assertTrue($service->featureEnabled('multi_user'));
+        $this->assertDatabaseCount('licenses', 3);
     }
 
     public function test_unknown_or_malformed_signed_entitlements_are_rejected_before_persistence(): void

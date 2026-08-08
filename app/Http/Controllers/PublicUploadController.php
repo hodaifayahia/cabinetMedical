@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\CabinetSetting;
 use App\Models\UploadedDocument;
 use App\Models\UploadSession;
-use App\Services\DocumentBrandingService;
 use App\Services\QrUploadService;
 use App\Services\UploadAudienceService;
 use App\Services\UploadDocumentService;
@@ -21,13 +20,20 @@ final class PublicUploadController extends Controller
 {
     public function show(
         string $selector,
-        DocumentBrandingService $branding,
+        QrUploadService $sessions,
     ): Response {
         config(['livewire.inject_assets' => false]);
         SupportAutoInjectedAssets::$forceAssetInjection = false;
         SupportAutoInjectedAssets::$hasRenderedAComponentThisRequest = false;
 
-        $identity = $branding->identity(cabinet: CabinetSetting::current());
+        $session = $sessions->findBySelector($selector);
+        abort_unless($session instanceof UploadSession, 404);
+
+        $cabinet = $session->cabinet_id === null
+            ? CabinetSetting::current()
+            : CabinetSetting::query()->where('cabinet_id', $session->cabinet_id)->first();
+        abort_unless($cabinet instanceof CabinetSetting, 404);
+
         $nonce = rtrim(strtr(base64_encode(random_bytes(24)), '+/', '-_'), '=');
         $contentSecurityPolicy = implode('; ', [
             "default-src 'none'",
@@ -50,9 +56,9 @@ final class PublicUploadController extends Controller
         return response()->view('uploads.public', [
             'nonce' => $nonce,
             'clinic' => [
-                'name' => $identity['clinic_name'],
-                'phone' => $identity['phone'],
-                'city' => $identity['city'],
+                'name' => trim((string) $cabinet->name),
+                'phone' => trim((string) $cabinet->phone),
+                'city' => trim((string) $cabinet->city),
             ],
             'configuration' => [
                 'selector' => $selector,

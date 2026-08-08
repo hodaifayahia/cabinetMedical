@@ -47,7 +47,7 @@ final class InspectOfflineRestore extends Command
                 : self::FAILURE;
         }
 
-        $this->info('Prepared MediSmart restore inspection');
+        $this->info('Prepared DrClickDz restore inspection');
         $this->line('Operation: '.$restore->operationId);
         $this->line('State: '.$last['event']);
         $this->line('Staged files: '.$restore->stagedFileCount);

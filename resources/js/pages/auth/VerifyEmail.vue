@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -21,6 +22,13 @@ defineProps<{
 
 <template>
     <Head title="Vérification de l’e-mail" />
+
+    <AuthBackLink
+        :href="logout()"
+        method="post"
+        as="button"
+        label="Retour à la connexion"
+    />
 
     <div
         v-if="status === 'verification-link-sent'"

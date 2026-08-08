@@ -17,8 +17,11 @@ import {
     UserCog,
     Users,
 } from '@lucide/vue';
+import { isTauri } from '@tauri-apps/api/core';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import ClinicLogo from '@/components/ClinicLogo.vue';
+import PageBackButton from '@/components/PageBackButton.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,7 +46,9 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { useSessionLockTimer } from '@/composables/useSessionLockTimer';
+import { applicationBackNavigation } from '@/lib/applicationBackNavigation';
 import { configurationNavForPermissions } from '@/lib/configurationNav';
+import { desktopChromeVisibility } from '@/lib/desktopExperience';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
@@ -57,10 +62,26 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const page = usePage();
+const desktopRuntime = ref(false);
+const runtimeResolved = ref(false);
 const auth = computed(() => page.props.auth);
-const clinicName = computed(() => String(page.props.name ?? 'ClickDZ'));
+const clinicName = computed(() => String(page.props.name ?? 'DrClickDz'));
 const clinicLogoUrl = computed(() => page.props.cabinet?.logo_url ?? null);
 const desktopDownload = computed(() => page.props.desktopDownload);
+const chromeVisibility = computed(() => {
+    if (!runtimeResolved.value) {
+        return { administration: false, installer: false };
+    }
+
+    return desktopChromeVisibility(
+        desktopRuntime.value,
+        auth.value.user?.can.accessAdminPanel ?? false,
+        desktopDownload.value,
+    );
+});
+const backNavigation = computed(() =>
+    applicationBackNavigation(page.url, props.breadcrumbs, dashboard()),
+);
 const { isCurrentOrParentUrl, isCurrentUrl } = useCurrentUrl();
 
 const canConfigureAppointments = computed(
@@ -131,7 +152,7 @@ const mainNavItems = computed<NavItem[]>(() => {
 const rightNavItems = computed<NavItem[]>(() => {
     const items: NavItem[] = [];
 
-    if (auth.value.user?.can.accessAdminPanel) {
+    if (chromeVisibility.value.administration) {
         items.push({ title: 'Administration', href: '/admin', icon: Shield });
     }
 
@@ -177,6 +198,8 @@ const updateOnlineState = () => {
 };
 
 onMounted(() => {
+    desktopRuntime.value = isTauri();
+    runtimeResolved.value = true;
     window.addEventListener('online', updateOnlineState);
     window.addEventListener('offline', updateOnlineState);
 });
@@ -233,16 +256,14 @@ onBeforeUnmount(() => {
                         </SheetTitle>
                         <SheetHeader class="px-0 text-left">
                             <div class="flex items-center gap-2">
-                                <img
-                                    v-if="clinicLogoUrl"
+                                <ClinicLogo
                                     :src="clinicLogoUrl"
-                                    alt=""
-                                    class="size-8 rounded-lg object-contain"
-                                />
-                                <Stethoscope
-                                    v-else
-                                    class="h-6 w-6 text-[#d89d16]"
-                                />
+                                    image-class="size-8 rounded-lg object-contain"
+                                >
+                                    <Stethoscope
+                                        class="h-6 w-6 text-[#d89d16]"
+                                    />
+                                </ClinicLogo>
                                 <span
                                     class="text-lg font-bold tracking-tight text-slate-800 dark:text-white"
                                 >
@@ -288,13 +309,17 @@ onBeforeUnmount(() => {
                             </template>
 
                             <p
-                                v-if="desktopDownload || rightNavItems.length"
+                                v-if="
+                                    chromeVisibility.installer ||
+                                    rightNavItems.length
+                                "
                                 class="mt-3 px-3 pb-1 text-xs font-semibold tracking-wide text-slate-400 uppercase"
                             >
                                 Liens
                             </p>
                             <a
                                 v-if="
+                                    chromeVisibility.installer &&
                                     desktopDownload?.available &&
                                     desktopDownload.url
                                 "
@@ -305,7 +330,10 @@ onBeforeUnmount(() => {
                                 {{ desktopDownload.label }}
                             </a>
                             <button
-                                v-else-if="desktopDownload"
+                                v-else-if="
+                                    chromeVisibility.installer &&
+                                    desktopDownload
+                                "
                                 type="button"
                                 disabled
                                 class="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-400"
@@ -330,18 +358,24 @@ onBeforeUnmount(() => {
                 </Sheet>
             </div>
 
+            <PageBackButton
+                v-if="backNavigation.visible"
+                :href="backNavigation.href"
+                :label="backNavigation.label"
+                compact
+            />
+
             <!-- Logo -->
             <Link
                 :href="dashboard()"
                 class="flex min-w-0 shrink-0 items-center gap-2 pr-1"
             >
-                <img
-                    v-if="clinicLogoUrl"
+                <ClinicLogo
                     :src="clinicLogoUrl"
-                    alt=""
-                    class="size-9 rounded-xl object-contain"
-                />
-                <Stethoscope v-else class="h-7 w-7 text-[#d89d16]" />
+                    image-class="size-9 rounded-xl object-contain"
+                >
+                    <Stethoscope class="h-7 w-7 text-[#d89d16]" />
+                </ClinicLogo>
                 <span
                     class="hidden max-w-40 truncate text-lg font-bold tracking-tight whitespace-nowrap text-slate-800 sm:inline xl:hidden 2xl:inline dark:text-white"
                 >
@@ -381,9 +415,7 @@ onBeforeUnmount(() => {
                             "
                         >
                             <Settings class="h-4 w-4 shrink-0" />
-                            <span class="hidden 2xl:inline"
-                                >Configuration</span
-                            >
+                            <span class="hidden 2xl:inline">Configuration</span>
                             <ChevronDown class="h-4 w-4 shrink-0" />
                         </button>
                     </DropdownMenuTrigger>
@@ -418,7 +450,10 @@ onBeforeUnmount(() => {
 
             <!-- Right cluster -->
             <div class="ml-auto flex shrink-0 items-center gap-2">
-                <TooltipProvider :delay-duration="0">
+                <TooltipProvider
+                    v-if="chromeVisibility.installer"
+                    :delay-duration="0"
+                >
                     <Tooltip>
                         <TooltipTrigger as-child>
                             <Button
@@ -427,7 +462,7 @@ onBeforeUnmount(() => {
                                     desktopDownload.url
                                 "
                                 as-child
-                                class="hidden h-10 shrink-0 rounded-full bg-slate-900 px-3 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 xl:inline-flex 2xl:px-4"
+                                class="hidden h-10 shrink-0 rounded-full bg-slate-900 px-3 text-white hover:bg-slate-800 xl:inline-flex 2xl:px-4 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                             >
                                 <a :href="desktopDownload.url">
                                     <Download class="h-4 w-4 shrink-0" />
@@ -462,7 +497,8 @@ onBeforeUnmount(() => {
 
                 <!-- Icon actions -->
                 <div
-                    class="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50/80 p-1 dark:border-slate-800 dark:bg-slate-900/80 xl:flex"
+                    v-if="canConfigureAppointments || rightNavItems.length"
+                    class="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50/80 p-1 xl:flex dark:border-slate-800 dark:bg-slate-900/80"
                 >
                     <TooltipProvider
                         v-if="canConfigureAppointments"

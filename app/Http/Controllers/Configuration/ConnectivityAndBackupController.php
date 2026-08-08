@@ -11,9 +11,12 @@ use App\Models\CabinetSetting;
 use App\Models\Patient;
 use App\Models\UploadedDocument;
 use App\Models\UploadSession;
+use App\Models\User;
 use App\Services\ApplicationHealthService;
 use App\Services\ApplicationSettingService;
+use App\Services\Cabinet\CabinetEntitlementService;
 use App\Services\GoogleDriveService;
+use App\Services\InstallationMaintenanceAccessService;
 use App\Services\LicenseActivationService;
 use App\Services\LicenseService;
 use App\Services\NetworkService;
@@ -31,6 +34,10 @@ final class ConnectivityAndBackupController extends Controller
 {
     private const ACTIVE_UPLOAD_COOKIE = 'medismart_active_upload';
 
+    public function __construct(
+        private readonly InstallationMaintenanceAccessService $installationMaintenance,
+    ) {}
+
     public function edit(
         Request $request,
         ApplicationSettingService $settings,
@@ -38,18 +45,32 @@ final class ConnectivityAndBackupController extends Controller
         NetworkService $network,
         GoogleDriveService $drive,
         LicenseService $licenses,
+        CabinetEntitlementService $cabinetEntitlements,
         LicenseActivationService $licenseActivation,
         QrUploadService $qrUploads,
     ): Response {
+        /** @var User|null $actor */
         $actor = $request->user();
-        $canManageConnectivity = $actor?->can(PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value) ?? false;
-        $canManageBackups = $actor?->can(PermissionName::CONFIGURATION_BACKUPS_MANAGE->value) ?? false;
-        $canManageRestore = $actor?->can(PermissionName::CONFIGURATION_RESTORE_MANAGE->value) ?? false;
-        $canManageDrive = $actor?->can(PermissionName::CONFIGURATION_DRIVE_MANAGE->value) ?? false;
-        $canManageLicense = $actor?->can(PermissionName::CONFIGURATION_LICENSING_MANAGE->value) ?? false;
-        $canViewDiagnostics = $actor?->can(PermissionName::CONFIGURATION_DIAGNOSTICS_VIEW->value) ?? false;
-        $foundationReady = $this->foundationReady();
-        $status = $health->status();
+        $maintenanceAllowed = $this->installationMaintenance->allows($actor);
+        $canManageConnectivity = $maintenanceAllowed
+            && ($actor?->can(PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value) ?? false);
+        $canManageBackups = $maintenanceAllowed
+            && ($actor?->can(PermissionName::CONFIGURATION_BACKUPS_MANAGE->value) ?? false);
+        $canManageRestore = $maintenanceAllowed
+            && ($actor?->can(PermissionName::CONFIGURATION_RESTORE_MANAGE->value) ?? false);
+        $canManageDrive = $maintenanceAllowed
+            && ($actor?->can(PermissionName::CONFIGURATION_DRIVE_MANAGE->value) ?? false);
+        $canManageLicense = $maintenanceAllowed
+            && ($actor?->can(PermissionName::CONFIGURATION_LICENSING_MANAGE->value) ?? false);
+        $canViewDiagnostics = $maintenanceAllowed
+            && ($actor?->can(PermissionName::CONFIGURATION_DIAGNOSTICS_VIEW->value) ?? false);
+        $canManageUploadSessions = $actor?->can(
+            PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value,
+        ) ?? false;
+        $foundationReady = $maintenanceAllowed && $this->foundationReady();
+        $status = $maintenanceAllowed
+            ? $health->status()
+            : $this->hiddenInstallationStatus();
         $candidates = $foundationReady ? $network->ipv4Candidates() : [];
         $selectedAdapterId = $foundationReady ? $network->selectedAdapterId() : null;
         $selectedAdapter = collect($candidates)->first(
@@ -63,6 +84,7 @@ final class ConnectivityAndBackupController extends Controller
             $foundationReady,
         );
         $license = $status['license'];
+        $hostedLicense = $cabinetEntitlements->hostedEntitlement($actor);
         $remoteLicensed = $foundationReady && $licenses->featureEnabled('remote_upload');
         $relayLicensed = $foundationReady && $licenses->featureEnabled('remote_relay');
         $tunnelReady = ($status['tunnel']['configured'] ?? false) === true
@@ -153,11 +175,12 @@ final class ConnectivityAndBackupController extends Controller
         $driveLicensed = $foundationReady && $licenses->featureEnabled('google_drive_backup');
         $queueWorkerActive = $this->queueWorkerActive($status);
         $schedulerActive = $this->schedulerActive($status);
-        $signedUpdaterAvailable = (bool) config('medismart.runtime.desktop_supervised', false)
+        $signedUpdaterAvailable = $maintenanceAllowed
+            && (bool) config('medismart.runtime.desktop_supervised', false)
             && (bool) config('medismart.updates.signed_updater_configured', false);
         $automaticUpdatesLicensed = $foundationReady && $licenses->featureEnabled('automatic_updates');
         $driveAvailable = $encryptedBackupsReady && $driveConfigured && $driveLicensed;
-        $uploadTablesReady = $foundationReady
+        $uploadTablesReady = $canManageUploadSessions
             && Schema::hasTable('upload_sessions')
             && Schema::hasTable('uploaded_documents');
         $activeSessions = $uploadTablesReady
@@ -366,16 +389,17 @@ final class ConnectivityAndBackupController extends Controller
                 'manage_drive' => $canManageDrive,
                 'manage_license' => $canManageLicense,
                 'view_diagnostics' => $canViewDiagnostics,
-                'manage_upload_sessions' => $canManageConnectivity,
-                'sensitive_actions_confirmed' => $this->recentPasswordConfirmation($request),
+                'manage_upload_sessions' => $canManageUploadSessions,
+                'sensitive_actions_confirmed' => $maintenanceAllowed
+                    && $this->recentPasswordConfirmation($request),
             ],
             // Raw SQLite replacement remains deliberately hidden until the
             // validated, atomic .msbackup restore workflow is implemented.
             'legacyRestoreEnabled' => false,
-            'activeUpload' => $canManageConnectivity ? $this->activeUpload($request, $qrUploads) : null,
-            'activeUploadSessions' => $canManageConnectivity ? $this->activeUploadSessions($uploadTablesReady) : [],
-            'pendingUploads' => $canManageConnectivity ? $this->pendingUploads($uploadTablesReady) : [],
-            'patients' => $canManageConnectivity ? Patient::query()
+            'activeUpload' => $canManageUploadSessions ? $this->activeUpload($request, $qrUploads) : null,
+            'activeUploadSessions' => $canManageUploadSessions ? $this->activeUploadSessions($uploadTablesReady) : [],
+            'pendingUploads' => $canManageUploadSessions ? $this->pendingUploads($uploadTablesReady) : [],
+            'patients' => $canManageUploadSessions ? Patient::query()
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->limit(500)
@@ -386,9 +410,20 @@ final class ConnectivityAndBackupController extends Controller
                 ])->all() : [],
             'qrDataUrl' => null,
             'license' => $license,
-            'licenseActivation' => $canManageLicense
+            'hostedEntitlement' => $hostedLicense === null ? null : [
+                'plan' => $hostedLicense->plan?->value,
+                'plan_label' => $hostedLicense->plan?->label(),
+                'status' => $hostedLicense->effectiveStatus(),
+                'status_label' => $hostedLicense->effectiveStatusLabel(),
+                'expires_at' => $hostedLicense->expires_at?->toIso8601String(),
+            ],
+            'licenseActivation' => $canManageLicense && $hostedLicense === null
                 ? $licenseActivation->status()
-                : $this->hiddenLicenseActivationStatus(),
+                : $this->hiddenLicenseActivationStatus(
+                    $hostedLicense === null
+                        ? 'Autorisation de gestion de licence requise.'
+                        : 'La licence de ce cabinet est gérée par la plateforme DrClickDz.',
+                ),
         ]);
     }
 
@@ -399,6 +434,8 @@ final class ConnectivityAndBackupController extends Controller
         NetworkService $network,
         LicenseService $licenses,
     ): RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         abort_unless($this->foundationReady(), 503, 'Desktop settings migrations are not applied.');
 
         $actor = $request->user();
@@ -504,7 +541,7 @@ final class ConnectivityAndBackupController extends Controller
         ], userId: $request->user()?->getKey());
         Inertia::flash('toast', [
             'type' => 'info',
-            'message' => 'Préférences enregistrées. Le runtime natif vérifie ensuite l’état demandé.',
+            'message' => 'Préférences enregistrées sur le serveur DrClickDz.',
         ]);
 
         return back();
@@ -512,6 +549,8 @@ final class ConnectivityAndBackupController extends Controller
 
     public function confirmSensitiveActions(Request $request): RedirectResponse
     {
+        $this->installationMaintenance->authorize($request->user());
+
         $request->session()->put(
             'url.intended',
             route('app.configuration.connectivity-backup.edit'),
@@ -606,15 +645,52 @@ final class ConnectivityAndBackupController extends Controller
         ];
     }
 
-    /** @return array<string, bool|string|null> */
-    private function hiddenLicenseActivationStatus(): array
+    /** @return array<string, mixed> */
+    private function hiddenInstallationStatus(): array
     {
+        return [
+            'checked_at' => null,
+            'database' => ['driver' => null],
+            'storage' => ['writable' => false],
+            'urls' => ['remote' => null],
+            'lan_listener' => [
+                'status' => 'unavailable',
+                'address' => null,
+            ],
+            'tunnel' => [
+                'configured' => false,
+                'runtime_state' => 'unavailable',
+                'hostname' => null,
+                'service_installed' => false,
+                'cloudflared_version' => null,
+                'retry_count' => null,
+                'desired_state' => 'stopped',
+                'last_health_check_at' => null,
+                'last_error' => null,
+            ],
+            'queue' => [],
+            'scheduler' => [],
+            'license' => [
+                'state' => 'not_activated',
+                'edition' => null,
+                'expires_at' => null,
+                'offline_grace_until' => null,
+                'last_verified_at' => null,
+                'clock_warning' => false,
+            ],
+        ];
+    }
+
+    /** @return array<string, bool|string|null> */
+    private function hiddenLicenseActivationStatus(
+        string $reason = 'Autorisation de gestion de licence requise.',
+    ): array {
         return [
             'configured' => false,
             'refresh_configured' => false,
             'deactivation_configured' => false,
             'installation_id_hint' => '—',
-            'reason' => 'Autorisation de gestion de licence requise.',
+            'reason' => $reason,
         ];
     }
 
@@ -805,8 +881,7 @@ final class ConnectivityAndBackupController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $payload
-     *
+     * @param  array<string, mixed>  $payload
      * @return array{state: string, checked_at: string|null, message: string|null}
      */
     private function activeUploadReachability(array $payload): array

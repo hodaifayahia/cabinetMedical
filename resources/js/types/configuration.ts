@@ -352,6 +352,14 @@ export type LicenseActivationPresentation = {
     reason: string | null;
 };
 
+export type HostedEntitlementPresentation = {
+    plan: 'trial' | 'lifetime' | null;
+    plan_label: string | null;
+    status: LicenseRuntimeStatus['state'] | 'inactive';
+    status_label: string;
+    expires_at: string | null;
+};
+
 /**
  * Inertia props contract for `configuration/ConnectivityAndBackup.vue`.
  *
@@ -370,6 +378,7 @@ export type ConnectivityBackupPageProps = {
     backupHistory?: BackupHistoryEntry[];
     permissions: ConnectivityBackupPermissions;
     license: LicenseRuntimeStatus;
+    hostedEntitlement: HostedEntitlementPresentation | null;
     licenseActivation: LicenseActivationPresentation;
     legacyRestoreEnabled: boolean;
     activeUpload?: ActiveUploadSession | null;

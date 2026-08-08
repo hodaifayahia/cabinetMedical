@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,8 @@ defineProps<{
 
 <template>
     <Head title="Mot de passe oublié" />
+
+    <AuthBackLink :href="login()" label="Retour à la connexion" />
 
     <div
         v-if="status"

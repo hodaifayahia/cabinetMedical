@@ -24,7 +24,10 @@ final class RefreshLicenseStatus extends Command
             return self::SUCCESS;
         }
 
-        $license = License::query()->latest('id')->first();
+        $license = License::query()
+            ->whereNull('plan')
+            ->latest('id')
+            ->first();
 
         if ($license === null) {
             $this->components->info('Actualisation ignorée : aucune licence active sur cette installation.');

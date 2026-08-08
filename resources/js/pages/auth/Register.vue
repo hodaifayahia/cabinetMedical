@@ -1,1 +1,388 @@
-PHNjcmlwdCBzZXR1cCBsYW5nPSJ0cyI+CmltcG9ydCB7IEZvcm0sIEhlYWQgfSBmcm9tICdAaW5lcnRpYWpzL3Z1ZTMnOwppbXBvcnQgSW5wdXRFcnJvciBmcm9tICdAL2NvbXBvbmVudHMvSW5wdXRFcnJvci52dWUnOwppbXBvcnQgUGFzc3dvcmRJbnB1dCBmcm9tICdAL2NvbXBvbmVudHMvUGFzc3dvcmRJbnB1dC52dWUnOwppbXBvcnQgVGV4dExpbmsgZnJvbSAnQC9jb21wb25lbnRzL1RleHRMaW5rLnZ1ZSc7CmltcG9ydCB7IEJ1dHRvbiB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9idXR0b24nOwppbXBvcnQgeyBJbnB1dCB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9pbnB1dCc7CmltcG9ydCB7IExhYmVsIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2xhYmVsJzsKaW1wb3J0IHsgU3Bpbm5lciB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9zcGlubmVyJzsKaW1wb3J0IHsgbG9naW4gfSBmcm9tICdAL3JvdXRlcyc7CmltcG9ydCB7IHN0b3JlIH0gZnJvbSAnQC9yb3V0ZXMvcmVnaXN0ZXInOwoKZGVmaW5lUHJvcHM8ewogICAgcGFzc3dvcmRSdWxlczogc3RyaW5nOwogICAgc3BlY2lhbHR5U3VnZ2VzdGlvbnM6IHN0cmluZ1tdOwogICAgd2lsYXlhczogeyBjb2RlOiBudW1iZXI7IG5hbWU6IHN0cmluZyB9W107Cn0+KCk7CgpkZWZpbmVPcHRpb25zKHsKICAgIGxheW91dDogewogICAgICAgIHRpdGxlOiAnQ3LDqWVyIHVuIG5vdXZlYXUgY2FiaW5ldCcsCiAgICAgICAgZGVzY3JpcHRpb246CiAgICAgICAgICAgICdFbnJlZ2lzdHJleiB2b3RyZSBjYWJpbmV0LiBJbCBzZXJhIGFjdGl2w6kgcGFyIG5vdHJlIMOpcXVpcGUgYXByw6hzIHbDqXJpZmljYXRpb24uJywKICAgIH0sCn0pOwo8L3NjcmlwdD4KCjx0ZW1wbGF0ZT4KICAgIDxIZWFkIHRpdGxlPSJDcsOpZXIgdW4gY2FiaW5ldCIgLz4KCiAgICA8Rm9ybQogICAgICAgIHYtYmluZD0ic3RvcmUuZm9ybSgpIgogICAgICAgIDpyZXNldC1vbi1zdWNjZXNzPSJbJ3Bhc3N3b3JkJywgJ3Bhc3N3b3JkX2NvbmZpcm1hdGlvbiddIgogICAgICAgIHYtc2xvdD0ieyBlcnJvcnMsIHByb2Nlc3NpbmcgfSIKICAgICAgICBjbGFzcz0iZmxleCBmbGV4LWNvbCBnYXAtNiIKICAgID4KICAgICAgICA8ZGl2IGNsYXNzPSJncmlkIGdhcC02Ij4KICAgICAgICAgICAgPGRpdiBjbGFzcz0iZ3JpZCBnYXAtMiI+CiAgICAgICAgICAgICAgICA8TGFiZWwgZm9yPSJjYWJpbmV0X25hbWUiPk5vbSBkdSBjYWJpbmV0PC9MYWJlbD4KICAgICAgICAgICAgICAgIDxJbnB1dAogICAgICAgICAgICAgICAgICAgIGlkPSJjYWJpbmV0X25hbWUiCiAgICAgICAgICAgICAgICAgICAgdHlwZT0idGV4dCIKICAgICAgICAgICAgICAgICAgICByZXF1aXJlZAogICAgICAgICAgICAgICAgICAgIGF1dG9mb2N1cwogICAgICAgICAgICAgICAgICAgIDp0YWJpbmRleD0iMSIKICAgICAgICAgICAgICAgICAgICBuYW1lPSJjYWJpbmV0X25hbWUiCiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9IkNhYmluZXQgbcOpZGljYWwgQmVuYWxpIgogICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgIDxJbnB1dEVycm9yIDptZXNzYWdlPSJlcnJvcnMuY2FiaW5ldF9uYW1lIiAvPgogICAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImdyaWQgZ2FwLTIiPgogICAgICAgICAgICAgICAgPExhYmVsIGZvcj0ic3BlY2lhbGl6YXRpb24iPlNww6ljaWFsaXTDqSBtw6lkaWNhbGU8L0xhYmVsPgogICAgICAgICAgICAgICAgPElucHV0CiAgICAgICAgICAgICAgICAgICAgaWQ9InNwZWNpYWxpemF0aW9uIgogICAgICAgICAgICAgICAgICAgIHR5cGU9InRleHQiCiAgICAgICAgICAgICAgICAgICAgcmVxdWlyZWQKICAgICAgICAgICAgICAgICAgICA6dGFiaW5kZXg9IjIiCiAgICAgICAgICAgICAgICAgICAgbmFtZT0ic3BlY2lhbGl6YXRpb24iCiAgICAgICAgICAgICAgICAgICAgbGlzdD0ibWVkaWNhbC1zcGVjaWFsdGllcyIKICAgICAgICAgICAgICAgICAgICBhdXRvY29tcGxldGU9Im9yZ2FuaXphdGlvbi10aXRsZSIKICAgICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj0iTcOpZGVjaW5lIGfDqW7DqXJhbGUiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPGRhdGFsaXN0IGlkPSJtZWRpY2FsLXNwZWNpYWx0aWVzIj4KICAgICAgICAgICAgICAgICAgICA8b3B0aW9uCiAgICAgICAgICAgICAgICAgICAgICAgIHYtZm9yPSJzcGVjaWFsdHkgaW4gc3BlY2lhbHR5U3VnZ2VzdGlvbnMiCiAgICAgICAgICAgICAgICAgICAgICAgIDprZXk9InNwZWNpYWx0eSIKICAgICAgICAgICAgICAgICAgICAgICAgOnZhbHVlPSJzcGVjaWFsdHkiCiAgICAgICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgIDwvZGF0YWxpc3Q+CiAgICAgICAgICAgICAgICA8SW5wdXRFcnJvciA6bWVzc2FnZT0iZXJyb3JzLnNwZWNpYWxpemF0aW9uIiAvPgogICAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImdyaWQgZ2FwLTIiPgogICAgICAgICAgICAgICAgPExhYmVsIGZvcj0id2lsYXlhIj5XaWxheWE8L0xhYmVsPgogICAgICAgICAgICAgICAgPHNlbGVjdAogICAgICAgICAgICAgICAgICAgIGlkPSJ3aWxheWEiCiAgICAgICAgICAgICAgICAgICAgbmFtZT0id2lsYXlhIgogICAgICAgICAgICAgICAgICAgIHJlcXVpcmVkCiAgICAgICAgICAgICAgICAgICAgOnRhYmluZGV4PSIzIgogICAgICAgICAgICAgICAgICAgIGNsYXNzPSJmbGV4IGgtOSB3LWZ1bGwgcm91bmRlZC1tZCBib3JkZXIgYm9yZGVyLWlucHV0IGJnLXRyYW5zcGFyZW50IHB4LTMgcHktMSB0ZXh0LXNtIHNoYWRvdy1zbSB0cmFuc2l0aW9uLWNvbG9ycyBmb2N1cy12aXNpYmxlOm91dGxpbmUtbm9uZSBmb2N1cy12aXNpYmxlOnJpbmctMSBmb2N1cy12aXNpYmxlOnJpbmctcmluZyIKICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPSIiIGRpc2FibGVkIHNlbGVjdGVkPgogICAgICAgICAgICAgICAgICAgICAgICBTw6lsZWN0aW9ubmV6IHVuZSB3aWxheWEKICAgICAgICAgICAgICAgICAgICA8L29wdGlvbj4KICAgICAgICAgICAgICAgICAgICA8b3B0aW9uCiAgICAgICAgICAgICAgICAgICAgICAgIHYtZm9yPSJ3aWxheWEgaW4gd2lsYXlhcyIKICAgICAgICAgICAgICAgICAgICAgICAgOmtleT0id2lsYXlhLmNvZGUiCiAgICAgICAgICAgICAgICAgICAgICAgIDp2YWx1ZT0id2lsYXlhLmNvZGUiCiAgICAgICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICAgICAgICB7eyBTdHJpbmcod2lsYXlhLmNvZGUpLnBhZFN0YXJ0KDIsICcwJykgfX0gLQogICAgICAgICAgICAgICAgICAgICAgICB7eyB3aWxheWEubmFtZSB9fQogICAgICAgICAgICAgICAgICAgIDwvb3B0aW9uPgogICAgICAgICAgICAgICAgPC9zZWxlY3Q+CiAgICAgICAgICAgICAgICA8SW5wdXRFcnJvciA6bWVzc2FnZT0iZXJyb3JzLndpbGF5YSIgLz4KICAgICAgICAgICAgPC9kaXY+CgogICAgICAgICAgICA8ZGl2IGNsYXNzPSJncmlkIGdhcC0yIj4KICAgICAgICAgICAgICAgIDxMYWJlbCBmb3I9Im5hbWUiPlZvdHJlIG5vbSBjb21wbGV0PC9MYWJlbD4KICAgICAgICAgICAgICAgIDxJbnB1dAogICAgICAgICAgICAgICAgICAgIGlkPSJuYW1lIgogICAgICAgICAgICAgICAgICAgIHR5cGU9InRleHQiCiAgICAgICAgICAgICAgICAgICAgcmVxdWlyZWQKICAgICAgICAgICAgICAgICAgICA6dGFiaW5kZXg9IjQiCiAgICAgICAgICAgICAgICAgICAgYXV0b2NvbXBsZXRlPSJuYW1lIgogICAgICAgICAgICAgICAgICAgIG5hbWU9Im5hbWUiCiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9IkRyIE5hZGlhIEJlbmFsaSIKICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICA8SW5wdXRFcnJvciA6bWVzc2FnZT0iZXJyb3JzLm5hbWUiIC8+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgPGRpdiBjbGFzcz0iZ3JpZCBnYXAtMiI+CiAgICAgICAgICAgICAgICA8TGFiZWwgZm9yPSJlbWFpbCI+QWRyZXNzZSBlLW1haWw8L0xhYmVsPgogICAgICAgICAgICAgICAgPElucHV0CiAgICAgICAgICAgICAgICAgICAgaWQ9ImVtYWlsIgogICAgICAgICAgICAgICAgICAgIHR5cGU9ImVtYWlsIgogICAgICAgICAgICAgICAgICAgIHJlcXVpcmVkCiAgICAgICAgICAgICAgICAgICAgOnRhYmluZGV4PSI1IgogICAgICAgICAgICAgICAgICAgIGF1dG9jb21wbGV0ZT0iZW1haWwiCiAgICAgICAgICAgICAgICAgICAgbmFtZT0iZW1haWwiCiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9ImVtYWlsQGV4YW1wbGUuY29tIgogICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgIDxJbnB1dEVycm9yIDptZXNzYWdlPSJlcnJvcnMuZW1haWwiIC8+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgPGRpdiBjbGFzcz0iZ3JpZCBnYXAtMiI+CiAgICAgICAgICAgICAgICA8TGFiZWwgZm9yPSJwYXNzd29yZCI+TW90IGRlIHBhc3NlPC9MYWJlbD4KICAgICAgICAgICAgICAgIDxQYXNzd29yZElucHV0CiAgICAgICAgICAgICAgICAgICAgaWQ9InBhc3N3b3JkIgogICAgICAgICAgICAgICAgICAgIHJlcXVpcmVkCiAgICAgICAgICAgICAgICAgICAgOnRhYmluZGV4PSI2IgogICAgICAgICAgICAgICAgICAgIGF1dG9jb21wbGV0ZT0ibmV3LXBhc3N3b3JkIgogICAgICAgICAgICAgICAgICAgIG5hbWU9InBhc3N3b3JkIgogICAgICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPSJNb3QgZGUgcGFzc2UiCiAgICAgICAgICAgICAgICAgICAgOnBhc3N3b3JkcnVsZXM9InBhc3N3b3JkUnVsZXMiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPElucHV0RXJyb3IgOm1lc3NhZ2U9ImVycm9ycy5wYXNzd29yZCIgLz4KICAgICAgICAgICAgPC9kaXY+CgogICAgICAgICAgICA8ZGl2IGNsYXNzPSJncmlkIGdhcC0yIj4KICAgICAgICAgICAgICAgIDxMYWJlbCBmb3I9InBhc3N3b3JkX2NvbmZpcm1hdGlvbiI+CiAgICAgICAgICAgICAgICAgICAgQ29uZmlybWVyIGxlIG1vdCBkZSBwYXNzZQogICAgICAgICAgICAgICAgPC9MYWJlbD4KICAgICAgICAgICAgICAgIDxQYXNzd29yZElucHV0CiAgICAgICAgICAgICAgICAgICAgaWQ9InBhc3N3b3JkX2NvbmZpcm1hdGlvbiIKICAgICAgICAgICAgICAgICAgICByZXF1aXJlZAogICAgICAgICAgICAgICAgICAgIDp0YWJpbmRleD0iNyIKICAgICAgICAgICAgICAgICAgICBhdXRvY29tcGxldGU9Im5ldy1wYXNzd29yZCIKICAgICAgICAgICAgICAgICAgICBuYW1lPSJwYXNzd29yZF9jb25maXJtYXRpb24iCiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9IkNvbmZpcm1lciBsZSBtb3QgZGUgcGFzc2UiCiAgICAgICAgICAgICAgICAgICAgOnBhc3N3b3JkcnVsZXM9InBhc3N3b3JkUnVsZXMiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPElucHV0RXJyb3IgOm1lc3NhZ2U9ImVycm9ycy5wYXNzd29yZF9jb25maXJtYXRpb24iIC8+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgPEJ1dHRvbgogICAgICAgICAgICAgICAgdHlwZT0ic3VibWl0IgogICAgICAgICAgICAgICAgY2xhc3M9Im10LTIgdy1mdWxsIgogICAgICAgICAgICAgICAgdGFiaW5kZXg9IjgiCiAgICAgICAgICAgICAgICA6ZGlzYWJsZWQ9InByb2Nlc3NpbmciCiAgICAgICAgICAgICAgICBkYXRhLXRlc3Q9InJlZ2lzdGVyLXVzZXItYnV0dG9uIgogICAgICAgICAgICA+CiAgICAgICAgICAgICAgICA8U3Bpbm5lciB2LWlmPSJwcm9jZXNzaW5nIiAvPgogICAgICAgICAgICAgICAgQ3LDqWVyIGxlIGNhYmluZXQKICAgICAgICAgICAgPC9CdXR0b24+CiAgICAgICAgPC9kaXY+CgogICAgICAgIDxkaXYgY2xhc3M9InRleHQtY2VudGVyIHRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgVm91cyBhdmV6IGTDqWrDoCB1biBjb21wdGUgPwogICAgICAgICAgICA8VGV4dExpbmsKICAgICAgICAgICAgICAgIDpocmVmPSJsb2dpbigpIgogICAgICAgICAgICAgICAgY2xhc3M9InVuZGVybGluZSB1bmRlcmxpbmUtb2Zmc2V0LTQiCiAgICAgICAgICAgICAgICA6dGFiaW5kZXg9IjkiCiAgICAgICAgICAgICAgICA+U2UgY29ubmVjdGVyPC9UZXh0TGluawogICAgICAgICAgICA+CiAgICAgICAgPC9kaXY+CgogICAgICAgIDxkaXYgY2xhc3M9InRleHQtY2VudGVyIHRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgVm91cyByZWpvaWduZXogdW4gY2FiaW5ldCBleGlzdGFudCA/CiAgICAgICAgICAgIDxUZXh0TGluawogICAgICAgICAgICAgICAgaHJlZj0iL2pvaW4iCiAgICAgICAgICAgICAgICBjbGFzcz0idW5kZXJsaW5lIHVuZGVybGluZS1vZmZzZXQtNCIKICAgICAgICAgICAgICAgIDp0YWJpbmRleD0iMTAiCiAgICAgICAgICAgICAgICA+RGVtYW5kZXIgbCdhY2PDqHM8L1RleHRMaW5rCiAgICAgICAgICAgID4KICAgICAgICA8L2Rpdj4KICAgIDwvRm9ybT4KPC90ZW1wbGF0ZT4K
+<script setup lang="ts">
+import { Form, Head } from '@inertiajs/vue3';
+import {
+    ArrowRight,
+    Building2,
+    Check,
+    LockKeyhole,
+    Stethoscope,
+    UserRound,
+} from '@lucide/vue';
+import { isTauri } from '@tauri-apps/api/core';
+import { onMounted, ref } from 'vue';
+import AuthBackLink from '@/components/auth/AuthBackLink.vue';
+import InputError from '@/components/InputError.vue';
+import PasswordInput from '@/components/PasswordInput.vue';
+import TextLink from '@/components/TextLink.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { markDesktopOnboardingComplete } from '@/lib/desktopOnboarding';
+import { login } from '@/routes';
+import { store } from '@/routes/register';
+
+defineProps<{
+    passwordRules: string;
+    specialtySuggestions: string[];
+    wilayas: { code: number; name: string }[];
+}>();
+
+const desktopRuntime = ref(false);
+const runtimeResolved = ref(false);
+
+onMounted(() => {
+    desktopRuntime.value = isTauri();
+    runtimeResolved.value = true;
+});
+
+defineOptions({
+    layout: {
+        title: 'Créer votre espace cabinet',
+        description:
+            'Renseignez vos coordonnées professionnelles. Votre accès sera ouvert dès l’activation de votre licence.',
+    },
+});
+</script>
+
+<template>
+    <Head title="Créer un cabinet" />
+
+    <AuthBackLink :href="login()" label="Retour à la connexion" />
+
+    <div
+        class="mb-7 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-xs font-semibold text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100"
+        aria-label="Garanties d’inscription"
+    >
+        <span class="inline-flex items-center gap-1.5">
+            <Check class="size-3.5 text-emerald-600" aria-hidden="true" />
+            Inscription sécurisée
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+            <Check class="size-3.5 text-emerald-600" aria-hidden="true" />
+            Données confidentielles
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+            <Check class="size-3.5 text-emerald-600" aria-hidden="true" />
+            Activation contrôlée
+        </span>
+    </div>
+
+    <Form
+        v-bind="store.form()"
+        :reset-on-success="['password', 'password_confirmation']"
+        v-slot="{ errors, processing }"
+        class="flex flex-col gap-6"
+        @success="markDesktopOnboardingComplete"
+    >
+        <fieldset
+            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
+        >
+            <legend class="sr-only">Vos coordonnées professionnelles</legend>
+            <div class="mb-5 flex items-center gap-3">
+                <span
+                    class="flex size-9 items-center justify-center rounded-xl bg-sky-100 text-[#1268a5] dark:bg-sky-950 dark:text-sky-300"
+                >
+                    <UserRound class="size-4.5" aria-hidden="true" />
+                </span>
+                <div>
+                    <p
+                        class="text-sm font-extrabold text-slate-900 dark:text-white"
+                    >
+                        Vos coordonnées
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Le médecin responsable du cabinet
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div class="grid gap-2">
+                    <Label for="name" class="font-semibold">Nom complet</Label>
+                    <Input
+                        id="name"
+                        type="text"
+                        required
+                        autofocus
+                        :tabindex="1"
+                        autocomplete="name"
+                        name="name"
+                        placeholder="Dr Nadia Benali"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.name)"
+                        :aria-describedby="
+                            errors.name ? 'name-error' : undefined
+                        "
+                    />
+                    <InputError id="name-error" :message="errors.name" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="phone" class="font-semibold">
+                        Numéro de téléphone
+                    </Label>
+                    <Input
+                        id="phone"
+                        type="tel"
+                        required
+                        :tabindex="2"
+                        autocomplete="tel"
+                        inputmode="tel"
+                        name="phone"
+                        placeholder="0555 12 34 56"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.phone)"
+                        :aria-describedby="
+                            errors.phone ? 'phone-error' : undefined
+                        "
+                    />
+                    <InputError id="phone-error" :message="errors.phone" />
+                </div>
+
+                <div class="grid gap-2 sm:col-span-2">
+                    <Label for="email" class="font-semibold"
+                        >Adresse e-mail</Label
+                    >
+                    <Input
+                        id="email"
+                        type="email"
+                        required
+                        :tabindex="3"
+                        autocomplete="email"
+                        inputmode="email"
+                        name="email"
+                        placeholder="docteur@cabinet.dz"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.email)"
+                        :aria-describedby="
+                            errors.email ? 'email-error' : undefined
+                        "
+                    />
+                    <InputError id="email-error" :message="errors.email" />
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset
+            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
+        >
+            <legend class="sr-only">Informations du cabinet</legend>
+            <div class="mb-5 flex items-center gap-3">
+                <span
+                    class="flex size-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"
+                >
+                    <Building2 class="size-4.5" aria-hidden="true" />
+                </span>
+                <div>
+                    <p
+                        class="text-sm font-extrabold text-slate-900 dark:text-white"
+                    >
+                        Votre cabinet
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        L’identité affichée dans votre espace
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div class="grid gap-2 sm:col-span-2">
+                    <Label for="cabinet_name" class="font-semibold">
+                        Nom du cabinet
+                    </Label>
+                    <Input
+                        id="cabinet_name"
+                        type="text"
+                        required
+                        :tabindex="4"
+                        autocomplete="organization"
+                        name="cabinet_name"
+                        placeholder="Cabinet médical Benali"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.cabinet_name)"
+                        :aria-describedby="
+                            errors.cabinet_name
+                                ? 'cabinet-name-error'
+                                : undefined
+                        "
+                    />
+                    <InputError
+                        id="cabinet-name-error"
+                        :message="errors.cabinet_name"
+                    />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="specialization" class="font-semibold">
+                        Spécialité médicale
+                    </Label>
+                    <Input
+                        id="specialization"
+                        type="text"
+                        required
+                        :tabindex="5"
+                        name="specialization"
+                        list="medical-specialties"
+                        autocomplete="organization-title"
+                        placeholder="Médecine générale"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.specialization)"
+                        :aria-describedby="
+                            errors.specialization
+                                ? 'specialization-error'
+                                : undefined
+                        "
+                    />
+                    <datalist id="medical-specialties">
+                        <option
+                            v-for="specialty in specialtySuggestions"
+                            :key="specialty"
+                            :value="specialty"
+                        />
+                    </datalist>
+                    <InputError
+                        id="specialization-error"
+                        :message="errors.specialization"
+                    />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="wilaya" class="font-semibold">Wilaya</Label>
+                    <select
+                        id="wilaya"
+                        name="wilaya"
+                        required
+                        :tabindex="6"
+                        autocomplete="address-level1"
+                        class="h-11 w-full rounded-xl border border-input bg-white px-3 text-sm shadow-sm transition outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-slate-900"
+                        :aria-invalid="Boolean(errors.wilaya)"
+                        :aria-describedby="
+                            errors.wilaya ? 'wilaya-error' : undefined
+                        "
+                    >
+                        <option value="" disabled selected>
+                            Sélectionnez une wilaya
+                        </option>
+                        <option
+                            v-for="wilaya in wilayas"
+                            :key="wilaya.code"
+                            :value="wilaya.code"
+                        >
+                            {{ String(wilaya.code).padStart(2, '0') }} —
+                            {{ wilaya.name }}
+                        </option>
+                    </select>
+                    <InputError id="wilaya-error" :message="errors.wilaya" />
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset
+            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
+        >
+            <legend class="sr-only">Sécurisation du compte</legend>
+            <div class="mb-5 flex items-center gap-3">
+                <span
+                    class="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                >
+                    <LockKeyhole class="size-4.5" aria-hidden="true" />
+                </span>
+                <div>
+                    <p
+                        class="text-sm font-extrabold text-slate-900 dark:text-white"
+                    >
+                        Sécurisez votre accès
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Choisissez un mot de passe unique
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div class="grid gap-2">
+                    <Label for="password" class="font-semibold"
+                        >Mot de passe</Label
+                    >
+                    <PasswordInput
+                        id="password"
+                        required
+                        :tabindex="7"
+                        autocomplete="new-password"
+                        name="password"
+                        placeholder="8 caractères minimum"
+                        :passwordrules="passwordRules"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.password)"
+                        :aria-describedby="
+                            errors.password ? 'password-error' : undefined
+                        "
+                    />
+                    <InputError
+                        id="password-error"
+                        :message="errors.password"
+                    />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="password_confirmation" class="font-semibold">
+                        Confirmer le mot de passe
+                    </Label>
+                    <PasswordInput
+                        id="password_confirmation"
+                        required
+                        :tabindex="8"
+                        autocomplete="new-password"
+                        name="password_confirmation"
+                        placeholder="Saisissez-le à nouveau"
+                        :passwordrules="passwordRules"
+                        class="h-11"
+                        :aria-invalid="Boolean(errors.password_confirmation)"
+                        :aria-describedby="
+                            errors.password_confirmation
+                                ? 'password-confirmation-error'
+                                : undefined
+                        "
+                    />
+                    <InputError
+                        id="password-confirmation-error"
+                        :message="errors.password_confirmation"
+                    />
+                </div>
+            </div>
+        </fieldset>
+
+        <Button
+            type="submit"
+            size="lg"
+            class="h-12 w-full bg-[#1268a5] text-white shadow-lg shadow-sky-800/15 hover:bg-[#0d578b]"
+            tabindex="9"
+            :disabled="processing"
+            data-test="register-user-button"
+        >
+            <Spinner v-if="processing" />
+            <Stethoscope v-else class="size-4" aria-hidden="true" />
+            {{ processing ? 'Création en cours…' : 'Créer mon cabinet' }}
+            <ArrowRight
+                v-if="!processing"
+                class="ml-auto size-4"
+                aria-hidden="true"
+            />
+        </Button>
+    </Form>
+
+    <div
+        v-if="runtimeResolved"
+        class="mt-7 flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-500 sm:flex-row dark:text-slate-400"
+    >
+        <span>Vous rejoignez un cabinet existant ?</span>
+        <TextLink
+            :href="desktopRuntime ? '/desktop/cabinet-login' : '/join'"
+            class="font-bold text-[#1268a5]"
+            :tabindex="10"
+        >
+            {{ desktopRuntime ? 'Connecter ce poste' : 'Demander l’accès' }}
+        </TextLink>
+    </div>
+</template>

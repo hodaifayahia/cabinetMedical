@@ -1,1 +1,51 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcQXR0cmlidXRlc1xGaWxsYWJsZTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcTW9kZWw7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XFJlbGF0aW9uc1xCZWxvbmdzVG87CgovKioKICogQHByb3BlcnR5IGludHxudWxsICRmaWxlX3NpemUKICogQHByb3BlcnR5IGludCAkZmlsZV92ZXJzaW9uCiAqLwojW0ZpbGxhYmxlKFsKICAgICdwYXRpZW50X2lkJywKICAgICdjb25zdWx0YXRpb25faWQnLAogICAgJ2NhdGVnb3J5JywKICAgICd0aXRsZScsCiAgICAndGVtcGxhdGVfa2V5JywKICAgICdwYXBlcl9zaXplJywKICAgICdjb250ZW50JywKICAgICdmaWxlX3BhdGgnLAogICAgJ29yaWdpbmFsX2ZpbGVuYW1lJywKICAgICdtaW1lX3R5cGUnLAogICAgJ2ZpbGVfc2l6ZScsCiAgICAnZmlsZV92ZXJzaW9uJywKICAgICdjcmVhdGVkX2J5JywKXSldCmNsYXNzIERvY3VtZW50IGV4dGVuZHMgTW9kZWwKewogICAgdXNlIFxBcHBcTW9kZWxzXENvbmNlcm5zXEJlbG9uZ3NUb0NhYmluZXQ7CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIGFycmF5PHN0cmluZywgc3RyaW5nPgogICAgICovCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gY2FzdHMoKTogYXJyYXkKICAgIHsKICAgICAgICByZXR1cm4gWwogICAgICAgICAgICAnZmlsZV9zaXplJyA9PiAnaW50ZWdlcicsCiAgICAgICAgICAgICdmaWxlX3ZlcnNpb24nID0+ICdpbnRlZ2VyJywKICAgICAgICBdOwogICAgfQoKICAgIC8qKgogICAgICogQHJldHVybiBCZWxvbmdzVG88UGF0aWVudCwgJHRoaXM+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBwYXRpZW50KCk6IEJlbG9uZ3NUbwogICAgewogICAgICAgIHJldHVybiAkdGhpcy0+YmVsb25nc1RvKFBhdGllbnQ6OmNsYXNzKTsKICAgIH0KfQo=
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToCabinet;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property int|null $file_size
+ * @property int $file_version
+ */
+#[Fillable([
+    'patient_id',
+    'consultation_id',
+    'category',
+    'title',
+    'template_key',
+    'paper_size',
+    'content',
+    'file_path',
+    'original_filename',
+    'mime_type',
+    'file_size',
+    'file_version',
+    'created_by',
+])]
+class Document extends Model
+{
+    use BelongsToCabinet;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'file_size' => 'integer',
+            'file_version' => 'integer',
+        ];
+    }
+
+    /**
+     * @return BelongsTo<Patient, $this>
+     */
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
+    }
+}

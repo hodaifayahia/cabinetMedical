@@ -1,1 +1,30 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxSZXNvdXJjZXM7Cgp1c2UgQXBwXE1vZGVsc1xVc2VyOwp1c2UgSWxsdW1pbmF0ZVxIdHRwXFJlcXVlc3Q7CnVzZSBJbGx1bWluYXRlXEh0dHBcUmVzb3VyY2VzXEpzb25cSnNvblJlc291cmNlOwoKLyoqCiAqIEBtaXhpbiBVc2VyCiAqLwpjbGFzcyBVc2VyUmVzb3VyY2UgZXh0ZW5kcyBKc29uUmVzb3VyY2UKewogICAgLyoqCiAgICAgKiBAcmV0dXJuIGFycmF5PHN0cmluZywgbWl4ZWQ+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB0b0FycmF5KFJlcXVlc3QgJHJlcXVlc3QpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICdpZCcgPT4gJHRoaXMtPmlkLAogICAgICAgICAgICAnbmFtZScgPT4gJHRoaXMtPm5hbWUsCiAgICAgICAgICAgICdlbWFpbCcgPT4gJHRoaXMtPmVtYWlsLAogICAgICAgICAgICAnaXNfcGxhdGZvcm1fYWRtaW4nID0+ICR0aGlzLT5pc19wbGF0Zm9ybV9hZG1pbiwKICAgICAgICAgICAgJ2FwcHJvdmVkJyA9PiAkdGhpcy0+aXNBcHByb3ZlZCgpLAogICAgICAgICAgICAnY2FiaW5ldCcgPT4gJHRoaXMtPndoZW5Mb2FkZWQoJ2NhYmluZXQnLCBmbiAoKSA9PiAkdGhpcy0+Y2FiaW5ldCA/IG5ldyBDYWJpbmV0UmVzb3VyY2UoJHRoaXMtPmNhYmluZXQpIDogbnVsbCksCiAgICAgICAgICAgICdyb2xlcycgPT4gJHRoaXMtPmdldFJvbGVOYW1lcygpLT52YWx1ZXMoKSwKICAgICAgICAgICAgJ3Blcm1pc3Npb25zJyA9PiAkdGhpcy0+Z2V0QWxsUGVybWlzc2lvbnMoKS0+cGx1Y2soJ25hbWUnKS0+dmFsdWVzKCksCiAgICAgICAgXTsKICAgIH0KfQo=
+<?php
+
+namespace App\Http\Resources;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * @mixin User
+ */
+class UserResource extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'is_platform_admin' => $this->is_platform_admin,
+            'approved' => $this->isApproved(),
+            'cabinet' => $this->whenLoaded('cabinet', fn () => $this->cabinet ? new CabinetResource($this->cabinet) : null),
+            'roles' => $this->getRoleNames()->values(),
+            'permissions' => $this->getAllPermissions()->pluck('name')->values(),
+        ];
+    }
+}

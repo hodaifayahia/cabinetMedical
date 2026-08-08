@@ -1,1 +1,105 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcU2VydmljZXNcQ2FiaW5ldDsKCnVzZSBBcHBcTW9kZWxzXFVzZXI7CgovKioKICogU2hhcmVkIGVsaWdpYmlsaXR5IHJ1bGVzIGRlY2lkaW5nIHdoZXRoZXIgYW4gYXV0aGVudGljYXRlZCBjYWJpbmV0IG1lbWJlciBpcwogKiBhbGxvd2VkIHRvIHVzZSB0aGUgYXBwbGljYXRpb24sIHVzZWQgYnkgYm90aCB0aGUgd2ViIG1pZGRsZXdhcmUKICogKEVuc3VyZUNhYmluZXRJc0FjdGl2ZSkgYW5kIHRoZSBTYW5jdHVtIEFQSS4gS2VlcGluZyB0aGUgcnVsZXMgaW4gb25lIHBsYWNlCiAqIGd1YXJhbnRlZXMgdGhlIHdlYiBhbmQgQVBJIHN1cmZhY2VzIGdhdGUgYWNjZXNzIGlkZW50aWNhbGx5LgogKi8KY2xhc3MgQ2FiaW5ldEFjY2Vzc1NlcnZpY2UKewogICAgcHVibGljIGNvbnN0IFJFQVNPTl9DQUJJTkVUX1BFTkRJTkcgPSAnY2FiaW5ldF9wZW5kaW5nJzsKCiAgICBwdWJsaWMgY29uc3QgUkVBU09OX0NBQklORVRfU1VTUEVOREVEID0gJ2NhYmluZXRfc3VzcGVuZGVkJzsKCiAgICBwdWJsaWMgY29uc3QgUkVBU09OX0FXQUlUSU5HX0FQUFJPVkFMID0gJ2F3YWl0aW5nX2FwcHJvdmFsJzsKCiAgICAvKioKICAgICAqIFdoZXRoZXIgdGhlIHVzZXIgbWF5IGFjY2VzcyBjYWJpbmV0LXNjb3BlZCByZXNvdXJjZXMuIFBsYXRmb3JtIHN0YWZmIGFuZAogICAgICogbGVnYWN5IGFjY291bnRzIHdpdGhvdXQgYSBjYWJpbmV0IGFyZSBhbHdheXMgZWxpZ2libGUuCiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBpc0VsaWdpYmxlKFVzZXIgJHVzZXIpOiBib29sCiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT5kZW5pYWxSZWFzb24oJHVzZXIpID09PSBudWxsOwogICAgfQoKICAgIC8qKgogICAgICogVGhlIG1hY2hpbmUtcmVhZGFibGUgcmVhc29uIGEgdXNlciBpcyBibG9ja2VkLCBvciBudWxsIHdoZW4gZWxpZ2libGUuCiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBkZW5pYWxSZWFzb24oVXNlciAkdXNlcik6ID9zdHJpbmcKICAgIHsKICAgICAgICBpZiAoJHVzZXItPmlzX3BsYXRmb3JtX2FkbWluKSB7CiAgICAgICAgICAgIHJldHVybiBudWxsOwogICAgICAgIH0KCiAgICAgICAgJGNhYmluZXQgPSAkdXNlci0+Y2FiaW5ldDsKCiAgICAgICAgLy8gTGVnYWN5IC8gdW5zY29wZWQgYWNjb3VudHMgaGF2ZSBubyB0ZW5hbnQgZ2F0ZS4KICAgICAgICBpZiAoJGNhYmluZXQgPT09IG51bGwpIHsKICAgICAgICAgICAgcmV0dXJuIG51bGw7CiAgICAgICAgfQoKICAgICAgICBpZiAoJGNhYmluZXQtPmlzUGVuZGluZygpKSB7CiAgICAgICAgICAgIHJldHVybiBzZWxmOjpSRUFTT05fQ0FCSU5FVF9QRU5ESU5HOwogICAgICAgIH0KCiAgICAgICAgaWYgKCEgJGNhYmluZXQtPmlzQWN0aXZlKCkpIHsKICAgICAgICAgICAgcmV0dXJuIHNlbGY6OlJFQVNPTl9DQUJJTkVUX1NVU1BFTkRFRDsKICAgICAgICB9CgogICAgICAgIGlmICgkdXNlci0+aXNQZW5kaW5nQXBwcm92YWwoKSkgewogICAgICAgICAgICByZXR1cm4gc2VsZjo6UkVBU09OX0FXQUlUSU5HX0FQUFJPVkFMOwogICAgICAgIH0KCiAgICAgICAgcmV0dXJuIG51bGw7CiAgICB9CgogICAgLyoqCiAgICAgKiBBIGh1bWFuLXJlYWRhYmxlIEZyZW5jaCBtZXNzYWdlIG1hdGNoaW5nIHRoZSBkZW5pYWwgcmVhc29uLgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gZGVuaWFsTWVzc2FnZShVc2VyICR1c2VyKTogP3N0cmluZwogICAgewogICAgICAgIHJldHVybiBtYXRjaCAoJHRoaXMtPmRlbmlhbFJlYXNvbigkdXNlcikpIHsKICAgICAgICAgICAgc2VsZjo6UkVBU09OX0NBQklORVRfUEVORElORyA9PiAiVm90cmUgY2FiaW5ldCBlc3QgZW4gYXR0ZW50ZSBkJ2FjdGl2YXRpb24gcGFyIGwnw6lxdWlwZSBNZWRpU21hcnQuIiwKICAgICAgICAgICAgc2VsZjo6UkVBU09OX0NBQklORVRfU1VTUEVOREVEID0+ICdWb3RyZSBjYWJpbmV0IGVzdCBhY3R1ZWxsZW1lbnQgc3VzcGVuZHUuIENvbnRhY3RleiBsZSBzdXBwb3J0IE1lZGlTbWFydC4nLAogICAgICAgICAgICBzZWxmOjpSRUFTT05fQVdBSVRJTkdfQVBQUk9WQUwgPT4gIlZvdHJlIGNvbXB0ZSBlc3QgZW4gYXR0ZW50ZSBkJ2FwcHJvYmF0aW9uIHBhciBsZSBwcm9wcmnDqXRhaXJlIGR1IGNhYmluZXQuIiwKICAgICAgICAgICAgZGVmYXVsdCA9PiBudWxsLAogICAgICAgIH07CiAgICB9Cn0K
+<?php
+
+namespace App\Services\Cabinet;
+
+use App\Models\User;
+
+/**
+ * Shared eligibility rules deciding whether an authenticated cabinet member is
+ * allowed to use the application, used by both the web middleware
+ * (EnsureCabinetIsActive) and the Sanctum API. Keeping the rules in one place
+ * guarantees the web and API surfaces gate access identically.
+ */
+class CabinetAccessService
+{
+    public const REASON_CABINET_PENDING = 'cabinet_pending';
+
+    public const REASON_CABINET_SUSPENDED = 'cabinet_suspended';
+
+    public const REASON_LICENSE_EXPIRED = 'license_expired';
+
+    public const REASON_LICENSE_INACTIVE = 'license_inactive';
+
+    public const REASON_AWAITING_APPROVAL = 'awaiting_approval';
+
+    /**
+     * Whether the user may access cabinet-scoped resources. Platform staff and
+     * legacy accounts without a cabinet are always eligible.
+     */
+    public function isEligible(User $user): bool
+    {
+        return $this->denialReason($user) === null;
+    }
+
+    /**
+     * The machine-readable reason a user is blocked, or null when eligible.
+     */
+    public function denialReason(User $user): ?string
+    {
+        if ($user->is_platform_admin) {
+            return null;
+        }
+
+        $cabinet = $user->cabinet;
+
+        // Legacy / unscoped accounts have no tenant gate.
+        if ($cabinet === null) {
+            return null;
+        }
+
+        if ($cabinet->isPending()) {
+            return self::REASON_CABINET_PENDING;
+        }
+
+        if (! $cabinet->isActive()) {
+            return self::REASON_CABINET_SUSPENDED;
+        }
+
+        $license = $cabinet->license;
+        if ($license?->isHostedEntitlement() === true) {
+            if ($license->isExpired()) {
+                return self::REASON_LICENSE_EXPIRED;
+            }
+
+            if ($license->effectiveStatus() !== 'active') {
+                return self::REASON_LICENSE_INACTIVE;
+            }
+        }
+
+        if ($user->isPendingApproval()) {
+            return self::REASON_AWAITING_APPROVAL;
+        }
+
+        return null;
+    }
+
+    /**
+     * A human-readable French message matching the denial reason.
+     */
+    public function denialMessage(User $user): ?string
+    {
+        return match ($this->denialReason($user)) {
+            self::REASON_CABINET_PENDING => "Votre cabinet est en attente d'activation par l'équipe DrClickDz.",
+            self::REASON_CABINET_SUSPENDED => 'Votre cabinet est actuellement suspendu. Contactez le support DrClickDz.',
+            self::REASON_LICENSE_EXPIRED => "Votre essai de 7 jours est expiré. Contactez l'administration DrClickDz pour renouveler votre licence ou passer à une licence à vie.",
+            self::REASON_LICENSE_INACTIVE => "La licence de votre cabinet n'est pas active. Contactez l'administration DrClickDz.",
+            self::REASON_AWAITING_APPROVAL => "Votre compte est en attente d'approbation par le propriétaire du cabinet.",
+            default => null,
+        };
+    }
+
+    /**
+     * A concise state suitable for API clients and the pending-access screen.
+     */
+    public function denialStatus(User $user): ?string
+    {
+        return match ($this->denialReason($user)) {
+            self::REASON_CABINET_PENDING => 'pending',
+            self::REASON_CABINET_SUSPENDED => 'suspended',
+            self::REASON_LICENSE_EXPIRED => 'expired',
+            self::REASON_LICENSE_INACTIVE => 'inactive',
+            self::REASON_AWAITING_APPROVAL => 'awaiting_approval',
+            default => null,
+        };
+    }
+}

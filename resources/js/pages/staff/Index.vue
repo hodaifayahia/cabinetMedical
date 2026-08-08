@@ -126,7 +126,7 @@ const openEdit = (member: StaffMember) => {
     form.password = '';
     form.password_confirmation = '';
     form.role = member.roles[0] ?? props.roles[0] ?? '';
-    form.assigned_to_cabinet = member.cabinet !== null;
+    form.assigned_to_cabinet = true;
     form.clearErrors();
     showForm.value = true;
 };
@@ -549,6 +549,8 @@ const removeUser = (member: StaffMember) => {
                         <input
                             v-model="form.assigned_to_cabinet"
                             type="checkbox"
+                            disabled
+                            aria-readonly="true"
                             class="size-5 accent-blue-600"
                         />
                     </label>

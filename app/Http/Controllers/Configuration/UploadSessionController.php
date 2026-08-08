@@ -10,6 +10,7 @@ use App\Models\UploadedDocument;
 use App\Models\UploadSession;
 use App\Models\User;
 use App\Services\ApplicationSettingService;
+use App\Services\InstallationMaintenanceAccessService;
 use App\Services\LicenseService;
 use App\Services\NetworkService;
 use App\Services\QrUploadService;
@@ -28,7 +29,12 @@ use Throwable;
 final class UploadSessionController extends Controller
 {
     private const ACTIVE_UPLOAD_COOKIE = 'medismart_active_upload';
+
     private const ACTIVE_UPLOAD_COOKIE_PATH = '/app/configuration/connectivity-backup';
+
+    public function __construct(
+        private readonly InstallationMaintenanceAccessService $installationMaintenance,
+    ) {}
 
     public function store(
         Request $request,
@@ -38,6 +44,8 @@ final class UploadSessionController extends Controller
         ApplicationSettingService $settings,
         NetworkService $network,
     ): RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         $data = $request->validate([
             'mode' => ['required', Rule::in(['local', 'remote', 'relay'])],
             'patient_id' => ['required', 'integer', Rule::exists('patients', 'id')->whereNull('deleted_at')],
@@ -126,6 +134,8 @@ final class UploadSessionController extends Controller
         string $uploadSession,
         QrUploadService $sessions,
     ): RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         $uploadSession = UploadSession::query()->findOrFail($uploadSession);
         $payload = $this->activeUploadPayload($request, $sessions);
 
@@ -153,8 +163,8 @@ final class UploadSessionController extends Controller
             'state' => $reachable ? 'verified' : 'failed',
             'checked_at' => $checkedAt,
             'message' => $reachable
-                ? 'Le portail de téléversement MediSmart répond à cette adresse.'
-                : 'Cette adresse ne répond pas comme un portail de téléversement MediSmart.',
+                ? 'Le portail de téléversement DrClickDz répond à cette adresse.'
+                : 'Cette adresse ne répond pas comme un portail de téléversement DrClickDz.',
         ];
 
         $activeUpload = json_encode($payload, JSON_THROW_ON_ERROR);

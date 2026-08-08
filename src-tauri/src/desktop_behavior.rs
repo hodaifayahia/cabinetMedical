@@ -1,1 +1,101 @@
-Ly8gTWVkaVNtYXJ0IERlc2t0b3Ag4oCUIHN5c3RlbSB0cmF5IGFuZCB3aW5kb3cgYmVoYXZpb3VyCi8vCi8vIFVuY2hhbmdlZCBmcm9tIHRoZSBvcmlnaW5hbCBleGNlcHQ6Ci8vICAgLSBzaG91bGRfaGlkZV9vbl9jbG9zZSBub3cgb25seSBtYW5hZ2VzICJtYWluIiAodGhlICJzdGFydHVwIiB3aW5kb3cgaXMgZ29uZQovLyAgICAgaW4gdGhpbi1jbGllbnQgbW9kZTsgdGhlIG1haW4gd2luZG93IHNlcnZlcyBhcyB0aGUgc29sZSBzaGVsbCB3aW5kb3cpLgoKdXNlIHN0ZDo6c3luYzo6YXRvbWljOjp7QXRvbWljQm9vbCwgT3JkZXJpbmd9OwoKdXNlIHRhdXJpOjp7CiAgICBtZW51Ojp7TWVudSwgTWVudUl0ZW19LAogICAgdHJheTo6e01vdXNlQnV0dG9uLCBNb3VzZUJ1dHRvblN0YXRlLCBUcmF5SWNvbkJ1aWxkZXIsIFRyYXlJY29uRXZlbnR9LAogICAgQXBwSGFuZGxlLCBNYW5hZ2VyLAp9OwoKY29uc3QgT1BFTl9NRU5VX0lEOiAmc3RyID0gIm1lZGlzbWFydC10cmF5LW9wZW4iOwpjb25zdCBRVUlUX01FTlVfSUQ6ICZzdHIgPSAibWVkaXNtYXJ0LXRyYXktcXVpdCI7CgojW2Rlcml2ZShEZWZhdWx0KV0KcHViKGNyYXRlKSBzdHJ1Y3QgRGVza3RvcEJlaGF2aW9yU3RhdGUgewogICAgcXVpdF9yZXF1ZXN0ZWQ6IEF0b21pY0Jvb2wsCn0KCmltcGwgRGVza3RvcEJlaGF2aW9yU3RhdGUgewogICAgcHViKGNyYXRlKSBmbiByZXF1ZXN0X3F1aXQoJnNlbGYpIHsKICAgICAgICBzZWxmLnF1aXRfcmVxdWVzdGVkLnN0b3JlKHRydWUsIE9yZGVyaW5nOjpTZXFDc3QpOwogICAgfQoKICAgIC8vLyBSZXR1cm5zIHRydWUgaWYgY2xvc2luZyB0aGUgbmFtZWQgd2luZG93IHNob3VsZCBoaWRlIGl0IHJhdGhlciB0aGFuIGV4aXQuCiAgICAvLy8gSW4gdGhpbi1jbGllbnQgbW9kZSB0aGUgb25seSBtYW5hZ2VkIHdpbmRvdyBpcyAibWFpbiIuCiAgICBwdWIoY3JhdGUpIGZuIHNob3VsZF9oaWRlX29uX2Nsb3NlKCZzZWxmLCB3aW5kb3dfbGFiZWw6ICZzdHIpIC0+IGJvb2wgewogICAgICAgIHdpbmRvd19sYWJlbCA9PSAibWFpbiIgJiYgIXNlbGYucXVpdF9yZXF1ZXN0ZWQubG9hZChPcmRlcmluZzo6U2VxQ3N0KQogICAgfQp9CgpwdWIoY3JhdGUpIGZuIGluc3RhbGxfc3lzdGVtX3RyYXkoYXBwOiAmQXBwSGFuZGxlKSAtPiB0YXVyaTo6UmVzdWx0PCgpPiB7CiAgICBsZXQgb3BlbiA9IE1lbnVJdGVtOjp3aXRoX2lkKGFwcCwgT1BFTl9NRU5VX0lELCAiT3V2cmlyIE1lZGlTbWFydCIsIHRydWUsIE5vbmU6Ojwmc3RyPik/OwogICAgbGV0IHF1aXQgPSBNZW51SXRlbTo6d2l0aF9pZChhcHAsIFFVSVRfTUVOVV9JRCwgIlF1aXR0ZXIgTWVkaVNtYXJ0IiwgdHJ1ZSwgTm9uZTo6PCZzdHI+KT87CiAgICBsZXQgbWVudSA9IE1lbnU6OndpdGhfaXRlbXMoYXBwLCAmWyZvcGVuLCAmcXVpdF0pPzsKICAgIGxldCBtdXQgdHJheSA9IFRyYXlJY29uQnVpbGRlcjo6d2l0aF9pZCgibWVkaXNtYXJ0LW1haW4tdHJheSIpCiAgICAgICAgLm1lbnUoJm1lbnUpCiAgICAgICAgLnRvb2x0aXAoIk1lZGlTbWFydCIpCiAgICAgICAgLnNob3dfbWVudV9vbl9sZWZ0X2NsaWNrKGZhbHNlKQogICAgICAgIC5vbl9tZW51X2V2ZW50KHxhcHAsIGV2ZW50fCBtYXRjaCBldmVudC5pZCgpLmFzX3JlZigpIHsKICAgICAgICAgICAgT1BFTl9NRU5VX0lEID0+IHNob3dfZGVza3RvcF93aW5kb3coYXBwKSwKICAgICAgICAgICAgUVVJVF9NRU5VX0lEID0+IHsKICAgICAgICAgICAgICAgIGFwcC5zdGF0ZTo6PERlc2t0b3BCZWhhdmlvclN0YXRlPigpLnJlcXVlc3RfcXVpdCgpOwogICAgICAgICAgICAgICAgYXBwLmV4aXQoMCk7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgXyA9PiB7fQogICAgICAgIH0pCiAgICAgICAgLm9uX3RyYXlfaWNvbl9ldmVudCh8dHJheSwgZXZlbnR8IHsKICAgICAgICAgICAgaWYgbWF0Y2hlcyEoCiAgICAgICAgICAgICAgICBldmVudCwKICAgICAgICAgICAgICAgIFRyYXlJY29uRXZlbnQ6OkNsaWNrIHsKICAgICAgICAgICAgICAgICAgICBidXR0b246IE1vdXNlQnV0dG9uOjpMZWZ0LAogICAgICAgICAgICAgICAgICAgIGJ1dHRvbl9zdGF0ZTogTW91c2VCdXR0b25TdGF0ZTo6VXAsCiAgICAgICAgICAgICAgICAgICAgLi4KICAgICAgICAgICAgICAgIH0gfCBUcmF5SWNvbkV2ZW50OjpEb3VibGVDbGljayB7CiAgICAgICAgICAgICAgICAgICAgYnV0dG9uOiBNb3VzZUJ1dHRvbjo6TGVmdCwKICAgICAgICAgICAgICAgICAgICAuLgogICAgICAgICAgICAgICAgfQogICAgICAgICAgICApIHsKICAgICAgICAgICAgICAgIHNob3dfZGVza3RvcF93aW5kb3codHJheS5hcHBfaGFuZGxlKCkpOwogICAgICAgICAgICB9CiAgICAgICAgfSk7CgogICAgaWYgbGV0IFNvbWUoaWNvbikgPSBhcHAuZGVmYXVsdF93aW5kb3dfaWNvbigpIHsKICAgICAgICB0cmF5ID0gdHJheS5pY29uKGljb24uY2xvbmUoKSk7CiAgICB9CgogICAgdHJheS5idWlsZChhcHApPzsKCiAgICBPaygoKSkKfQoKcHViKGNyYXRlKSBmbiBzaG93X2Rlc2t0b3Bfd2luZG93KGFwcDogJkFwcEhhbmRsZSkgewogICAgLy8gSW4gdGhpbi1jbGllbnQgbW9kZSB0aGVyZSBpcyBvbmx5IHRoZSAibWFpbiIgd2luZG93LgogICAgaWYgbGV0IFNvbWUod2luZG93KSA9IGFwcC5nZXRfd2Vidmlld193aW5kb3coIm1haW4iKSB7CiAgICAgICAgbGV0IF8gPSB3aW5kb3cuc2hvdygpOwogICAgICAgIGxldCBfID0gd2luZG93LnVubWluaW1pemUoKTsKICAgICAgICBsZXQgXyA9IHdpbmRvdy5zZXRfZm9jdXMoKTsKICAgIH0KfQoKI1tjZmcodGVzdCldCm1vZCB0ZXN0cyB7CiAgICB1c2Ugc3VwZXI6OkRlc2t0b3BCZWhhdmlvclN0YXRlOwoKICAgICNbdGVzdF0KICAgIGZuIG1haW5fd2luZG93X2hpZGVzX3VudGlsX2FuX2V4cGxpY2l0X3RyYXlfcXVpdCgpIHsKICAgICAgICBsZXQgc3RhdGUgPSBEZXNrdG9wQmVoYXZpb3JTdGF0ZTo6ZGVmYXVsdCgpOwoKICAgICAgICBhc3NlcnQhKHN0YXRlLnNob3VsZF9oaWRlX29uX2Nsb3NlKCJtYWluIikpOwogICAgICAgIC8vIFVubWFuYWdlZCB3aW5kb3dzIGFyZSBub3QgaGlkZGVuCiAgICAgICAgYXNzZXJ0ISghc3RhdGUuc2hvdWxkX2hpZGVfb25fY2xvc2UoInNldHRpbmdzIikpOwoKICAgICAgICBzdGF0ZS5yZXF1ZXN0X3F1aXQoKTsKCiAgICAgICAgYXNzZXJ0ISghc3RhdGUuc2hvdWxkX2hpZGVfb25fY2xvc2UoIm1haW4iKSk7CiAgICB9Cn0K
+// DrClickDz Desktop — system tray and window behaviour
+//
+// Unchanged from the original except:
+//   - should_hide_on_close now only manages "main" (the "startup" window is gone
+//     in thin-client mode; the main window serves as the sole shell window).
+
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Manager,
+};
+
+const OPEN_MENU_ID: &str = "medismart-tray-open";
+const QUIT_MENU_ID: &str = "medismart-tray-quit";
+
+#[derive(Default)]
+pub(crate) struct DesktopBehaviorState {
+    quit_requested: AtomicBool,
+}
+
+impl DesktopBehaviorState {
+    pub(crate) fn request_quit(&self) {
+        self.quit_requested.store(true, Ordering::SeqCst);
+    }
+
+    /// Returns true if closing the named window should hide it rather than exit.
+    /// In thin-client mode the only managed window is "main".
+    pub(crate) fn should_hide_on_close(&self, window_label: &str) -> bool {
+        window_label == "main" && !self.quit_requested.load(Ordering::SeqCst)
+    }
+}
+
+pub(crate) fn install_system_tray(app: &AppHandle) -> tauri::Result<()> {
+    let open = MenuItem::with_id(app, OPEN_MENU_ID, "Ouvrir DrClickDz", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, QUIT_MENU_ID, "Quitter DrClickDz", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&open, &quit])?;
+    let mut tray = TrayIconBuilder::with_id("medismart-main-tray")
+        .menu(&menu)
+        .tooltip("DrClickDz")
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            OPEN_MENU_ID => show_desktop_window(app),
+            QUIT_MENU_ID => {
+                app.state::<DesktopBehaviorState>().request_quit();
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if matches!(
+                event,
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } | TrayIconEvent::DoubleClick {
+                    button: MouseButton::Left,
+                    ..
+                }
+            ) {
+                show_desktop_window(tray.app_handle());
+            }
+        });
+
+    if let Some(icon) = app.default_window_icon() {
+        tray = tray.icon(icon.clone());
+    }
+
+    tray.build(app)?;
+
+    Ok(())
+}
+
+pub(crate) fn show_desktop_window(app: &AppHandle) {
+    // In thin-client mode there is only the "main" window.
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DesktopBehaviorState;
+
+    #[test]
+    fn main_window_hides_until_an_explicit_tray_quit() {
+        let state = DesktopBehaviorState::default();
+
+        assert!(state.should_hide_on_close("main"));
+        // Unmanaged windows are not hidden
+        assert!(!state.should_hide_on_close("settings"));
+
+        state.request_quit();
+
+        assert!(!state.should_hide_on_close("main"));
+    }
+}

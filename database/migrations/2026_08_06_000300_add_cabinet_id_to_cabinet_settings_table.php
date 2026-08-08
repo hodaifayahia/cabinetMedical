@@ -1,1 +1,35 @@
-PD9waHAKCnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXE1pZ3JhdGlvbnNcTWlncmF0aW9uOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxTY2hlbWFcQmx1ZXByaW50Owp1c2UgSWxsdW1pbmF0ZVxTdXBwb3J0XEZhY2FkZXNcU2NoZW1hOwoKcmV0dXJuIG5ldyBjbGFzcyBleHRlbmRzIE1pZ3JhdGlvbgp7CiAgICAvKioKICAgICAqIENvbnZlcnQgdGhlIHNldHRpbmdzIHRhYmxlIGZyb20gYW4gaW1wbGljaXQgc2luZ2xldG9uIGludG8gYSBwZXItY2FiaW5ldAogICAgICogcm93IGtleWVkIGJ5IGEgdW5pcXVlIGNhYmluZXRfaWQuCiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB1cCgpOiB2b2lkCiAgICB7CiAgICAgICAgU2NoZW1hOjp0YWJsZSgnY2FiaW5ldF9zZXR0aW5ncycsIGZ1bmN0aW9uIChCbHVlcHJpbnQgJHRhYmxlKTogdm9pZCB7CiAgICAgICAgICAgIGlmICghIFNjaGVtYTo6aGFzQ29sdW1uKCdjYWJpbmV0X3NldHRpbmdzJywgJ2NhYmluZXRfaWQnKSkgewogICAgICAgICAgICAgICAgJHRhYmxlLT5mb3JlaWduSWQoJ2NhYmluZXRfaWQnKQogICAgICAgICAgICAgICAgICAgIC0+bnVsbGFibGUoKQogICAgICAgICAgICAgICAgICAgIC0+YWZ0ZXIoJ2lkJykKICAgICAgICAgICAgICAgICAgICAtPmNvbnN0cmFpbmVkKCdjYWJpbmV0cycpCiAgICAgICAgICAgICAgICAgICAgLT5jYXNjYWRlT25EZWxldGUoKTsKICAgICAgICAgICAgICAgICR0YWJsZS0+dW5pcXVlKCdjYWJpbmV0X2lkJyk7CiAgICAgICAgICAgIH0KICAgICAgICB9KTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gZG93bigpOiB2b2lkCiAgICB7CiAgICAgICAgU2NoZW1hOjp0YWJsZSgnY2FiaW5ldF9zZXR0aW5ncycsIGZ1bmN0aW9uIChCbHVlcHJpbnQgJHRhYmxlKTogdm9pZCB7CiAgICAgICAgICAgIGlmIChTY2hlbWE6Omhhc0NvbHVtbignY2FiaW5ldF9zZXR0aW5ncycsICdjYWJpbmV0X2lkJykpIHsKICAgICAgICAgICAgICAgICR0YWJsZS0+ZHJvcENvbnN0cmFpbmVkRm9yZWlnbklkKCdjYWJpbmV0X2lkJyk7CiAgICAgICAgICAgIH0KICAgICAgICB9KTsKICAgIH0KfTsK
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Convert the settings table from an implicit singleton into a per-cabinet
+     * row keyed by a unique cabinet_id.
+     */
+    public function up(): void
+    {
+        Schema::table('cabinet_settings', function (Blueprint $table): void {
+            if (! Schema::hasColumn('cabinet_settings', 'cabinet_id')) {
+                $table->foreignId('cabinet_id')
+                    ->nullable()
+                    ->after('id')
+                    ->constrained('cabinets')
+                    ->cascadeOnDelete();
+                $table->unique('cabinet_id');
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('cabinet_settings', function (Blueprint $table): void {
+            if (Schema::hasColumn('cabinet_settings', 'cabinet_id')) {
+                $table->dropConstrainedForeignId('cabinet_id');
+            }
+        });
+    }
+};

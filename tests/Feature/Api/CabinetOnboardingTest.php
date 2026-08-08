@@ -1,1 +1,111 @@
-PD9waHAKCm5hbWVzcGFjZSBUZXN0c1xGZWF0dXJlXEFwaTsKCnVzZSBBcHBcRW51bXNcQ2FiaW5ldFN0YXR1czsKdXNlIEFwcFxNb2RlbHNcQ2FiaW5ldDsKdXNlIEFwcFxNb2RlbHNcVXNlcjsKdXNlIERhdGFiYXNlXFNlZWRlcnNcUm9sZXNBbmRQZXJtaXNzaW9uc1NlZWRlcjsKdXNlIElsbHVtaW5hdGVcRm91bmRhdGlvblxUZXN0aW5nXFJlZnJlc2hEYXRhYmFzZTsKdXNlIFRlc3RzXEZlYXR1cmVcQXBpXENvbmNlcm5zXEJ1aWxkc0NhYmluZXRzOwp1c2UgVGVzdHNcVGVzdENhc2U7CgpjbGFzcyBDYWJpbmV0T25ib2FyZGluZ1Rlc3QgZXh0ZW5kcyBUZXN0Q2FzZQp7CiAgICB1c2UgQnVpbGRzQ2FiaW5ldHMsIFJlZnJlc2hEYXRhYmFzZTsKCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gc2V0VXAoKTogdm9pZAogICAgewogICAgICAgIHBhcmVudDo6c2V0VXAoKTsKICAgICAgICAkdGhpcy0+c2VlZChSb2xlc0FuZFBlcm1pc3Npb25zU2VlZGVyOjpjbGFzcyk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfcmVnaXN0ZXJfY3JlYXRlc19hX3BlbmRpbmdfY2FiaW5ldF9hbmRfb3duZXIoKTogdm9pZAogICAgewogICAgICAgICRyZXNwb25zZSA9ICR0aGlzLT5wb3N0SnNvbignL2FwaS92MS9jYWJpbmV0cy9yZWdpc3RlcicsIFsKICAgICAgICAgICAgJ25hbWUnID0+ICdBcGkgT3duZXInLAogICAgICAgICAgICAnY2FiaW5ldF9uYW1lJyA9PiAnQ2FiaW5ldCBBUEknLAogICAgICAgICAgICAnc3BlY2lhbGl6YXRpb24nID0+ICdDYXJkaW9sb2dpZScsCiAgICAgICAgICAgICdlbWFpbCcgPT4gJ2FwaS1vd25lckBleGFtcGxlLmNvbScsCiAgICAgICAgICAgICd3aWxheWEnID0+IDE2LAogICAgICAgICAgICAncGFzc3dvcmQnID0+ICdwYXNzd29yZCcsCiAgICAgICAgICAgICdwYXNzd29yZF9jb25maXJtYXRpb24nID0+ICdwYXNzd29yZCcsCiAgICAgICAgXSk7CgogICAgICAgICRyZXNwb25zZS0+YXNzZXJ0U3RhdHVzKDIwMSkKICAgICAgICAgICAgLT5hc3NlcnRKc29uUGF0aCgnc3RhdHVzJywgJ3BlbmRpbmcnKQogICAgICAgICAgICAtPmFzc2VydEpzb25TdHJ1Y3R1cmUoWydjYWJpbmV0X2lkJywgJ3N0YXR1cyddKTsKCiAgICAgICAgJG93bmVyID0gVXNlcjo6cXVlcnkoKS0+d2hlcmUoJ2VtYWlsJywgJ2FwaS1vd25lckBleGFtcGxlLmNvbScpLT5zb2xlKCk7CiAgICAgICAgJHRoaXMtPmFzc2VydE5vdE51bGwoJG93bmVyLT5hcHByb3ZlZF9hdCk7CgogICAgICAgICRjYWJpbmV0ID0gQ2FiaW5ldDo6cXVlcnkoKS0+c29sZSgpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKENhYmluZXRTdGF0dXM6OlBFTkRJTkcsICRjYWJpbmV0LT5zdGF0dXMpOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKCRyZXNwb25zZS0+anNvbignY2FiaW5ldF9pZCcpLCAkY2FiaW5ldC0+Z2V0S2V5KCkpOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiB0ZXN0X3JlZ2lzdGVyX3ZhbGlkYXRpb25fZmFpbHNfd2l0aF80MjIoKTogdm9pZAogICAgewogICAgICAgICR0aGlzLT5wb3N0SnNvbignL2FwaS92MS9jYWJpbmV0cy9yZWdpc3RlcicsIFsKICAgICAgICAgICAgJ25hbWUnID0+ICcnLAogICAgICAgICAgICAnZW1haWwnID0+ICdub3QtYW4tZW1haWwnLAogICAgICAgIF0pLT5hc3NlcnRTdGF0dXMoNDIyKTsKCiAgICAgICAgJHRoaXMtPmFzc2VydERhdGFiYXNlQ291bnQoJ2NhYmluZXRzJywgMCk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3Rfam9pbl9jcmVhdGVzX2FfcGVuZGluZ19tZW1iZXIoKTogdm9pZAogICAgewogICAgICAgIFskY2FiaW5ldF0gPSAkdGhpcy0+YWN0aXZlQ2FiaW5ldFdpdGhPd25lcignam9pbi1vd25lckBleGFtcGxlLmNvbScpOwoKICAgICAgICAkdGhpcy0+cG9zdEpzb24oJy9hcGkvdjEvY2FiaW5ldHMvam9pbicsIFsKICAgICAgICAgICAgJ25hbWUnID0+ICdOZXcgTWVtYmVyJywKICAgICAgICAgICAgJ2VtYWlsJyA9PiAnam9pbmVyQGV4YW1wbGUuY29tJywKICAgICAgICAgICAgJ293bmVyX2VtYWlsJyA9PiAnam9pbi1vd25lckBleGFtcGxlLmNvbScsCiAgICAgICAgICAgICdwYXNzd29yZCcgPT4gJ3Bhc3N3b3JkJywKICAgICAgICAgICAgJ3Bhc3N3b3JkX2NvbmZpcm1hdGlvbicgPT4gJ3Bhc3N3b3JkJywKICAgICAgICBdKS0+YXNzZXJ0U3RhdHVzKDIwMSkKICAgICAgICAgICAgLT5hc3NlcnRKc29uUGF0aCgnc3RhdHVzJywgJ2F3YWl0aW5nX2FwcHJvdmFsJyk7CgogICAgICAgICRtZW1iZXIgPSBVc2VyOjpxdWVyeSgpLT53aGVyZSgnZW1haWwnLCAnam9pbmVyQGV4YW1wbGUuY29tJyktPnNvbGUoKTsKICAgICAgICAkdGhpcy0+YXNzZXJ0U2FtZSgkY2FiaW5ldC0+Z2V0S2V5KCksICRtZW1iZXItPmNhYmluZXRfaWQpOwogICAgICAgICR0aGlzLT5hc3NlcnROdWxsKCRtZW1iZXItPmFwcHJvdmVkX2F0KTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9qb2luX2lzX2Jsb2NrZWRfYnlfdGhlX3NlYXRfbGltaXQoKTogdm9pZAogICAgewogICAgICAgIFskY2FiaW5ldF0gPSAkdGhpcy0+YWN0aXZlQ2FiaW5ldFdpdGhPd25lcignZnVsbC1vd25lckBleGFtcGxlLmNvbScpOwoKICAgICAgICAvLyBPd25lciBpcyBzZWF0ICMxOyBmaWxsIHRoZSByZW1haW5pbmcgdHdvIHNlYXRzLgogICAgICAgIFVzZXI6OmZhY3RvcnkoKS0+Y291bnQoMiktPmNyZWF0ZShbCiAgICAgICAgICAgICdjYWJpbmV0X2lkJyA9PiAkY2FiaW5ldC0+Z2V0S2V5KCksCiAgICAgICAgICAgICdhcHByb3ZlZF9hdCcgPT4gbm93KCksCiAgICAgICAgXSk7CgogICAgICAgICR0aGlzLT5wb3N0SnNvbignL2FwaS92MS9jYWJpbmV0cy9qb2luJywgWwogICAgICAgICAgICAnbmFtZScgPT4gJ0ZvdXJ0aCcsCiAgICAgICAgICAgICdlbWFpbCcgPT4gJ2ZvdXJ0aEBleGFtcGxlLmNvbScsCiAgICAgICAgICAgICdvd25lcl9lbWFpbCcgPT4gJ2Z1bGwtb3duZXJAZXhhbXBsZS5jb20nLAogICAgICAgICAgICAncGFzc3dvcmQnID0+ICdwYXNzd29yZCcsCiAgICAgICAgICAgICdwYXNzd29yZF9jb25maXJtYXRpb24nID0+ICdwYXNzd29yZCcsCiAgICAgICAgXSktPmFzc2VydFN0YXR1cyg0MjIpCiAgICAgICAgICAgIC0+YXNzZXJ0SnNvblZhbGlkYXRpb25FcnJvcnMoJ293bmVyX2VtYWlsJyk7CgogICAgICAgICR0aGlzLT5hc3NlcnREYXRhYmFzZU1pc3NpbmcoJ3VzZXJzJywgWydlbWFpbCcgPT4gJ2ZvdXJ0aEBleGFtcGxlLmNvbSddKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9qb2luX3Vua25vd25fb3duZXJfZmFpbHNfd2l0aF80MjIoKTogdm9pZAogICAgewogICAgICAgICR0aGlzLT5wb3N0SnNvbignL2FwaS92MS9jYWJpbmV0cy9qb2luJywgWwogICAgICAgICAgICAnbmFtZScgPT4gJ05vYm9keScsCiAgICAgICAgICAgICdlbWFpbCcgPT4gJ25vYm9keUBleGFtcGxlLmNvbScsCiAgICAgICAgICAgICdvd25lcl9lbWFpbCcgPT4gJ2dob3N0QGV4YW1wbGUuY29tJywKICAgICAgICAgICAgJ3Bhc3N3b3JkJyA9PiAncGFzc3dvcmQnLAogICAgICAgICAgICAncGFzc3dvcmRfY29uZmlybWF0aW9uJyA9PiAncGFzc3dvcmQnLAogICAgICAgIF0pLT5hc3NlcnRTdGF0dXMoNDIyKQogICAgICAgICAgICAtPmFzc2VydEpzb25WYWxpZGF0aW9uRXJyb3JzKCdvd25lcl9lbWFpbCcpOwogICAgfQp9Cg==
+<?php
+
+namespace Tests\Feature\Api;
+
+use App\Enums\CabinetStatus;
+use App\Models\Cabinet;
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Api\Concerns\BuildsCabinets;
+use Tests\TestCase;
+
+class CabinetOnboardingTest extends TestCase
+{
+    use BuildsCabinets, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
+
+    public function test_register_creates_a_pending_cabinet_and_owner(): void
+    {
+        $response = $this->postJson('/api/v1/cabinets/register', [
+            'name' => 'Api Owner',
+            'cabinet_name' => 'Cabinet API',
+            'specialization' => 'Cardiologie',
+            'phone' => '0555 98 76 54',
+            'email' => 'api-owner@example.com',
+            'wilaya' => 16,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('status', 'pending')
+            ->assertJsonStructure(['cabinet_id', 'status']);
+
+        $owner = User::query()->where('email', 'api-owner@example.com')->sole();
+        $this->assertNotNull($owner->approved_at);
+        $this->assertSame('0555 98 76 54', $owner->doctorProfile?->phone);
+
+        $cabinet = Cabinet::query()->sole();
+        $this->assertSame(CabinetStatus::PENDING, $cabinet->status);
+        $this->assertSame($response->json('cabinet_id'), $cabinet->getKey());
+    }
+
+    public function test_register_validation_fails_with_422(): void
+    {
+        $this->postJson('/api/v1/cabinets/register', [
+            'name' => '',
+            'email' => 'not-an-email',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('phone');
+
+        $this->assertDatabaseCount('cabinets', 0);
+    }
+
+    public function test_join_creates_a_pending_member(): void
+    {
+        [$cabinet] = $this->activeCabinetWithOwner('join-owner@example.com');
+
+        $this->postJson('/api/v1/cabinets/join', [
+            'name' => 'New Member',
+            'email' => 'joiner@example.com',
+            'owner_email' => 'join-owner@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertStatus(201)
+            ->assertJsonPath('status', 'awaiting_approval');
+
+        $member = User::query()->where('email', 'joiner@example.com')->sole();
+        $this->assertSame($cabinet->getKey(), $member->cabinet_id);
+        $this->assertNull($member->approved_at);
+    }
+
+    public function test_join_is_blocked_by_the_seat_limit(): void
+    {
+        [$cabinet] = $this->activeCabinetWithOwner('full-owner@example.com');
+
+        // Owner is seat #1; fill the remaining two seats.
+        User::factory()->count(2)->create([
+            'cabinet_id' => $cabinet->getKey(),
+            'approved_at' => now(),
+        ]);
+
+        $this->postJson('/api/v1/cabinets/join', [
+            'name' => 'Fourth',
+            'email' => 'fourth@example.com',
+            'owner_email' => 'full-owner@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('owner_email');
+
+        $this->assertDatabaseMissing('users', ['email' => 'fourth@example.com']);
+    }
+
+    public function test_join_unknown_owner_fails_with_422(): void
+    {
+        $this->postJson('/api/v1/cabinets/join', [
+            'name' => 'Nobody',
+            'email' => 'nobody@example.com',
+            'owner_email' => 'ghost@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('owner_email');
+    }
+}

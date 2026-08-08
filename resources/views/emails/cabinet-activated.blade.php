@@ -1,1 +1,23 @@
-QGNvbXBvbmVudCgnbWFpbDo6bWVzc2FnZScpCiMgVm90cmUgY2FiaW5ldCBlc3QgYWN0aXbDqQoKQm9uam91ciB7eyAkb3duZXJOYW1lIH19LAoKQm9ubmUgbm91dmVsbGUgOiB2b3RyZSBjYWJpbmV0ICoqe3sgJGNhYmluZXROYW1lIH19KiogYSDDqXTDqSBhY3RpdsOpLiBWb3VzIHBvdXZlegpkw6lzb3JtYWlzIHZvdXMgY29ubmVjdGVyIGV0IGNvbW1lbmNlciDDoCB1dGlsaXNlciBsJ2FwcGxpY2F0aW9uLgoKQGNvbXBvbmVudCgnbWFpbDo6YnV0dG9uJywgWyd1cmwnID0+ICRsb2dpblVybF0pClNlIGNvbm5lY3RlcgpAZW5kY29tcG9uZW50CgpNZXJjaSBkZSB2b3RyZSBjb25maWFuY2UsPGJyPgpMJ8OpcXVpcGUge3sgY29uZmlnKCdhcHAubmFtZScpIH19CkBlbmRjb21wb25lbnQK
+@component('mail::message')
+# Votre cabinet est activé
+
+Bonjour {{ $ownerName }},
+
+Bonne nouvelle : votre cabinet **{{ $cabinetName }}** a été activé. Vous pouvez
+désormais vous connecter et commencer à utiliser l'application.
+
+**Licence attribuée :** {{ $licensePlan ?? 'À vie' }}
+
+@if ($expiresAt)
+**Valable jusqu'au :** {{ $expiresAt->timezone(config('app.timezone'))->translatedFormat('d F Y à H:i') }}
+@else
+Cette licence est sans date d'expiration.
+@endif
+
+@component('mail::button', ['url' => $loginUrl])
+Se connecter
+@endcomponent
+
+Merci de votre confiance,<br>
+L'équipe {{ config('app.name') }}
+@endcomponent

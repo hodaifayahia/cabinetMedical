@@ -1,1 +1,156 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIEFwcFxFbnVtc1xDYWJpbmV0U3RhdHVzOwp1c2UgQXBwXFN1cHBvcnRcV2lsYXlhczsKdXNlIENhcmJvblxDYXJib25JbW11dGFibGU7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XEF0dHJpYnV0ZXNcRmlsbGFibGU7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XENhc3RzXEF0dHJpYnV0ZTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcTW9kZWw7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XFJlbGF0aW9uc1xCZWxvbmdzVG87CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XFJlbGF0aW9uc1xIYXNNYW55Owp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxFbG9xdWVudFxSZWxhdGlvbnNcSGFzT25lOwoKLyoqCiAqIEBwcm9wZXJ0eSBpbnQgJGlkCiAqIEBwcm9wZXJ0eSBzdHJpbmcgJG5hbWUKICogQHByb3BlcnR5IENhYmluZXRTdGF0dXMgJHN0YXR1cwogKiBAcHJvcGVydHkgc3RyaW5nfG51bGwgJHNwZWNpYWxpemF0aW9uCiAqIEBwcm9wZXJ0eSBpbnR8bnVsbCAkd2lsYXlhX2NvZGUKICogQHByb3BlcnR5IGludHxudWxsICRvd25lcl91c2VyX2lkCiAqIEBwcm9wZXJ0eSBpbnR8bnVsbCAkbGljZW5zZV9pZAogKiBAcHJvcGVydHkgQ2FyYm9uSW1tdXRhYmxlfG51bGwgJGFjdGl2YXRlZF9hdAogKiBAcHJvcGVydHktcmVhZCBzdHJpbmd8bnVsbCAkd2lsYXlhX25hbWUKICovCiNbRmlsbGFibGUoWwogICAgJ25hbWUnLAogICAgJ3N0YXR1cycsCiAgICAnc3BlY2lhbGl6YXRpb24nLAogICAgJ3dpbGF5YV9jb2RlJywKICAgICdvd25lcl91c2VyX2lkJywKICAgICdhY3RpdmF0ZWRfYXQnLAogICAgJ2xpY2Vuc2VfaWQnLApdKV0KY2xhc3MgQ2FiaW5ldCBleHRlbmRzIE1vZGVsCnsKICAgIC8qKgogICAgICogTWF4aW11bSBudW1iZXIgb2Ygc2VhdHMgKG1lbWJlcnMpIGEgc2luZ2xlIGNhYmluZXQgbWF5IGhvbGQuIEJvdGgKICAgICAqIGFwcHJvdmVkIGFuZCBwZW5kaW5nLWFwcHJvdmFsIG1lbWJlcnMgY291bnQgdG93YXJkIHRoaXMgbGltaXQuCiAgICAgKi8KICAgIHB1YmxpYyBjb25zdCBNQVhfU0VBVFMgPSAzOwoKICAgIHByb3RlY3RlZCBmdW5jdGlvbiBjYXN0cygpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICdzdGF0dXMnID0+IENhYmluZXRTdGF0dXM6OmNsYXNzLAogICAgICAgICAgICAnd2lsYXlhX2NvZGUnID0+ICdpbnRlZ2VyJywKICAgICAgICAgICAgJ2FjdGl2YXRlZF9hdCcgPT4gJ2ltbXV0YWJsZV9kYXRldGltZScsCiAgICAgICAgXTsKICAgIH0KCiAgICAvKioKICAgICAqIEByZXR1cm4gQmVsb25nc1RvPFVzZXIsICR0aGlzPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gb3duZXIoKTogQmVsb25nc1RvCiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT5iZWxvbmdzVG8oVXNlcjo6Y2xhc3MsICdvd25lcl91c2VyX2lkJyk7CiAgICB9CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIEhhc01hbnk8VXNlciwgJHRoaXM+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB1c2VycygpOiBIYXNNYW55CiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT5oYXNNYW55KFVzZXI6OmNsYXNzKTsKICAgIH0KCiAgICAvKioKICAgICAqIEByZXR1cm4gQmVsb25nc1RvPExpY2Vuc2UsICR0aGlzPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gbGljZW5zZSgpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhMaWNlbnNlOjpjbGFzcyk7CiAgICB9CgogICAgLyoqCiAgICAgKiBAcmV0dXJuIEhhc09uZTxDYWJpbmV0U2V0dGluZywgJHRoaXM+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBzZXR0aW5ncygpOiBIYXNPbmUKICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmhhc09uZShDYWJpbmV0U2V0dGluZzo6Y2xhc3MpOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiBpc0FjdGl2ZSgpOiBib29sCiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT5zdGF0dXMgPT09IENhYmluZXRTdGF0dXM6OkFDVElWRTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gaXNQZW5kaW5nKCk6IGJvb2wKICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPnN0YXR1cyA9PT0gQ2FiaW5ldFN0YXR1czo6UEVORElORzsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gaXNTdXNwZW5kZWQoKTogYm9vbAogICAgewogICAgICAgIHJldHVybiAkdGhpcy0+c3RhdHVzID09PSBDYWJpbmV0U3RhdHVzOjpTVVNQRU5ERUQ7CiAgICB9CgogICAgLyoqCiAgICAgKiBOdW1iZXIgb2Ygc2VhdHMgY3VycmVudGx5IG9jY3VwaWVkLiBBIHNlYXQgaXMgYW55IHVzZXIgYXR0YWNoZWQgdG8gdGhlCiAgICAgKiBjYWJpbmV0IHJlZ2FyZGxlc3Mgb2YgYXBwcm92YWwgc3RhdGUsIHNvIHBlbmRpbmcgbWVtYmVycyByZXNlcnZlIGEgc2VhdC4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIHNlYXRzSW5Vc2UoKTogaW50CiAgICB7CiAgICAgICAgcmV0dXJuICR0aGlzLT51c2VycygpLT5jb3VudCgpOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiBoYXNBdmFpbGFibGVTZWF0KCk6IGJvb2wKICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPnNlYXRzSW5Vc2UoKSA8IHNlbGY6Ok1BWF9TRUFUUzsKICAgIH0KCiAgICAvKioKICAgICAqIEByZXR1cm4gQXR0cmlidXRlPHN0cmluZ3xudWxsLCBuZXZlcj4KICAgICAqLwogICAgcHJvdGVjdGVkIGZ1bmN0aW9uIHdpbGF5YU5hbWUoKTogQXR0cmlidXRlCiAgICB7CiAgICAgICAgcmV0dXJuIEF0dHJpYnV0ZTo6Z2V0KGZuICgpOiA/c3RyaW5nID0+IFdpbGF5YXM6Om5hbWUoJHRoaXMtPndpbGF5YV9jb2RlKSk7CiAgICB9Cn0K
+<?php
+
+namespace App\Models;
+
+use App\Enums\CabinetStatus;
+use App\Support\Wilayas;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+/**
+ * @property int $id
+ * @property string $name
+ * @property CabinetStatus $status
+ * @property string|null $specialization
+ * @property int|null $wilaya_code
+ * @property int|null $owner_user_id
+ * @property int|null $license_id
+ * @property CarbonImmutable|null $activated_at
+ * @property-read string|null $wilaya_name
+ */
+#[Fillable([
+    'name',
+    'status',
+    'specialization',
+    'wilaya_code',
+    'owner_user_id',
+    'activated_at',
+    'license_id',
+])]
+class Cabinet extends Model
+{
+    /**
+     * Maximum number of seats (members) a single cabinet may hold. Both
+     * approved and pending-approval members count toward this limit.
+     */
+    public const MAX_SEATS = 3;
+
+    protected function casts(): array
+    {
+        return [
+            'status' => CabinetStatus::class,
+            'wilaya_code' => 'integer',
+            'activated_at' => 'immutable_datetime',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updated(static function (Cabinet $cabinet): void {
+            if (! $cabinet->wasChanged('status') || ! $cabinet->isSuspended()) {
+                return;
+            }
+
+            $revoked = DesktopPinCredential::withoutCabinetScope()
+                ->where('cabinet_id', $cabinet->getKey())
+                ->delete();
+
+            if ($revoked > 0) {
+                AuditLog::record('security.desktop_pin_credentials_revoked', $cabinet, [
+                    'reason' => 'cabinet_suspended',
+                    'credentials_revoked' => $revoked,
+                ]);
+            }
+        });
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    /**
+     * @return HasMany<User, $this>
+     */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    /**
+     * @return HasMany<HostedLicenseGrant, $this>
+     */
+    public function hostedLicenseGrants(): HasMany
+    {
+        return $this->hasMany(HostedLicenseGrant::class);
+    }
+
+    /**
+     * @return HasMany<DesktopPinCredential, $this>
+     */
+    public function desktopPinCredentials(): HasMany
+    {
+        return $this->hasMany(DesktopPinCredential::class);
+    }
+
+    /**
+     * @return BelongsTo<License, $this>
+     */
+    public function license(): BelongsTo
+    {
+        return $this->belongsTo(License::class);
+    }
+
+    /**
+     * @return HasOne<CabinetSetting, $this>
+     */
+    public function settings(): HasOne
+    {
+        return $this->hasOne(CabinetSetting::class);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === CabinetStatus::ACTIVE;
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === CabinetStatus::PENDING;
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === CabinetStatus::SUSPENDED;
+    }
+
+    /**
+     * Number of seats currently occupied. A seat is any user attached to the
+     * cabinet regardless of approval state, so pending members reserve a seat.
+     */
+    public function seatsInUse(): int
+    {
+        return $this->users()->count();
+    }
+
+    public function hasAvailableSeat(): bool
+    {
+        return $this->seatsInUse() < self::MAX_SEATS;
+    }
+
+    /**
+     * @return Attribute<string|null, never>
+     */
+    protected function wilayaName(): Attribute
+    {
+        return Attribute::get(fn (): ?string => Wilayas::name($this->wilaya_code));
+    }
+}

@@ -5,9 +5,10 @@
     "scripts": {
         "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",
-        "desktop:build": "tauri build",
+        "desktop:build": "node scripts/desktop/build-thin-client.mjs",
         "desktop:check": "cargo check --manifest-path src-tauri/Cargo.toml --all-targets",
         "desktop:dev": "tauri dev",
+        "desktop:dev:local": "node scripts/desktop/dev-local-thin-client.mjs",
         "desktop:core:test": "cargo test --manifest-path src-tauri/runtime-core/Cargo.toml",
         "desktop:queue:test": "cargo test --manifest-path src-tauri/runtime-core/Cargo.toml queue_worker",
         "desktop:release:readiness": "node scripts/desktop/check-release-readiness.mjs",

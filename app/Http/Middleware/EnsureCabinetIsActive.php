@@ -1,1 +1,68 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxNaWRkbGV3YXJlOwoKdXNlIEFwcFxNb2RlbHNcVXNlcjsKdXNlIEFwcFxTZXJ2aWNlc1xDYWJpbmV0XENhYmluZXRBY2Nlc3NTZXJ2aWNlOwp1c2UgQ2xvc3VyZTsKdXNlIElsbHVtaW5hdGVcSHR0cFxSZXF1ZXN0Owp1c2UgU3ltZm9ueVxDb21wb25lbnRcSHR0cEZvdW5kYXRpb25cUmVzcG9uc2U7CgovKioKICogSG9sZHMgYXV0aGVudGljYXRlZCBjYWJpbmV0IG1lbWJlcnMgb3V0IG9mIHRoZSBhcHBsaWNhdGlvbiB1bnRpbCB0aGVpcgogKiBjYWJpbmV0IGlzIGFjdGl2ZSBhbmQgdGhlaXIgb3duIG1lbWJlcnNoaXAgaGFzIGJlZW4gYXBwcm92ZWQuCiAqCiAqIC0gT3duZXJzIG9mIHBlbmRpbmcvc3VzcGVuZGVkIGNhYmluZXRzIGFyZSByZWRpcmVjdGVkIHRvIGEgc3RhdHVzIHBhZ2UuCiAqIC0gTWVtYmVycyBhd2FpdGluZyBhbiBvd25lcidzIGFwcHJvdmFsIGFyZSByZWRpcmVjdGVkIHRvIGEgd2FpdGluZyBwYWdlLgogKgogKiBQbGF0Zm9ybSBzdGFmZiBhbmQgdXNlcnMgd2l0aG91dCBhIGNhYmluZXQgKGxlZ2FjeSBzaW5nbGUtaW5zdGFsbCBhY2NvdW50cykKICogYXJlIHVuYWZmZWN0ZWQuIExvZ291dCBhbmQgdGhlIHN0YXR1cyBwYWdlcyB0aGVtc2VsdmVzIGFyZSBhbHdheXMgYWxsb3dlZCBzbwogKiBhIGJsb2NrZWQgdXNlciBpcyBuZXZlciB0cmFwcGVkLgogKi8KY2xhc3MgRW5zdXJlQ2FiaW5ldElzQWN0aXZlCnsKICAgIHB1YmxpYyBmdW5jdGlvbiBfX2NvbnN0cnVjdCgKICAgICAgICBwcml2YXRlIHJlYWRvbmx5IENhYmluZXRBY2Nlc3NTZXJ2aWNlICRhY2Nlc3MsCiAgICApIHt9CgogICAgLyoqCiAgICAgKiBAcGFyYW0gIENsb3N1cmUoUmVxdWVzdCk6IFJlc3BvbnNlICAkbmV4dAogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gaGFuZGxlKFJlcXVlc3QgJHJlcXVlc3QsIENsb3N1cmUgJG5leHQpOiBSZXNwb25zZQogICAgewogICAgICAgICR1c2VyID0gJHJlcXVlc3QtPnVzZXIoKTsKCiAgICAgICAgaWYgKCEgJHVzZXIgaW5zdGFuY2VvZiBVc2VyIHx8ICR1c2VyLT5pc19wbGF0Zm9ybV9hZG1pbikgewogICAgICAgICAgICByZXR1cm4gJG5leHQoJHJlcXVlc3QpOwogICAgICAgIH0KCiAgICAgICAgLy8gQWx3YXlzIGFsbG93IGxvZ291dCBhbmQgdGhlIHN0YXR1cyBlbmRwb2ludHMgdG8gYXZvaWQgYSByZWRpcmVjdCBsb29wLgogICAgICAgIGlmICgkdGhpcy0+aXNBbHdheXNBbGxvd2VkKCRyZXF1ZXN0KSkgewogICAgICAgICAgICByZXR1cm4gJG5leHQoJHJlcXVlc3QpOwogICAgICAgIH0KCiAgICAgICAgJHJlYXNvbiA9ICR0aGlzLT5hY2Nlc3MtPmRlbmlhbFJlYXNvbigkdXNlcik7CgogICAgICAgIGlmICgkcmVhc29uID09PSBDYWJpbmV0QWNjZXNzU2VydmljZTo6UkVBU09OX0FXQUlUSU5HX0FQUFJPVkFMKSB7CiAgICAgICAgICAgIHJldHVybiByZWRpcmVjdCgpLT5yb3V0ZSgnY2FiaW5ldC5hd2FpdGluZy1hcHByb3ZhbCcpOwogICAgICAgIH0KCiAgICAgICAgaWYgKCRyZWFzb24gIT09IG51bGwpIHsKICAgICAgICAgICAgcmV0dXJuIHJlZGlyZWN0KCktPnJvdXRlKCdjYWJpbmV0LnBlbmRpbmcnKTsKICAgICAgICB9CgogICAgICAgIHJldHVybiAkbmV4dCgkcmVxdWVzdCk7CiAgICB9CgogICAgcHJpdmF0ZSBmdW5jdGlvbiBpc0Fsd2F5c0FsbG93ZWQoUmVxdWVzdCAkcmVxdWVzdCk6IGJvb2wKICAgIHsKICAgICAgICByZXR1cm4gJHJlcXVlc3QtPnJvdXRlSXMoCiAgICAgICAgICAgICdjYWJpbmV0LnBlbmRpbmcnLAogICAgICAgICAgICAnY2FiaW5ldC5hd2FpdGluZy1hcHByb3ZhbCcsCiAgICAgICAgICAgICdsb2dvdXQnLAogICAgICAgICAgICAnc2Vzc2lvbi1sb2NrLionLAogICAgICAgICkgfHwgJHJlcXVlc3QtPmlzKCdsb2dvdXQnKTsKICAgIH0KfQo=
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Models\User;
+use App\Services\Cabinet\CabinetAccessService;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * Holds authenticated cabinet members out of the application until their
+ * cabinet is active and their own membership has been approved.
+ *
+ * - Owners of pending/suspended cabinets are redirected to a status page.
+ * - Members awaiting an owner's approval are redirected to a waiting page.
+ *
+ * Platform staff and users without a cabinet (legacy single-install accounts)
+ * are unaffected. Logout and the status pages themselves are always allowed so
+ * a blocked user is never trapped.
+ */
+class EnsureCabinetIsActive
+{
+    public function __construct(
+        private readonly CabinetAccessService $access,
+    ) {}
+
+    /**
+     * @param  Closure(Request): Response  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User || $user->is_platform_admin) {
+            return $next($request);
+        }
+
+        // Always allow logout and the status endpoints to avoid a redirect loop.
+        if ($this->isAlwaysAllowed($request)) {
+            return $next($request);
+        }
+
+        $reason = $this->access->denialReason($user);
+
+        if ($reason === CabinetAccessService::REASON_AWAITING_APPROVAL) {
+            return redirect()->route('cabinet.awaiting-approval');
+        }
+
+        if ($reason !== null) {
+            return redirect()->route('cabinet.pending');
+        }
+
+        return $next($request);
+    }
+
+    private function isAlwaysAllowed(Request $request): bool
+    {
+        return $request->routeIs(
+            'cabinet.pending',
+            'cabinet.license.redeem',
+            'cabinet.awaiting-approval',
+            'desktop.pin.enroll',
+            'logout',
+            'session-lock.*',
+        ) || $request->is('logout');
+    }
+}

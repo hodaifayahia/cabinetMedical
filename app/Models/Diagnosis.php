@@ -1,1 +1,49 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIEFwcFxFbnVtc1xEaWFnbm9zaXNTdGF0dXM7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XEZhY3Rvcmllc1xGYWN0b3J5Owp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxFbG9xdWVudFxGYWN0b3JpZXNcSGFzRmFjdG9yeTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcTW9kZWw7CnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXEVsb3F1ZW50XFJlbGF0aW9uc1xCZWxvbmdzVG87CgovKioKICogQHByb3BlcnR5IERpYWdub3Npc1N0YXR1cyAkc3RhdHVzCiAqLwpjbGFzcyBEaWFnbm9zaXMgZXh0ZW5kcyBNb2RlbAp7CiAgICAvKiogQHVzZSBIYXNGYWN0b3J5PEZhY3Rvcnk8RGlhZ25vc2lzPj4gKi8KICAgIHVzZSBcQXBwXE1vZGVsc1xDb25jZXJuc1xCZWxvbmdzVG9DYWJpbmV0LCBIYXNGYWN0b3J5OwoKICAgIHByb3RlY3RlZCAkZmlsbGFibGUgPSBbCiAgICAgICAgJ2VuY291bnRlcl9pZCcsCiAgICAgICAgJ2NvZGUnLAogICAgICAgICdjb2RlX3N5c3RlbScsCiAgICAgICAgJ2Rpc3BsYXlfbGFiZWwnLAogICAgICAgICdub3RlcycsCiAgICAgICAgJ3N0YXR1cycsCiAgICAgICAgJ2NyZWF0ZWRfYnknLAogICAgXTsKCiAgICBwcm90ZWN0ZWQgJGNhc3RzID0gWwogICAgICAgICdzdGF0dXMnID0+IERpYWdub3Npc1N0YXR1czo6Y2xhc3MsCiAgICBdOwoKICAgIC8qKgogICAgICogQHJldHVybiBCZWxvbmdzVG88RW5jb3VudGVyLCAkdGhpcz4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIGVuY291bnRlcigpOiBCZWxvbmdzVG8KICAgIHsKICAgICAgICByZXR1cm4gJHRoaXMtPmJlbG9uZ3NUbyhFbmNvdW50ZXI6OmNsYXNzKTsKICAgIH0KCiAgICAvKioKICAgICAqIEByZXR1cm4gQmVsb25nc1RvPFVzZXIsICR0aGlzPgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gY3JlYXRlZEJ5KCk6IEJlbG9uZ3NUbwogICAgewogICAgICAgIHJldHVybiAkdGhpcy0+YmVsb25nc1RvKFVzZXI6OmNsYXNzLCAnY3JlYXRlZF9ieScpOwogICAgfQp9Cg==
+<?php
+
+namespace App\Models;
+
+use App\Enums\DiagnosisStatus;
+use App\Models\Concerns\BelongsToCabinet;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property DiagnosisStatus $status
+ */
+class Diagnosis extends Model
+{
+    /** @use HasFactory<Factory<Diagnosis>> */
+    use BelongsToCabinet, HasFactory;
+
+    protected $fillable = [
+        'encounter_id',
+        'code',
+        'code_system',
+        'display_label',
+        'notes',
+        'status',
+        'created_by',
+    ];
+
+    protected $casts = [
+        'status' => DiagnosisStatus::class,
+    ];
+
+    /**
+     * @return BelongsTo<Encounter, $this>
+     */
+    public function encounter(): BelongsTo
+    {
+        return $this->belongsTo(Encounter::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+}

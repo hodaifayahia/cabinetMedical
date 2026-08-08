@@ -4,6 +4,7 @@ namespace Tests\Feature\Configuration;
 
 use App\Enums\RoleName;
 use App\Models\AuditLog;
+use App\Models\Cabinet;
 use App\Models\CabinetSetting;
 use App\Models\DriveBackupConnection;
 use App\Models\GoogleDriveOAuthAttempt;
@@ -112,7 +113,7 @@ class GoogleDriveOAuthStateTest extends TestCase
             ->assertHeader('Cache-Control', 'max-age=0, no-store, private')
             ->assertHeader('Referrer-Policy', 'no-referrer')
             ->assertSee('Google Drive est connect', false)
-            ->assertSee('revenir &agrave; MediSmart', false)
+            ->assertSee('revenir &agrave; DrClickDz', false)
             ->assertDontSee('authorization-code')
             ->assertDontSee($query['state'])
             ->assertDontSee('access-token')
@@ -322,6 +323,30 @@ class GoogleDriveOAuthStateTest extends TestCase
         $audit = AuditLog::query()->where('action', 'backup.drive_oauth_failed')->sole();
         $this->assertSame($this->administrator->getKey(), $audit->user_id);
         $this->assertSame('authorization_changed', $audit->metadata['reason_code']);
+    }
+
+    public function test_callback_rejects_an_attempt_when_its_actor_becomes_cabinet_scoped(): void
+    {
+        [, $query, $attempt] = $this->prepare();
+        $tenant = Cabinet::query()->create([
+            'name' => 'Hosted tenant',
+            'status' => 'pending',
+        ]);
+        $this->administrator->update(['cabinet_id' => $tenant->getKey()]);
+        Http::fake();
+        auth()->logout();
+
+        $this->googleCallbackRequest([
+            'code' => 'authorization-code',
+            'state' => $query['state'],
+        ])->assertStatus(400);
+
+        Http::assertNothingSent();
+        $attempt->refresh();
+        $this->assertSame(GoogleDriveOAuthAttempt::STATUS_FAILED, $attempt->status);
+        $this->assertSame('authorization_changed', $attempt->failure_code);
+        $this->assertNull($attempt->encrypted_pkce_verifier);
+        $this->assertDatabaseCount('drive_backup_connections', 0);
     }
 
     public function test_callback_revalidates_the_attempt_cabinet_binding_before_exchange(): void

@@ -2,13 +2,18 @@
 
 namespace Tests\Feature\Configuration;
 
+use App\Enums\CabinetStatus;
+use App\Enums\LicensePlan;
 use App\Enums\RoleName;
+use App\Models\Cabinet;
 use App\Models\CabinetSetting;
 use App\Models\DoctorProfile;
 use App\Models\User;
+use App\Services\CabinetFulfillmentService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\ActivatesSignedLicense;
@@ -155,6 +160,47 @@ class ClinicIdentityControllerTest extends TestCase
             'subject_id' => (string) $cabinet->getKey(),
             'user_id' => $user->getKey(),
         ]);
+    }
+
+    public function test_hosted_cabinet_uses_its_plan_for_custom_branding(): void
+    {
+        Storage::fake('public');
+        Mail::fake();
+
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet Hosted',
+            'status' => CabinetStatus::PENDING,
+        ]);
+        $settings = CabinetSetting::current($cabinet);
+        $owner = User::factory()->create([
+            'cabinet_id' => $cabinet->getKey(),
+            'cabinet_setting_id' => $settings->getKey(),
+            'approved_at' => now(),
+        ]);
+        $owner->assignRole(RoleName::ADMINISTRATOR->value);
+        $cabinet->forceFill(['owner_user_id' => $owner->getKey()])->save();
+        app(CabinetFulfillmentService::class)->activate($cabinet, LicensePlan::TRIAL);
+
+        $this->actingAs($owner);
+        DoctorProfile::factory()->for($owner)->create();
+
+        $this->get(route('app.configuration.identity.edit'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('customBrandingCapability.available', true)
+                ->where('customBrandingCapability.reason', null));
+
+        $this->post(route('app.configuration.identity.update'), [
+            'clinic_name' => 'Cabinet Hosted personnalis\u00e9',
+            'footer_line' => 'Soins et confiance',
+            'logo' => UploadedFile::fake()->image('hosted-logo.png', 200, 200),
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $settings->refresh();
+        $this->assertSame('Cabinet Hosted personnalis\u00e9', $settings->name);
+        $this->assertSame('Soins et confiance', $settings->prescription_footer);
+        $this->assertNotNull($settings->logo_path);
+        Storage::disk('public')->assertExists($settings->logo_path);
     }
 
     public function test_identity_update_rejects_a_malformed_phone_number(): void

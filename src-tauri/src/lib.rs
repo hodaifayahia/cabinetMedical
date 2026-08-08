@@ -1,1 +1,393 @@
-Ly8gTWVkaVNtYXJ0IERlc2t0b3Ag4oCUIHRoaW4gY29ubmVjdGVkLWNsaWVudCBzaGVsbAovLwovLyBBcmNoaXRlY3R1cmUgY2hhbmdlICgyMDI1KTogVGhlIGFwcCBubyBsb25nZXIgYnVuZGxlcyBhIGxvY2FsIFBIUC9MYXJhdmVsIHJ1bnRpbWUuCi8vIEl0IHNpbXBseSBsb2FkcyB0aGUgY2VudHJhbCBob3N0ZWQgc2VydmVyIChTRVJWRVJfVVJMKSBpbiBhIFRhdXJpIHdlYnZpZXcgd2luZG93LgovLyBJbnRlcm5ldCBjb25uZWN0aXZpdHkgaXMgcmVxdWlyZWQuIFRoaXMgZWxpbWluYXRlczoKLy8gICAtIEJ1ZyAxIChtaWdyYXRpb25fcmVzb3VyY2VzX2ludmFsaWQpOiB0aGUgYnVuZGxlZC1yZXNvdXJjZSB2YWxpZGF0aW9uIG5vIGxvbmdlciBleGlzdHMuCi8vICAgLSBCdWcgMiAodmlzaWJsZSBjb25zb2xlKTogbWFpbi5ycyBub3cgaGFzICMhW3dpbmRvd3Nfc3Vic3lzdGVtID0gIndpbmRvd3MiXSBhbmQgbm8KLy8gICAgIGV4dGVybmFsIHByb2Nlc3NlcyBhcmUgc3Bhd25lZCBieSB0aGUgZGVza3RvcCBzaGVsbC4KLy8KLy8gS2VwdDoKLy8gICAtIFN5c3RlbSB0cmF5ICsgaGlkZS10by10cmF5IGJlaGF2aW91ciAoZGVza3RvcF9iZWhhdmlvci5ycykKLy8gICAtIFNpZ25lZCB1cGRhdGVyICh1cGRhdGVzLnJzKQovLyAgIC0gTmF2aWdhdGlvblBvbGljeSDigJQgcmV3cml0dGVuIGZvciB0aGUgaG9zdGVkIHNlcnZlciBvcmlnaW4KLy8KLy8gUmVtb3ZlZDoKLy8gICAtIGRlc2t0b3AucnMgKFBIUCBzdXBlcnZpc29yIHByZXBhcmF0aW9uKQovLyAgIC0gcnVudGltZS1jb3JlIGRlcGVuZGVuY3kKLy8gICAtIG9hdXRoX29wZW5lci5ycyBHb29nbGUgRHJpdmUgbG9vcGJhY2sgZmxvdyAodGllZCB0byBsb2NhbCBydW50aW1lIHBvcnQpCi8vICAgLSBBbGwgTEFOIC8gb2ZmbGluZS1yZXN0b3JlIC8gdHVubmVsIGNvbW1hbmRzCgptb2QgZGVza3RvcF9iZWhhdmlvcjsKbW9kIHVwZGF0ZXM7Cgp1c2Ugc3RkOjp7CiAgICBmcywKICAgIHN5bmM6OntBcmMsIFJ3TG9ja30sCn07Cgp1c2UgdGF1cmk6OnsKICAgIHBsdWdpbjo6e0J1aWxkZXIgYXMgUGx1Z2luQnVpbGRlciwgVGF1cmlQbHVnaW59LAogICAgd2Vidmlldzo6V2Vidmlld1dpbmRvd0J1aWxkZXIsCiAgICBBcHBIYW5kbGUsIE1hbmFnZXIsIFJ1bkV2ZW50LCBXZWJ2aWV3VXJsLAp9Owp1c2UgdGF1cmlfcGx1Z2luX29wZW5lcjo6T3BlbmVyRXh0Owp1c2UgdXJsOjpVcmw7Cgp1c2UgY3JhdGU6OmRlc2t0b3BfYmVoYXZpb3I6OntpbnN0YWxsX3N5c3RlbV90cmF5LCBzaG93X2Rlc2t0b3Bfd2luZG93LCBEZXNrdG9wQmVoYXZpb3JTdGF0ZX07CnVzZSBjcmF0ZTo6dXBkYXRlczo6U2lnbmVkVXBkYXRlclN0YXRlOwoKLy8gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCi8vIFNlcnZlciBVUkwgY29uZmlndXJhdGlvbgovLyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCi8vLyBDb21waWxlLXRpbWUgZGVmYXVsdCBzZXJ2ZXIgVVJMLiBPdmVycmlkZSBhdCBydW50aW1lIGJ5IHBsYWNpbmcgYSBKU09OIGZpbGUKLy8vIGF0IGA8YXBwLWxvY2FsLWRhdGE+L2NvbmZpZy9zZXJ2ZXIuanNvbmAgd2l0aCBjb250ZW50IGB7InVybCI6ICJodHRwczovLy4uLiJ9YC4KLy8vIFRoZSBvdmVycmlkZSBpcyByZWFkIG9uY2UgYXQgc3RhcnR1cCBhbmQgbmV2ZXIgcmUtcmVhZCB3aGlsZSB0aGUgYXBwIGlzIHJ1bm5pbmcuCmNvbnN0IERFRkFVTFRfU0VSVkVSX1VSTDogJnN0ciA9ICJodHRwczovL2FwcC5tZWRpc21hcnQuZHoiOwoKLy8vIExvYWQgdGhlIHNlcnZlciBVUkw6IGZpcnN0IGNoZWNrcyB0aGUgcnVudGltZSBvdmVycmlkZSBmaWxlLCBmYWxscyBiYWNrIHRvCi8vLyB0aGUgY29tcGlsZWQtaW4gY29uc3RhbnQuICBUaGUgb3ZlcnJpZGUgZmlsZSBpcyBvcHRpb25hbCBhbmQgc2lsZW50bHkgaWdub3JlZAovLy8gb24gYW55IHBhcnNlL0lPIGVycm9yIHNvIGEgbWlzY29uZmlndXJlZCBmaWxlIGNhbm5vdCBwcmV2ZW50IHN0YXJ0dXAuCmZuIHJlc29sdmVfc2VydmVyX3VybChhcHA6ICZBcHBIYW5kbGUpIC0+IFVybCB7CiAgICBpZiBsZXQgT2soZGF0YV9kaXIpID0gYXBwLnBhdGgoKS5hcHBfbG9jYWxfZGF0YV9kaXIoKSB7CiAgICAgICAgbGV0IG92ZXJyaWRlX3BhdGggPSBkYXRhX2Rpci5qb2luKCJjb25maWcvc2VydmVyLmpzb24iKTsKICAgICAgICBpZiBsZXQgT2soYnl0ZXMpID0gZnM6OnJlYWQoJm92ZXJyaWRlX3BhdGgpIHsKICAgICAgICAgICAgaWYgbGV0IE9rKHZhbHVlKSA9IHNlcmRlX2pzb246OmZyb21fc2xpY2U6OjxzZXJkZV9qc29uOjpWYWx1ZT4oJmJ5dGVzKSB7CiAgICAgICAgICAgICAgICBpZiBsZXQgU29tZSh1cmxfc3RyKSA9IHZhbHVlLmdldCgidXJsIikuYW5kX3RoZW4ofHZ8IHYuYXNfc3RyKCkpIHsKICAgICAgICAgICAgICAgICAgICBpZiBsZXQgT2sodXJsKSA9IFVybDo6cGFyc2UodXJsX3N0cikgewogICAgICAgICAgICAgICAgICAgICAgICBpZiB1cmwuc2NoZW1lKCkgPT0gImh0dHBzIgogICAgICAgICAgICAgICAgICAgICAgICAgICAgJiYgdXJsLmhvc3Rfc3RyKCkuaXNfc29tZSgpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAmJiB1cmwudXNlcm5hbWUoKS5pc19lbXB0eSgpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAmJiB1cmwucGFzc3dvcmQoKS5pc19ub25lKCkKICAgICAgICAgICAgICAgICAgICAgICAgICAgICYmIHVybC5mcmFnbWVudCgpLmlzX25vbmUoKQogICAgICAgICAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICByZXR1cm4gdXJsOwogICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9CiAgICAgICAgfQogICAgfQogICAgLy8gRmFsbGJhY2s6IGNvbXBpbGUtdGltZSBjb25zdGFudCAoYWx3YXlzIHZhbGlkLCBwYW5pY3Mgb25seSBpbiB0ZXN0cyBpZgogICAgLy8gdGhlIGNvbnN0YW50IGl0c2VsZiBpcyBtYWxmb3JtZWQg4oCUIGNhdWdodCBhdCBkZXZlbG9wbWVudCB0aW1lKS4KICAgIFVybDo6cGFyc2UoREVGQVVMVF9TRVJWRVJfVVJMKS5leHBlY3QoIkRFRkFVTFRfU0VSVkVSX1VSTCBpcyBhIHZhbGlkIEhUVFBTIFVSTCIpCn0KCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQovLyBOYXZpZ2F0aW9uUG9saWN5IOKAlCByZXdyaXR0ZW4gZm9yIGhvc3RlZC1zZXJ2ZXIgb3JpZ2luCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKLy8vIEhvbGRzIHRoZSBzZXJ2ZXIgb3JpZ2luIChzY2hlbWUgKyBob3N0ICsgb3B0aW9uYWwgcG9ydCkgYW5kIGRlY2lkZXMgd2hpY2gKLy8vIG5hdmlnYXRpb25zIHRoZSB3ZWJ2aWV3IG1heSBwZXJmb3JtLgovLy8KLy8vIFJ1bGVzOgovLy8gICAtIEFsbG93OiAgIHRoZSBjb25maWd1cmVkIHNlcnZlciBvcmlnaW4gYW5kIGFsbCBpdHMgc3ViLXBhdGhzCi8vLyAgIC0gQWxsb3c6ICAgdGF1cmk6Ly8sIGFzc2V0Oi8vLCBhYm91dDogKGludGVybmFsIFRhdXJpIHNjaGVtZXMpCi8vLyAgIC0gQmxvY2s6ICAgZXZlcnl0aGluZyBlbHNlIOKAlCBleHRlcm5hbCBodHRwKHMpIGxpbmtzIGFyZSBvcGVuZWQgaW4gdGhlCi8vLyAgICAgc3lzdGVtIGJyb3dzZXIgYnkgdGhlIG9uX25hdmlnYXRpb24gaGFuZGxlciBpbnN0ZWFkCiNbZGVyaXZlKENsb25lLCBEZWZhdWx0KV0Kc3RydWN0IE5hdmlnYXRpb25Qb2xpY3kgewogICAgLy8vIFRoZSBzZXJ2ZXIgb3JpZ2luLCBlLmcuIGBodHRwczovL2FwcC5tZWRpc21hcnQuZHpgLiBTZXQgb25jZSBvbiBzdGFydHVwLgogICAgc2VydmVyX29yaWdpbjogQXJjPFJ3TG9jazxPcHRpb248VXJsPj4+LAp9CgppbXBsIE5hdmlnYXRpb25Qb2xpY3kgewogICAgZm4gc2V0X3NlcnZlcl91cmwoJnNlbGYsIHVybDogVXJsKSB7CiAgICAgICAgaWYgbGV0IE9rKG11dCBjdXJyZW50KSA9IHNlbGYuc2VydmVyX29yaWdpbi53cml0ZSgpIHsKICAgICAgICAgICAgKmN1cnJlbnQgPSBTb21lKHVybCk7CiAgICAgICAgfQogICAgfQoKICAgIC8vLyBSZXR1cm5zIHRydWUgaWYgdGhlIHdlYnZpZXcgaXMgYWxsb3dlZCB0byBuYXZpZ2F0ZSB0byBgdXJsYCBkaXJlY3RseS4KICAgIC8vLyBFeHRlcm5hbCBIVFRQUyBsaW5rcyB0aGF0IGFyZSBub3Qgb24gdGhlIHNlcnZlciBvcmlnaW4gYXJlIE5PVCBhbGxvd2VkCiAgICAvLy8gaGVyZTsgdGhlIGNhbGxlciBvcGVucyB0aGVtIGluIHRoZSBzeXN0ZW0gYnJvd3NlciBpbnN0ZWFkLgogICAgZm4gYWxsb3dzKCZzZWxmLCB1cmw6ICZVcmwpIC0+IGJvb2wgewogICAgICAgIC8vIEFsd2F5cyBhbGxvdyBpbnRlcm5hbCBUYXVyaSAvIGFzc2V0IHNjaGVtZXMgdXNlZCBieSB0aGUgb2ZmbGluZSBwYWdlCiAgICAgICAgaWYgbWF0Y2hlcyEodXJsLnNjaGVtZSgpLCAidGF1cmkiIHwgImFzc2V0IiB8ICJhYm91dCIpCiAgICAgICAgICAgIHx8IG1hdGNoZXMhKHVybC5ob3N0X3N0cigpLCBTb21lKCJ0YXVyaS5sb2NhbGhvc3QiIHwgImFzc2V0LmxvY2FsaG9zdCIpKQogICAgICAgIHsKICAgICAgICAgICAgcmV0dXJuIHRydWU7CiAgICAgICAgfQoKICAgICAgICBsZXQgb3JpZ2luID0gbWF0Y2ggc2VsZi5zZXJ2ZXJfb3JpZ2luLnJlYWQoKS5vaygpLmFuZF90aGVuKHxvfCBvLmNsb25lKCkpIHsKICAgICAgICAgICAgU29tZShvKSA9PiBvLAogICAgICAgICAgICBOb25lID0+IHJldHVybiBmYWxzZSwKICAgICAgICB9OwoKICAgICAgICAvLyBNdXN0IG1hdGNoIHNjaGVtZSArIGhvc3QgZXhhY3RseTsgcG9ydCBtdXN0IGFsc28gbWF0Y2ggKE5vbmUgPT0gZGVmYXVsdCkKICAgICAgICB1cmwuc2NoZW1lKCkgPT0gb3JpZ2luLnNjaGVtZSgpCiAgICAgICAgICAgICYmIHVybC5ob3N0KCkgPT0gb3JpZ2luLmhvc3QoKQogICAgICAgICAgICAmJiB1cmwucG9ydCgpID09IG9yaWdpbi5wb3J0KCkKICAgICAgICAgICAgJiYgdXJsLnVzZXJuYW1lKCkuaXNfZW1wdHkoKQogICAgICAgICAgICAmJiB1cmwucGFzc3dvcmQoKS5pc19ub25lKCkKICAgIH0KCiAgICAvLy8gUmV0dXJucyB0cnVlIGlmIHRoZSBVUkwgaXMgYW4gZXh0ZXJuYWwgSFRUUFMgbGluayBvbiBhIGRpZmZlcmVudCBvcmlnaW4KICAgIC8vLyB0aGF0IHNob3VsZCBiZSBvcGVuZWQgaW4gdGhlIHN5c3RlbSBicm93c2VyIHJhdGhlciB0aGFuIGFsbG93ZWQgaW4tYXBwLgogICAgZm4gaXNfZXh0ZXJuYWxfbGluaygmc2VsZiwgdXJsOiAmVXJsKSAtPiBib29sIHsKICAgICAgICBpZiB1cmwuc2NoZW1lKCkgIT0gImh0dHBzIiB7CiAgICAgICAgICAgIHJldHVybiBmYWxzZTsKICAgICAgICB9CiAgICAgICAgIXNlbGYuYWxsb3dzKHVybCkKICAgIH0KfQoKLy8gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCi8vIFRhdXJpIHNldHVwCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKcHViIGZuIHJ1bigpIHsKICAgIGxldCBuYXZpZ2F0aW9uX3BvbGljeSA9IE5hdmlnYXRpb25Qb2xpY3k6OmRlZmF1bHQoKTsKICAgIGxldCBwb2xpY3lfZm9yX2d1YXJkID0gbmF2aWdhdGlvbl9wb2xpY3kuY2xvbmUoKTsKCiAgICBsZXQgYXBwbGljYXRpb24gPSB0YXVyaTo6QnVpbGRlcjo6ZGVmYXVsdCgpCiAgICAgICAgLnBsdWdpbigKICAgICAgICAgICAgdGF1cmlfcGx1Z2luX29wZW5lcjo6QnVpbGRlcjo6bmV3KCkKICAgICAgICAgICAgICAgIC5vcGVuX2pzX2xpbmtzX29uX2NsaWNrKGZhbHNlKQogICAgICAgICAgICAgICAgLmJ1aWxkKCksCiAgICAgICAgKQogICAgICAgIC5wbHVnaW4odGF1cmlfcGx1Z2luX3NpbmdsZV9pbnN0YW5jZTo6aW5pdCgKICAgICAgICAgICAgfGFwcCwgX2FyZ3VtZW50cywgX3dvcmtpbmdfZGlyZWN0b3J5fCB7CiAgICAgICAgICAgICAgICBzaG93X2Rlc2t0b3Bfd2luZG93KGFwcCk7CiAgICAgICAgICAgIH0sCiAgICAgICAgKSkKICAgICAgICAvLyBOYXZpZ2F0aW9uIGd1YXJkOiBhbGxvdyBzZXJ2ZXIgb3JpZ2luICsgdGF1cmkvYXNzZXQgc2NoZW1lczsKICAgICAgICAvLyBvcGVuIGV4dGVybmFsIEhUVFBTIGxpbmtzIGluIHRoZSBzeXN0ZW0gYnJvd3Nlci4KICAgICAgICAucGx1Z2luKG5hdmlnYXRpb25fZ3VhcmQocG9saWN5X2Zvcl9ndWFyZCkpCiAgICAgICAgLm1hbmFnZShEZXNrdG9wQmVoYXZpb3JTdGF0ZTo6ZGVmYXVsdCgpKQogICAgICAgIC5tYW5hZ2UoU2lnbmVkVXBkYXRlclN0YXRlOjpjb21waWxlZCgpKQogICAgICAgIC5pbnZva2VfaGFuZGxlcih0YXVyaTo6Z2VuZXJhdGVfaGFuZGxlciFbCiAgICAgICAgICAgIHVwZGF0ZXM6OnNpZ25lZF91cGRhdGVyX3N0YXR1cywKICAgICAgICAgICAgdXBkYXRlczo6Y2hlY2tfZm9yX3NpZ25lZF91cGRhdGUsCiAgICAgICAgICAgIHVwZGF0ZXM6Omluc3RhbGxfc2lnbmVkX3VwZGF0ZQogICAgICAgIF0pCiAgICAgICAgLnNldHVwKG1vdmUgfGFwcHwgewogICAgICAgICAgICBpZiBsZXQgU29tZShwbHVnaW4pID0gdXBkYXRlczo6Y29uZmlndXJlZF9wbHVnaW4oKSB7CiAgICAgICAgICAgICAgICBhcHAuaGFuZGxlKCkucGx1Z2luKHBsdWdpbik/OwogICAgICAgICAgICB9CgogICAgICAgICAgICBpbnN0YWxsX3N5c3RlbV90cmF5KGFwcC5oYW5kbGUoKSk/OwoKICAgICAgICAgICAgLy8gUmVzb2x2ZSB3aGljaCBzZXJ2ZXIgVVJMIHRvIGxvYWQgKGNvbXBpbGUtdGltZSBkZWZhdWx0IG9yIG92ZXJyaWRlIGZpbGUpCiAgICAgICAgICAgIGxldCBzZXJ2ZXJfdXJsID0gcmVzb2x2ZV9zZXJ2ZXJfdXJsKGFwcC5oYW5kbGUoKSk7CiAgICAgICAgICAgIG5hdmlnYXRpb25fcG9saWN5LnNldF9zZXJ2ZXJfdXJsKHNlcnZlcl91cmwuY2xvbmUoKSk7CgogICAgICAgICAgICAvLyBCdWlsZCB0aGUgbWFpbiB3aW5kb3cuIEl0IGxvYWRzIGBpbmRleC5odG1sYCAodGhlIG9mZmxpbmUvcmVkaXJlY3QKICAgICAgICAgICAgLy8gcGFnZSBidW5kbGVkIGFzIGZyb250ZW5kRGlzdCkgd2hpY2ggaW1tZWRpYXRlbHkgdHJpZXMgdG8gbmF2aWdhdGUgdG8KICAgICAgICAgICAgLy8gdGhlIHNlcnZlciBVUkwgYW5kIHNob3dzIGFuIG9mZmxpbmUgZXJyb3IgcGFnZSBvbiBmYWlsdXJlLgogICAgICAgICAgICBidWlsZF9tYWluX3dpbmRvdyhhcHAsIHNlcnZlcl91cmwpPzsKCiAgICAgICAgICAgIE9rKCgpKQogICAgICAgIH0pCiAgICAgICAgLm9uX3dpbmRvd19ldmVudCh8d2luZG93LCBldmVudHwgewogICAgICAgICAgICBpZiBsZXQgdGF1cmk6OldpbmRvd0V2ZW50OjpDbG9zZVJlcXVlc3RlZCB7IGFwaSwgLi4gfSA9IGV2ZW50IHsKICAgICAgICAgICAgICAgIGxldCBiZWhhdmlvciA9IHdpbmRvdy5hcHBfaGFuZGxlKCkuc3RhdGU6OjxEZXNrdG9wQmVoYXZpb3JTdGF0ZT4oKTsKICAgICAgICAgICAgICAgIGlmIGJlaGF2aW9yLnNob3VsZF9oaWRlX29uX2Nsb3NlKHdpbmRvdy5sYWJlbCgpKSB7CiAgICAgICAgICAgICAgICAgICAgYXBpLnByZXZlbnRfY2xvc2UoKTsKICAgICAgICAgICAgICAgICAgICBsZXQgXyA9IHdpbmRvdy5oaWRlKCk7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0KICAgICAgICB9KQogICAgICAgIC5idWlsZCh0YXVyaTo6Z2VuZXJhdGVfY29udGV4dCEoKSkKICAgICAgICAuZXhwZWN0KCJmYWlsZWQgdG8gYnVpbGQgdGhlIE1lZGlTbWFydCBkZXNrdG9wIHNoZWxsIik7CgogICAgLy8gTm8gcnVudGltZSBzaHV0ZG93biBuZWVkZWQg4oCUIHRoZXJlIGFyZSBubyBzdXBlcnZpc2VkIHByb2Nlc3Nlcy4KICAgIGFwcGxpY2F0aW9uLnJ1bih8X2FwcCwgX2V2ZW50fCB7CiAgICAgICAgaWYgbWF0Y2hlcyEoX2V2ZW50LCBSdW5FdmVudDo6RXhpdFJlcXVlc3RlZCB7IC4uIH0gfCBSdW5FdmVudDo6RXhpdCkgewogICAgICAgICAgICAvLyBOb3RoaW5nIHRvIGNsZWFuIHVwIGluIHRoaW4tY2xpZW50IG1vZGUuCiAgICAgICAgfQogICAgfSk7Cn0KCi8vLyBCdWlsZCB0aGUgc2luZ2xlIG1haW4gYXBwbGljYXRpb24gd2luZG93LgovLy8gVGhlIHdpbmRvdyBsb2FkcyB0aGUgYnVuZGxlZCBgaW5kZXguaHRtbGAgKGZyb250ZW5kRGlzdCkgYXMgaXRzIGluaXRpYWwKLy8vIHBhZ2U7IHRoYXQgcGFnZSdzIEphdmFTY3JpcHQgaW1tZWRpYXRlbHkgcmVkaXJlY3RzIHRvIGBzZXJ2ZXJfdXJsYC4KZm4gYnVpbGRfbWFpbl93aW5kb3coYXBwOiAmbXV0IHRhdXJpOjpBcHAsIHNlcnZlcl91cmw6IFVybCkgLT4gdGF1cmk6OlJlc3VsdDwoKT4gewogICAgV2Vidmlld1dpbmRvd0J1aWxkZXI6Om5ldygKICAgICAgICBhcHAsCiAgICAgICAgIm1haW4iLAogICAgICAgIC8vIFN0YXJ0IHdpdGggdGhlIGxvY2FsIGxvYWRlciBwYWdlOyBpdCB3aWxsIG5hdmlnYXRlIHRvIHRoZSBzZXJ2ZXIgVVJMLgogICAgICAgIFdlYnZpZXdVcmw6OkFwcCgiaW5kZXguaHRtbCIuaW50bygpKSwKICAgICkKICAgIC50aXRsZSgiTWVkaVNtYXJ0IikKICAgIC5pbm5lcl9zaXplKDE0NDAuMCwgOTAwLjApCiAgICAubWluX2lubmVyX3NpemUoMTEwMC4wLCA3MjAuMCkKICAgIC5jZW50ZXIoKQogICAgLnJlc2l6YWJsZSh0cnVlKQogICAgLm1heGltaXphYmxlKHRydWUpCiAgICAvLyBJbmplY3QgdGhlIHNlcnZlciBVUkwgaW50byB3aW5kb3cgc28gdGhlIGxvYWRlciBwYWdlIGNhbiByZWFkIGl0LgogICAgLmluaXRpYWxpemF0aW9uX3NjcmlwdChmb3JtYXQhKAogICAgICAgICJ3aW5kb3cuX19NRURJU01BUlRfU0VSVkVSX1VSTCA9IHt9OyIsCiAgICAgICAgc2VyZGVfanNvbjo6dG9fc3RyaW5nKHNlcnZlcl91cmwuYXNfc3RyKCkpLnVud3JhcF9vcl9kZWZhdWx0KCkKICAgICkpCiAgICAuYnVpbGQoKT87CgogICAgT2soKCkpCn0KCi8vLyBUYXVyaSBwbHVnaW4gdGhhdCBlbmZvcmNlcyB0aGUgTmF2aWdhdGlvblBvbGljeSBhbmQgb3BlbnMgZXh0ZXJuYWwgbGlua3MgaW4KLy8vIHRoZSBzeXN0ZW0gYnJvd3Nlci4KZm4gbmF2aWdhdGlvbl9ndWFyZChwb2xpY3k6IE5hdmlnYXRpb25Qb2xpY3kpIC0+IFRhdXJpUGx1Z2luPHRhdXJpOjpXcnk+IHsKICAgIFBsdWdpbkJ1aWxkZXI6Om5ldygibWVkaXNtYXJ0LW5hdmlnYXRpb24tZ3VhcmQiKQogICAgICAgIC5vbl9uYXZpZ2F0aW9uKG1vdmUgfHdlYnZpZXcsIHVybHwgewogICAgICAgICAgICBpZiBwb2xpY3kuYWxsb3dzKHVybCkgewogICAgICAgICAgICAgICAgcmV0dXJuIHRydWU7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgLy8gRXh0ZXJuYWwgSFRUUFMgbGluayBvbiBhIGRpZmZlcmVudCBvcmlnaW4g4oaSIG9wZW4gaW4gc3lzdGVtIGJyb3dzZXIKICAgICAgICAgICAgaWYgcG9saWN5LmlzX2V4dGVybmFsX2xpbmsodXJsKSB7CiAgICAgICAgICAgICAgICBsZXQgdXJsX3N0ciA9IHVybC50b19zdHJpbmcoKTsKICAgICAgICAgICAgICAgIGxldCBhcHAgPSB3ZWJ2aWV3LmFwcF9oYW5kbGUoKS5jbG9uZSgpOwogICAgICAgICAgICAgICAgdGF1cmk6OmFzeW5jX3J1bnRpbWU6OnNwYXduKGFzeW5jIG1vdmUgewogICAgICAgICAgICAgICAgICAgIGxldCBfID0gYXBwLm9wZW5lcigpLm9wZW5fdXJsKCZ1cmxfc3RyLCBOb25lOjo8JnN0cj4pOwogICAgICAgICAgICAgICAgfSk7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgLy8gQmxvY2sgaW4td2VidmlldyBuYXZpZ2F0aW9uIGZvciBhbnl0aGluZyBub3Qgb24gdGhlIHNlcnZlciBvcmlnaW4KICAgICAgICAgICAgZmFsc2UKICAgICAgICB9KQogICAgICAgIC5idWlsZCgpCn0KCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQovLyBVbml0IHRlc3RzCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKI1tjZmcodGVzdCldCm1vZCB0ZXN0cyB7CiAgICB1c2Ugc3VwZXI6Oio7CgogICAgZm4gbWFrZV9wb2xpY3koc2VydmVyX3VybDogJnN0cikgLT4gTmF2aWdhdGlvblBvbGljeSB7CiAgICAgICAgbGV0IHBvbGljeSA9IE5hdmlnYXRpb25Qb2xpY3k6OmRlZmF1bHQoKTsKICAgICAgICBwb2xpY3kuc2V0X3NlcnZlcl91cmwoVXJsOjpwYXJzZShzZXJ2ZXJfdXJsKS51bndyYXAoKSk7CiAgICAgICAgcG9saWN5CiAgICB9CgogICAgI1t0ZXN0XQogICAgZm4gc2VydmVyX29yaWdpbl9hbmRfc3VicGF0aHNfYXJlX2FsbG93ZWQoKSB7CiAgICAgICAgbGV0IHBvbGljeSA9IG1ha2VfcG9saWN5KCJodHRwczovL2FwcC5tZWRpc21hcnQuZHoiKTsKCiAgICAgICAgYXNzZXJ0IShwb2xpY3kuYWxsb3dzKCZVcmw6OnBhcnNlKCJodHRwczovL2FwcC5tZWRpc21hcnQuZHoiKS51bndyYXAoKSkpOwogICAgICAgIGFzc2VydCEocG9saWN5LmFsbG93cygmVXJsOjpwYXJzZSgiaHR0cHM6Ly9hcHAubWVkaXNtYXJ0LmR6LyIpLnVud3JhcCgpKSk7CiAgICAgICAgYXNzZXJ0IShwb2xpY3kuYWxsb3dzKCZVcmw6OnBhcnNlKCJodHRwczovL2FwcC5tZWRpc21hcnQuZHovbG9naW4iKS51bndyYXAoKSkpOwogICAgICAgIGFzc2VydCEocG9saWN5LmFsbG93cygKICAgICAgICAgICAgJlVybDo6cGFyc2UoImh0dHBzOi8vYXBwLm1lZGlzbWFydC5kei9wYXRpZW50cy8xMjMvY29uc3VsdGF0aW9uIikudW53cmFwKCkKICAgICAgICApKTsKICAgIH0KCiAgICAjW3Rlc3RdCiAgICBmbiBkaWZmZXJlbnRfb3JpZ2luX2lzX2Jsb2NrZWQoKSB7CiAgICAgICAgbGV0IHBvbGljeSA9IG1ha2VfcG9saWN5KCJodHRwczovL2FwcC5tZWRpc21hcnQuZHoiKTsKCiAgICAgICAgLy8gRGlmZmVyZW50IGhvc3QKICAgICAgICBhc3NlcnQhKCFwb2xpY3kuYWxsb3dzKCZVcmw6OnBhcnNlKCJodHRwczovL2V2aWwuZXhhbXBsZS5jb20vIikudW53cmFwKCkpKTsKICAgICAgICAvLyBEaWZmZXJlbnQgc2NoZW1lCiAgICAgICAgYXNzZXJ0ISghcG9saWN5LmFsbG93cygmVXJsOjpwYXJzZSgiaHR0cDovL2FwcC5tZWRpc21hcnQuZHovIikudW53cmFwKCkpKTsKICAgICAgICAvLyBTdWJkb21haW4gaXMgTk9UIHRoZSBzYW1lIG9yaWdpbgogICAgICAgIGFzc2VydCEoIXBvbGljeS5hbGxvd3MoJlVybDo6cGFyc2UoImh0dHBzOi8vc3ViLmFwcC5tZWRpc21hcnQuZHovIikudW53cmFwKCkpKTsKICAgICAgICAvLyBQb3J0IG1pc21hdGNoCiAgICAgICAgYXNzZXJ0ISghcG9saWN5LmFsbG93cygmVXJsOjpwYXJzZSgiaHR0cHM6Ly9hcHAubWVkaXNtYXJ0LmR6Ojg0NDMvIikudW53cmFwKCkpKTsKICAgIH0KCiAgICAjW3Rlc3RdCiAgICBmbiBjcmVkZW50aWFsc19pbl91cmxfYXJlX2Fsd2F5c19ibG9ja2VkKCkgewogICAgICAgIGxldCBwb2xpY3kgPSBtYWtlX3BvbGljeSgiaHR0cHM6Ly9hcHAubWVkaXNtYXJ0LmR6Iik7CgogICAgICAgIGFzc2VydCEoIXBvbGljeS5hbGxvd3MoCiAgICAgICAgICAgICZVcmw6OnBhcnNlKCJodHRwczovL3VzZXI6cGFzc0BhcHAubWVkaXNtYXJ0LmR6LyIpLnVud3JhcCgpCiAgICAgICAgKSk7CiAgICB9CgogICAgI1t0ZXN0XQogICAgZm4gdGF1cmlfYW5kX2Fzc2V0X3NjaGVtZXNfYXJlX2Fsd2F5c19hbGxvd2VkKCkgewogICAgICAgIGxldCBwb2xpY3kgPSBtYWtlX3BvbGljeSgiaHR0cHM6Ly9hcHAubWVkaXNtYXJ0LmR6Iik7CgogICAgICAgIGFzc2VydCEocG9saWN5LmFsbG93cygmVXJsOjpwYXJzZSgidGF1cmk6Ly9sb2NhbGhvc3QvIikudW53cmFwKCkpKTsKICAgICAgICBhc3NlcnQhKHBvbGljeS5hbGxvd3MoJlVybDo6cGFyc2UoImFzc2V0Oi8vbG9jYWxob3N0LyIpLnVud3JhcCgpKSk7CiAgICAgICAgYXNzZXJ0IShwb2xpY3kuYWxsb3dzKCZVcmw6OnBhcnNlKCJhYm91dDpibGFuayIpLnVud3JhcCgpKSk7CiAgICB9CgogICAgI1t0ZXN0XQogICAgZm4gbm9fc2VydmVyX2NvbmZpZ3VyZWRfYmxvY2tzX2V2ZXJ5dGhpbmdfZXhjZXB0X2ludGVybmFsX3NjaGVtZXMoKSB7CiAgICAgICAgbGV0IHBvbGljeSA9IE5hdmlnYXRpb25Qb2xpY3k6OmRlZmF1bHQoKTsgLy8gbm8gc2VydmVyIFVSTCBzZXQKCiAgICAgICAgYXNzZXJ0ISghcG9saWN5LmFsbG93cygmVXJsOjpwYXJzZSgiaHR0cHM6Ly9hcHAubWVkaXNtYXJ0LmR6LyIpLnVud3JhcCgpKSk7CiAgICAgICAgLy8gSW50ZXJuYWwgc2NoZW1lcyBzdGlsbCBwYXNzCiAgICAgICAgYXNzZXJ0IShwb2xpY3kuYWxsb3dzKCZVcmw6OnBhcnNlKCJ0YXVyaTovL2xvY2FsaG9zdC8iKS51bndyYXAoKSkpOwogICAgfQoKICAgICNbdGVzdF0KICAgIGZuIGV4dGVybmFsX2xpbmtfZGV0ZWN0aW9uX2lzX2NvcnJlY3QoKSB7CiAgICAgICAgbGV0IHBvbGljeSA9IG1ha2VfcG9saWN5KCJodHRwczovL2FwcC5tZWRpc21hcnQuZHoiKTsKCiAgICAgICAgLy8gRXh0ZXJuYWwgSFRUUFMgb24gYSBkaWZmZXJlbnQgaG9zdCDihpIgc2hvdWxkIGJlIG9wZW5lZCBpbiBicm93c2VyCiAgICAgICAgYXNzZXJ0IShwb2xpY3kuaXNfZXh0ZXJuYWxfbGluaygmVXJsOjpwYXJzZSgiaHR0cHM6Ly9leGFtcGxlLmNvbS9kb2NzIikudW53cmFwKCkpKTsKICAgICAgICAvLyBTYW1lIG9yaWdpbiDihpIgbm90IGV4dGVybmFsCiAgICAgICAgYXNzZXJ0ISghcG9saWN5LmlzX2V4dGVybmFsX2xpbmsoJlVybDo6cGFyc2UoImh0dHBzOi8vYXBwLm1lZGlzbWFydC5kei9sb2dpbiIpLnVud3JhcCgpKSk7CiAgICAgICAgLy8gSFRUUCAobm9uLUhUVFBTKSBvbiBkaWZmZXJlbnQgaG9zdCDihpIgbm90IHRyZWF0ZWQgYXMgYW4gb3BlbmFibGUgZXh0ZXJuYWwgbGluawogICAgICAgIGFzc2VydCEoIXBvbGljeS5pc19leHRlcm5hbF9saW5rKCZVcmw6OnBhcnNlKCJodHRwOi8vZXhhbXBsZS5jb20vIikudW53cmFwKCkpKTsKICAgIH0KCiAgICAjW3Rlc3RdCiAgICBmbiBkZWZhdWx0X3NlcnZlcl91cmxfaXNfdmFsaWRfaHR0cHMoKSB7CiAgICAgICAgbGV0IHVybCA9IFVybDo6cGFyc2UoREVGQVVMVF9TRVJWRVJfVVJMKS51bndyYXAoKTsKICAgICAgICBhc3NlcnRfZXEhKHVybC5zY2hlbWUoKSwgImh0dHBzIik7CiAgICAgICAgYXNzZXJ0ISh1cmwuaG9zdF9zdHIoKS5pc19zb21lKCkpOwogICAgfQp9Cg==
+// DrClickDz Desktop — thin connected-client shell
+//
+// Architecture change (2025): The app no longer bundles a local PHP/Laravel runtime.
+// It simply loads the central hosted server (SERVER_URL) in a Tauri webview window.
+// Internet connectivity is required. This eliminates:
+//   - Bug 1 (migration_resources_invalid): the bundled-resource validation no longer exists.
+//   - Bug 2 (visible console): main.rs now has #![windows_subsystem = "windows"] and no
+//     external processes are spawned by the desktop shell.
+//
+// Kept:
+//   - System tray + hide-to-tray behaviour (desktop_behavior.rs)
+//   - Signed updater (updates.rs)
+//   - NavigationPolicy — rewritten for the hosted server origin
+//
+// Removed:
+//   - desktop.rs (PHP supervisor preparation)
+//   - runtime-core dependency
+//   - oauth_opener.rs Google Drive loopback flow (tied to local runtime port)
+//   - All LAN / offline-restore / tunnel commands
+
+mod desktop_behavior;
+mod updates;
+
+use std::{
+    fs,
+    sync::{Arc, RwLock},
+};
+
+use tauri::{
+    plugin::{Builder as PluginBuilder, TauriPlugin},
+    webview::WebviewWindowBuilder,
+    AppHandle, Manager, RunEvent, WebviewUrl,
+};
+use tauri_plugin_opener::OpenerExt;
+use url::Url;
+
+use crate::desktop_behavior::{install_system_tray, show_desktop_window, DesktopBehaviorState};
+use crate::updates::SignedUpdaterState;
+
+// ---------------------------------------------------------------------------
+// Server URL configuration
+// ---------------------------------------------------------------------------
+
+/// Compile-time default server URL. Override at runtime by placing a JSON file
+/// at `<app-local-data>/config/server.json` with content `{"url": "https://..."}`.
+/// The override is read once at startup and never re-read while the app is running.
+const DEFAULT_SERVER_URL: &str = "https://app.medismart.dz";
+
+#[cfg(debug_assertions)]
+const LOCAL_DEVELOPMENT_SERVER_ENV: &str = "DRCLICKDZ_DEV_SERVER_URL";
+
+#[cfg(debug_assertions)]
+fn local_development_server_url() -> Option<Url> {
+    let value = std::env::var(LOCAL_DEVELOPMENT_SERVER_ENV).ok()?;
+    let url = Url::parse(value.trim()).ok()?;
+
+    is_valid_local_development_server_url(&url).then_some(url)
+}
+
+#[cfg(debug_assertions)]
+fn is_valid_local_development_server_url(url: &Url) -> bool {
+    url.scheme() == "http"
+        && url.host_str() == Some("localhost")
+        && url.port() == Some(8000)
+        && url.path() == "/"
+        && url.query().is_none()
+        && url.fragment().is_none()
+        && url.username().is_empty()
+        && url.password().is_none()
+}
+
+/// Load the server URL: first checks the runtime override file, falls back to
+/// the compiled-in constant.  The override file is optional and silently ignored
+/// on any parse/IO error so a misconfigured file cannot prevent startup.
+fn resolve_server_url(app: &AppHandle) -> Url {
+    // Local HTTP is an explicit debug-build escape hatch only. The entire
+    // branch is compiled out of release installers, which remain HTTPS-only.
+    #[cfg(debug_assertions)]
+    if let Some(url) = local_development_server_url() {
+        return url;
+    }
+
+    if let Ok(data_dir) = app.path().app_local_data_dir() {
+        let override_path = data_dir.join("config/server.json");
+        if let Ok(bytes) = fs::read(&override_path) {
+            if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+                if let Some(url_str) = value.get("url").and_then(|v| v.as_str()) {
+                    if let Ok(url) = Url::parse(url_str) {
+                        if url.scheme() == "https"
+                            && url.host_str().is_some()
+                            && url.username().is_empty()
+                            && url.password().is_none()
+                            && url.fragment().is_none()
+                        {
+                            return url;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Fallback: compile-time constant (always valid, panics only in tests if
+    // the constant itself is malformed — caught at development time).
+    Url::parse(DEFAULT_SERVER_URL).expect("DEFAULT_SERVER_URL is a valid HTTPS URL")
+}
+
+// ---------------------------------------------------------------------------
+// NavigationPolicy — rewritten for hosted-server origin
+// ---------------------------------------------------------------------------
+
+/// Holds the server origin (scheme + host + optional port) and decides which
+/// navigations the webview may perform.
+///
+/// Rules:
+///   - Allow:   the configured server origin and all its sub-paths
+///   - Allow:   tauri://, asset://, about: (internal Tauri schemes)
+///   - Block:   everything else — external http(s) links are opened in the
+///     system browser by the on_navigation handler instead
+#[derive(Clone, Default)]
+struct NavigationPolicy {
+    /// The server origin, e.g. `https://app.medismart.dz`. Set once on startup.
+    server_origin: Arc<RwLock<Option<Url>>>,
+}
+
+impl NavigationPolicy {
+    fn set_server_url(&self, url: Url) {
+        if let Ok(mut current) = self.server_origin.write() {
+            *current = Some(url);
+        }
+    }
+
+    /// Returns true if the webview is allowed to navigate to `url` directly.
+    /// External HTTPS links that are not on the server origin are NOT allowed
+    /// here; the caller opens them in the system browser instead.
+    fn allows(&self, url: &Url) -> bool {
+        // Always allow internal Tauri / asset schemes used by the offline page
+        if matches!(url.scheme(), "tauri" | "asset" | "about")
+            || matches!(url.host_str(), Some("tauri.localhost" | "asset.localhost"))
+        {
+            return true;
+        }
+
+        let origin = match self.server_origin.read().ok().and_then(|o| o.clone()) {
+            Some(o) => o,
+            None => return false,
+        };
+
+        // Must match scheme + host exactly; port must also match (None == default)
+        url.scheme() == origin.scheme()
+            && url.host() == origin.host()
+            && url.port() == origin.port()
+            && url.username().is_empty()
+            && url.password().is_none()
+    }
+
+    /// Returns true if the URL is an external HTTPS link on a different origin
+    /// that should be opened in the system browser rather than allowed in-app.
+    fn is_external_link(&self, url: &Url) -> bool {
+        if url.scheme() != "https" {
+            return false;
+        }
+        !self.allows(url)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tauri setup
+// ---------------------------------------------------------------------------
+
+pub fn run() {
+    let navigation_policy = NavigationPolicy::default();
+    let policy_for_guard = navigation_policy.clone();
+
+    let application = tauri::Builder::default()
+        .plugin(
+            tauri_plugin_opener::Builder::new()
+                .open_js_links_on_click(false)
+                .build(),
+        )
+        .plugin(tauri_plugin_single_instance::init(
+            |app, _arguments, _working_directory| {
+                show_desktop_window(app);
+            },
+        ))
+        // Navigation guard: allow server origin + tauri/asset schemes;
+        // open external HTTPS links in the system browser.
+        .plugin(navigation_guard(policy_for_guard))
+        .manage(DesktopBehaviorState::default())
+        .manage(SignedUpdaterState::compiled())
+        .invoke_handler(tauri::generate_handler![
+            updates::signed_updater_status,
+            updates::check_for_signed_update,
+            updates::install_signed_update
+        ])
+        .setup(move |app| {
+            if let Some(plugin) = updates::configured_plugin() {
+                app.handle().plugin(plugin)?;
+            }
+
+            install_system_tray(app.handle())?;
+
+            // Resolve which server URL to load (compile-time default or override file)
+            let server_url = resolve_server_url(app.handle());
+            navigation_policy.set_server_url(server_url.clone());
+
+            // Build the main window. It loads `index.html` (the offline/redirect
+            // page bundled as frontendDist) which immediately tries to navigate to
+            // the server URL and shows an offline error page on failure.
+            build_main_window(app, server_url)?;
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let behavior = window.app_handle().state::<DesktopBehaviorState>();
+                if behavior.should_hide_on_close(window.label()) {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
+        .build(tauri::generate_context!())
+        .expect("failed to build the DrClickDz desktop shell");
+
+    // No runtime shutdown needed — there are no supervised processes.
+    application.run(|_app, _event| {
+        if matches!(_event, RunEvent::ExitRequested { .. } | RunEvent::Exit) {
+            // Nothing to clean up in thin-client mode.
+        }
+    });
+}
+
+/// Build the single main application window.
+/// The window loads the bundled `index.html` (frontendDist) as its initial
+/// page; that page's JavaScript immediately redirects to `server_url`.
+fn build_main_window(app: &mut tauri::App, server_url: Url) -> tauri::Result<()> {
+    #[cfg(debug_assertions)]
+    let initial_url = if is_valid_local_development_server_url(&server_url) {
+        // Chromium can reject the local loader's cross-origin loopback probe
+        // under its Private Network Access rules. The exact debug-only origin
+        // has already been validated, so navigate to it directly.
+        WebviewUrl::External(server_url.clone())
+    } else {
+        WebviewUrl::App("index.html".into())
+    };
+
+    #[cfg(not(debug_assertions))]
+    let initial_url = WebviewUrl::App("index.html".into());
+
+    WebviewWindowBuilder::new(app, "main", initial_url)
+        .title("DrClickDz")
+        .inner_size(1440.0, 900.0)
+        .min_inner_size(1100.0, 720.0)
+        .center()
+        .resizable(true)
+        .maximizable(true)
+        // Inject the server URL into window so the loader page can read it.
+        .initialization_script(format!(
+            "window.__MEDISMART_SERVER_URL = {};",
+            serde_json::to_string(server_url.as_str()).unwrap_or_default()
+        ))
+        .build()?;
+
+    Ok(())
+}
+
+/// Tauri plugin that enforces the NavigationPolicy and opens external links in
+/// the system browser.
+fn navigation_guard(policy: NavigationPolicy) -> TauriPlugin<tauri::Wry> {
+    PluginBuilder::new("medismart-navigation-guard")
+        .on_navigation(move |webview, url| {
+            if policy.allows(url) {
+                return true;
+            }
+            // External HTTPS link on a different origin → open in system browser
+            if policy.is_external_link(url) {
+                let url_str = url.to_string();
+                let app = webview.app_handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    let _ = app.opener().open_url(&url_str, None::<&str>);
+                });
+            }
+            // Block in-webview navigation for anything not on the server origin
+            false
+        })
+        .build()
+}
+
+// ---------------------------------------------------------------------------
+// Unit tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_policy(server_url: &str) -> NavigationPolicy {
+        let policy = NavigationPolicy::default();
+        policy.set_server_url(Url::parse(server_url).unwrap());
+        policy
+    }
+
+    #[test]
+    fn server_origin_and_subpaths_are_allowed() {
+        let policy = make_policy("https://app.medismart.dz");
+
+        assert!(policy.allows(&Url::parse("https://app.medismart.dz").unwrap()));
+        assert!(policy.allows(&Url::parse("https://app.medismart.dz/").unwrap()));
+        assert!(policy.allows(&Url::parse("https://app.medismart.dz/login").unwrap()));
+        assert!(policy
+            .allows(&Url::parse("https://app.medismart.dz/patients/123/consultation").unwrap()));
+    }
+
+    #[test]
+    fn different_origin_is_blocked() {
+        let policy = make_policy("https://app.medismart.dz");
+
+        // Different host
+        assert!(!policy.allows(&Url::parse("https://evil.example.com/").unwrap()));
+        // Different scheme
+        assert!(!policy.allows(&Url::parse("http://app.medismart.dz/").unwrap()));
+        // Subdomain is NOT the same origin
+        assert!(!policy.allows(&Url::parse("https://sub.app.medismart.dz/").unwrap()));
+        // Port mismatch
+        assert!(!policy.allows(&Url::parse("https://app.medismart.dz:8443/").unwrap()));
+    }
+
+    #[test]
+    fn credentials_in_url_are_always_blocked() {
+        let policy = make_policy("https://app.medismart.dz");
+
+        assert!(!policy.allows(&Url::parse("https://user:pass@app.medismart.dz/").unwrap()));
+    }
+
+    #[test]
+    fn tauri_and_asset_schemes_are_always_allowed() {
+        let policy = make_policy("https://app.medismart.dz");
+
+        assert!(policy.allows(&Url::parse("tauri://localhost/").unwrap()));
+        assert!(policy.allows(&Url::parse("asset://localhost/").unwrap()));
+        assert!(policy.allows(&Url::parse("about:blank").unwrap()));
+    }
+
+    #[test]
+    fn no_server_configured_blocks_everything_except_internal_schemes() {
+        let policy = NavigationPolicy::default(); // no server URL set
+
+        assert!(!policy.allows(&Url::parse("https://app.medismart.dz/").unwrap()));
+        // Internal schemes still pass
+        assert!(policy.allows(&Url::parse("tauri://localhost/").unwrap()));
+    }
+
+    #[test]
+    fn external_link_detection_is_correct() {
+        let policy = make_policy("https://app.medismart.dz");
+
+        // External HTTPS on a different host → should be opened in browser
+        assert!(policy.is_external_link(&Url::parse("https://example.com/docs").unwrap()));
+        // Same origin → not external
+        assert!(!policy.is_external_link(&Url::parse("https://app.medismart.dz/login").unwrap()));
+        // HTTP (non-HTTPS) on different host → not treated as an openable external link
+        assert!(!policy.is_external_link(&Url::parse("http://example.com/").unwrap()));
+    }
+
+    #[test]
+    fn default_server_url_is_valid_https() {
+        let url = Url::parse(DEFAULT_SERVER_URL).unwrap();
+        assert_eq!(url.scheme(), "https");
+        assert!(url.host_str().is_some());
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn local_development_url_is_strictly_loopback_port_8000() {
+        assert!(is_valid_local_development_server_url(
+            &Url::parse("http://localhost:8000").unwrap()
+        ));
+
+        for rejected in [
+            "http://127.0.0.1:8000/",
+            "http://[::1]:8000/",
+            "https://localhost:8000/",
+            "http://localhost:5173/",
+            "http://localhost:8000/login",
+            "http://localhost:8000/?debug=1",
+            "http://user@localhost:8000/",
+        ] {
+            assert!(!is_valid_local_development_server_url(
+                &Url::parse(rejected).unwrap()
+            ));
+        }
+    }
+}

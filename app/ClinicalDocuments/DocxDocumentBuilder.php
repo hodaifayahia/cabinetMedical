@@ -342,7 +342,7 @@ final class DocxDocumentBuilder
         $timestamp = now()->utc()->format('Y-m-d\TH:i:s\Z');
         $creator = trim($variables['doctor.name'] ?? '')
             ?: trim($variables['cabinet.name'] ?? '')
-            ?: 'MediSmart';
+            ?: 'DrClickDz';
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
@@ -359,7 +359,7 @@ final class DocxDocumentBuilder
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
             .'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
-            .'<Application>MediSmart</Application></Properties>';
+            .'<Application>DrClickDz</Application></Properties>';
     }
 
     private function xml(string $value): string

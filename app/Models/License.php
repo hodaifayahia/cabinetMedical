@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\LicensePlan;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property CarbonImmutable|null $expires_at
@@ -14,11 +16,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable $issued_at
  * @property CarbonImmutable|null $last_verified_at
  * @property array<string, mixed>|null $last_server_response
+ * @property LicensePlan|null $plan
  */
 #[Fillable([
     'license_id',
     'product',
     'edition',
+    'plan',
     'customer_id',
     'signed_certificate',
     'status',
@@ -34,6 +38,7 @@ class License extends Model
     protected function casts(): array
     {
         return [
+            'plan' => LicensePlan::class,
             'issued_at' => 'immutable_datetime',
             'expires_at' => 'immutable_datetime',
             'offline_grace_until' => 'immutable_datetime',
@@ -57,5 +62,45 @@ class License extends Model
     public function activations(): HasMany
     {
         return $this->hasMany(LicenseActivation::class);
+    }
+
+    /** @return HasOne<Cabinet, $this> */
+    public function cabinet(): HasOne
+    {
+        return $this->hasOne(Cabinet::class);
+    }
+
+    public function isHostedEntitlement(): bool
+    {
+        return $this->plan instanceof LicensePlan || $this->edition === 'hosted';
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->lessThanOrEqualTo(now());
+    }
+
+    /**
+     * Expiry is computed from the clock so a seven-day trial is denied at its
+     * exact expiry instant even before a maintenance job persists "expired".
+     */
+    public function effectiveStatus(): string
+    {
+        if ($this->isExpired()) {
+            return 'expired';
+        }
+
+        return $this->status;
+    }
+
+    public function effectiveStatusLabel(): string
+    {
+        return match ($this->effectiveStatus()) {
+            'active' => 'Active',
+            'expired' => 'Expirée',
+            'suspended' => 'Suspendue',
+            'revoked' => 'Révoquée',
+            default => 'Inactive',
+        };
     }
 }

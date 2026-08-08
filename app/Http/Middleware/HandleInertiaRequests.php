@@ -45,28 +45,35 @@ class HandleInertiaRequests extends Middleware
             return parent::share($request);
         }
 
-        $cabinet = CabinetSetting::current();
-        $sessionLock = $request->user() instanceof User
+        $user = $request->user();
+        $cabinet = $user instanceof User && ! $user->is_platform_admin
+            ? CabinetSetting::current()
+            : null;
+        $cabinetName = $cabinet?->name ?? (string) config('app.name', 'DrClickDz');
+        $sessionLock = $user instanceof User
             ? app(SessionLockService::class)
             : null;
 
         return [
             ...parent::share($request),
-            'name' => $cabinet->name,
+            'name' => $cabinetName,
             'cabinet' => [
-                'name' => $cabinet->name,
-                'phone' => $cabinet->phone,
-                'email' => $cabinet->email,
-                'address' => $cabinet->address,
-                'city' => $cabinet->city,
-                'logo_path' => $cabinet->logo_path,
-                'logo_url' => $cabinet->logo_path
+                'name' => $cabinetName,
+                'phone' => $cabinet?->phone,
+                'email' => $cabinet?->email,
+                'address' => $cabinet?->address,
+                'city' => $cabinet?->city,
+                'logo_path' => $cabinet?->logo_path,
+                'logo_url' => $cabinet?->logo_path
                     ? Storage::disk('public')->url($cabinet->logo_path)
                     : null,
-                'timezone' => $cabinet->timezone,
+                'timezone' => $cabinet?->timezone ?? (string) config('app.timezone', 'UTC'),
                 'currency' => [
-                    'code' => $cabinet->currency_code,
-                    'symbol' => (string) config('clinic.currency.symbol', $cabinet->currency_code),
+                    'code' => $cabinet?->currency_code ?? (string) config('clinic.currency.code', 'DZD'),
+                    'symbol' => (string) config(
+                        'clinic.currency.symbol',
+                        $cabinet?->currency_code ?? (string) config('clinic.currency.code', 'DZD'),
+                    ),
                     'minor_unit' => (int) config('clinic.currency.minor_unit', 2),
                 ],
             ],

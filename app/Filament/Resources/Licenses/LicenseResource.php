@@ -14,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class LicenseResource extends Resource
@@ -30,17 +31,17 @@ class LicenseResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'licence';
+        return 'licence locale';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'licences';
+        return 'licences locales';
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Licences';
+        return 'Licences locales';
     }
 
     public static function canAccess(): bool
@@ -50,7 +51,20 @@ class LicenseResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) License::query()->where('status', 'active')->count();
+        return (string) License::query()
+            ->whereNull('plan')
+            ->where('status', 'active')
+            ->count();
+    }
+
+    /**
+     * Hosted entitlements are cabinet-linked and may only be managed through
+     * the Cabinets resource. Keeping them out of this legacy signed-licence
+     * resource prevents edits or deletes from bypassing cabinet access rules.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereNull('plan');
     }
 
     public static function form(Schema $schema): Schema

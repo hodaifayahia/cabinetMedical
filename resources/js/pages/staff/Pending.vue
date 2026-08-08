@@ -1,1 +1,121 @@
-PHNjcmlwdCBzZXR1cCBsYW5nPSJ0cyI+CmltcG9ydCB7IEhlYWQsIHJvdXRlciwgdXNlRm9ybSB9IGZyb20gJ0BpbmVydGlhanMvdnVlMyc7CmltcG9ydCB7IHJlYWN0aXZlIH0gZnJvbSAndnVlJzsKaW1wb3J0IHsgQmFkZ2UgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYmFkZ2UnOwppbXBvcnQgeyBCdXR0b24gfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYnV0dG9uJzsKaW1wb3J0IHsgTGFiZWwgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvbGFiZWwnOwppbXBvcnQgewogICAgU2VsZWN0LAogICAgU2VsZWN0Q29udGVudCwKICAgIFNlbGVjdEl0ZW0sCiAgICBTZWxlY3RUcmlnZ2VyLAogICAgU2VsZWN0VmFsdWUsCn0gZnJvbSAnQC9jb21wb25lbnRzL3VpL3NlbGVjdCc7Cgp0eXBlIFBlbmRpbmdNZW1iZXIgPSB7CiAgICBpZDogbnVtYmVyOwogICAgbmFtZTogc3RyaW5nOwogICAgZW1haWw6IHN0cmluZzsKICAgIGNyZWF0ZWRfYXQ6IHN0cmluZyB8IG51bGw7Cn07Cgpjb25zdCBwcm9wcyA9IGRlZmluZVByb3BzPHsKICAgIHBlbmRpbmc6IFBlbmRpbmdNZW1iZXJbXTsKICAgIHJvbGVzOiBzdHJpbmdbXTsKICAgIHNlYXRzOiB7IHVzZWQ6IG51bWJlcjsgbWF4OiBudW1iZXIgfTsKfT4oKTsKCmNvbnN0IHNlbGVjdGVkUm9sZSA9IHJlYWN0aXZlPFJlY29yZDxudW1iZXIsIHN0cmluZz4+KHt9KTsKCmNvbnN0IGFwcHJvdmVGb3JtID0gdXNlRm9ybSh7IHJvbGU6ICcnIH0pOwoKZnVuY3Rpb24gYXBwcm92ZShtZW1iZXI6IFBlbmRpbmdNZW1iZXIpOiB2b2lkIHsKICAgIGFwcHJvdmVGb3JtLnJvbGUgPSBzZWxlY3RlZFJvbGVbbWVtYmVyLmlkXSA/PyAnJzsKICAgIGFwcHJvdmVGb3JtLnBvc3QoYC9hcHAvc3RhZmYvcGVuZGluZy8ke21lbWJlci5pZH0vYXBwcm92ZWAsIHsKICAgICAgICBwcmVzZXJ2ZVNjcm9sbDogdHJ1ZSwKICAgIH0pOwp9CgpmdW5jdGlvbiByZWplY3QobWVtYmVyOiBQZW5kaW5nTWVtYmVyKTogdm9pZCB7CiAgICBpZiAoIXdpbmRvdy5jb25maXJtKGBSZWpldGVyIGxhIGRlbWFuZGUgZGUgJHttZW1iZXIubmFtZX0gP2ApKSB7CiAgICAgICAgcmV0dXJuOwogICAgfQoKICAgIHJvdXRlci5kZWxldGUoYC9hcHAvc3RhZmYvcGVuZGluZy8ke21lbWJlci5pZH1gLCB7CiAgICAgICAgcHJlc2VydmVTY3JvbGw6IHRydWUsCiAgICB9KTsKfQo8L3NjcmlwdD4KCjx0ZW1wbGF0ZT4KICAgIDxIZWFkIHRpdGxlPSJEZW1hbmRlcyBlbiBhdHRlbnRlIiAvPgoKICAgIDxkaXYgY2xhc3M9InNwYWNlLXktNiBwLTQiPgogICAgICAgIDxoZWFkZXIgY2xhc3M9InNwYWNlLXktMSI+CiAgICAgICAgICAgIDxoMSBjbGFzcz0idGV4dC14bCBmb250LXNlbWlib2xkIj5NZW1icmVzIGVuIGF0dGVudGU8L2gxPgogICAgICAgICAgICA8cCBjbGFzcz0idGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICAgICAgQXBwcm91dmV6IG91IHJlamV0ZXogbGVzIGRlbWFuZGVzIGQnYWNjw6hzIMOgIHZvdHJlIGNhYmluZXQuCiAgICAgICAgICAgICAgICBTacOoZ2VzIHV0aWxpc8OpcyA6IHt7IHByb3BzLnNlYXRzLnVzZWQgfX0gLyB7eyBwcm9wcy5zZWF0cy5tYXggfX0uCiAgICAgICAgICAgIDwvcD4KICAgICAgICA8L2hlYWRlcj4KCiAgICAgICAgPHAKICAgICAgICAgICAgdi1pZj0icHJvcHMucGVuZGluZy5sZW5ndGggPT09IDAiCiAgICAgICAgICAgIGNsYXNzPSJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCIKICAgICAgICA+CiAgICAgICAgICAgIEF1Y3VuZSBkZW1hbmRlIGVuIGF0dGVudGUuCiAgICAgICAgPC9wPgoKICAgICAgICA8dWwgdi1lbHNlIGNsYXNzPSJzcGFjZS15LTQiPgogICAgICAgICAgICA8bGkKICAgICAgICAgICAgICAgIHYtZm9yPSJtZW1iZXIgaW4gcHJvcHMucGVuZGluZyIKICAgICAgICAgICAgICAgIDprZXk9Im1lbWJlci5pZCIKICAgICAgICAgICAgICAgIGNsYXNzPSJmbGV4IGZsZXgtY29sIGdhcC0zIHJvdW5kZWQtbGcgYm9yZGVyIHAtNCBzbTpmbGV4LXJvdyBzbTppdGVtcy1jZW50ZXIgc206anVzdGlmeS1iZXR3ZWVuIgogICAgICAgICAgICA+CiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJzcGFjZS15LTEiPgogICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzPSJmb250LW1lZGl1bSI+e3sgbWVtYmVyLm5hbWUgfX08L3A+CiAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3M9InRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgICAgICAgICAgICAge3sgbWVtYmVyLmVtYWlsIH19CiAgICAgICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICAgICAgIDxCYWRnZSB2YXJpYW50PSJzZWNvbmRhcnkiPkVuIGF0dGVudGU8L0JhZGdlPgogICAgICAgICAgICAgICAgPC9kaXY+CgogICAgICAgICAgICAgICAgPGRpdiBjbGFzcz0iZmxleCBmbGV4LXdyYXAgaXRlbXMtZW5kIGdhcC0yIj4KICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJncmlkIGdhcC0xIj4KICAgICAgICAgICAgICAgICAgICAgICAgPExhYmVsIDpmb3I9ImByb2xlLSR7bWVtYmVyLmlkfWAiIGNsYXNzPSJ0ZXh0LXhzIj4KICAgICAgICAgICAgICAgICAgICAgICAgICAgIFLDtGxlCiAgICAgICAgICAgICAgICAgICAgICAgIDwvTGFiZWw+CiAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3Qgdi1tb2RlbD0ic2VsZWN0ZWRSb2xlW21lbWJlci5pZF0iPgogICAgICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdFRyaWdnZXIgOmlkPSJgcm9sZS0ke21lbWJlci5pZH1gIiBjbGFzcz0idy00OCI+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdFZhbHVlIHBsYWNlaG9sZGVyPSJDaG9pc2lyIHVuIHLDtGxlIiAvPgogICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9TZWxlY3RUcmlnZ2VyPgogICAgICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdENvbnRlbnQ+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdEl0ZW0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgdi1mb3I9InJvbGUgaW4gcHJvcHMucm9sZXMiCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDprZXk9InJvbGUiCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDp2YWx1ZT0icm9sZSIKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHt7IHJvbGUgfX0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdEl0ZW0+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdENvbnRlbnQ+CiAgICAgICAgICAgICAgICAgICAgICAgIDwvU2VsZWN0PgogICAgICAgICAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgICAgICAgICA8QnV0dG9uCiAgICAgICAgICAgICAgICAgICAgICAgIDpkaXNhYmxlZD0iIXNlbGVjdGVkUm9sZVttZW1iZXIuaWRdIgogICAgICAgICAgICAgICAgICAgICAgICBAY2xpY2s9ImFwcHJvdmUobWVtYmVyKSIKICAgICAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgICAgICAgIEFwcHJvdXZlcgogICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPgogICAgICAgICAgICAgICAgICAgIDxCdXR0b24gdmFyaWFudD0iZGVzdHJ1Y3RpdmUiIEBjbGljaz0icmVqZWN0KG1lbWJlcikiPgogICAgICAgICAgICAgICAgICAgICAgICBSZWpldGVyCiAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+CiAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9saT4KICAgICAgICA8L3VsPgogICAgPC9kaXY+CjwvdGVtcGxhdGU+Cg==
+<script setup lang="ts">
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { reactive } from 'vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
+type PendingMember = {
+    id: number;
+    name: string;
+    email: string;
+    created_at: string | null;
+};
+
+const props = defineProps<{
+    pending: PendingMember[];
+    roles: string[];
+    seats: { used: number; max: number };
+}>();
+
+const selectedRole = reactive<Record<number, string>>({});
+
+const approveForm = useForm({ role: '' });
+
+function approve(member: PendingMember): void {
+    approveForm.role = selectedRole[member.id] ?? '';
+    approveForm.post(`/app/staff/pending/${member.id}/approve`, {
+        preserveScroll: true,
+    });
+}
+
+function reject(member: PendingMember): void {
+    if (!window.confirm(`Rejeter la demande de ${member.name} ?`)) {
+        return;
+    }
+
+    router.delete(`/app/staff/pending/${member.id}`, {
+        preserveScroll: true,
+    });
+}
+</script>
+
+<template>
+    <Head title="Demandes en attente" />
+
+    <div class="space-y-6 p-4">
+        <header class="space-y-1">
+            <h1 class="text-xl font-semibold">Membres en attente</h1>
+            <p class="text-sm text-muted-foreground">
+                Approuvez ou rejetez les demandes d'accès à votre cabinet.
+                Sièges utilisés : {{ props.seats.used }} /
+                {{ props.seats.max }}.
+            </p>
+        </header>
+
+        <p
+            v-if="props.pending.length === 0"
+            class="text-sm text-muted-foreground"
+        >
+            Aucune demande en attente.
+        </p>
+
+        <ul v-else class="space-y-4">
+            <li
+                v-for="member in props.pending"
+                :key="member.id"
+                class="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="space-y-1">
+                    <p class="font-medium">{{ member.name }}</p>
+                    <p class="text-sm text-muted-foreground">
+                        {{ member.email }}
+                    </p>
+                    <Badge variant="secondary">En attente</Badge>
+                </div>
+
+                <div class="flex flex-wrap items-end gap-2">
+                    <div class="grid gap-1">
+                        <Label :for="`role-${member.id}`" class="text-xs">
+                            Rôle
+                        </Label>
+                        <Select v-model="selectedRole[member.id]">
+                            <SelectTrigger
+                                :id="`role-${member.id}`"
+                                class="w-48"
+                            >
+                                <SelectValue placeholder="Choisir un rôle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="role in props.roles"
+                                    :key="role"
+                                    :value="role"
+                                >
+                                    {{ role }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <Button
+                        :disabled="!selectedRole[member.id]"
+                        @click="approve(member)"
+                    >
+                        Approuver
+                    </Button>
+                    <Button variant="destructive" @click="reject(member)">
+                        Rejeter
+                    </Button>
+                </div>
+            </li>
+        </ul>
+    </div>
+</template>

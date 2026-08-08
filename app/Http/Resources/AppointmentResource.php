@@ -1,1 +1,41 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxSZXNvdXJjZXM7Cgp1c2UgQXBwXEVudW1zXEFwcG9pbnRtZW50U3RhdHVzOwp1c2UgQXBwXE1vZGVsc1xBcHBvaW50bWVudDsKdXNlIElsbHVtaW5hdGVcSHR0cFxSZXF1ZXN0Owp1c2UgSWxsdW1pbmF0ZVxIdHRwXFJlc291cmNlc1xKc29uXEpzb25SZXNvdXJjZTsKCi8qKgogKiBAbWl4aW4gQXBwb2ludG1lbnQKICovCmNsYXNzIEFwcG9pbnRtZW50UmVzb3VyY2UgZXh0ZW5kcyBKc29uUmVzb3VyY2UKewogICAgLyoqCiAgICAgKiBAcmV0dXJuIGFycmF5PHN0cmluZywgbWl4ZWQ+CiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB0b0FycmF5KFJlcXVlc3QgJHJlcXVlc3QpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICdpZCcgPT4gJHRoaXMtPmlkLAogICAgICAgICAgICAncGF0aWVudF9pZCcgPT4gJHRoaXMtPnBhdGllbnRfaWQsCiAgICAgICAgICAgICdwYXRpZW50JyA9PiBuZXcgUGF0aWVudFJlc291cmNlKCR0aGlzLT53aGVuTG9hZGVkKCdwYXRpZW50JykpLAogICAgICAgICAgICAnYXBwb2ludG1lbnRfZGF0ZScgPT4gJHRoaXMtPmFwcG9pbnRtZW50X2RhdGU/LT50b0RhdGVTdHJpbmcoKSwKICAgICAgICAgICAgJ3N0YXJ0c19hdCcgPT4gJHRoaXMtPnN0YXJ0c19hdD8tPnRvSXNvODYwMVN0cmluZygpLAogICAgICAgICAgICAnZW5kc19hdCcgPT4gJHRoaXMtPmVuZHNfYXQ/LT50b0lzbzg2MDFTdHJpbmcoKSwKICAgICAgICAgICAgJ3N0YXR1cycgPT4gJHRoaXMtPnN0YXR1cy0+dmFsdWUsCiAgICAgICAgICAgICdyZWFzb24nID0+ICR0aGlzLT5yZWFzb24sCiAgICAgICAgICAgICdwcmVzdGF0aW9uJyA9PiAkdGhpcy0+cHJlc3RhdGlvbiwKICAgICAgICAgICAgJ3JlY2VwdGlvbl9ub3RlcycgPT4gJHRoaXMtPnJlY2VwdGlvbl9ub3RlcywKICAgICAgICAgICAgJ2NhbmNlbGxhdGlvbl9yZWFzb24nID0+ICR0aGlzLT5jYW5jZWxsYXRpb25fcmVhc29uLAogICAgICAgICAgICAnY2FuX2NvbmZpcm0nID0+ICR0aGlzLT5zdGF0dXMgPT09IEFwcG9pbnRtZW50U3RhdHVzOjpTQ0hFRFVMRUQsCiAgICAgICAgICAgICdjYW5fY2hlY2tfaW4nID0+IGluX2FycmF5KCR0aGlzLT5zdGF0dXMsIFtBcHBvaW50bWVudFN0YXR1czo6U0NIRURVTEVELCBBcHBvaW50bWVudFN0YXR1czo6Q09ORklSTUVEXSwgdHJ1ZSksCiAgICAgICAgICAgICdjYW5fY2FuY2VsJyA9PiAhIGluX2FycmF5KCR0aGlzLT5zdGF0dXMsIFtBcHBvaW50bWVudFN0YXR1czo6Q09NUExFVEVELCBBcHBvaW50bWVudFN0YXR1czo6Q0FOQ0VMTEVELCBBcHBvaW50bWVudFN0YXR1czo6Tk9fU0hPV10sIHRydWUpLAogICAgICAgICAgICAnY29uZmlybWVkX2F0JyA9PiAkdGhpcy0+Y29uZmlybWVkX2F0Py0+dG9Jc284NjAxU3RyaW5nKCksCiAgICAgICAgICAgICdjaGVja2VkX2luX2F0JyA9PiAkdGhpcy0+Y2hlY2tlZF9pbl9hdD8tPnRvSXNvODYwMVN0cmluZygpLAogICAgICAgICAgICAnY3JlYXRlZF9hdCcgPT4gJHRoaXMtPmNyZWF0ZWRfYXQ/LT50b0lzbzg2MDFTdHJpbmcoKSwKICAgICAgICAgICAgJ3VwZGF0ZWRfYXQnID0+ICR0aGlzLT51cGRhdGVkX2F0Py0+dG9Jc284NjAxU3RyaW5nKCksCiAgICAgICAgXTsKICAgIH0KfQo=
+<?php
+
+namespace App\Http\Resources;
+
+use App\Enums\AppointmentStatus;
+use App\Models\Appointment;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * @mixin Appointment
+ */
+class AppointmentResource extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'patient_id' => $this->patient_id,
+            'patient' => new PatientResource($this->whenLoaded('patient')),
+            'appointment_date' => $this->appointment_date?->toDateString(),
+            'starts_at' => $this->starts_at?->toIso8601String(),
+            'ends_at' => $this->ends_at?->toIso8601String(),
+            'status' => $this->status->value,
+            'reason' => $this->reason,
+            'prestation' => $this->prestation,
+            'reception_notes' => $this->reception_notes,
+            'cancellation_reason' => $this->cancellation_reason,
+            'can_confirm' => $this->status === AppointmentStatus::SCHEDULED,
+            'can_check_in' => in_array($this->status, [AppointmentStatus::SCHEDULED, AppointmentStatus::CONFIRMED], true),
+            'can_cancel' => ! in_array($this->status, [AppointmentStatus::COMPLETED, AppointmentStatus::CANCELLED, AppointmentStatus::NO_SHOW], true),
+            'confirmed_at' => $this->confirmed_at?->toIso8601String(),
+            'checked_in_at' => $this->checked_in_at?->toIso8601String(),
+            'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
+        ];
+    }
+}

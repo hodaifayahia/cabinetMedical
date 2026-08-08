@@ -1,1 +1,88 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxDb250cm9sbGVyc1xBcGlcVjE7Cgp1c2UgQXBwXEh0dHBcQ29udHJvbGxlcnNcQ29udHJvbGxlcjsKdXNlIEFwcFxIdHRwXFJlc291cmNlc1xVc2VyUmVzb3VyY2U7CnVzZSBBcHBcTW9kZWxzXFVzZXI7CnVzZSBBcHBcU2VydmljZXNcQ2FiaW5ldFxDYWJpbmV0QWNjZXNzU2VydmljZTsKdXNlIElsbHVtaW5hdGVcSHR0cFxKc29uUmVzcG9uc2U7CnVzZSBJbGx1bWluYXRlXEh0dHBcUmVxdWVzdDsKdXNlIElsbHVtaW5hdGVcU3VwcG9ydFxGYWNhZGVzXEhhc2g7CnVzZSBJbGx1bWluYXRlXFZhbGlkYXRpb25cVmFsaWRhdGlvbkV4Y2VwdGlvbjsKCmNsYXNzIEF1dGhDb250cm9sbGVyIGV4dGVuZHMgQ29udHJvbGxlcgp7CiAgICBwdWJsaWMgZnVuY3Rpb24gX19jb25zdHJ1Y3QoCiAgICAgICAgcHJpdmF0ZSByZWFkb25seSBDYWJpbmV0QWNjZXNzU2VydmljZSAkYWNjZXNzLAogICAgKSB7fQoKICAgIC8qKgogICAgICogSXNzdWUgYSBwZXJzb25hbCBhY2Nlc3MgdG9rZW4gZm9yIGEgdmFsaWQsIGVsaWdpYmxlIGFjY291bnQuCiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiB0b2tlbihSZXF1ZXN0ICRyZXF1ZXN0KTogSnNvblJlc3BvbnNlCiAgICB7CiAgICAgICAgJGRhdGEgPSAkcmVxdWVzdC0+dmFsaWRhdGUoWwogICAgICAgICAgICAnZW1haWwnID0+IFsncmVxdWlyZWQnLCAnZW1haWwnXSwKICAgICAgICAgICAgJ3Bhc3N3b3JkJyA9PiBbJ3JlcXVpcmVkJywgJ3N0cmluZyddLAogICAgICAgICAgICAnZGV2aWNlX25hbWUnID0+IFsncmVxdWlyZWQnLCAnc3RyaW5nJywgJ21heDoyNTUnXSwKICAgICAgICBdKTsKCiAgICAgICAgLyoqIEB2YXIgVXNlcnxudWxsICR1c2VyICovCiAgICAgICAgJHVzZXIgPSBVc2VyOjpxdWVyeSgpLT53aGVyZSgnZW1haWwnLCAkZGF0YVsnZW1haWwnXSktPmZpcnN0KCk7CgogICAgICAgIGlmICgkdXNlciA9PT0gbnVsbCB8fCAhIEhhc2g6OmNoZWNrKCRkYXRhWydwYXNzd29yZCddLCAkdXNlci0+cGFzc3dvcmQpKSB7CiAgICAgICAgICAgIHRocm93IFZhbGlkYXRpb25FeGNlcHRpb246OndpdGhNZXNzYWdlcyhbCiAgICAgICAgICAgICAgICAnZW1haWwnID0+IFsnQ2VzIGlkZW50aWZpYW50cyBuZSBjb3JyZXNwb25kZW50IMOgIGF1Y3VuIGNvbXB0ZS4nXSwKICAgICAgICAgICAgXSk7CiAgICAgICAgfQoKICAgICAgICAvLyBCbG9jayBwZW5kaW5nL3N1c3BlbmRlZCBjYWJpbmV0cyBhbmQgdW5hcHByb3ZlZCBtZW1iZXJzIHdpdGggNDAzLgogICAgICAgICRyZWFzb24gPSAkdGhpcy0+YWNjZXNzLT5kZW5pYWxSZWFzb24oJHVzZXIpOwogICAgICAgIGlmICgkcmVhc29uICE9PSBudWxsKSB7CiAgICAgICAgICAgIHJldHVybiByZXNwb25zZSgpLT5qc29uKFsKICAgICAgICAgICAgICAgICdtZXNzYWdlJyA9PiAkdGhpcy0+YWNjZXNzLT5kZW5pYWxNZXNzYWdlKCR1c2VyKSwKICAgICAgICAgICAgICAgICdyZWFzb24nID0+ICRyZWFzb24sCiAgICAgICAgICAgIF0sIDQwMyk7CiAgICAgICAgfQoKICAgICAgICAkdG9rZW4gPSAkdXNlci0+Y3JlYXRlVG9rZW4oJGRhdGFbJ2RldmljZV9uYW1lJ10pOwoKICAgICAgICByZXR1cm4gcmVzcG9uc2UoKS0+anNvbihbCiAgICAgICAgICAgICd0b2tlbicgPT4gJHRva2VuLT5wbGFpblRleHRUb2tlbiwKICAgICAgICAgICAgJ3VzZXInID0+IChuZXcgVXNlclJlc291cmNlKCR1c2VyLT5sb2FkKCdjYWJpbmV0JykpKS0+cmVzb2x2ZSgkcmVxdWVzdCksCiAgICAgICAgXSk7CiAgICB9CgogICAgLyoqCiAgICAgKiBSZXZva2UgdGhlIHRva2VuIHVzZWQgdG8gYXV0aGVudGljYXRlIHRoZSBjdXJyZW50IHJlcXVlc3QuCiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBsb2dvdXQoUmVxdWVzdCAkcmVxdWVzdCk6IEpzb25SZXNwb25zZQogICAgewogICAgICAgIC8qKiBAdmFyIFVzZXIgJHVzZXIgKi8KICAgICAgICAkdXNlciA9ICRyZXF1ZXN0LT51c2VyKCk7CgogICAgICAgICR0b2tlbiA9ICR1c2VyLT5jdXJyZW50QWNjZXNzVG9rZW4oKTsKICAgICAgICBpZiAoJHRva2VuICE9PSBudWxsICYmIG1ldGhvZF9leGlzdHMoJHRva2VuLCAnZGVsZXRlJykpIHsKICAgICAgICAgICAgJHRva2VuLT5kZWxldGUoKTsKICAgICAgICB9CgogICAgICAgIC8vIENsZWFyIGFueSBtZW1vaXplZCBndWFyZCB1c2VyIHNvIHRoZSBub3ctcmV2b2tlZCB0b2tlbiBjYW5ub3QgYmUKICAgICAgICAvLyByZXNvbHZlZCBhZ2FpbiBmcm9tIGEgY2FjaGVkIGd1YXJkIGluc3RhbmNlIHdpdGhpbiB0aGUgc2FtZSBsaWZlY3ljbGUuCiAgICAgICAgYXV0aCgpLT5mb3JnZXRHdWFyZHMoKTsKCiAgICAgICAgcmV0dXJuIHJlc3BvbnNlKCktPmpzb24oWydtZXNzYWdlJyA9PiAnRMOpY29ubmV4aW9uIHLDqXVzc2llLiddKTsKICAgIH0KCiAgICAvKioKICAgICAqIFJldHVybiB0aGUgYXV0aGVudGljYXRlZCB1c2VyIHdpdGggY2FiaW5ldCwgcm9sZXMgYW5kIHBlcm1pc3Npb25zLgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gbWUoUmVxdWVzdCAkcmVxdWVzdCk6IFVzZXJSZXNvdXJjZQogICAgewogICAgICAgIC8qKiBAdmFyIFVzZXIgJHVzZXIgKi8KICAgICAgICAkdXNlciA9ICRyZXF1ZXN0LT51c2VyKCk7CgogICAgICAgIHJldHVybiBuZXcgVXNlclJlc291cmNlKCR1c2VyLT5sb2FkKCdjYWJpbmV0JykpOwogICAgfQp9Cg==
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use App\Services\Cabinet\CabinetAccessService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
+class AuthController extends Controller
+{
+    public function __construct(
+        private readonly CabinetAccessService $access,
+    ) {}
+
+    /**
+     * Issue a personal access token for a valid, eligible account.
+     */
+    public function token(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+            'device_name' => ['required', 'string', 'max:255'],
+        ]);
+
+        /** @var User|null $user */
+        $user = User::query()->where('email', $data['email'])->first();
+
+        if ($user === null || ! Hash::check($data['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['Ces identifiants ne correspondent à aucun compte.'],
+            ]);
+        }
+
+        // Block pending/suspended cabinets and unapproved members with 403.
+        $reason = $this->access->denialReason($user);
+        if ($reason !== null) {
+            return response()->json([
+                'message' => $this->access->denialMessage($user),
+                'reason' => $reason,
+                'status' => $this->access->denialStatus($user),
+            ], 403);
+        }
+
+        $token = $user->createToken($data['device_name']);
+
+        return response()->json([
+            'token' => $token->plainTextToken,
+            'user' => (new UserResource($user->load('cabinet.license')))->resolve($request),
+        ]);
+    }
+
+    /**
+     * Revoke the token used to authenticate the current request.
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $token = $user->currentAccessToken();
+        if ($token !== null && method_exists($token, 'delete')) {
+            $token->delete();
+        }
+
+        // Clear any memoized guard user so the now-revoked token cannot be
+        // resolved again from a cached guard instance within the same lifecycle.
+        auth()->forgetGuards();
+
+        return response()->json(['message' => 'Déconnexion réussie.']);
+    }
+
+    /**
+     * Return the authenticated user with cabinet, roles and permissions.
+     */
+    public function me(Request $request): UserResource
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return new UserResource($user->load('cabinet.license'));
+    }
+}

@@ -73,6 +73,35 @@ export const isGoogleAuthorizationUrl = (value: unknown): value is string => {
     }
 };
 
+/**
+ * Starts OAuth without granting the hosted desktop shell another native command.
+ * External HTTPS navigation is denied in the webview and opened by the Rust
+ * navigation guard; browsers keep using the popup opened by the user gesture.
+ */
+export const openGoogleAuthorization = (
+    authorizationUrl: string,
+    desktopRuntime: boolean,
+    browserAuthorizationWindow: Window | null,
+    navigateHostedDesktop: (url: string) => void = (url) =>
+        window.location.assign(url),
+): void => {
+    if (!isGoogleAuthorizationUrl(authorizationUrl)) {
+        throw new Error('invalid_google_authorization_url');
+    }
+
+    if (desktopRuntime) {
+        navigateHostedDesktop(authorizationUrl);
+
+        return;
+    }
+
+    if (browserAuthorizationWindow === null) {
+        throw new Error('google_authorization_window_unavailable');
+    }
+
+    browserAuthorizationWindow.location.replace(authorizationUrl);
+};
+
 export const googleOAuthErrorMessage = (error: unknown): string => {
     if (
         isRecord(error) &&

@@ -1,1 +1,195 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxDb250cm9sbGVyc1xBcGlcVjE7Cgp1c2UgQXBwXEFjdGlvbnNcQXBwb2ludG1lbnRzXENyZWF0ZUFwcG9pbnRtZW50QWN0aW9uOwp1c2UgQXBwXEVudW1zXEFwcG9pbnRtZW50U3RhdHVzOwp1c2UgQXBwXEh0dHBcQ29udHJvbGxlcnNcQ29udHJvbGxlcjsKdXNlIEFwcFxIdHRwXFJlcXVlc3RzXEFwaVxVcGRhdGVBcHBvaW50bWVudFJlcXVlc3Q7CnVzZSBBcHBcSHR0cFxSZXF1ZXN0c1xBcHBvaW50bWVudHNcU3RvcmVBcHBvaW50bWVudFJlcXVlc3Q7CnVzZSBBcHBcSHR0cFxSZXNvdXJjZXNcQXBwb2ludG1lbnRSZXNvdXJjZTsKdXNlIEFwcFxNb2RlbHNcQXBwb2ludG1lbnQ7CnVzZSBBcHBcTW9kZWxzXFBhdGllbnQ7CnVzZSBBcHBcTW9kZWxzXFVzZXI7CnVzZSBBcHBcU2VydmljZXNcQXBwb2ludG1lbnRzXEF2YWlsYWJpbGl0eVNlcnZpY2U7CnVzZSBDYXJib25cQ2FyYm9uSW1tdXRhYmxlOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxFbG9xdWVudFxCdWlsZGVyOwp1c2UgSWxsdW1pbmF0ZVxIdHRwXEpzb25SZXNwb25zZTsKdXNlIElsbHVtaW5hdGVcSHR0cFxSZXF1ZXN0Owp1c2UgSWxsdW1pbmF0ZVxIdHRwXFJlc291cmNlc1xKc29uXEFub255bW91c1Jlc291cmNlQ29sbGVjdGlvbjsKdXNlIElsbHVtaW5hdGVcVmFsaWRhdGlvblxWYWxpZGF0aW9uRXhjZXB0aW9uOwoKY2xhc3MgQXBwb2ludG1lbnRDb250cm9sbGVyIGV4dGVuZHMgQ29udHJvbGxlcgp7CiAgICAvKioKICAgICAqIFBhZ2luYXRlZCBsaXN0IG9mIHRoZSBjYWJpbmV0J3MgYXBwb2ludG1lbnRzIHdpdGggb3B0aW9uYWwgZmlsdGVycy4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIGluZGV4KFJlcXVlc3QgJHJlcXVlc3QpOiBBbm9ueW1vdXNSZXNvdXJjZUNvbGxlY3Rpb24KICAgIHsKICAgICAgICAkdGhpcy0+YXV0aG9yaXplKCd2aWV3QW55JywgQXBwb2ludG1lbnQ6OmNsYXNzKTsKCiAgICAgICAgJHZhbGlkYXRlZCA9ICRyZXF1ZXN0LT52YWxpZGF0ZShbCiAgICAgICAgICAgICdmcm9tJyA9PiBbJ251bGxhYmxlJywgJ2RhdGUnXSwKICAgICAgICAgICAgJ3RvJyA9PiBbJ251bGxhYmxlJywgJ2RhdGUnXSwKICAgICAgICAgICAgJ3BhdGllbnRfaWQnID0+IFsnbnVsbGFibGUnLCAnaW50ZWdlciddLAogICAgICAgICAgICAnc3RhdHVzJyA9PiBbJ251bGxhYmxlJywgJ3N0cmluZyddLAogICAgICAgICAgICAncGVyX3BhZ2UnID0+IFsnbnVsbGFibGUnLCAnaW50ZWdlcicsICdiZXR3ZWVuOjEsMTAwJ10sCiAgICAgICAgXSk7CgogICAgICAgICRhcHBvaW50bWVudHMgPSBBcHBvaW50bWVudDo6cXVlcnkoKQogICAgICAgICAgICAtPndpdGgoJ3BhdGllbnQnKQogICAgICAgICAgICAtPndoZW4oaXNzZXQoJHZhbGlkYXRlZFsnZnJvbSddKSwgZm4gKEJ1aWxkZXIgJHEpID0+ICRxLT53aGVyZURhdGUoJ2FwcG9pbnRtZW50X2RhdGUnLCAnPj0nLCBDYXJib25JbW11dGFibGU6OnBhcnNlKCR2YWxpZGF0ZWRbJ2Zyb20nXSktPnRvRGF0ZVN0cmluZygpKSkKICAgICAgICAgICAgLT53aGVuKGlzc2V0KCR2YWxpZGF0ZWRbJ3RvJ10pLCBmbiAoQnVpbGRlciAkcSkgPT4gJHEtPndoZXJlRGF0ZSgnYXBwb2ludG1lbnRfZGF0ZScsICc8PScsIENhcmJvbkltbXV0YWJsZTo6cGFyc2UoJHZhbGlkYXRlZFsndG8nXSktPnRvRGF0ZVN0cmluZygpKSkKICAgICAgICAgICAgLT53aGVuKGlzc2V0KCR2YWxpZGF0ZWRbJ3BhdGllbnRfaWQnXSksIGZuIChCdWlsZGVyICRxKSA9PiAkcS0+d2hlcmUoJ3BhdGllbnRfaWQnLCAkdmFsaWRhdGVkWydwYXRpZW50X2lkJ10pKQogICAgICAgICAgICAtPndoZW4oaXNzZXQoJHZhbGlkYXRlZFsnc3RhdHVzJ10pICYmIEFwcG9pbnRtZW50U3RhdHVzOjp0cnlGcm9tKCR2YWxpZGF0ZWRbJ3N0YXR1cyddKSAhPT0gbnVsbCwgZm4gKEJ1aWxkZXIgJHEpID0+ICRxLT53aGVyZSgnc3RhdHVzJywgJHZhbGlkYXRlZFsnc3RhdHVzJ10pKQogICAgICAgICAgICAtPm9yZGVyQnkoJ3N0YXJ0c19hdCcpCiAgICAgICAgICAgIC0+cGFnaW5hdGUoKGludCkgKCR2YWxpZGF0ZWRbJ3Blcl9wYWdlJ10gPz8gMTUpKQogICAgICAgICAgICAtPndpdGhRdWVyeVN0cmluZygpOwoKICAgICAgICByZXR1cm4gQXBwb2ludG1lbnRSZXNvdXJjZTo6Y29sbGVjdGlvbigkYXBwb2ludG1lbnRzKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gc2hvdyhBcHBvaW50bWVudCAkYXBwb2ludG1lbnQpOiBBcHBvaW50bWVudFJlc291cmNlCiAgICB7CiAgICAgICAgJHRoaXMtPmF1dGhvcml6ZSgndmlldycsICRhcHBvaW50bWVudCk7CgogICAgICAgIHJldHVybiBuZXcgQXBwb2ludG1lbnRSZXNvdXJjZSgkYXBwb2ludG1lbnQtPmxvYWQoJ3BhdGllbnQnKSk7CiAgICB9CgogICAgLyoqCiAgICAgKiBCb29rIGFuIGFwcG9pbnRtZW50LiBSZXVzZXMgdGhlIGF2YWlsYWJpbGl0eSBjaGVjayBhbmQgY3JlYXRpb24gYWN0aW9uCiAgICAgKiB0aGF0IGJhY2sgdGhlIHdlYiBib29raW5nIGRpYWxvZyBzbyB0aGUgYnVzaW5lc3MgcnVsZXMgbmV2ZXIgZm9yay4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIHN0b3JlKFN0b3JlQXBwb2ludG1lbnRSZXF1ZXN0ICRyZXF1ZXN0LCBDcmVhdGVBcHBvaW50bWVudEFjdGlvbiAkYWN0aW9uKTogSnNvblJlc3BvbnNlCiAgICB7CiAgICAgICAgJHRoaXMtPmF1dGhvcml6ZSgnY3JlYXRlJywgQXBwb2ludG1lbnQ6OmNsYXNzKTsKCiAgICAgICAgLyoqIEB2YXIgVXNlciAkdXNlciAqLwogICAgICAgICR1c2VyID0gJHJlcXVlc3QtPnVzZXIoKTsKCiAgICAgICAgJGF2YWlsYWJpbGl0eSA9IEF2YWlsYWJpbGl0eVNlcnZpY2U6OmZvckN1cnJlbnREb2N0b3IoKTsKCiAgICAgICAgaWYgKCEgJGF2YWlsYWJpbGl0eSBpbnN0YW5jZW9mIEF2YWlsYWJpbGl0eVNlcnZpY2UpIHsKICAgICAgICAgICAgdGhyb3cgVmFsaWRhdGlvbkV4Y2VwdGlvbjo6d2l0aE1lc3NhZ2VzKFsKICAgICAgICAgICAgICAgICdkb2N0b3InID0+ICJBdWN1biBtw6lkZWNpbiBhY3RpZiBuJ2VzdCBjb25maWd1csOpIHBvdXIgY2UgY2FiaW5ldC4iLAogICAgICAgICAgICBdKTsKICAgICAgICB9CgogICAgICAgICRzdGFydHNBdCA9IENhcmJvbkltbXV0YWJsZTo6cGFyc2UoKHN0cmluZykgJHJlcXVlc3QtPnN0cmluZygnc3RhcnRzX2F0JykpOwoKICAgICAgICAkc2xvdCA9IGNvbGxlY3QoJGF2YWlsYWJpbGl0eS0+c2xvdHNGb3JEYXRlKCRzdGFydHNBdClbJ3Nsb3RzJ10pCiAgICAgICAgICAgIC0+Zmlyc3Qoc3RhdGljIGZuIChhcnJheSAkc2xvdCk6IGJvb2wgPT4gJHNsb3RbJ3N0YXJ0c19hdCddID09PSAkc3RhcnRzQXQtPnRvSXNvODYwMVN0cmluZygpKTsKCiAgICAgICAgaWYgKCRzbG90ID09PSBudWxsIHx8ICRzbG90WydhdmFpbGFibGUnXSAhPT0gdHJ1ZSkgewogICAgICAgICAgICB0aHJvdyBWYWxpZGF0aW9uRXhjZXB0aW9uOjp3aXRoTWVzc2FnZXMoWwogICAgICAgICAgICAgICAgJ3N0YXJ0c19hdCcgPT4gIkNlIGNyw6luZWF1IG4nZXN0IHBsdXMgZGlzcG9uaWJsZS4gVmV1aWxsZXogZW4gY2hvaXNpciB1biBhdXRyZS4iLAogICAgICAgICAgICBdKTsKICAgICAgICB9CgogICAgICAgICRwYXRpZW50ID0gUGF0aWVudDo6cXVlcnkoKS0+ZmluZE9yRmFpbCgkcmVxdWVzdC0+aW50ZWdlcigncGF0aWVudF9pZCcpKTsKCiAgICAgICAgJGFwcG9pbnRtZW50ID0gJGFjdGlvbi0+aGFuZGxlKCRwYXRpZW50LCAkdXNlciwgWwogICAgICAgICAgICAnc3RhcnRzX2F0JyA9PiAkc3RhcnRzQXQsCiAgICAgICAgICAgICdlbmRzX2F0JyA9PiBDYXJib25JbW11dGFibGU6OnBhcnNlKCRzbG90WydlbmRzX2F0J10pLAogICAgICAgICAgICAncmVhc29uJyA9PiAkcmVxdWVzdC0+aW5wdXQoJ3JlYXNvbicpLAogICAgICAgICAgICAncmVjZXB0aW9uX25vdGVzJyA9PiAkcmVxdWVzdC0+aW5wdXQoJ3JlY2VwdGlvbl9ub3RlcycpLAogICAgICAgICAgICAncHJlc3RhdGlvbicgPT4gJHJlcXVlc3QtPmlucHV0KCdwcmVzdGF0aW9uJyksCiAgICAgICAgICAgICdzdGF0dXMnID0+ICRyZXF1ZXN0LT5pbnB1dCgnc3RhdHVzJyksCiAgICAgICAgXSk7CgogICAgICAgIHJldHVybiAobmV3IEFwcG9pbnRtZW50UmVzb3VyY2UoJGFwcG9pbnRtZW50LT5sb2FkKCdwYXRpZW50JykpKQogICAgICAgICAgICAtPnJlc3BvbnNlKCkKICAgICAgICAgICAgLT5zZXRTdGF0dXNDb2RlKDIwMSk7CiAgICB9CgogICAgLyoqCiAgICAgKiBVcGRhdGUgbXV0YWJsZSBmaWVsZHMgYW5kL29yIHBlcmZvcm0gYSBzdGF0dXMgdHJhbnNpdGlvbiwgYXBwbHlpbmcgdGhlCiAgICAgKiBzYW1lIGd1YXJkIHJhaWxzIGFzIHRoZSB3ZWIgY29uZmlybS9jaGVjay1pbi9jYW5jZWwgZW5kcG9pbnRzLgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gdXBkYXRlKFVwZGF0ZUFwcG9pbnRtZW50UmVxdWVzdCAkcmVxdWVzdCwgQXBwb2ludG1lbnQgJGFwcG9pbnRtZW50KTogQXBwb2ludG1lbnRSZXNvdXJjZQogICAgewogICAgICAgICR0aGlzLT5hdXRob3JpemUoJ3VwZGF0ZScsICRhcHBvaW50bWVudCk7CgogICAgICAgICRkYXRhID0gJHJlcXVlc3QtPnZhbGlkYXRlZCgpOwogICAgICAgICRhdHRyaWJ1dGVzID0gW107CgogICAgICAgIGZvcmVhY2ggKFsncmVhc29uJywgJ3JlY2VwdGlvbl9ub3RlcycsICdwcmVzdGF0aW9uJ10gYXMgJGZpZWxkKSB7CiAgICAgICAgICAgIGlmICgkcmVxdWVzdC0+aGFzKCRmaWVsZCkpIHsKICAgICAgICAgICAgICAgICRhdHRyaWJ1dGVzWyRmaWVsZF0gPSAkZGF0YVskZmllbGRdID8/IG51bGw7CiAgICAgICAgICAgIH0KICAgICAgICB9CgogICAgICAgIGlmIChpc3NldCgkZGF0YVsnc3RhdHVzJ10pKSB7CiAgICAgICAgICAgICR0YXJnZXQgPSBBcHBvaW50bWVudFN0YXR1czo6ZnJvbSgkZGF0YVsnc3RhdHVzJ10pOwogICAgICAgICAgICAkYXR0cmlidXRlcyA9IGFycmF5X21lcmdlKCRhdHRyaWJ1dGVzLCAkdGhpcy0+c3RhdHVzVHJhbnNpdGlvbigkcmVxdWVzdCwgJGFwcG9pbnRtZW50LCAkdGFyZ2V0LCAkZGF0YSkpOwogICAgICAgIH0KCiAgICAgICAgJGFwcG9pbnRtZW50LT51cGRhdGUoJGF0dHJpYnV0ZXMpOwoKICAgICAgICByZXR1cm4gbmV3IEFwcG9pbnRtZW50UmVzb3VyY2UoJGFwcG9pbnRtZW50LT5mcmVzaCgpLT5sb2FkKCdwYXRpZW50JykpOwogICAgfQoKICAgIC8qKgogICAgICogRGVsZXRlIGFuIGFwcG9pbnRtZW50IHJlY29yZC4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIGRlc3Ryb3koQXBwb2ludG1lbnQgJGFwcG9pbnRtZW50KTogSnNvblJlc3BvbnNlCiAgICB7CiAgICAgICAgJHRoaXMtPmF1dGhvcml6ZSgnY2FuY2VsJywgJGFwcG9pbnRtZW50KTsKCiAgICAgICAgJGFwcG9pbnRtZW50LT5kZWxldGUoKTsKCiAgICAgICAgcmV0dXJuIHJlc3BvbnNlKCktPmpzb24oWydtZXNzYWdlJyA9PiAnUmVuZGV6LXZvdXMgc3VwcHJpbcOpLiddKTsKICAgIH0KCiAgICAvKioKICAgICAqIENvbXB1dGUgdGhlIGF0dHJpYnV0ZSBjaGFuZ2VzIGZvciBhIHJlcXVlc3RlZCBzdGF0dXMgdHJhbnNpdGlvbiwKICAgICAqIHZhbGlkYXRpbmcgdGhhdCBpdCBpcyBsZWdhbCBmcm9tIHRoZSBjdXJyZW50IHN0YXRlLgogICAgICoKICAgICAqIEBwYXJhbSAgYXJyYXk8c3RyaW5nLCBtaXhlZD4gICRkYXRhCiAgICAgKiBAcmV0dXJuIGFycmF5PHN0cmluZywgbWl4ZWQ+CiAgICAgKi8KICAgIHByaXZhdGUgZnVuY3Rpb24gc3RhdHVzVHJhbnNpdGlvbihSZXF1ZXN0ICRyZXF1ZXN0LCBBcHBvaW50bWVudCAkYXBwb2ludG1lbnQsIEFwcG9pbnRtZW50U3RhdHVzICR0YXJnZXQsIGFycmF5ICRkYXRhKTogYXJyYXkKICAgIHsKICAgICAgICByZXR1cm4gbWF0Y2ggKCR0YXJnZXQpIHsKICAgICAgICAgICAgQXBwb2ludG1lbnRTdGF0dXM6OkNPTkZJUk1FRCA9PiAkdGhpcy0+Z3VhcmQoCiAgICAgICAgICAgICAgICAkYXBwb2ludG1lbnQtPnN0YXR1cyA9PT0gQXBwb2ludG1lbnRTdGF0dXM6OlNDSEVEVUxFRCwKICAgICAgICAgICAgICAgICdTZXVscyBsZXMgcmVuZGV6LXZvdXMgcHJvZ3JhbW3DqXMgcGV1dmVudCDDqnRyZSBjb25maXJtw6lzLicsCiAgICAgICAgICAgICkgKyBbCiAgICAgICAgICAgICAgICAnc3RhdHVzJyA9PiBBcHBvaW50bWVudFN0YXR1czo6Q09ORklSTUVELAogICAgICAgICAgICAgICAgJ2NvbmZpcm1lZF9hdCcgPT4gQ2FyYm9uSW1tdXRhYmxlOjpub3coKSwKICAgICAgICAgICAgXSwKICAgICAgICAgICAgQXBwb2ludG1lbnRTdGF0dXM6OkNIRUNLRURfSU4gPT4gJHRoaXMtPmd1YXJkKAogICAgICAgICAgICAgICAgaW5fYXJyYXkoJGFwcG9pbnRtZW50LT5zdGF0dXMsIFtBcHBvaW50bWVudFN0YXR1czo6U0NIRURVTEVELCBBcHBvaW50bWVudFN0YXR1czo6Q09ORklSTUVEXSwgdHJ1ZSksCiAgICAgICAgICAgICAgICAnQ2UgcmVuZGV6LXZvdXMgbmUgcGV1dCBwYXMgw6p0cmUgbWFycXXDqSBjb21tZSBhcnJpdsOpLicsCiAgICAgICAgICAgICkgKyBbCiAgICAgICAgICAgICAgICAnc3RhdHVzJyA9PiBBcHBvaW50bWVudFN0YXR1czo6Q0hFQ0tFRF9JTiwKICAgICAgICAgICAgICAgICdjb25maXJtZWRfYXQnID0+ICRhcHBvaW50bWVudC0+Y29uZmlybWVkX2F0ID8/IENhcmJvbkltbXV0YWJsZTo6bm93KCksCiAgICAgICAgICAgICAgICAnY2hlY2tlZF9pbl9hdCcgPT4gQ2FyYm9uSW1tdXRhYmxlOjpub3coKSwKICAgICAgICAgICAgXSwKICAgICAgICAgICAgQXBwb2ludG1lbnRTdGF0dXM6OkNBTkNFTExFRCA9PiAkdGhpcy0+Z3VhcmQoCiAgICAgICAgICAgICAgICAhIGluX2FycmF5KCRhcHBvaW50bWVudC0+c3RhdHVzLCBbQXBwb2ludG1lbnRTdGF0dXM6OkNPTVBMRVRFRCwgQXBwb2ludG1lbnRTdGF0dXM6OkNBTkNFTExFRCwgQXBwb2ludG1lbnRTdGF0dXM6Ok5PX1NIT1ddLCB0cnVlKSwKICAgICAgICAgICAgICAgICJDZSByZW5kZXotdm91cyBuZSBwZXV0IHBsdXMgw6p0cmUgYW5udWzDqS4iLAogICAgICAgICAgICApICsgWwogICAgICAgICAgICAgICAgJ3N0YXR1cycgPT4gQXBwb2ludG1lbnRTdGF0dXM6OkNBTkNFTExFRCwKICAgICAgICAgICAgICAgICdjYW5jZWxsZWRfYXQnID0+IENhcmJvbkltbXV0YWJsZTo6bm93KCksCiAgICAgICAgICAgICAgICAnY2FuY2VsbGVkX2J5JyA9PiAkcmVxdWVzdC0+dXNlcigpPy0+aWQsCiAgICAgICAgICAgICAgICAnY2FuY2VsbGF0aW9uX3JlYXNvbicgPT4gJGRhdGFbJ2NhbmNlbGxhdGlvbl9yZWFzb24nXSA/PyBudWxsLAogICAgICAgICAgICBdLAogICAgICAgICAgICBkZWZhdWx0ID0+IHRocm93IFZhbGlkYXRpb25FeGNlcHRpb246OndpdGhNZXNzYWdlcyhbCiAgICAgICAgICAgICAgICAnc3RhdHVzJyA9PiAiQ2V0dGUgdHJhbnNpdGlvbiBkZSBzdGF0dXQgbidlc3QgcGFzIHByaXNlIGVuIGNoYXJnZSBwYXIgbCdBUEkuIiwKICAgICAgICAgICAgXSksCiAgICAgICAgfTsKICAgIH0KCiAgICAvKioKICAgICAqIEByZXR1cm4gYXJyYXk8c3RyaW5nLCBtaXhlZD4KICAgICAqLwogICAgcHJpdmF0ZSBmdW5jdGlvbiBndWFyZChib29sICRjb25kaXRpb24sIHN0cmluZyAkbWVzc2FnZSk6IGFycmF5CiAgICB7CiAgICAgICAgaWYgKCEgJGNvbmRpdGlvbikgewogICAgICAgICAgICB0aHJvdyBWYWxpZGF0aW9uRXhjZXB0aW9uOjp3aXRoTWVzc2FnZXMoWydzdGF0dXMnID0+ICRtZXNzYWdlXSk7CiAgICAgICAgfQoKICAgICAgICByZXR1cm4gW107CiAgICB9Cn0K
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Actions\Appointments\CreateAppointmentAction;
+use App\Enums\AppointmentStatus;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\UpdateAppointmentRequest;
+use App\Http\Requests\Appointments\StoreAppointmentRequest;
+use App\Http\Resources\AppointmentResource;
+use App\Models\Appointment;
+use App\Models\Patient;
+use App\Models\User;
+use App\Services\Appointments\AvailabilityService;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\ValidationException;
+
+class AppointmentController extends Controller
+{
+    /**
+     * Paginated list of the cabinet's appointments with optional filters.
+     */
+    public function index(Request $request): AnonymousResourceCollection
+    {
+        $this->authorize('viewAny', Appointment::class);
+
+        $validated = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'patient_id' => ['nullable', 'integer'],
+            'status' => ['nullable', 'string'],
+            'per_page' => ['nullable', 'integer', 'between:1,100'],
+        ]);
+
+        $appointments = Appointment::query()
+            ->with('patient')
+            ->when(isset($validated['from']), fn (Builder $q) => $q->whereDate('appointment_date', '>=', CarbonImmutable::parse($validated['from'])->toDateString()))
+            ->when(isset($validated['to']), fn (Builder $q) => $q->whereDate('appointment_date', '<=', CarbonImmutable::parse($validated['to'])->toDateString()))
+            ->when(isset($validated['patient_id']), fn (Builder $q) => $q->where('patient_id', $validated['patient_id']))
+            ->when(isset($validated['status']) && AppointmentStatus::tryFrom($validated['status']) !== null, fn (Builder $q) => $q->where('status', $validated['status']))
+            ->orderBy('starts_at')
+            ->paginate((int) ($validated['per_page'] ?? 15))
+            ->withQueryString();
+
+        return AppointmentResource::collection($appointments);
+    }
+
+    public function show(Appointment $appointment): AppointmentResource
+    {
+        $this->authorize('view', $appointment);
+
+        return new AppointmentResource($appointment->load('patient'));
+    }
+
+    /**
+     * Book an appointment. Reuses the availability check and creation action
+     * that back the web booking dialog so the business rules never fork.
+     */
+    public function store(StoreAppointmentRequest $request, CreateAppointmentAction $action): JsonResponse
+    {
+        $this->authorize('create', Appointment::class);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        $availability = AvailabilityService::forCurrentDoctor();
+
+        if (! $availability instanceof AvailabilityService) {
+            throw ValidationException::withMessages([
+                'doctor' => "Aucun médecin actif n'est configuré pour ce cabinet.",
+            ]);
+        }
+
+        $startsAt = CarbonImmutable::parse((string) $request->string('starts_at'));
+
+        $slot = collect($availability->slotsForDate($startsAt)['slots'])
+            ->first(static fn (array $slot): bool => $slot['starts_at'] === $startsAt->toIso8601String());
+
+        if ($slot === null || $slot['available'] !== true) {
+            throw ValidationException::withMessages([
+                'starts_at' => "Ce créneau n'est plus disponible. Veuillez en choisir un autre.",
+            ]);
+        }
+
+        $patient = Patient::query()->findOrFail($request->integer('patient_id'));
+
+        $appointment = $action->handle($patient, $user, [
+            'starts_at' => $startsAt,
+            'ends_at' => CarbonImmutable::parse($slot['ends_at']),
+            'reason' => $request->input('reason'),
+            'reception_notes' => $request->input('reception_notes'),
+            'prestation' => $request->input('prestation'),
+            'status' => $request->input('status'),
+        ]);
+
+        return (new AppointmentResource($appointment->load('patient')))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /**
+     * Update mutable fields and/or perform a status transition, applying the
+     * same guard rails as the web confirm/check-in/cancel endpoints.
+     */
+    public function update(UpdateAppointmentRequest $request, Appointment $appointment): AppointmentResource
+    {
+        $this->authorize('update', $appointment);
+
+        $data = $request->validated();
+        $attributes = [];
+
+        foreach (['reason', 'reception_notes', 'prestation'] as $field) {
+            if ($request->has($field)) {
+                $attributes[$field] = $data[$field] ?? null;
+            }
+        }
+
+        if (isset($data['status'])) {
+            $target = AppointmentStatus::from($data['status']);
+            $attributes = array_merge($attributes, $this->statusTransition($request, $appointment, $target, $data));
+        }
+
+        $appointment->update($attributes);
+
+        return new AppointmentResource($appointment->fresh()->load('patient'));
+    }
+
+    /**
+     * Delete an appointment record.
+     */
+    public function destroy(Appointment $appointment): JsonResponse
+    {
+        $this->authorize('cancel', $appointment);
+
+        $appointment->delete();
+
+        return response()->json(['message' => 'Rendez-vous supprimé.']);
+    }
+
+    /**
+     * Compute the attribute changes for a requested status transition,
+     * validating that it is legal from the current state.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function statusTransition(Request $request, Appointment $appointment, AppointmentStatus $target, array $data): array
+    {
+        return match ($target) {
+            AppointmentStatus::CONFIRMED => $this->guard(
+                $appointment->status === AppointmentStatus::SCHEDULED,
+                'Seuls les rendez-vous programmés peuvent être confirmés.',
+            ) + [
+                'status' => AppointmentStatus::CONFIRMED,
+                'confirmed_at' => CarbonImmutable::now(),
+            ],
+            AppointmentStatus::CHECKED_IN => $this->guard(
+                in_array($appointment->status, [AppointmentStatus::SCHEDULED, AppointmentStatus::CONFIRMED], true),
+                'Ce rendez-vous ne peut pas être marqué comme arrivé.',
+            ) + [
+                'status' => AppointmentStatus::CHECKED_IN,
+                'confirmed_at' => $appointment->confirmed_at ?? CarbonImmutable::now(),
+                'checked_in_at' => CarbonImmutable::now(),
+            ],
+            AppointmentStatus::CANCELLED => $this->guard(
+                ! in_array($appointment->status, [AppointmentStatus::COMPLETED, AppointmentStatus::CANCELLED, AppointmentStatus::NO_SHOW], true),
+                'Ce rendez-vous ne peut plus être annulé.',
+            ) + [
+                'status' => AppointmentStatus::CANCELLED,
+                'cancelled_at' => CarbonImmutable::now(),
+                'cancelled_by' => $request->user()?->id,
+                'cancellation_reason' => $data['cancellation_reason'] ?? null,
+            ],
+            default => throw ValidationException::withMessages([
+                'status' => "Cette transition de statut n'est pas prise en charge par l'API.",
+            ]),
+        };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function guard(bool $condition, string $message): array
+    {
+        if (! $condition) {
+            throw ValidationException::withMessages(['status' => $message]);
+        }
+
+        return [];
+    }
+}

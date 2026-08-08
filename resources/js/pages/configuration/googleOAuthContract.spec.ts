@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { HttpError } from '@/lib/http';
 import {
     googleOAuthErrorMessage,
     isGoogleAuthorizationUrl,
+    openGoogleAuthorization,
 } from './googleOAuthContract';
 
 const authorizationUrl = (): URL => {
@@ -89,6 +90,59 @@ describe('Google OAuth browser contract', () => {
         for (const invalid of [duplicate, missing, extra, fragmented]) {
             expect(isGoogleAuthorizationUrl(invalid.toString())).toBe(false);
         }
+    });
+
+    it('uses guarded top-level HTTPS navigation in the hosted desktop', () => {
+        const navigateHostedDesktop = vi.fn();
+        const authorization = authorizationUrl().toString();
+
+        openGoogleAuthorization(
+            authorization,
+            true,
+            null,
+            navigateHostedDesktop,
+        );
+
+        expect(navigateHostedDesktop).toHaveBeenCalledOnce();
+        expect(navigateHostedDesktop).toHaveBeenCalledWith(authorization);
+    });
+
+    it('keeps browser OAuth in the popup opened by the user gesture', () => {
+        const replace = vi.fn();
+        const browserAuthorizationWindow = {
+            location: { replace },
+        } as unknown as Window;
+        const navigateHostedDesktop = vi.fn();
+        const authorization = authorizationUrl().toString();
+
+        openGoogleAuthorization(
+            authorization,
+            false,
+            browserAuthorizationWindow,
+            navigateHostedDesktop,
+        );
+
+        expect(replace).toHaveBeenCalledWith(authorization);
+        expect(navigateHostedDesktop).not.toHaveBeenCalled();
+    });
+
+    it('rejects an unsafe URL before either navigation path runs', () => {
+        const replace = vi.fn();
+        const browserAuthorizationWindow = {
+            location: { replace },
+        } as unknown as Window;
+        const navigateHostedDesktop = vi.fn();
+
+        expect(() =>
+            openGoogleAuthorization(
+                'https://attacker.invalid/oauth',
+                true,
+                browserAuthorizationWindow,
+                navigateHostedDesktop,
+            ),
+        ).toThrow('invalid_google_authorization_url');
+        expect(replace).not.toHaveBeenCalled();
+        expect(navigateHostedDesktop).not.toHaveBeenCalled();
     });
 
     it('shows bounded native French errors and maps password confirmation', () => {

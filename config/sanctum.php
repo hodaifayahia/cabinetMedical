@@ -1,1 +1,87 @@
-PD9waHAKCnVzZSBJbGx1bWluYXRlXENvb2tpZVxNaWRkbGV3YXJlXEVuY3J5cHRDb29raWVzOwp1c2UgSWxsdW1pbmF0ZVxGb3VuZGF0aW9uXEh0dHBcTWlkZGxld2FyZVxWYWxpZGF0ZUNzcmZUb2tlbjsKdXNlIExhcmF2ZWxcU2FuY3R1bVxIdHRwXE1pZGRsZXdhcmVcQXV0aGVudGljYXRlU2Vzc2lvbjsKdXNlIExhcmF2ZWxcU2FuY3R1bVxTYW5jdHVtOwoKcmV0dXJuIFsKCiAgICAvKgogICAgfC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAgICB8IFN0YXRlZnVsIERvbWFpbnMKICAgIHwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogICAgfAogICAgfCBSZXF1ZXN0cyBmcm9tIHRoZSBmb2xsb3dpbmcgZG9tYWlucyAvIGhvc3RzIHdpbGwgcmVjZWl2ZSBzdGF0ZWZ1bCBBUEkKICAgIHwgYXV0aGVudGljYXRpb24gY29va2llcy4gVHlwaWNhbGx5LCB0aGVzZSBzaG91bGQgaW5jbHVkZSB5b3VyIGxvY2FsCiAgICB8IGFuZCBwcm9kdWN0aW9uIGRvbWFpbnMgd2hpY2ggYWNjZXNzIHlvdXIgQVBJIHZpYSBhIGZyb250ZW5kIFNQQS4KICAgIHwKICAgICovCgogICAgJ3N0YXRlZnVsJyA9PiBleHBsb2RlKCcsJywgZW52KCdTQU5DVFVNX1NUQVRFRlVMX0RPTUFJTlMnLCBzcHJpbnRmKAogICAgICAgICclcyVzJywKICAgICAgICAnbG9jYWxob3N0LGxvY2FsaG9zdDozMDAwLDEyNy4wLjAuMSwxMjcuMC4wLjE6ODAwMCw6OjEnLAogICAgICAgIFNhbmN0dW06OmN1cnJlbnRBcHBsaWNhdGlvblVybFdpdGhQb3J0KCksCiAgICAgICAgLy8gU2FuY3R1bTo6Y3VycmVudFJlcXVlc3RIb3N0KCksCiAgICApKSksCgogICAgLyoKICAgIHwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogICAgfCBTYW5jdHVtIEd1YXJkcwogICAgfC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAgICB8CiAgICB8IFRoaXMgYXJyYXkgY29udGFpbnMgdGhlIGF1dGhlbnRpY2F0aW9uIGd1YXJkcyB0aGF0IHdpbGwgYmUgY2hlY2tlZCB3aGVuCiAgICB8IFNhbmN0dW0gaXMgdHJ5aW5nIHRvIGF1dGhlbnRpY2F0ZSBhIHJlcXVlc3QuIElmIG5vbmUgb2YgdGhlc2UgZ3VhcmRzCiAgICB8IGFyZSBhYmxlIHRvIGF1dGhlbnRpY2F0ZSB0aGUgcmVxdWVzdCwgU2FuY3R1bSB3aWxsIHVzZSB0aGUgYmVhcmVyCiAgICB8IHRva2VuIHRoYXQncyBwcmVzZW50IG9uIGFuIGluY29taW5nIHJlcXVlc3QgZm9yIGF1dGhlbnRpY2F0aW9uLgogICAgfAogICAgKi8KCiAgICAnZ3VhcmQnID0+IFsnd2ViJ10sCgogICAgLyoKICAgIHwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogICAgfCBFeHBpcmF0aW9uIE1pbnV0ZXMKICAgIHwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogICAgfAogICAgfCBUaGlzIHZhbHVlIGNvbnRyb2xzIHRoZSBudW1iZXIgb2YgbWludXRlcyB1bnRpbCBhbiBpc3N1ZWQgdG9rZW4gd2lsbCBiZQogICAgfCBjb25zaWRlcmVkIGV4cGlyZWQuIFRoaXMgd2lsbCBvdmVycmlkZSBhbnkgdmFsdWVzIHNldCBpbiB0aGUgdG9rZW4ncwogICAgfCAiZXhwaXJlc19hdCIgYXR0cmlidXRlLCBidXQgZmlyc3QtcGFydHkgc2Vzc2lvbnMgYXJlIG5vdCBhZmZlY3RlZC4KICAgIHwKICAgICovCgogICAgJ2V4cGlyYXRpb24nID0+IG51bGwsCgogICAgLyoKICAgIHwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogICAgfCBUb2tlbiBQcmVmaXgKICAgIHwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogICAgfAogICAgfCBTYW5jdHVtIGNhbiBwcmVmaXggbmV3IHRva2VucyBpbiBvcmRlciB0byB0YWtlIGFkdmFudGFnZSBvZiBudW1lcm91cwogICAgfCBzZWN1cml0eSBzY2FubmluZyBpbml0aWF0aXZlcyBtYWludGFpbmVkIGJ5IG9wZW4gc291cmNlIHBsYXRmb3JtcwogICAgfCB0aGF0IG5vdGlmeSBkZXZlbG9wZXJzIGlmIHRoZXkgY29tbWl0IHRva2VucyBpbnRvIHJlcG9zaXRvcmllcy4KICAgIHwKICAgIHwgU2VlOiBodHRwczovL2RvY3MuZ2l0aHViLmNvbS9lbi9jb2RlLXNlY3VyaXR5L3NlY3JldC1zY2FubmluZy9hYm91dC1zZWNyZXQtc2Nhbm5pbmcKICAgIHwKICAgICovCgogICAgJ3Rva2VuX3ByZWZpeCcgPT4gZW52KCdTQU5DVFVNX1RPS0VOX1BSRUZJWCcsICcnKSwKCiAgICAvKgogICAgfC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAgICB8IFNhbmN0dW0gTWlkZGxld2FyZQogICAgfC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAgICB8CiAgICB8IFdoZW4gYXV0aGVudGljYXRpbmcgeW91ciBmaXJzdC1wYXJ0eSBTUEEgd2l0aCBTYW5jdHVtIHlvdSBtYXkgbmVlZCB0bwogICAgfCBjdXN0b21pemUgc29tZSBvZiB0aGUgbWlkZGxld2FyZSBTYW5jdHVtIHVzZXMgd2hpbGUgcHJvY2Vzc2luZyB0aGUKICAgIHwgcmVxdWVzdC4gWW91IG1heSBjaGFuZ2UgdGhlIG1pZGRsZXdhcmUgbGlzdGVkIGJlbG93IGFzIHJlcXVpcmVkLgogICAgfAogICAgKi8KCiAgICAnbWlkZGxld2FyZScgPT4gWwogICAgICAgICdhdXRoZW50aWNhdGVfc2Vzc2lvbicgPT4gQXV0aGVudGljYXRlU2Vzc2lvbjo6Y2xhc3MsCiAgICAgICAgJ2VuY3J5cHRfY29va2llcycgPT4gRW5jcnlwdENvb2tpZXM6OmNsYXNzLAogICAgICAgICd2YWxpZGF0ZV9jc3JmX3Rva2VuJyA9PiBWYWxpZGF0ZUNzcmZUb2tlbjo6Y2xhc3MsCiAgICBdLAoKXTsK
+<?php
+
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Laravel\Sanctum\Http\Middleware\AuthenticateSession;
+use Laravel\Sanctum\Sanctum;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Stateful Domains
+    |--------------------------------------------------------------------------
+    |
+    | Requests from the following domains / hosts will receive stateful API
+    | authentication cookies. Typically, these should include your local
+    | and production domains which access your API via a frontend SPA.
+    |
+    */
+
+    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
+        '%s%s',
+        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+        Sanctum::currentApplicationUrlWithPort(),
+        // Sanctum::currentRequestHost(),
+    ))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sanctum Guards
+    |--------------------------------------------------------------------------
+    |
+    | This array contains the authentication guards that will be checked when
+    | Sanctum is trying to authenticate a request. If none of these guards
+    | are able to authenticate the request, Sanctum will use the bearer
+    | token that's present on an incoming request for authentication.
+    |
+    */
+
+    'guard' => ['web'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Expiration Minutes
+    |--------------------------------------------------------------------------
+    |
+    | This value controls the number of minutes until an issued token will be
+    | considered expired. This will override any values set in the token's
+    | "expires_at" attribute, but first-party sessions are not affected.
+    |
+    */
+
+    'expiration' => null,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Token Prefix
+    |--------------------------------------------------------------------------
+    |
+    | Sanctum can prefix new tokens in order to take advantage of numerous
+    | security scanning initiatives maintained by open source platforms
+    | that notify developers if they commit tokens into repositories.
+    |
+    | See: https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning
+    |
+    */
+
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sanctum Middleware
+    |--------------------------------------------------------------------------
+    |
+    | When authenticating your first-party SPA with Sanctum you may need to
+    | customize some of the middleware Sanctum uses while processing the
+    | request. You may change the middleware listed below as required.
+    |
+    */
+
+    'middleware' => [
+        'authenticate_session' => AuthenticateSession::class,
+        'encrypt_cookies' => EncryptCookies::class,
+        'validate_csrf_token' => ValidateCsrfToken::class,
+    ],
+
+];

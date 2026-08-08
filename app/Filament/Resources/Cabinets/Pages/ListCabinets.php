@@ -1,1 +1,16 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcRmlsYW1lbnRcUmVzb3VyY2VzXENhYmluZXRzXFBhZ2VzOwoKdXNlIEFwcFxGaWxhbWVudFxSZXNvdXJjZXNcQ2FiaW5ldHNcQ2FiaW5ldFJlc291cmNlOwp1c2UgRmlsYW1lbnRcUmVzb3VyY2VzXFBhZ2VzXExpc3RSZWNvcmRzOwoKY2xhc3MgTGlzdENhYmluZXRzIGV4dGVuZHMgTGlzdFJlY29yZHMKewogICAgcHJvdGVjdGVkIHN0YXRpYyBzdHJpbmcgJHJlc291cmNlID0gQ2FiaW5ldFJlc291cmNlOjpjbGFzczsKCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gZ2V0SGVhZGVyQWN0aW9ucygpOiBhcnJheQogICAgewogICAgICAgIHJldHVybiBbXTsKICAgIH0KfQo=
+<?php
+
+namespace App\Filament\Resources\Cabinets\Pages;
+
+use App\Filament\Resources\Cabinets\CabinetResource;
+use Filament\Resources\Pages\ListRecords;
+
+class ListCabinets extends ListRecords
+{
+    protected static string $resource = CabinetResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [];
+    }
+}

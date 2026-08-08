@@ -1,1 +1,15 @@
-ewogICAgIiRzY2hlbWEiOiAiLi4vZ2VuL3NjaGVtYXMvZGVza3RvcC1zY2hlbWEuanNvbiIsCiAgICAiaWRlbnRpZmllciI6ICJkZXNrdG9wLXdpbmRvd3MiLAogICAgImRlc2NyaXB0aW9uIjogIlRoZSBob3N0ZWQgTWVkaVNtYXJ0IGFwcGxpY2F0aW9uIHdpbmRvdyBtYXkgaW52b2tlIHNpZ25lZC11cGRhdGVyIGNvbW1hbmRzLiBObyBvZmZsaW5lLXJlc3RvcmUsIExBTiwgR29vZ2xlIE9BdXRoLCBvcGVuZXIsIHNoZWxsLCBvciBmaWxlc3lzdGVtIGNhcGFiaWxpdHkgaXMgZ3JhbnRlZC4iLAogICAgImxvY2FsIjogZmFsc2UsCiAgICAicmVtb3RlIjogewogICAgICAgICJ1cmxzIjogWyJodHRwczovL2FwcC5tZWRpc21hcnQuZHovKiIsICJodHRwczovLyoubWVkaXNtYXJ0LmR6LyoiXQogICAgfSwKICAgICJ3aW5kb3dzIjogWyJtYWluIl0sCiAgICAicGVybWlzc2lvbnMiOiBbCiAgICAgICAgImFsbG93LXNpZ25lZC11cGRhdGVyLXN0YXR1cyIsCiAgICAgICAgImFsbG93LWNoZWNrLWZvci1zaWduZWQtdXBkYXRlIiwKICAgICAgICAiYWxsb3ctaW5zdGFsbC1zaWduZWQtdXBkYXRlIgogICAgXQp9Cg==
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "desktop-windows",
+    "description": "The hosted DrClickDz application window may invoke signed-updater commands. No offline-restore, LAN, Google OAuth, opener, shell, or filesystem capability is granted.",
+    "local": false,
+    "remote": {
+        "urls": ["https://app.medismart.dz/*", "https://*.medismart.dz/*"]
+    },
+    "windows": ["main"],
+    "permissions": [
+        "allow-signed-updater-status",
+        "allow-check-for-signed-update",
+        "allow-install-signed-update"
+    ]
+}

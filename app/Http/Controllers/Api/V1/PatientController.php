@@ -1,1 +1,43 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcSHR0cFxDb250cm9sbGVyc1xBcGlcVjE7Cgp1c2UgQXBwXEh0dHBcQ29udHJvbGxlcnNcQ29udHJvbGxlcjsKdXNlIEFwcFxIdHRwXFJlc291cmNlc1xQYXRpZW50UmVzb3VyY2U7CnVzZSBBcHBcTW9kZWxzXFBhdGllbnQ7CnVzZSBJbGx1bWluYXRlXEh0dHBcUmVxdWVzdDsKdXNlIElsbHVtaW5hdGVcSHR0cFxSZXNvdXJjZXNcSnNvblxBbm9ueW1vdXNSZXNvdXJjZUNvbGxlY3Rpb247CgpjbGFzcyBQYXRpZW50Q29udHJvbGxlciBleHRlbmRzIENvbnRyb2xsZXIKewogICAgLyoqCiAgICAgKiBTZWFyY2hhYmxlLCBwYWdpbmF0ZWQgbGlzdCBvZiB0aGUgY2FiaW5ldCdzIHBhdGllbnRzLgogICAgICovCiAgICBwdWJsaWMgZnVuY3Rpb24gaW5kZXgoUmVxdWVzdCAkcmVxdWVzdCk6IEFub255bW91c1Jlc291cmNlQ29sbGVjdGlvbgogICAgewogICAgICAgICR0aGlzLT5hdXRob3JpemUoJ3ZpZXdBbnknLCBQYXRpZW50OjpjbGFzcyk7CgogICAgICAgICR2YWxpZGF0ZWQgPSAkcmVxdWVzdC0+dmFsaWRhdGUoWwogICAgICAgICAgICAncScgPT4gWydudWxsYWJsZScsICdzdHJpbmcnLCAnbWF4OjEyMCddLAogICAgICAgICAgICAncGVyX3BhZ2UnID0+IFsnbnVsbGFibGUnLCAnaW50ZWdlcicsICdiZXR3ZWVuOjEsMTAwJ10sCiAgICAgICAgXSk7CgogICAgICAgICRzZWFyY2ggPSB0cmltKChzdHJpbmcpICgkdmFsaWRhdGVkWydxJ10gPz8gJycpKTsKCiAgICAgICAgJHBhdGllbnRzID0gUGF0aWVudDo6cXVlcnkoKQogICAgICAgICAgICAtPndoZW4oJHNlYXJjaCAhPT0gJycsIGZuICgkcXVlcnkpID0+ICRxdWVyeS0+c2VhcmNoKCRzZWFyY2gpKQogICAgICAgICAgICAtPm9yZGVyQnkoJ2xhc3RfbmFtZScpCiAgICAgICAgICAgIC0+b3JkZXJCeSgnZmlyc3RfbmFtZScpCiAgICAgICAgICAgIC0+cGFnaW5hdGUoKGludCkgKCR2YWxpZGF0ZWRbJ3Blcl9wYWdlJ10gPz8gMTUpKQogICAgICAgICAgICAtPndpdGhRdWVyeVN0cmluZygpOwoKICAgICAgICByZXR1cm4gUGF0aWVudFJlc291cmNlOjpjb2xsZWN0aW9uKCRwYXRpZW50cyk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHNob3coUGF0aWVudCAkcGF0aWVudCk6IFBhdGllbnRSZXNvdXJjZQogICAgewogICAgICAgICR0aGlzLT5hdXRob3JpemUoJ3ZpZXcnLCAkcGF0aWVudCk7CgogICAgICAgIHJldHVybiBuZXcgUGF0aWVudFJlc291cmNlKCRwYXRpZW50KTsKICAgIH0KfQo=
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\PatientResource;
+use App\Models\Patient;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+
+class PatientController extends Controller
+{
+    /**
+     * Searchable, paginated list of the cabinet's patients.
+     */
+    public function index(Request $request): AnonymousResourceCollection
+    {
+        $this->authorize('viewAny', Patient::class);
+
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'per_page' => ['nullable', 'integer', 'between:1,100'],
+        ]);
+
+        $search = trim((string) ($validated['q'] ?? ''));
+
+        $patients = Patient::query()
+            ->when($search !== '', fn ($query) => $query->search($search))
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->paginate((int) ($validated['per_page'] ?? 15))
+            ->withQueryString();
+
+        return PatientResource::collection($patients);
+    }
+
+    public function show(Patient $patient): PatientResource
+    {
+        $this->authorize('view', $patient);
+
+        return new PatientResource($patient);
+    }
+}

@@ -1,1 +1,312 @@
-PD9waHAKCm5hbWVzcGFjZSBUZXN0c1xGZWF0dXJlXEF1dGhvcml6YXRpb247Cgp1c2UgQXBwXEVudW1zXFJvbGVOYW1lOwp1c2UgQXBwXE1vZGVsc1xBdWRpdExvZzsKdXNlIEFwcFxNb2RlbHNcQ2FiaW5ldFNldHRpbmc7CnVzZSBBcHBcTW9kZWxzXFVzZXI7CnVzZSBEYXRhYmFzZVxTZWVkZXJzXFJvbGVzQW5kUGVybWlzc2lvbnNTZWVkZXI7CnVzZSBJbGx1bWluYXRlXEZvdW5kYXRpb25cVGVzdGluZ1xSZWZyZXNoRGF0YWJhc2U7CnVzZSBJbmVydGlhXFRlc3RpbmdcQXNzZXJ0YWJsZUluZXJ0aWEgYXMgQXNzZXJ0Owp1c2UgVGVzdHNcU3VwcG9ydFxBY3RpdmF0ZXNTaWduZWRMaWNlbnNlOwp1c2UgVGVzdHNcVGVzdENhc2U7CgpjbGFzcyBSb2xlUGVybWlzc2lvbkFjY2Vzc1Rlc3QgZXh0ZW5kcyBUZXN0Q2FzZQp7CiAgICB1c2UgQWN0aXZhdGVzU2lnbmVkTGljZW5zZTsKICAgIHVzZSBSZWZyZXNoRGF0YWJhc2U7CgogICAgcHJvdGVjdGVkIGZ1bmN0aW9uIHNldFVwKCk6IHZvaWQKICAgIHsKICAgICAgICBwYXJlbnQ6OnNldFVwKCk7CgogICAgICAgICR0aGlzLT5zZWVkKFJvbGVzQW5kUGVybWlzc2lvbnNTZWVkZXI6OmNsYXNzKTsKICAgIH0KCiAgICBwcm90ZWN0ZWQgZnVuY3Rpb24gdGVhckRvd24oKTogdm9pZAogICAgewogICAgICAgICR0aGlzLT5jbGVhblVwU2lnbmVkTGljZW5zZUZlYXR1cmVzKCk7CgogICAgICAgIHBhcmVudDo6dGVhckRvd24oKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9zdXBlcl9hZG1pbmlzdHJhdG9yX2Nhbl9hY2Nlc3NfdGhlX2ZpbGFtZW50X2FkbWluX3BhbmVsKCkKICAgIHsKICAgICAgICAvLyBVbmRlciBtdWx0aS1jYWJpbmV0IHRlbmFuY3kgdGhlIEZpbGFtZW50IGJhY2sgb2ZmaWNlIGlzIHJlc2VydmVkIGZvcgogICAgICAgIC8vIHBsYXRmb3JtIHN0YWZmOyBjYWJpbmV0IG1lbWJlcnMgKGV2ZW4gc3VwZXIgYWRtaW5pc3RyYXRvcnMpIHdvcmsgaW4KICAgICAgICAvLyB0aGUgSW5lcnRpYSBhcHBsaWNhdGlvbiBpbnN0ZWFkLiBTZWUgVXNlcjo6Y2FuQWNjZXNzUGFuZWwoKS4KICAgICAgICAkdXNlciA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKFsnaXNfcGxhdGZvcm1fYWRtaW4nID0+IHRydWVdKTsKICAgICAgICAkdXNlci0+YXNzaWduUm9sZShSb2xlTmFtZTo6U1VQRVJfQURNSU5JU1RSQVRPUi0+dmFsdWUpOwoKICAgICAgICAkdGhpcy0+YWN0aW5nQXMoJHVzZXIpCiAgICAgICAgICAgIC0+Z2V0KCcvYWRtaW4nKQogICAgICAgICAgICAtPmFzc2VydE9rKCk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfcmVjZXB0aW9uaXN0X2Nhbm5vdF9hY2Nlc3NfdGhlX2ZpbGFtZW50X2FkbWluX3BhbmVsKCkKICAgIHsKICAgICAgICAkdXNlciA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKCk7CiAgICAgICAgJHVzZXItPmFzc2lnblJvbGUoUm9sZU5hbWU6OlJFQ0VQVElPTklTVC0+dmFsdWUpOwoKICAgICAgICAkdGhpcy0+YWN0aW5nQXMoJHVzZXIpCiAgICAgICAgICAgIC0+Z2V0KCcvYWRtaW4nKQogICAgICAgICAgICAtPmFzc2VydEZvcmJpZGRlbigpOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiB0ZXN0X2FkbWluaXN0cmF0b3JfY2FuX3ZpZXdfdGhlX3N0YWZmX2luZGV4KCkKICAgIHsKICAgICAgICAkdXNlciA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKCk7CiAgICAgICAgJHVzZXItPmFzc2lnblJvbGUoUm9sZU5hbWU6OkFETUlOSVNUUkFUT1ItPnZhbHVlKTsKCiAgICAgICAgVXNlcjo6ZmFjdG9yeSgpLT5jb3VudCgyKS0+Y3JlYXRlKCk7CgogICAgICAgICR0aGlzLT5hY3RpbmdBcygkdXNlcikKICAgICAgICAgICAgLT5nZXQocm91dGUoJ2FwcC5zdGFmZi5pbmRleCcpKQogICAgICAgICAgICAtPmFzc2VydE9rKCkKICAgICAgICAgICAgLT5hc3NlcnRJbmVydGlhKGZuIChBc3NlcnQgJHBhZ2UpID0+ICRwYWdlCiAgICAgICAgICAgICAgICAtPmNvbXBvbmVudCgnc3RhZmYvSW5kZXgnKQogICAgICAgICAgICAgICAgLT5oYXMoJ3N0YWZmLmRhdGEnLCAzKQogICAgICAgICAgICAgICAgLT53aGVyZSgnc3RhZmYudG90YWwnLCAzKQogICAgICAgICAgICAgICAgLT53aGVyZSgnbXVsdGlVc2VyQ2FwYWJpbGl0eS5hdmFpbGFibGUnLCBmYWxzZSksCiAgICAgICAgICAgICk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfcmVjZXB0aW9uaXN0X2Nhbm5vdF92aWV3X3RoZV9zdGFmZl9pbmRleCgpCiAgICB7CiAgICAgICAgJHVzZXIgPSBVc2VyOjpmYWN0b3J5KCktPmNyZWF0ZSgpOwogICAgICAgICR1c2VyLT5hc3NpZ25Sb2xlKFJvbGVOYW1lOjpSRUNFUFRJT05JU1QtPnZhbHVlKTsKCiAgICAgICAgJHRoaXMtPmFjdGluZ0FzKCR1c2VyKQogICAgICAgICAgICAtPmdldChyb3V0ZSgnYXBwLnN0YWZmLmluZGV4JykpCiAgICAgICAgICAgIC0+YXNzZXJ0Rm9yYmlkZGVuKCk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfdW5rbm93bl9zdGFmZl9yb2xlX2ZpbHRlcl9pc19yZWplY3RlZF93aXRob3V0X3F1ZXJ5aW5nX3RoZV9yb2xlX3N0b3JlKCk6IHZvaWQKICAgIHsKICAgICAgICAkYWRtaW5pc3RyYXRvciA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKCk7CiAgICAgICAgJGFkbWluaXN0cmF0b3ItPmFzc2lnblJvbGUoUm9sZU5hbWU6OkFETUlOSVNUUkFUT1ItPnZhbHVlKTsKCiAgICAgICAgJHRoaXMtPmFjdGluZ0FzKCRhZG1pbmlzdHJhdG9yKQogICAgICAgICAgICAtPmZyb20ocm91dGUoJ2FwcC5zdGFmZi5pbmRleCcpKQogICAgICAgICAgICAtPmdldChyb3V0ZSgnYXBwLnN0YWZmLmluZGV4JywgWydyb2xlJyA9PiAnVW5rbm93biByb2xlJ10pKQogICAgICAgICAgICAtPmFzc2VydFNlc3Npb25IYXNFcnJvcnMoJ3JvbGUnKQogICAgICAgICAgICAtPmFzc2VydFJlZGlyZWN0KHJvdXRlKCdhcHAuc3RhZmYuaW5kZXgnKSk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfYWRtaW5pc3RyYXRvcl9jYW5fYWRkX2FuZF9hc3NpZ25fYV91c2VyX3RvX3RoZV9jYWJpbmV0KCk6IHZvaWQKICAgIHsKICAgICAgICAkdGhpcy0+YWN0aXZhdGVTaWduZWRMaWNlbnNlRmVhdHVyZXMoWydtdWx0aV91c2VyJyA9PiB0cnVlXSk7CiAgICAgICAgJGFkbWluaXN0cmF0b3IgPSBVc2VyOjpmYWN0b3J5KCktPmNyZWF0ZSgpOwogICAgICAgICRhZG1pbmlzdHJhdG9yLT5hc3NpZ25Sb2xlKFJvbGVOYW1lOjpBRE1JTklTVFJBVE9SLT52YWx1ZSk7CiAgICAgICAgJGNhYmluZXQgPSBDYWJpbmV0U2V0dGluZzo6Y3VycmVudCgpOwoKICAgICAgICAkdGhpcy0+YWN0aW5nQXMoJGFkbWluaXN0cmF0b3IpCiAgICAgICAgICAgIC0+cG9zdChyb3V0ZSgnYXBwLnN0YWZmLnN0b3JlJyksIFsKICAgICAgICAgICAgICAgICduYW1lJyA9PiAnTWVkaWNhbCBBc3Npc3RhbnQnLAogICAgICAgICAgICAgICAgJ2VtYWlsJyA9PiAnYXNzaXN0YW50QGV4YW1wbGUudGVzdCcsCiAgICAgICAgICAgICAgICAncGFzc3dvcmQnID0+ICdzZWN1cmUtcGFzc3dvcmQnLAogICAgICAgICAgICAgICAgJ3Bhc3N3b3JkX2NvbmZpcm1hdGlvbicgPT4gJ3NlY3VyZS1wYXNzd29yZCcsCiAgICAgICAgICAgICAgICAncm9sZScgPT4gUm9sZU5hbWU6OlJFQ0VQVElPTklTVC0+dmFsdWUsCiAgICAgICAgICAgICAgICAnYXNzaWduZWRfdG9fY2FiaW5ldCcgPT4gdHJ1ZSwKICAgICAgICAgICAgXSkKICAgICAgICAgICAgLT5hc3NlcnRSZWRpcmVjdCgpOwoKICAgICAgICAkc3RhZmYgPSBVc2VyOjpxdWVyeSgpLT53aGVyZSgnZW1haWwnLCAnYXNzaXN0YW50QGV4YW1wbGUudGVzdCcpLT5maXJzdE9yRmFpbCgpOwoKICAgICAgICAkdGhpcy0+YXNzZXJ0VHJ1ZSgkc3RhZmYtPmhhc1JvbGUoUm9sZU5hbWU6OlJFQ0VQVElPTklTVC0+dmFsdWUpKTsKICAgICAgICAkdGhpcy0+YXNzZXJ0U2FtZSgkY2FiaW5ldC0+aWQsICRzdGFmZi0+Y2FiaW5ldF9zZXR0aW5nX2lkKTsKICAgICAgICAkdGhpcy0+YXNzZXJ0Tm90TnVsbCgkc3RhZmYtPmVtYWlsX3ZlcmlmaWVkX2F0KTsKICAgICAgICAkdGhpcy0+YXNzZXJ0RGF0YWJhc2VIYXMoJ2F1ZGl0X2xvZ3MnLCBbCiAgICAgICAgICAgICdhY3Rpb24nID0+ICdzdGFmZi51c2VyX2NyZWF0ZWQnLAogICAgICAgICAgICAnc3ViamVjdF9pZCcgPT4gKHN0cmluZykgJHN0YWZmLT5nZXRLZXkoKSwKICAgICAgICAgICAgJ3VzZXJfaWQnID0+ICRhZG1pbmlzdHJhdG9yLT5nZXRLZXkoKSwKICAgICAgICBdKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF91bmxpY2Vuc2VkX3N0YWZmX2NyZWF0aW9uX2ZhaWxzX2Nsb3NlZF93aXRob3V0X2hpZGluZ19leGlzdGluZ19hY2NvdW50cygpOiB2b2lkCiAgICB7CiAgICAgICAgJGFkbWluaXN0cmF0b3IgPSBVc2VyOjpmYWN0b3J5KCktPmNyZWF0ZSgpOwogICAgICAgICRhZG1pbmlzdHJhdG9yLT5hc3NpZ25Sb2xlKFJvbGVOYW1lOjpBRE1JTklTVFJBVE9SLT52YWx1ZSk7CgogICAgICAgICR0aGlzLT5hY3RpbmdBcygkYWRtaW5pc3RyYXRvcikKICAgICAgICAgICAgLT5wb3N0KHJvdXRlKCdhcHAuc3RhZmYuc3RvcmUnKSwgWwogICAgICAgICAgICAgICAgJ25hbWUnID0+ICdVbmxpY2Vuc2VkIGFjY291bnQnLAogICAgICAgICAgICAgICAgJ2VtYWlsJyA9PiAndW5saWNlbnNlZEBleGFtcGxlLnRlc3QnLAogICAgICAgICAgICAgICAgJ3Bhc3N3b3JkJyA9PiAnc2VjdXJlLXBhc3N3b3JkJywKICAgICAgICAgICAgICAgICdwYXNzd29yZF9jb25maXJtYXRpb24nID0+ICdzZWN1cmUtcGFzc3dvcmQnLAogICAgICAgICAgICAgICAgJ3JvbGUnID0+IFJvbGVOYW1lOjpSRUNFUFRJT05JU1QtPnZhbHVlLAogICAgICAgICAgICAgICAgJ2Fzc2lnbmVkX3RvX2NhYmluZXQnID0+IHRydWUsCiAgICAgICAgICAgIF0pCiAgICAgICAgICAgIC0+YXNzZXJ0Rm9yYmlkZGVuKCk7CgogICAgICAgICR0aGlzLT5hc3NlcnREYXRhYmFzZU1pc3NpbmcoJ3VzZXJzJywgWydlbWFpbCcgPT4gJ3VubGljZW5zZWRAZXhhbXBsZS50ZXN0J10pOwoKICAgICAgICAkdGhpcy0+YWN0aW5nQXMoJGFkbWluaXN0cmF0b3IpCiAgICAgICAgICAgIC0+Z2V0KHJvdXRlKCdhcHAuc3RhZmYuaW5kZXgnKSkKICAgICAgICAgICAgLT5hc3NlcnRPaygpCiAgICAgICAgICAgIC0+YXNzZXJ0SW5lcnRpYShmbiAoQXNzZXJ0ICRwYWdlKSA9PiAkcGFnZQogICAgICAgICAgICAgICAgLT53aGVyZSgnc3RhZmYudG90YWwnLCAxKQogICAgICAgICAgICAgICAgLT53aGVyZSgnbXVsdGlVc2VyQ2FwYWJpbGl0eS5hdmFpbGFibGUnLCBmYWxzZSkKICAgICAgICAgICAgICAgIC0+d2hlcmUoJ211bHRpVXNlckNhcGFiaWxpdHkucmVhc29uJywgZm4gKG1peGVkICRyZWFzb24pOiBib29sID0+IGlzX3N0cmluZygkcmVhc29uKSAmJiAkcmVhc29uICE9PSAnJykpOwogICAgfQoKICAgIHB1YmxpYyBmdW5jdGlvbiB0ZXN0X2FkbWluaXN0cmF0b3JfY2FuX2NoYW5nZV9hX3VzZXJzX2Z1bmN0aW9uX2FuZF9jYWJpbmV0X2Fzc2lnbm1lbnQoKTogdm9pZAogICAgewogICAgICAgICRhZG1pbmlzdHJhdG9yID0gVXNlcjo6ZmFjdG9yeSgpLT5jcmVhdGUoKTsKICAgICAgICAkYWRtaW5pc3RyYXRvci0+YXNzaWduUm9sZShSb2xlTmFtZTo6QURNSU5JU1RSQVRPUi0+dmFsdWUpOwogICAgICAgICRzdGFmZiA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKCk7CiAgICAgICAgJHN0YWZmLT5hc3NpZ25Sb2xlKFJvbGVOYW1lOjpSRUNFUFRJT05JU1QtPnZhbHVlKTsKCiAgICAgICAgJHRoaXMtPmFjdGluZ0FzKCRhZG1pbmlzdHJhdG9yKQogICAgICAgICAgICAtPnB1dChyb3V0ZSgnYXBwLnN0YWZmLnVwZGF0ZScsICRzdGFmZiksIFsKICAgICAgICAgICAgICAgICduYW1lJyA9PiAkc3RhZmYtPm5hbWUsCiAgICAgICAgICAgICAgICAnZW1haWwnID0+ICRzdGFmZi0+ZW1haWwsCiAgICAgICAgICAgICAgICAncGFzc3dvcmQnID0+ICcnLAogICAgICAgICAgICAgICAgJ3Bhc3N3b3JkX2NvbmZpcm1hdGlvbicgPT4gJycsCiAgICAgICAgICAgICAgICAncm9sZScgPT4gUm9sZU5hbWU6OkNBU0hJRVItPnZhbHVlLAogICAgICAgICAgICAgICAgJ2Fzc2lnbmVkX3RvX2NhYmluZXQnID0+IHRydWUsCiAgICAgICAgICAgIF0pCiAgICAgICAgICAgIC0+YXNzZXJ0UmVkaXJlY3QoKTsKCiAgICAgICAgJHN0YWZmLT5yZWZyZXNoKCk7CgogICAgICAgICR0aGlzLT5hc3NlcnRUcnVlKCRzdGFmZi0+aGFzUm9sZShSb2xlTmFtZTo6Q0FTSElFUi0+dmFsdWUpKTsKICAgICAgICAkdGhpcy0+YXNzZXJ0U2FtZShDYWJpbmV0U2V0dGluZzo6Y3VycmVudCgpLT5pZCwgJHN0YWZmLT5jYWJpbmV0X3NldHRpbmdfaWQpOwogICAgICAgICR0aGlzLT5hc3NlcnREYXRhYmFzZUhhcygnYXVkaXRfbG9ncycsIFsKICAgICAgICAgICAgJ2FjdGlvbicgPT4gJ3N0YWZmLnVzZXJfdXBkYXRlZCcsCiAgICAgICAgICAgICdzdWJqZWN0X2lkJyA9PiAoc3RyaW5nKSAkc3RhZmYtPmdldEtleSgpLAogICAgICAgICAgICAndXNlcl9pZCcgPT4gJGFkbWluaXN0cmF0b3ItPmdldEtleSgpLAogICAgICAgIF0pOwogICAgICAgICR0aGlzLT5hc3NlcnRTYW1lKAogICAgICAgICAgICBmYWxzZSwKICAgICAgICAgICAgQXVkaXRMb2c6OnF1ZXJ5KCkKICAgICAgICAgICAgICAgIC0+d2hlcmUoJ2FjdGlvbicsICdzdGFmZi51c2VyX3VwZGF0ZWQnKQogICAgICAgICAgICAgICAgLT5maXJzdE9yRmFpbCgpCiAgICAgICAgICAgICAgICAtPm1ldGFkYXRhWydjcmVkZW50aWFsc19jaGFuZ2VkJ10sCiAgICAgICAgKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9hbl9hZG1pbmlzdHJhdG9yX2Nhbm5vdF9tb2RpZnlfb3JfZGVsZXRlX2Ffc3VwZXJfYWRtaW5pc3RyYXRvcigpOiB2b2lkCiAgICB7CiAgICAgICAgJGFkbWluaXN0cmF0b3IgPSBVc2VyOjpmYWN0b3J5KCktPmNyZWF0ZSgpOwogICAgICAgICRhZG1pbmlzdHJhdG9yLT5hc3NpZ25Sb2xlKFJvbGVOYW1lOjpBRE1JTklTVFJBVE9SLT52YWx1ZSk7CiAgICAgICAgJHN1cGVyQWRtaW5pc3RyYXRvciA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKCk7CiAgICAgICAgJHN1cGVyQWRtaW5pc3RyYXRvci0+YXNzaWduUm9sZShSb2xlTmFtZTo6U1VQRVJfQURNSU5JU1RSQVRPUi0+dmFsdWUpOwoKICAgICAgICAkdGhpcy0+YWN0aW5nQXMoJGFkbWluaXN0cmF0b3IpCiAgICAgICAgICAgIC0+cHV0KHJvdXRlKCdhcHAuc3RhZmYudXBkYXRlJywgJHN1cGVyQWRtaW5pc3RyYXRvciksIFsKICAgICAgICAgICAgICAgICduYW1lJyA9PiAkc3VwZXJBZG1pbmlzdHJhdG9yLT5uYW1lLAogICAgICAgICAgICAgICAgJ2VtYWlsJyA9PiAkc3VwZXJBZG1pbmlzdHJhdG9yLT5lbWFpbCwKICAgICAgICAgICAgICAgICdwYXNzd29yZCcgPT4gJycsCiAgICAgICAgICAgICAgICAncGFzc3dvcmRfY29uZmlybWF0aW9uJyA9PiAnJywKICAgICAgICAgICAgICAgICdyb2xlJyA9PiBSb2xlTmFtZTo6QURNSU5JU1RSQVRPUi0+dmFsdWUsCiAgICAgICAgICAgICAgICAnYXNzaWduZWRfdG9fY2FiaW5ldCcgPT4gdHJ1ZSwKICAgICAgICAgICAgXSkKICAgICAgICAgICAgLT5hc3NlcnRGb3JiaWRkZW4oKTsKCiAgICAgICAgJHRoaXMtPmFjdGluZ0FzKCRhZG1pbmlzdHJhdG9yKQogICAgICAgICAgICAtPmRlbGV0ZShyb3V0ZSgnYXBwLnN0YWZmLmRlc3Ryb3knLCAkc3VwZXJBZG1pbmlzdHJhdG9yKSkKICAgICAgICAgICAgLT5hc3NlcnRGb3JiaWRkZW4oKTsKCiAgICAgICAgJHRoaXMtPmFzc2VydFRydWUoCiAgICAgICAgICAgICRzdXBlckFkbWluaXN0cmF0b3ItPnJlZnJlc2goKS0+aGFzUm9sZShSb2xlTmFtZTo6U1VQRVJfQURNSU5JU1RSQVRPUi0+dmFsdWUpLAogICAgICAgICk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfdGhlX2xhc3Rfc3VwZXJfYWRtaW5pc3RyYXRvcl9jYW5ub3RfZGVtb3RlX3RoZWlyX293bl9hY2NvdW50KCk6IHZvaWQKICAgIHsKICAgICAgICAkc3VwZXJBZG1pbmlzdHJhdG9yID0gVXNlcjo6ZmFjdG9yeSgpLT5jcmVhdGUoKTsKICAgICAgICAkc3VwZXJBZG1pbmlzdHJhdG9yLT5hc3NpZ25Sb2xlKFJvbGVOYW1lOjpTVVBFUl9BRE1JTklTVFJBVE9SLT52YWx1ZSk7CgogICAgICAgICR0aGlzLT5hY3RpbmdBcygkc3VwZXJBZG1pbmlzdHJhdG9yKQogICAgICAgICAgICAtPnB1dChyb3V0ZSgnYXBwLnN0YWZmLnVwZGF0ZScsICRzdXBlckFkbWluaXN0cmF0b3IpLCBbCiAgICAgICAgICAgICAgICAnbmFtZScgPT4gJHN1cGVyQWRtaW5pc3RyYXRvci0+bmFtZSwKICAgICAgICAgICAgICAgICdlbWFpbCcgPT4gJHN1cGVyQWRtaW5pc3RyYXRvci0+ZW1haWwsCiAgICAgICAgICAgICAgICAncGFzc3dvcmQnID0+ICcnLAogICAgICAgICAgICAgICAgJ3Bhc3N3b3JkX2NvbmZpcm1hdGlvbicgPT4gJycsCiAgICAgICAgICAgICAgICAncm9sZScgPT4gUm9sZU5hbWU6OkFETUlOSVNUUkFUT1ItPnZhbHVlLAogICAgICAgICAgICAgICAgJ2Fzc2lnbmVkX3RvX2NhYmluZXQnID0+IHRydWUsCiAgICAgICAgICAgIF0pCiAgICAgICAgICAgIC0+YXNzZXJ0U2Vzc2lvbkhhc0Vycm9ycygncm9sZScpOwoKICAgICAgICAkdGhpcy0+YXNzZXJ0VHJ1ZSgKICAgICAgICAgICAgJHN1cGVyQWRtaW5pc3RyYXRvci0+cmVmcmVzaCgpLT5oYXNSb2xlKFJvbGVOYW1lOjpTVVBFUl9BRE1JTklTVFJBVE9SLT52YWx1ZSksCiAgICAgICAgKTsKICAgIH0KCiAgICBwdWJsaWMgZnVuY3Rpb24gdGVzdF9hX3N1cGVyX2FkbWluaXN0cmF0b3JfY2FuX3JlbW92ZV9zdGFmZl9hbmRfdGhlX2FjdGlvbl9pc19hdWRpdGVkKCk6IHZvaWQKICAgIHsKICAgICAgICAkc3VwZXJBZG1pbmlzdHJhdG9yID0gVXNlcjo6ZmFjdG9yeSgpLT5jcmVhdGUoKTsKICAgICAgICAkc3VwZXJBZG1pbmlzdHJhdG9yLT5hc3NpZ25Sb2xlKFJvbGVOYW1lOjpTVVBFUl9BRE1JTklTVFJBVE9SLT52YWx1ZSk7CiAgICAgICAgJHN0YWZmID0gVXNlcjo6ZmFjdG9yeSgpLT5jcmVhdGUoKTsKICAgICAgICAkc3RhZmYtPmFzc2lnblJvbGUoUm9sZU5hbWU6OlJFQ0VQVElPTklTVC0+dmFsdWUpOwoKICAgICAgICAkdGhpcy0+YWN0aW5nQXMoJHN1cGVyQWRtaW5pc3RyYXRvcikKICAgICAgICAgICAgLT5kZWxldGUocm91dGUoJ2FwcC5zdGFmZi5kZXN0cm95JywgJHN0YWZmKSkKICAgICAgICAgICAgLT5hc3NlcnRSZWRpcmVjdCgpOwoKICAgICAgICAkdGhpcy0+YXNzZXJ0TnVsbCgkc3RhZmYtPmZyZXNoKCkpOwogICAgICAgICR0aGlzLT5hc3NlcnREYXRhYmFzZUhhcygnYXVkaXRfbG9ncycsIFsKICAgICAgICAgICAgJ2FjdGlvbicgPT4gJ3N0YWZmLnVzZXJfZGVsZXRlZCcsCiAgICAgICAgICAgICdzdWJqZWN0X2lkJyA9PiAoc3RyaW5nKSAkc3RhZmYtPmdldEtleSgpLAogICAgICAgICAgICAndXNlcl9pZCcgPT4gJHN1cGVyQWRtaW5pc3RyYXRvci0+Z2V0S2V5KCksCiAgICAgICAgXSk7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHRlc3RfZGFzaGJvYXJkX3NoYXJlc19yb2xlc19wZXJtaXNzaW9uc19hbmRfY2FwYWJpbGl0aWVzX2Zvcl9hdXRoZW50aWNhdGVkX3VzZXJzKCkKICAgIHsKICAgICAgICAkdXNlciA9IFVzZXI6OmZhY3RvcnkoKS0+Y3JlYXRlKCk7CiAgICAgICAgJHVzZXItPmFzc2lnblJvbGUoUm9sZU5hbWU6OkFETUlOSVNUUkFUT1ItPnZhbHVlKTsKCiAgICAgICAgJHRoaXMtPmFjdGluZ0FzKCR1c2VyKQogICAgICAgICAgICAtPmdldChyb3V0ZSgnZGFzaGJvYXJkJykpCiAgICAgICAgICAgIC0+YXNzZXJ0T2soKQogICAgICAgICAgICAtPmFzc2VydEluZXJ0aWEoZm4gKEFzc2VydCAkcGFnZSkgPT4gJHBhZ2UKICAgICAgICAgICAgICAgIC0+d2hlcmUoJ2F1dGgudXNlci5yb2xlcycsIFtSb2xlTmFtZTo6QURNSU5JU1RSQVRPUi0+dmFsdWVdKQogICAgICAgICAgICAgICAgLT53aGVyZSgnYXV0aC51c2VyLmNhbi5tYW5hZ2VTdGFmZicsIHRydWUpCiAgICAgICAgICAgICAgICAtPndoZXJlKCdhdXRoLnVzZXIuY2FuLmFjY2Vzc0FkbWluUGFuZWwnLCB0cnVlKSwKICAgICAgICAgICAgKTsKICAgIH0KfQo=
+<?php
+
+namespace Tests\Feature\Authorization;
+
+use App\Enums\CabinetStatus;
+use App\Enums\RoleName;
+use App\Models\AuditLog;
+use App\Models\Cabinet;
+use App\Models\CabinetSetting;
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\ActivatesSignedLicense;
+use Tests\TestCase;
+
+class RolePermissionAccessTest extends TestCase
+{
+    use ActivatesSignedLicense;
+    use RefreshDatabase;
+
+    private Cabinet $cabinet;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->cabinet = Cabinet::query()->create([
+            'name' => 'Authorization Test Cabinet',
+            'status' => CabinetStatus::ACTIVE,
+            'activated_at' => now(),
+        ]);
+        CabinetSetting::current($this->cabinet);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->cleanUpSignedLicenseFeatures();
+
+        parent::tearDown();
+    }
+
+    public function test_super_administrator_can_access_the_filament_admin_panel()
+    {
+        // Under multi-cabinet tenancy the Filament back office is reserved for
+        // platform staff; cabinet members (even super administrators) work in
+        // the Inertia application instead. See User::canAccessPanel().
+        $user = User::factory()->create(['is_platform_admin' => true]);
+        $user->assignRole(RoleName::SUPER_ADMINISTRATOR->value);
+
+        $this->actingAs($user)
+            ->get('/admin')
+            ->assertOk();
+    }
+
+    public function test_receptionist_cannot_access_the_filament_admin_panel()
+    {
+        $user = $this->cabinetUser();
+        $user->assignRole(RoleName::RECEPTIONIST->value);
+
+        $this->actingAs($user)
+            ->get('/admin')
+            ->assertForbidden();
+    }
+
+    public function test_administrator_can_view_the_staff_index()
+    {
+        $user = $this->cabinetUser();
+        $user->assignRole(RoleName::ADMINISTRATOR->value);
+
+        User::factory()->count(2)->create([
+            'cabinet_id' => $this->cabinet->getKey(),
+            'cabinet_setting_id' => CabinetSetting::current($this->cabinet)->getKey(),
+            'approved_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('app.staff.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('staff/Index')
+                ->has('staff.data', 3)
+                ->where('staff.total', 3)
+                ->where('multiUserCapability.available', false),
+            );
+    }
+
+    public function test_receptionist_cannot_view_the_staff_index()
+    {
+        $user = $this->cabinetUser();
+        $user->assignRole(RoleName::RECEPTIONIST->value);
+
+        $this->actingAs($user)
+            ->get(route('app.staff.index'))
+            ->assertForbidden();
+    }
+
+    public function test_unknown_staff_role_filter_is_rejected_without_querying_the_role_store(): void
+    {
+        $administrator = $this->cabinetUser();
+        $administrator->assignRole(RoleName::ADMINISTRATOR->value);
+
+        $this->actingAs($administrator)
+            ->from(route('app.staff.index'))
+            ->get(route('app.staff.index', ['role' => 'Unknown role']))
+            ->assertSessionHasErrors('role')
+            ->assertRedirect(route('app.staff.index'));
+    }
+
+    public function test_administrator_can_add_and_assign_a_user_to_the_cabinet(): void
+    {
+        $this->activateSignedLicenseFeatures(['multi_user' => true]);
+        $administrator = $this->cabinetUser();
+        $administrator->assignRole(RoleName::ADMINISTRATOR->value);
+        $cabinet = CabinetSetting::current();
+
+        $this->actingAs($administrator)
+            ->post(route('app.staff.store'), [
+                'name' => 'Medical Assistant',
+                'email' => 'assistant@example.test',
+                'password' => 'secure-password',
+                'password_confirmation' => 'secure-password',
+                'role' => RoleName::RECEPTIONIST->value,
+                'assigned_to_cabinet' => true,
+            ])
+            ->assertRedirect();
+
+        $staff = User::query()->where('email', 'assistant@example.test')->firstOrFail();
+
+        $this->assertTrue($staff->hasRole(RoleName::RECEPTIONIST->value));
+        $this->assertSame($cabinet->id, $staff->cabinet_setting_id);
+        $this->assertNotNull($staff->email_verified_at);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'staff.user_created',
+            'subject_id' => (string) $staff->getKey(),
+            'user_id' => $administrator->getKey(),
+        ]);
+    }
+
+    public function test_unlicensed_staff_creation_fails_closed_without_hiding_existing_accounts(): void
+    {
+        $administrator = $this->cabinetUser();
+        $administrator->assignRole(RoleName::ADMINISTRATOR->value);
+
+        $this->actingAs($administrator)
+            ->post(route('app.staff.store'), [
+                'name' => 'Unlicensed account',
+                'email' => 'unlicensed@example.test',
+                'password' => 'secure-password',
+                'password_confirmation' => 'secure-password',
+                'role' => RoleName::RECEPTIONIST->value,
+                'assigned_to_cabinet' => true,
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('users', ['email' => 'unlicensed@example.test']);
+
+        $this->actingAs($administrator)
+            ->get(route('app.staff.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('staff.total', 1)
+                ->where('multiUserCapability.available', false)
+                ->where('multiUserCapability.reason', fn (mixed $reason): bool => is_string($reason) && $reason !== ''));
+    }
+
+    public function test_administrator_can_change_a_users_function_and_cabinet_assignment(): void
+    {
+        $administrator = $this->cabinetUser();
+        $administrator->assignRole(RoleName::ADMINISTRATOR->value);
+        $staff = $this->cabinetUser();
+        $staff->assignRole(RoleName::RECEPTIONIST->value);
+
+        $this->actingAs($administrator)
+            ->put(route('app.staff.update', $staff), [
+                'name' => $staff->name,
+                'email' => $staff->email,
+                'password' => '',
+                'password_confirmation' => '',
+                'role' => RoleName::CASHIER->value,
+                'assigned_to_cabinet' => true,
+            ])
+            ->assertRedirect();
+
+        $staff->refresh();
+
+        $this->assertTrue($staff->hasRole(RoleName::CASHIER->value));
+        $this->assertSame(CabinetSetting::current()->id, $staff->cabinet_setting_id);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'staff.user_updated',
+            'subject_id' => (string) $staff->getKey(),
+            'user_id' => $administrator->getKey(),
+        ]);
+        $this->assertSame(
+            false,
+            AuditLog::query()
+                ->where('action', 'staff.user_updated')
+                ->firstOrFail()
+                ->metadata['credentials_changed'],
+        );
+    }
+
+    public function test_an_administrator_cannot_modify_or_delete_a_super_administrator(): void
+    {
+        $administrator = $this->cabinetUser();
+        $administrator->assignRole(RoleName::ADMINISTRATOR->value);
+        $superAdministrator = $this->cabinetUser();
+        $superAdministrator->assignRole(RoleName::SUPER_ADMINISTRATOR->value);
+
+        $this->actingAs($administrator)
+            ->put(route('app.staff.update', $superAdministrator), [
+                'name' => $superAdministrator->name,
+                'email' => $superAdministrator->email,
+                'password' => '',
+                'password_confirmation' => '',
+                'role' => RoleName::ADMINISTRATOR->value,
+                'assigned_to_cabinet' => true,
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($administrator)
+            ->delete(route('app.staff.destroy', $superAdministrator))
+            ->assertForbidden();
+
+        $this->assertTrue(
+            $superAdministrator->refresh()->hasRole(RoleName::SUPER_ADMINISTRATOR->value),
+        );
+    }
+
+    public function test_the_last_super_administrator_cannot_demote_their_own_account(): void
+    {
+        $superAdministrator = $this->cabinetUser();
+        $superAdministrator->assignRole(RoleName::SUPER_ADMINISTRATOR->value);
+
+        $this->actingAs($superAdministrator)
+            ->put(route('app.staff.update', $superAdministrator), [
+                'name' => $superAdministrator->name,
+                'email' => $superAdministrator->email,
+                'password' => '',
+                'password_confirmation' => '',
+                'role' => RoleName::ADMINISTRATOR->value,
+                'assigned_to_cabinet' => true,
+            ])
+            ->assertSessionHasErrors('role');
+
+        $this->assertTrue(
+            $superAdministrator->refresh()->hasRole(RoleName::SUPER_ADMINISTRATOR->value),
+        );
+    }
+
+    public function test_a_super_administrator_can_remove_staff_and_the_action_is_audited(): void
+    {
+        $superAdministrator = $this->cabinetUser();
+        $superAdministrator->assignRole(RoleName::SUPER_ADMINISTRATOR->value);
+        $staff = $this->cabinetUser();
+        $staff->assignRole(RoleName::RECEPTIONIST->value);
+
+        $this->actingAs($superAdministrator)
+            ->delete(route('app.staff.destroy', $staff))
+            ->assertRedirect();
+
+        $this->assertNull($staff->fresh());
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'staff.user_deleted',
+            'subject_id' => (string) $staff->getKey(),
+            'user_id' => $superAdministrator->getKey(),
+        ]);
+    }
+
+    public function test_dashboard_shares_roles_permissions_and_capabilities_for_authenticated_users()
+    {
+        $user = $this->cabinetUser();
+        $user->assignRole(RoleName::ADMINISTRATOR->value);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.user.roles', [RoleName::ADMINISTRATOR->value])
+                ->where('auth.user.can.manageStaff', true)
+                ->where('auth.user.can.accessAdminPanel', false),
+            );
+    }
+
+    public function test_only_platform_staff_are_advertised_as_able_to_access_filament(): void
+    {
+        $platformAdministrator = User::factory()->create([
+            'cabinet_id' => null,
+            'cabinet_setting_id' => null,
+            'is_platform_admin' => true,
+        ]);
+
+        $this->actingAs($platformAdministrator)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.user.can.accessAdminPanel', true),
+            );
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function cabinetUser(array $attributes = []): User
+    {
+        return User::factory()->create([
+            'cabinet_id' => $this->cabinet->getKey(),
+            'cabinet_setting_id' => CabinetSetting::current($this->cabinet)->getKey(),
+            'approved_at' => now(),
+            ...$attributes,
+        ]);
+    }
+}

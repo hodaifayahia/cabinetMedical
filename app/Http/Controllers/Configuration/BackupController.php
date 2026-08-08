@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\ApplicationHealthService;
 use App\Services\BackupService;
 use App\Services\GoogleDriveService;
+use App\Services\InstallationMaintenanceAccessService;
 use App\Services\LicenseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,8 +29,14 @@ class BackupController extends Controller
 
     private const LOCAL_RESTORE_FAILED = 'The backup could not be restored. Please contact support before trying again.';
 
+    public function __construct(
+        private readonly InstallationMaintenanceAccessService $installationMaintenance,
+    ) {}
+
     public function local(Request $request, BackupService $backup): BinaryFileResponse|RedirectResponse
     {
+        $this->installationMaintenance->authorize($request->user());
+
         try {
             $file = $backup->createArchive($request->user());
 
@@ -45,6 +52,8 @@ class BackupController extends Controller
         Request $request,
         BackupService $backup,
     ): BinaryFileResponse|RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         $data = $request->validate([
             'passphrase' => ['required', 'string', 'min:12', 'max:1024', 'confirmed'],
         ]);
@@ -69,6 +78,8 @@ class BackupController extends Controller
         Request $request,
         GoogleDriveService $drive,
     ): JsonResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         $actor = $request->user();
 
         abort_unless($actor instanceof User, 401);
@@ -92,6 +103,8 @@ class BackupController extends Controller
 
     public function restore(Request $request, BackupService $backup): RedirectResponse
     {
+        $this->installationMaintenance->authorize($request->user());
+
         abort_unless((bool) config('medismart.backups.legacy_restore_enabled'), 404);
 
         /** @var UploadedFile $file */
@@ -129,6 +142,8 @@ class BackupController extends Controller
 
     public function disconnectDrive(Request $request, GoogleDriveService $drive): RedirectResponse
     {
+        $this->installationMaintenance->authorize($request->user());
+
         $cabinet = CabinetSetting::current();
         $revocationConfirmed = $drive->disconnect($cabinet);
         AuditLog::record('backup.drive_disconnected', $cabinet, [
@@ -153,6 +168,8 @@ class BackupController extends Controller
         GoogleDriveService $drive,
         LicenseService $licenses,
     ): RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
         abort_unless($licenses->featureEnabled('google_drive_backup'), 403);
 
@@ -174,9 +191,12 @@ class BackupController extends Controller
     }
 
     public function driveFiles(
+        Request $request,
         GoogleDriveService $drive,
         LicenseService $licenses,
     ): JsonResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
         abort_unless($licenses->featureEnabled('google_drive_backup'), 403);
 
@@ -200,6 +220,8 @@ class BackupController extends Controller
         GoogleDriveService $drive,
         LicenseService $licenses,
     ): BinaryFileResponse|RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
         abort_unless($licenses->featureEnabled('google_drive_backup'), 403);
 
@@ -233,6 +255,8 @@ class BackupController extends Controller
         GoogleDriveService $drive,
         LicenseService $licenses,
     ): RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
         abort_unless($licenses->featureEnabled('google_drive_backup'), 403);
 
@@ -251,11 +275,11 @@ class BackupController extends Controller
             ]);
         } catch (Throwable) {
             return back()->withErrors([
-                'drive_delete' => 'La suppression a été refusée ou le fichier n’est plus une archive MediSmart gérée.',
+                'drive_delete' => 'La suppression a été refusée ou le fichier n’est plus une archive DrClickDz gérée.',
             ]);
         }
 
-        return back()->with('status', 'Archive MediSmart supprimée de Google Drive.');
+        return back()->with('status', 'Archive DrClickDz supprimée de Google Drive.');
     }
 
     /** @return array<string, string> */
@@ -300,6 +324,8 @@ class BackupController extends Controller
         GoogleDriveService $drive,
         LicenseService $licenses,
     ): RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
         abort_unless($licenses->featureEnabled('google_drive_backup'), 403, 'The active license does not include Google Drive backups.');
 
@@ -369,6 +395,8 @@ class BackupController extends Controller
         Request $request,
         string $backupRecordId,
     ): RedirectResponse {
+        $this->installationMaintenance->authorize($request->user());
+
         $backupRecord = BackupRecord::query()->findOrFail($backupRecordId);
 
         if ($backupRecord->drive_upload_status === BackupRecord::DRIVE_UPLOAD_CANCEL_REQUESTED

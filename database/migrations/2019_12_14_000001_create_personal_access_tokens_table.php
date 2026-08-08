@@ -1,1 +1,33 @@
-PD9waHAKCnVzZSBJbGx1bWluYXRlXERhdGFiYXNlXE1pZ3JhdGlvbnNcTWlncmF0aW9uOwp1c2UgSWxsdW1pbmF0ZVxEYXRhYmFzZVxTY2hlbWFcQmx1ZXByaW50Owp1c2UgSWxsdW1pbmF0ZVxTdXBwb3J0XEZhY2FkZXNcU2NoZW1hOwoKcmV0dXJuIG5ldyBjbGFzcyBleHRlbmRzIE1pZ3JhdGlvbgp7CiAgICAvKioKICAgICAqIFJ1biB0aGUgbWlncmF0aW9ucy4KICAgICAqLwogICAgcHVibGljIGZ1bmN0aW9uIHVwKCk6IHZvaWQKICAgIHsKICAgICAgICBTY2hlbWE6OmNyZWF0ZSgncGVyc29uYWxfYWNjZXNzX3Rva2VucycsIGZ1bmN0aW9uIChCbHVlcHJpbnQgJHRhYmxlKSB7CiAgICAgICAgICAgICR0YWJsZS0+aWQoKTsKICAgICAgICAgICAgJHRhYmxlLT5tb3JwaHMoJ3Rva2VuYWJsZScpOwogICAgICAgICAgICAkdGFibGUtPnRleHQoJ25hbWUnKTsKICAgICAgICAgICAgJHRhYmxlLT5zdHJpbmcoJ3Rva2VuJywgNjQpLT51bmlxdWUoKTsKICAgICAgICAgICAgJHRhYmxlLT50ZXh0KCdhYmlsaXRpZXMnKS0+bnVsbGFibGUoKTsKICAgICAgICAgICAgJHRhYmxlLT50aW1lc3RhbXAoJ2xhc3RfdXNlZF9hdCcpLT5udWxsYWJsZSgpOwogICAgICAgICAgICAkdGFibGUtPnRpbWVzdGFtcCgnZXhwaXJlc19hdCcpLT5udWxsYWJsZSgpLT5pbmRleCgpOwogICAgICAgICAgICAkdGFibGUtPnRpbWVzdGFtcHMoKTsKICAgICAgICB9KTsKICAgIH0KCiAgICAvKioKICAgICAqIFJldmVyc2UgdGhlIG1pZ3JhdGlvbnMuCiAgICAgKi8KICAgIHB1YmxpYyBmdW5jdGlvbiBkb3duKCk6IHZvaWQKICAgIHsKICAgICAgICBTY2hlbWE6OmRyb3BJZkV4aXN0cygncGVyc29uYWxfYWNjZXNzX3Rva2VucycpOwogICAgfQp9Owo=
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('personal_access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->morphs('tokenable');
+            $table->text('name');
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('personal_access_tokens');
+    }
+};
