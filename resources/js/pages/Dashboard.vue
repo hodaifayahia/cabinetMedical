@@ -17,6 +17,7 @@ import AreaChart from '@/components/charts/AreaChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import DonutChart from '@/components/charts/DonutChart.vue';
 import HBarChart from '@/components/charts/HBarChart.vue';
+import Heading from '@/components/Heading.vue';
 import {
     Card,
     CardContent,
@@ -168,18 +169,10 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
     <Head title="Tableau de bord" />
 
     <div class="med-page">
-        <div>
-            <h1
-                class="text-[2rem] leading-none font-bold tracking-tight text-[#111827] sm:text-[2.2rem] dark:text-slate-50"
-            >
-                Tableau de bord
-            </h1>
-            <div class="mt-3 h-1 w-20 rounded-full bg-[#e2a719]" />
-            <p class="mt-3 text-sm text-muted-foreground">
-                Vue d’ensemble en temps réel des recettes, rendez-vous et de
-                l’activité du cabinet.
-            </p>
-        </div>
+        <Heading
+            title="Tableau de bord"
+            description="Vue d’ensemble en temps réel des recettes, rendez-vous et de l’activité du cabinet."
+        />
 
         <div
             class="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(300px,0.8fr)]"
