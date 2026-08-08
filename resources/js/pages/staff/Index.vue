@@ -13,6 +13,7 @@ import {
 } from '@lucide/vue';
 import { reactive, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -126,7 +127,7 @@ const openEdit = (member: StaffMember) => {
     form.password = '';
     form.password_confirmation = '';
     form.role = member.roles[0] ?? props.roles[0] ?? '';
-    form.assigned_to_cabinet = true;
+    form.assigned_to_cabinet = member.cabinet !== null;
     form.clearErrors();
     showForm.value = true;
 };
@@ -171,28 +172,20 @@ const removeUser = (member: StaffMember) => {
     <Head title="Utilisateurs" />
 
     <div class="med-page">
-        <header class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <h1
-                    class="text-[2rem] leading-none font-bold tracking-tight text-[#111827] sm:text-[2.2rem] dark:text-slate-50"
+        <PageHeader
+            title="Utilisateurs"
+            description="Ajoutez les utilisateurs du cabinet, attribuez leurs fonctions et contrôlez leur accès."
+        >
+            <template #actions>
+                <Button
+                    :disabled="!multiUserCapability.available"
+                    @click="openCreate"
                 >
-                    Utilisateurs
-                </h1>
-                <div class="mt-3 h-1 w-20 rounded-full bg-[#e2a719]" />
-                <p class="mt-3 text-sm text-muted-foreground">
-                    Ajoutez les utilisateurs du cabinet, attribuez leurs
-                    fonctions et contrôlez leur accès.
-                </p>
-            </div>
-            <Button
-                class="bg-blue-600 hover:bg-blue-700"
-                :disabled="!multiUserCapability.available"
-                @click="openCreate"
-            >
-                <UserPlus class="size-4" />
-                Ajouter un utilisateur
-            </Button>
-        </header>
+                    <UserPlus class="size-4" />
+                    Ajouter un utilisateur
+                </Button>
+            </template>
+        </PageHeader>
 
         <div
             v-if="!multiUserCapability.available && multiUserCapability.reason"
@@ -204,9 +197,7 @@ const removeUser = (member: StaffMember) => {
         <section class="grid gap-4 sm:grid-cols-3">
             <article class="med-panel p-5">
                 <div class="flex items-center gap-3">
-                    <span
-                        class="flex size-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
-                    >
+                    <span class="med-stat-icon">
                         <Users class="size-5" />
                     </span>
                     <div>
@@ -221,9 +212,7 @@ const removeUser = (member: StaffMember) => {
             </article>
             <article class="med-panel p-5">
                 <div class="flex items-center gap-3">
-                    <span
-                        class="flex size-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"
-                    >
+                    <span class="med-stat-icon">
                         <Building2 class="size-5" />
                     </span>
                     <div class="min-w-0">
@@ -238,9 +227,7 @@ const removeUser = (member: StaffMember) => {
             </article>
             <article class="med-panel p-5">
                 <div class="flex items-center gap-3">
-                    <span
-                        class="flex size-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600"
-                    >
+                    <span class="med-stat-icon">
                         <ShieldCheck class="size-5" />
                     </span>
                     <div>
@@ -313,7 +300,7 @@ const removeUser = (member: StaffMember) => {
                             <td class="px-4 py-3">
                                 <div class="flex min-w-44 items-center gap-3">
                                     <span
-                                        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-xs font-bold text-white"
+                                        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground"
                                     >
                                         {{ initials(member.name) }}
                                     </span>
@@ -323,7 +310,7 @@ const removeUser = (member: StaffMember) => {
                                         }}</span>
                                         <span
                                             v-if="member.id === currentUserId"
-                                            class="text-xs font-medium text-blue-600"
+                                            class="text-xs font-medium text-brand"
                                         >
                                             Vous
                                         </span>
@@ -350,13 +337,13 @@ const removeUser = (member: StaffMember) => {
                                 </div>
                             </td>
                             <td class="px-4 py-3">
-                                <span
+                                <Badge
                                     v-if="member.cabinet"
-                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+                                    variant="secondary"
                                 >
                                     <Building2 class="size-3" />
                                     {{ member.cabinet.name }}
-                                </span>
+                                </Badge>
                                 <span
                                     v-else
                                     class="text-xs text-muted-foreground"
@@ -365,13 +352,21 @@ const removeUser = (member: StaffMember) => {
                             </td>
                             <td class="px-4 py-3">
                                 <span
-                                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
                                     :class="
                                         member.email_verified_at
-                                            ? 'bg-blue-50 text-blue-700'
-                                            : 'bg-amber-50 text-amber-700'
+                                            ? 'bg-brand-soft text-brand'
+                                            : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
                                     "
                                 >
+                                    <span
+                                        class="size-1.5 rounded-full"
+                                        :class="
+                                            member.email_verified_at
+                                                ? 'bg-brand'
+                                                : 'bg-amber-500'
+                                        "
+                                    />
                                     {{
                                         member.email_verified_at
                                             ? 'Actif'
@@ -394,7 +389,7 @@ const removeUser = (member: StaffMember) => {
                                         v-if="member.id !== currentUserId"
                                         variant="ghost"
                                         size="icon"
-                                        class="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                        class="text-destructive hover:bg-destructive/10 hover:text-destructive"
                                         aria-label="Supprimer l’utilisateur"
                                         title="Supprimer l’utilisateur"
                                         @click="removeUser(member)"
@@ -405,17 +400,17 @@ const removeUser = (member: StaffMember) => {
                             </td>
                         </tr>
                         <tr v-if="!staff.data.length">
-                            <td colspan="6" class="px-6 py-14 text-center">
-                                <Users
-                                    class="mx-auto size-10 text-muted-foreground/35"
-                                />
-                                <p class="mt-3 font-semibold">
-                                    Aucun utilisateur trouvé
-                                </p>
-                                <p class="mt-1 text-sm text-muted-foreground">
-                                    Modifiez la recherche ou ajoutez un nouvel
-                                    utilisateur au cabinet.
-                                </p>
+                            <td colspan="6">
+                                <div class="med-empty">
+                                    <Users class="med-empty-icon" />
+                                    <p class="med-empty-title">
+                                        Aucun utilisateur trouvé
+                                    </p>
+                                    <p class="med-empty-hint">
+                                        Modifiez la recherche ou ajoutez un
+                                        nouvel utilisateur au cabinet.
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -452,8 +447,9 @@ const removeUser = (member: StaffMember) => {
         </section>
 
         <button
+            v-if="multiUserCapability.available"
             type="button"
-            class="fixed right-5 bottom-5 z-30 flex size-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700"
+            class="fixed right-5 bottom-5 z-30 flex size-14 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-lg shadow-brand/25 transition hover:-translate-y-0.5 hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 sm:hidden"
             aria-label="Ajouter un utilisateur"
             title="Ajouter un utilisateur"
             @click="openCreate"
@@ -464,12 +460,10 @@ const removeUser = (member: StaffMember) => {
 
     <Dialog v-model:open="showForm">
         <DialogContent class="max-h-[92vh] overflow-y-auto p-0 sm:max-w-2xl">
-            <div
-                class="bg-gradient-to-r from-blue-700 to-cyan-500 px-6 py-5 text-white"
-            >
+            <div class="bg-brand px-6 py-5 text-brand-foreground">
                 <DialogHeader>
                     <DialogTitle
-                        class="flex items-center gap-2 text-xl text-white"
+                        class="flex items-center gap-2 text-xl text-brand-foreground"
                     >
                         <UserCog class="size-5" />
                         {{
@@ -478,7 +472,7 @@ const removeUser = (member: StaffMember) => {
                                 : 'Ajouter un utilisateur'
                         }}
                     </DialogTitle>
-                    <DialogDescription class="text-blue-100">
+                    <DialogDescription class="text-brand-foreground/80">
                         Configurez le compte, sa fonction et son affectation au
                         cabinet médical.
                     </DialogDescription>
@@ -538,7 +532,7 @@ const removeUser = (member: StaffMember) => {
                             <span
                                 class="flex items-center gap-1.5 text-sm font-semibold"
                             >
-                                <Building2 class="size-4 text-blue-600" />
+                                <Building2 class="size-4 text-brand" />
                                 Affecter au cabinet
                             </span>
                             <span
@@ -549,9 +543,7 @@ const removeUser = (member: StaffMember) => {
                         <input
                             v-model="form.assigned_to_cabinet"
                             type="checkbox"
-                            disabled
-                            aria-readonly="true"
-                            class="size-5 accent-blue-600"
+                            class="size-5 accent-brand"
                         />
                     </label>
                     <div class="grid gap-2">
@@ -591,11 +583,7 @@ const removeUser = (member: StaffMember) => {
                         @click="showForm = false"
                         >Annuler</Button
                     >
-                    <Button
-                        type="submit"
-                        class="bg-emerald-600 hover:bg-emerald-700"
-                        :disabled="form.processing"
-                    >
+                    <Button type="submit" :disabled="form.processing">
                         <UserPlus class="size-4" />
                         {{
                             editing
