@@ -1,18 +1,1 @@
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Model;
-
-#[Fillable(['name', 'description', 'category', 'is_active'])]
-class BilanType extends Model
-{
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return ['is_active' => 'boolean'];
-    }
-}
+PD9waHAKCm5hbWVzcGFjZSBBcHBcTW9kZWxzOwoKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcQXR0cmlidXRlc1xGaWxsYWJsZTsKdXNlIElsbHVtaW5hdGVcRGF0YWJhc2VcRWxvcXVlbnRcTW9kZWw7CgojW0ZpbGxhYmxlKFsnbmFtZScsICdkZXNjcmlwdGlvbicsICdjYXRlZ29yeScsICdpc19hY3RpdmUnXSldCmNsYXNzIEJpbGFuVHlwZSBleHRlbmRzIE1vZGVsCnsKICAgIHVzZSBcQXBwXE1vZGVsc1xDb25jZXJuc1xCZWxvbmdzVG9DYWJpbmV0OwoKICAgIC8qKgogICAgICogQHJldHVybiBhcnJheTxzdHJpbmcsIHN0cmluZz4KICAgICAqLwogICAgcHJvdGVjdGVkIGZ1bmN0aW9uIGNhc3RzKCk6IGFycmF5CiAgICB7CiAgICAgICAgcmV0dXJuIFsnaXNfYWN0aXZlJyA9PiAnYm9vbGVhbiddOwogICAgfQp9Cg==
