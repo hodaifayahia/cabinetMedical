@@ -49,10 +49,10 @@ const titleBox = ref(true);
 const paperSize = ref<'A4' | 'A5'>('A4');
 
 const categoryColors = [
-    'border-cyan-500',
+    'border-brand',
     'border-rose-500',
     'border-amber-500',
-    'border-violet-500',
+    'border-brand',
 ];
 
 const categories = computed(() =>
@@ -197,7 +197,7 @@ const displayDate = (date: string | null): string => {
                         <p
                             class="flex items-center gap-2 text-sm font-bold tracking-wide text-foreground uppercase"
                         >
-                            <FlaskConical class="size-4 text-cyan-700" />
+                            <FlaskConical class="size-4 text-brand" />
                             Nouveau bilan
                         </p>
                         <p class="mt-1 text-xs leading-5 text-muted-foreground">
@@ -206,7 +206,7 @@ const displayDate = (date: string | null): string => {
                         </p>
                     </div>
                     <span
-                        class="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-200"
+                        class="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand dark:bg-brand-deep/40 dark:text-brand-mint"
                     >
                         {{ selectedExams.length }} examen{{
                             selectedExams.length === 1 ? '' : 's'
@@ -229,7 +229,7 @@ const displayDate = (date: string | null): string => {
                     class="relative flex-1 px-2 py-2 text-xs font-medium transition"
                     :class="
                         mainTab === tab.key
-                            ? 'text-foreground after:absolute after:right-2 after:bottom-0 after:left-2 after:h-0.5 after:bg-cyan-600'
+                            ? 'text-foreground after:absolute after:right-2 after:bottom-0 after:left-2 after:h-0.5 after:bg-brand'
                             : 'text-muted-foreground hover:text-foreground'
                     "
                     @click="mainTab = tab.key as MainTab"
@@ -306,13 +306,13 @@ const displayDate = (date: string | null): string => {
                             v-for="exam in filteredExams"
                             :key="exam.id"
                             type="button"
-                            class="group flex w-full items-center gap-3 rounded-lg border border-l-4 border-sidebar-border/70 bg-background px-3 py-3 text-left transition hover:-translate-y-px hover:border-cyan-300 hover:shadow-sm dark:border-sidebar-border"
+                            class="group flex w-full items-center gap-3 rounded-lg border border-l-4 border-sidebar-border/70 bg-background px-3 py-3 text-left transition hover:-translate-y-px hover:border-brand hover:shadow-sm dark:border-sidebar-border"
                             :class="[
                                 categories.find(
                                     (item) => item.key === exam.category,
-                                )?.color ?? 'border-cyan-500',
+                                )?.color ?? 'border-brand',
                                 selectedIdSet.has(exam.id)
-                                    ? 'bg-cyan-50/60 dark:bg-cyan-950/20'
+                                    ? 'bg-brand-soft/60 dark:bg-brand-deep/20'
                                     : '',
                             ]"
                             :disabled="!canEdit || selectedIdSet.has(exam.id)"
@@ -369,7 +369,7 @@ const displayDate = (date: string | null): string => {
                             :key="exam.id"
                             class="flex items-center gap-2 rounded-md bg-background px-2.5 py-2 text-xs"
                         >
-                            <span class="font-semibold text-cyan-700"
+                            <span class="font-semibold text-brand"
                                 >{{ index + 1 }}.</span
                             >
                             <span class="min-w-0 flex-1 truncate">{{
@@ -427,7 +427,7 @@ const displayDate = (date: string | null): string => {
                     :key="document.id"
                     class="flex items-center gap-3 rounded-lg border border-sidebar-border/70 p-3 dark:border-sidebar-border"
                 >
-                    <FileText class="size-4 shrink-0 text-cyan-700" />
+                    <FileText class="size-4 shrink-0 text-brand" />
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold">
                             {{ document.title }}

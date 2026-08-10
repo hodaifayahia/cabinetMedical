@@ -82,6 +82,7 @@ class EncounterController extends Controller
 
     public function show(Patient $patient, Encounter $encounter): Response
     {
+        $this->ensureEncounterBelongsToPatient($patient, $encounter);
         $this->authorize('view', $encounter);
 
         $encounterData = $this->transformEncounter($encounter);
@@ -102,6 +103,7 @@ class EncounterController extends Controller
 
     public function edit(Patient $patient, Encounter $encounter): Response
     {
+        $this->ensureEncounterBelongsToPatient($patient, $encounter);
         $this->authorize('update', $encounter);
 
         $encounterData = $this->transformEncounter($encounter);
@@ -118,6 +120,7 @@ class EncounterController extends Controller
 
     public function update(Patient $patient, Encounter $encounter, UpdateEncounterRequest $request): RedirectResponse
     {
+        $this->ensureEncounterBelongsToPatient($patient, $encounter);
         $this->authorize('update', $encounter);
 
         $data = $request->validated();
@@ -148,6 +151,7 @@ class EncounterController extends Controller
 
     public function sign(Patient $patient, Encounter $encounter): RedirectResponse
     {
+        $this->ensureEncounterBelongsToPatient($patient, $encounter);
         $this->authorize('sign', $encounter);
 
         try {
@@ -162,6 +166,7 @@ class EncounterController extends Controller
 
     public function createAmendment(Patient $patient, Encounter $encounter): Response
     {
+        $this->ensureEncounterBelongsToPatient($patient, $encounter);
         $this->authorize('amend', $encounter);
 
         return Inertia::render('encounters/CreateAmendment', [
@@ -176,6 +181,7 @@ class EncounterController extends Controller
 
     public function storeAmendment(Patient $patient, Encounter $encounter, CreateAmendmentRequest $request): RedirectResponse
     {
+        $this->ensureEncounterBelongsToPatient($patient, $encounter);
         $this->authorize('amend', $encounter);
 
         try {
@@ -236,5 +242,10 @@ class EncounterController extends Controller
             'amends_encounter_id' => $encounter->amends_encounter_id,
             'amendment_reason' => $encounter->amendment_reason,
         ];
+    }
+
+    private function ensureEncounterBelongsToPatient(Patient $patient, Encounter $encounter): void
+    {
+        abort_unless((int) $encounter->patient_id === (int) $patient->getKey(), 404);
     }
 }

@@ -186,20 +186,20 @@ onMounted(async () => {
                 class="relative my-auto w-full max-w-xl overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_32px_100px_rgba(2,18,35,0.45)] dark:border-slate-700 dark:bg-slate-900"
             >
                 <div
-                    class="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#0d6797] via-cyan-400 to-amber-400"
+                    class="absolute inset-x-0 top-0 h-1.5 bg-brand-mint"
                     aria-hidden="true"
                 />
 
                 <div class="p-6 sm:p-9">
                     <div class="flex items-start gap-4">
                         <span
-                            class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1268a5] to-cyan-500 text-white shadow-lg shadow-sky-800/20"
+                            class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-brand-deep text-white shadow-lg shadow-brand-deep/20"
                         >
                             <KeyRound class="size-7" aria-hidden="true" />
                         </span>
                         <div>
                             <p
-                                class="text-xs font-extrabold tracking-[0.16em] text-[#1268a5] uppercase dark:text-sky-300"
+                                class="text-xs font-extrabold tracking-[0.16em] text-brand uppercase"
                             >
                                 Sécurisation de ce poste
                             </p>
@@ -253,7 +253,7 @@ onMounted(async () => {
                                     maxlength="4"
                                     autocomplete="new-password"
                                     required
-                                    class="h-14 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-5 text-center font-mono text-2xl font-extrabold tracking-[0.55em] text-slate-950 transition outline-none focus:border-[#1268a5] focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-sky-950"
+                                    class="h-14 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-5 text-center font-mono text-2xl font-extrabold tracking-[0.55em] text-slate-950 transition outline-none focus:border-brand focus:ring-4 focus:ring-brand dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-brand"
                                     aria-describedby="desktop-pin-help desktop-pin-error"
                                     :aria-invalid="Boolean(form.errors.pin)"
                                     data-test="desktop-pin-input"
@@ -288,7 +288,7 @@ onMounted(async () => {
                                     maxlength="4"
                                     autocomplete="new-password"
                                     required
-                                    class="h-14 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-5 text-center font-mono text-2xl font-extrabold tracking-[0.55em] text-slate-950 transition outline-none focus:border-[#1268a5] focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-sky-950"
+                                    class="h-14 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-5 text-center font-mono text-2xl font-extrabold tracking-[0.55em] text-slate-950 transition outline-none focus:border-brand focus:ring-4 focus:ring-brand dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-brand"
                                     aria-describedby="desktop-pin-confirmation-error"
                                     :aria-invalid="
                                         Boolean(form.errors.pin_confirmation)
@@ -327,7 +327,7 @@ onMounted(async () => {
                                     autocomplete="off"
                                     maxlength="100"
                                     required
-                                    class="h-12 w-full rounded-xl border border-slate-300 bg-white pr-4 pl-12 text-sm font-semibold text-slate-900 transition outline-none focus:border-[#1268a5] focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-sky-950"
+                                    class="h-12 w-full rounded-xl border border-slate-300 bg-white pr-4 pl-12 text-sm font-semibold text-slate-900 transition outline-none focus:border-brand focus:ring-4 focus:ring-brand dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-brand"
                                     :aria-invalid="
                                         Boolean(form.errors.device_name)
                                     "
@@ -350,7 +350,7 @@ onMounted(async () => {
 
                         <button
                             type="submit"
-                            class="inline-flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-[#1268a5] px-5 text-sm font-extrabold text-white shadow-lg shadow-sky-800/20 transition hover:bg-[#0d578b] focus-visible:ring-4 focus-visible:ring-sky-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                            class="inline-flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-brand px-5 text-sm font-extrabold text-white shadow-lg shadow-brand-deep/20 transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-brand focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="form.processing || Boolean(localError)"
                             data-test="desktop-pin-enroll-submit"
                         >

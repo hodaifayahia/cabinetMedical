@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import type { Page } from '@inertiajs/core';
 import { Form, Head } from '@inertiajs/vue3';
 import {
     ArrowRight,
     Building2,
-    Check,
+    KeyRound,
     LockKeyhole,
+    MonitorCheck,
     Stethoscope,
     UserRound,
 } from '@lucide/vue';
 import { isTauri } from '@tauri-apps/api/core';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
@@ -19,6 +21,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { markDesktopOnboardingComplete } from '@/lib/desktopOnboarding';
+import {
+    defaultDesktopDeviceName,
+    generateDesktopDeviceToken,
+    normalizeDesktopPin,
+    saveDesktopPinEnrollment,
+} from '@/lib/desktopPin';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
@@ -30,9 +38,71 @@ defineProps<{
 
 const desktopRuntime = ref(false);
 const runtimeResolved = ref(false);
+const deviceToken = ref('');
+const deviceName = ref('Poste Drclick');
+const pinValue = ref('');
+const pinConfirmationValue = ref('');
+const pinSetupError = ref('');
+
+const pin = computed({
+    get: () => pinValue.value,
+    set: (value: string) => {
+        pinValue.value = normalizeDesktopPin(value);
+    },
+});
+const pinConfirmation = computed({
+    get: () => pinConfirmationValue.value,
+    set: (value: string) => {
+        pinConfirmationValue.value = normalizeDesktopPin(value);
+    },
+});
+
+function prepareDesktopPin(): void {
+    deviceName.value = defaultDesktopDeviceName();
+
+    try {
+        deviceToken.value = generateDesktopDeviceToken();
+        pinSetupError.value = '';
+    } catch {
+        pinSetupError.value =
+            'La configuration sécurisée du PIN est indisponible. Redémarrez Drclick puis réessayez.';
+    }
+}
+
+function handleRegistrationSuccess(page: Page): void {
+    markDesktopOnboardingComplete();
+
+    if (!desktopRuntime.value || !deviceToken.value) {
+        return;
+    }
+
+    const user = (
+        page.props as {
+            auth?: { user?: { id: number; name: string } | null };
+        }
+    ).auth?.user;
+
+    if (
+        !user ||
+        !saveDesktopPinEnrollment(
+            deviceToken.value,
+            deviceName.value,
+            user.id,
+            user.name,
+        )
+    ) {
+        pinSetupError.value =
+            'Le cabinet a été créé, mais cet appareil n’a pas pu mémoriser le PIN.';
+    }
+}
 
 onMounted(() => {
     desktopRuntime.value = isTauri();
+
+    if (desktopRuntime.value) {
+        prepareDesktopPin();
+    }
+
     runtimeResolved.value = true;
 });
 
@@ -50,38 +120,18 @@ defineOptions({
 
     <AuthBackLink :href="login()" label="Retour à la connexion" />
 
-    <div
-        class="mb-7 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-xs font-semibold text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100"
-        aria-label="Garanties d’inscription"
-    >
-        <span class="inline-flex items-center gap-1.5">
-            <Check class="size-3.5 text-emerald-600" aria-hidden="true" />
-            Inscription sécurisée
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-            <Check class="size-3.5 text-emerald-600" aria-hidden="true" />
-            Données confidentielles
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-            <Check class="size-3.5 text-emerald-600" aria-hidden="true" />
-            Activation contrôlée
-        </span>
-    </div>
-
     <Form
         v-bind="store.form()"
         :reset-on-success="['password', 'password_confirmation']"
         v-slot="{ errors, processing }"
         class="flex flex-col gap-6"
-        @success="markDesktopOnboardingComplete"
+        @success="handleRegistrationSuccess"
     >
-        <fieldset
-            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
-        >
+        <fieldset class="rounded-lg border border-border p-4 sm:p-5">
             <legend class="sr-only">Vos coordonnées professionnelles</legend>
             <div class="mb-5 flex items-center gap-3">
                 <span
-                    class="flex size-9 items-center justify-center rounded-xl bg-sky-100 text-[#1268a5] dark:bg-sky-950 dark:text-sky-300"
+                    class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand dark:bg-brand-deep dark:text-brand-mint"
                 >
                     <UserRound class="size-4.5" aria-hidden="true" />
                 </span>
@@ -164,13 +214,11 @@ defineOptions({
             </div>
         </fieldset>
 
-        <fieldset
-            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
-        >
+        <fieldset class="rounded-lg border border-border p-4 sm:p-5">
             <legend class="sr-only">Informations du cabinet</legend>
             <div class="mb-5 flex items-center gap-3">
                 <span
-                    class="flex size-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"
+                    class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand dark:bg-brand-deep dark:text-brand-mint"
                 >
                     <Building2 class="size-4.5" aria-hidden="true" />
                 </span>
@@ -278,9 +326,7 @@ defineOptions({
             </div>
         </fieldset>
 
-        <fieldset
-            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
-        >
+        <fieldset class="rounded-lg border border-border p-4 sm:p-5">
             <legend class="sr-only">Sécurisation du compte</legend>
             <div class="mb-5 flex items-center gap-3">
                 <span
@@ -353,12 +399,105 @@ defineOptions({
             </div>
         </fieldset>
 
+        <fieldset
+            v-if="desktopRuntime"
+            class="grid gap-5 rounded-lg border border-border p-4 sm:p-5"
+        >
+            <legend class="sr-only">Code PIN de cet ordinateur</legend>
+
+            <div class="flex items-start gap-3">
+                <span
+                    class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground"
+                >
+                    <KeyRound class="size-4" aria-hidden="true" />
+                </span>
+                <div>
+                    <p class="text-sm font-semibold">Code PIN rapide</p>
+                    <p class="mt-1 text-xs leading-5 text-muted-foreground">
+                        Choisissez 4 chiffres pour ouvrir Drclick sur cet
+                        ordinateur sans ressaisir votre mot de passe.
+                    </p>
+                </div>
+            </div>
+
+            <input type="hidden" name="device_token" :value="deviceToken" />
+            <input type="hidden" name="device_name" :value="deviceName" />
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid gap-2">
+                    <Label for="pin">Code PIN</Label>
+                    <Input
+                        id="pin"
+                        v-model="pin"
+                        name="pin"
+                        type="password"
+                        inputmode="numeric"
+                        pattern="[0-9]{4}"
+                        minlength="4"
+                        maxlength="4"
+                        autocomplete="new-password"
+                        required
+                        :tabindex="9"
+                        class="h-11 text-center font-mono text-lg tracking-[0.45em]"
+                        :aria-invalid="Boolean(errors.pin)"
+                        aria-describedby="pin-help pin-error"
+                    />
+                    <p id="pin-help" class="text-xs text-muted-foreground">
+                        Exactement 4 chiffres
+                    </p>
+                    <InputError id="pin-error" :message="errors.pin" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="pin_confirmation">Confirmer le PIN</Label>
+                    <Input
+                        id="pin_confirmation"
+                        v-model="pinConfirmation"
+                        name="pin_confirmation"
+                        type="password"
+                        inputmode="numeric"
+                        pattern="[0-9]{4}"
+                        minlength="4"
+                        maxlength="4"
+                        autocomplete="new-password"
+                        required
+                        :tabindex="10"
+                        class="h-11 text-center font-mono text-lg tracking-[0.45em]"
+                        :aria-invalid="Boolean(errors.pin_confirmation)"
+                        aria-describedby="pin-confirmation-error"
+                    />
+                    <p class="text-xs text-muted-foreground">
+                        Saisissez les mêmes 4 chiffres
+                    </p>
+                    <InputError
+                        id="pin-confirmation-error"
+                        :message="errors.pin_confirmation"
+                    />
+                </div>
+            </div>
+
+            <div
+                class="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground"
+            >
+                <MonitorCheck class="size-4 shrink-0" aria-hidden="true" />
+                {{ deviceName }}
+            </div>
+
+            <p
+                v-if="pinSetupError"
+                class="text-sm text-destructive"
+                role="alert"
+            >
+                {{ pinSetupError }}
+            </p>
+        </fieldset>
+
         <Button
             type="submit"
             size="lg"
-            class="h-12 w-full bg-[#1268a5] text-white shadow-lg shadow-sky-800/15 hover:bg-[#0d578b]"
-            tabindex="9"
-            :disabled="processing"
+            class="h-12 w-full bg-brand text-white shadow-lg shadow-brand-deep/15 hover:bg-brand-deep"
+            :tabindex="desktopRuntime ? 11 : 9"
+            :disabled="processing || Boolean(pinSetupError)"
             data-test="register-user-button"
         >
             <Spinner v-if="processing" />
@@ -379,7 +518,7 @@ defineOptions({
         <span>Vous rejoignez un cabinet existant ?</span>
         <TextLink
             :href="desktopRuntime ? '/desktop/cabinet-login' : '/join'"
-            class="font-bold text-[#1268a5]"
+            class="font-bold text-brand"
             :tabindex="10"
         >
             {{ desktopRuntime ? 'Connecter ce poste' : 'Demander l’accès' }}

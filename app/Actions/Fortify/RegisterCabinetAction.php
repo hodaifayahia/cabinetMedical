@@ -13,6 +13,7 @@ use App\Models\CabinetSetting;
 use App\Models\DoctorProfile;
 use App\Models\DoctorSchedule;
 use App\Models\User;
+use App\Services\Auth\DesktopPinService;
 use App\Support\MedicalSpecialtyCatalog;
 use App\Support\Wilayas;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,7 @@ class RegisterCabinetAction
 
     public function __construct(
         private readonly MedicalSpecialtyCatalog $specialties,
+        private readonly DesktopPinService $desktopPins,
     ) {}
 
     /**
@@ -45,8 +47,35 @@ class RegisterCabinetAction
             'specialization' => ['required', 'string', 'min:2', 'max:150'],
             'wilaya' => ['required', 'integer', 'between:'.Wilayas::MIN.','.Wilayas::MAX],
             'password' => $this->passwordRules(),
+            'device_token' => [
+                'nullable',
+                'required_with:pin',
+                'string',
+                'min:32',
+                'max:255',
+                'regex:/\A[A-Za-z0-9_-]+\z/D',
+            ],
+            'pin' => [
+                'nullable',
+                'required_with:device_token',
+                'string',
+                'confirmed',
+                'regex:/\A[0-9]{4}\z/D',
+            ],
+            'pin_confirmation' => ['nullable', 'required_with:pin', 'string'],
+            'device_name' => [
+                'nullable',
+                'required_with:pin',
+                'string',
+                'min:2',
+                'max:120',
+                'different:device_token',
+                'different:pin',
+            ],
         ], [
             'phone.regex' => 'Saisissez un numéro de téléphone valide.',
+            'pin.confirmed' => 'La confirmation du code PIN ne correspond pas.',
+            'pin.regex' => 'Le code PIN doit contenir exactement 4 chiffres.',
         ])->validate();
 
         return DB::transaction(function () use ($data): User {
@@ -84,6 +113,15 @@ class RegisterCabinetAction
             ]);
 
             $this->provisionDoctorProfile($user, $cabinet, $specialty, $phone);
+
+            if (isset($data['device_token'], $data['pin'], $data['device_name'])) {
+                $this->desktopPins->enroll(
+                    $user,
+                    (string) $data['device_token'],
+                    (string) $data['pin'],
+                    trim((string) $data['device_name']),
+                );
+            }
 
             AuditLog::record(
                 'cabinet.registered',

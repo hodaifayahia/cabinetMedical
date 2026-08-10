@@ -2,13 +2,15 @@
     "$schema": "https://schema.tauri.app/config/2",
     "app": {
         "security": {
-            "csp": "default-src 'self'; connect-src https://app.medismart.dz https://*.medismart.dz http://localhost:8000; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+            "csp": "default-src 'self'; connect-src http://localhost:8000 https://seagreen-turkey-468004.hostingersite.com https://app.drclick.dz https://*.drclick.dz; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
         }
     },
     "plugins": {
         "updater": {
-            "pubkey": "local-development-updater-disabled",
-            "endpoints": []
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwQjRBOThBNDIxMENEQzgKUldUSXpSQkNpcW0wa0ZQbFFxZmZibG5NaXBHRndkNFpwa3FGSVlLalNvY2RTZno2VVpHOEpFZ3kK",
+            "endpoints": [
+                "https://seagreen-turkey-468004.hostingersite.com/desktop-updates/"
+            ]
         }
     }
 }

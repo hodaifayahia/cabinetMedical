@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn https_cloud_and_hub_origins_are_valid() {
         for accepted in [
-            "https://app.medismart.dz",
+            "https://app.drclick.dz",
             "https://hub-cabinet-42.drclick.local:8443/",
             "https://192.168.1.20/",
         ] {

@@ -6,9 +6,9 @@
     <title>Liste des rendez-vous</title>
     <style nonce="{{ Vite::cspNonce() }}">
         * { box-sizing: border-box; }
-        body { margin: 0; background: #eef3f7; color: #172033; font-family: Arial, sans-serif; }
+        body { margin: 0; background: #eef7f5; color: #00424a; font-family: Arial, sans-serif; }
         .sheet { width: min(1120px, calc(100% - 32px)); margin: 24px auto; background: white; padding: 38px; box-shadow: 0 16px 50px rgba(15, 35, 55, .12); }
-        .document-branding-header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 20px; border-bottom: 2px solid #173f67; }
+        .document-branding-header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 20px; border-bottom: 2px solid #00666f; }
         .document-branding-identity { display: flex; min-width: 0; align-items: flex-start; gap: 14px; }
         .document-branding-logo { width: 86px; max-height: 66px; object-fit: contain; }
         .document-branding-copy { min-width: 0; }
@@ -20,15 +20,15 @@
         .document-branding-footer p { margin: 2px 0; }
         .muted { margin: 4px 0 0; color: #667085; font-size: 12px; }
         .title { margin: 26px 0 12px; font-size: 21px; font-weight: 800; }
-        .filters { margin-bottom: 16px; border-radius: 10px; background: #edf5fb; padding: 11px 14px; font-size: 12px; }
+        .filters { margin-bottom: 16px; border-radius: 10px; background: #e7f5f1; padding: 11px 14px; font-size: 12px; }
         .warning { margin-bottom: 14px; border: 1px solid #f0b429; border-radius: 8px; background: #fff8e6; padding: 9px 12px; font-size: 11px; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th, td { border: 1px solid #aab5c0; padding: 8px 7px; vertical-align: top; }
-        th { background: #e7edf2; font-weight: 800; text-align: left; text-transform: uppercase; }
+        th { background: #eef8f5; font-weight: 800; text-align: left; text-transform: uppercase; }
         td.nowrap { white-space: nowrap; }
         .empty { padding: 28px; text-align: center; color: #667085; }
         .actions { position: fixed; right: 24px; bottom: 24px; }
-        button { border: 0; border-radius: 10px; background: #087f4f; color: white; padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer; }
+        button { border: 0; border-radius: 10px; background: #00666f; color: white; padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer; }
         @media print {
             @page { size: A4 landscape; margin: 12mm; }
             body { background: white; }

@@ -23,6 +23,7 @@ class UpdateAppointmentRequest extends FormRequest
                 AppointmentStatus::cases(),
             ))],
             'cancellation_reason' => ['required_if:status,cancelled', 'nullable', 'string', 'min:3', 'max:1000'],
+            'expected_version' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 }

@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Payments;
 
+use App\Enums\CabinetStatus;
 use App\Enums\RoleName;
 use App\Models\AuditLog;
+use App\Models\Cabinet;
 use App\Models\CabinetSetting;
 use App\Models\Consultation;
 use App\Models\DoctorProfile;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -116,6 +119,217 @@ class PaymentControllerTest extends TestCase
             ->assertOk()
             ->assertSee('RAPPORT DES PAIEMENTS')
             ->assertSee('Imprimer le rapport');
+    }
+
+    public function test_partial_payments_are_idempotent_and_can_be_completed_later(): void
+    {
+        $consultation = $this->payment(Patient::factory()->create(), [
+            'payment_amount_minor' => 100000,
+            'is_paid' => false,
+        ]);
+        $firstReference = '018f47a6-9780-7f77-b83c-0c4cf2e58ab1';
+
+        $payload = [
+            'amount' => 1000,
+            'paid_today' => 300,
+            'method' => 'Cash',
+            'service' => 'Consultation',
+            'settlement' => 'debt',
+            'client_reference' => $firstReference,
+        ];
+
+        $this->actingAs($this->user)
+            ->post(route('app.consultations.payments.store', $consultation), $payload)
+            ->assertRedirect();
+
+        $consultation->refresh();
+        $this->assertFalse($consultation->is_paid);
+        $this->assertSame(30000, $consultation->collectedMinor());
+        $this->assertSame(70000, $consultation->outstandingMinor());
+        $this->assertSame('partial', $consultation->paymentStatus());
+        $this->assertDatabaseHas('payments', [
+            'consultation_id' => $consultation->getKey(),
+            'amount_minor' => 30000,
+            'client_reference' => $firstReference,
+        ]);
+
+        // A mobile/network retry with the same reference must not collect twice.
+        $this->post(route('app.consultations.payments.store', $consultation), $payload)
+            ->assertRedirect();
+        $this->assertSame(1, Payment::query()->count());
+        $this->assertSame(30000, $consultation->fresh()->collectedMinor());
+
+        $this->post(route('app.consultations.payments.store', $consultation), [
+            ...$payload,
+            'paid_today' => 700,
+            'client_reference' => '018f47a6-9780-7f77-b83c-0c4cf2e58ab2',
+        ])->assertRedirect();
+
+        $consultation->refresh();
+        $this->assertTrue($consultation->is_paid);
+        $this->assertSame(100000, $consultation->collectedMinor());
+        $this->assertSame(0, $consultation->outstandingMinor());
+        $this->assertSame(2, Payment::query()->count());
+    }
+
+    public function test_accepting_less_as_settled_requires_a_note_and_records_the_adjustment(): void
+    {
+        $consultation = $this->payment(Patient::factory()->create(), [
+            'payment_amount_minor' => 100000,
+            'is_paid' => false,
+        ]);
+        $payload = [
+            'amount' => 1000,
+            'paid_today' => 400,
+            'method' => 'Cash',
+            'service' => 'Consultation',
+            'settlement' => 'settled',
+            'client_reference' => '018f47a6-9780-7f77-b83c-0c4cf2e58ab3',
+        ];
+
+        $this->actingAs($this->user)
+            ->post(route('app.consultations.payments.store', $consultation), $payload)
+            ->assertSessionHasErrors('notes');
+
+        $this->assertDatabaseCount('payments', 0);
+        $this->assertFalse($consultation->fresh()->is_paid);
+
+        $this->post(route('app.consultations.payments.store', $consultation), [
+            ...$payload,
+            'notes' => 'Remise commerciale approuvÃ©e par le mÃ©decin.',
+        ])->assertRedirect();
+
+        $consultation->refresh();
+        $this->assertTrue($consultation->is_paid);
+        $this->assertSame(40000, $consultation->collectedMinor());
+        $this->assertSame(60000, $consultation->payment_adjustment_minor);
+        $this->assertSame(0, $consultation->outstandingMinor());
+        $this->assertSame('Remise commerciale approuvÃ©e par le mÃ©decin.', $consultation->payment_notes);
+    }
+
+    public function test_a_charge_cannot_be_reduced_below_the_amount_already_collected(): void
+    {
+        $consultation = $this->payment(Patient::factory()->create(), [
+            'payment_amount_minor' => 100000,
+            'is_paid' => false,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('app.consultations.payments.store', $consultation), [
+                'amount' => 1000,
+                'paid_today' => 700,
+                'method' => 'Cash',
+                'settlement' => 'debt',
+                'client_reference' => '018f47a6-9780-7f77-b83c-0c4cf2e58ab4',
+            ])
+            ->assertRedirect();
+
+        $this->post(route('app.consultations.payments.store', $consultation), [
+            'amount' => 600,
+            'paid_today' => 0,
+            'method' => 'Cash',
+            'settlement' => 'debt',
+            'client_reference' => '018f47a6-9780-7f77-b83c-0c4cf2e58ab5',
+        ])->assertSessionHasErrors('amount');
+
+        $consultation->refresh();
+        $this->assertSame(100000, $consultation->payment_amount_minor);
+        $this->assertSame(70000, $consultation->collectedMinor());
+        $this->assertSame(1, $consultation->payments()->count());
+    }
+
+    public function test_debt_shortcut_lists_old_unpaid_consultations_without_a_date_window(): void
+    {
+        $patient = Patient::factory()->create();
+        $oldDebt = $this->payment($patient, [
+            'consulted_at' => now()->subMonths(4),
+            'payment_amount_minor' => 125000,
+            'is_paid' => false,
+        ]);
+        $this->payment($patient, [
+            'consulted_at' => now(),
+            'payment_amount_minor' => 80000,
+            'is_paid' => true,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('app.payments.index', ['status' => 'debt']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('payments/Index')
+                ->where('filters.from', '')
+                ->where('filters.to', '')
+                ->has('payments.data', 1)
+                ->where('payments.data.0.id', $oldDebt->getKey())
+                ->where('payments.data.0.status', 'unpaid')
+                ->where('payments.data.0.outstanding', 1250)
+            );
+    }
+
+    public function test_two_users_in_one_cabinet_share_payments_without_cross_cabinet_leakage(): void
+    {
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet partagé',
+            'status' => CabinetStatus::ACTIVE,
+            'activated_at' => now(),
+        ]);
+        $otherCabinet = Cabinet::query()->create([
+            'name' => 'Autre cabinet',
+            'status' => CabinetStatus::ACTIVE,
+            'activated_at' => now(),
+        ]);
+        $owner = User::factory()->create([
+            'cabinet_id' => $cabinet->getKey(),
+            'approved_at' => now(),
+        ]);
+        $teammate = User::factory()->create([
+            'cabinet_id' => $cabinet->getKey(),
+            'approved_at' => now(),
+        ]);
+        $outsider = User::factory()->create([
+            'cabinet_id' => $otherCabinet->getKey(),
+            'approved_at' => now(),
+        ]);
+
+        foreach ([$owner, $teammate, $outsider] as $member) {
+            $member->assignRole(RoleName::ADMINISTRATOR->value);
+        }
+
+        $this->actingAs($owner);
+        $patient = Patient::factory()->create();
+        $consultation = $this->payment($patient, [
+            'payment_amount_minor' => 90000,
+            'is_paid' => false,
+            'created_by' => $owner->getKey(),
+        ]);
+        $this->post(route('app.consultations.payments.store', $consultation), [
+            'amount' => 900,
+            'paid_today' => 300,
+            'method' => 'Cash',
+            'settlement' => 'debt',
+            'client_reference' => '018f47a6-9780-7f77-b83c-0c4cf2e58ab6',
+        ])->assertRedirect();
+
+        $this->actingAs($teammate)
+            ->get(route('app.payments.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('payments.data', 1)
+                ->where('payments.data.0.id', $consultation->getKey())
+                ->where('payments.data.0.paid', 300)
+                ->has('users', 2)
+                ->where('users.0.id', fn (int $id): bool => in_array($id, [$owner->id, $teammate->id], true))
+                ->where('users.1.id', fn (int $id): bool => in_array($id, [$owner->id, $teammate->id], true))
+            );
+
+        $this->actingAs($outsider)
+            ->get(route('app.payments.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('payments.data', 0)
+                ->where('summary.paid', 0)
+                ->where('summary.outstanding', 0)
+            );
     }
 
     public function test_payment_prints_follow_one_canonical_utf8_branding_update(): void

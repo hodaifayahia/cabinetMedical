@@ -15,7 +15,6 @@ import { isTauri } from '@tauri-apps/api/core';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import InputError from '@/components/InputError.vue';
-import PasskeyVerify from '@/components/PasskeyVerify.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -166,19 +165,19 @@ onBeforeUnmount(() => {
 
     <template v-if="runtimeResolved && pinEnrollment">
         <section
-            class="rounded-3xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-cyan-50 p-5 shadow-inner shadow-sky-900/5 dark:border-sky-900 dark:from-sky-950/45 dark:via-slate-900 dark:to-cyan-950/25"
+            class="rounded-3xl border border-brand/15 bg-brand-soft/45 p-5 shadow-inner shadow-brand-deep/5 dark:border-brand/25 dark:bg-brand-soft/20"
             aria-labelledby="desktop-pin-login-title"
             data-test="desktop-pin-login"
         >
             <div class="flex items-center gap-3">
                 <span
-                    class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#1268a5] text-white shadow-lg shadow-sky-800/20"
+                    class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-white shadow-lg shadow-brand-deep/20"
                 >
                     <KeyRound class="size-6" aria-hidden="true" />
                 </span>
                 <div class="min-w-0">
                     <p
-                        class="text-xs font-extrabold tracking-[0.14em] text-[#1268a5] uppercase dark:text-sky-300"
+                        class="text-xs font-extrabold tracking-[0.14em] text-brand uppercase dark:text-brand-mint"
                     >
                         Accès rapide sécurisé
                     </p>
@@ -216,7 +215,7 @@ onBeforeUnmount(() => {
                     maxlength="4"
                     autocomplete="off"
                     required
-                    class="mt-2 h-16 w-full rounded-2xl border border-slate-300 bg-white px-6 text-center font-mono text-3xl font-extrabold tracking-[0.7em] text-slate-950 transition outline-none placeholder:tracking-normal focus:border-[#1268a5] focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-sky-950"
+                    class="mt-2 h-16 w-full rounded-2xl border border-slate-300 bg-white px-6 text-center font-mono text-3xl font-extrabold tracking-[0.7em] text-slate-950 transition outline-none placeholder:tracking-normal focus:border-brand focus:ring-4 focus:ring-brand dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-brand"
                     aria-describedby="desktop-login-pin-help desktop-login-pin-error"
                     :aria-invalid="
                         Boolean(
@@ -240,7 +239,7 @@ onBeforeUnmount(() => {
                 <Button
                     type="submit"
                     size="lg"
-                    class="mt-5 h-12 w-full bg-[#1268a5] text-white shadow-lg shadow-sky-800/15 hover:bg-[#0d578b]"
+                    class="mt-5 h-12 w-full bg-brand text-white shadow-lg shadow-brand-deep/15 hover:bg-brand-deep"
                     :disabled="pinForm.processing"
                     data-test="desktop-pin-login-submit"
                 >
@@ -272,7 +271,7 @@ onBeforeUnmount(() => {
 
         <button
             type="button"
-            class="mx-auto mt-5 block rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-[#1268a5] focus-visible:outline-none dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+            class="mx-auto mt-5 block rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
             data-test="desktop-pin-use-another-account"
             @click="useAnotherAccount"
         >
@@ -281,8 +280,6 @@ onBeforeUnmount(() => {
     </template>
 
     <template v-else-if="runtimeResolved">
-        <PasskeyVerify />
-
         <Form
             v-bind="store.form()"
             :reset-on-success="['password']"
@@ -328,7 +325,7 @@ onBeforeUnmount(() => {
                         <TextLink
                             v-if="canResetPassword"
                             :href="request()"
-                            class="text-sm font-semibold text-[#1268a5] no-underline hover:underline"
+                            class="text-sm font-semibold text-brand no-underline hover:underline"
                             :tabindex="5"
                         >
                             Mot de passe oublié ?
@@ -364,7 +361,7 @@ onBeforeUnmount(() => {
                 <Button
                     type="submit"
                     size="lg"
-                    class="mt-1 h-12 w-full bg-[#1268a5] text-white shadow-lg shadow-sky-800/15 hover:bg-[#0d578b]"
+                    class="mt-1 h-12 w-full bg-brand text-white shadow-lg shadow-brand-deep/15 hover:bg-brand-deep"
                     :tabindex="4"
                     :disabled="processing"
                     data-test="login-button"
@@ -389,48 +386,24 @@ onBeforeUnmount(() => {
             showRegistrationOptions &&
             !pinEnrollment
         "
-        class="mt-8 grid gap-3 sm:grid-cols-2"
+        class="mt-6 grid gap-3 sm:grid-cols-2"
     >
         <TextLink
             :href="register()"
-            class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left no-underline transition hover:border-sky-200 hover:bg-sky-50/70 dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-sky-800"
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium no-underline shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
             :tabindex="6"
         >
-            <Building2 class="size-5 text-[#1268a5]" aria-hidden="true" />
-            <span
-                class="mt-3 block text-sm font-bold text-slate-800 dark:text-white"
-            >
-                Nouveau cabinet
-            </span>
-            <span
-                class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400"
-            >
-                Créer votre espace sécurisé
-            </span>
+            <Building2 class="size-4" aria-hidden="true" />
+            Créer un cabinet
         </TextLink>
 
         <TextLink
             :href="desktopRuntime ? '/desktop/cabinet-login' : '/join'"
-            class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left no-underline transition hover:border-amber-200 hover:bg-amber-50/70 dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-amber-800"
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium no-underline shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
             :tabindex="7"
         >
-            <UserPlus class="size-5 text-amber-600" aria-hidden="true" />
-            <span
-                class="mt-3 block text-sm font-bold text-slate-800 dark:text-white"
-            >
-                {{
-                    desktopRuntime ? 'Cabinet existant' : 'Rejoindre une équipe'
-                }}
-            </span>
-            <span
-                class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400"
-            >
-                {{
-                    desktopRuntime
-                        ? 'Utiliser le compte créé par votre responsable'
-                        : 'Demander l’accès à un cabinet'
-                }}
-            </span>
+            <UserPlus class="size-4" aria-hidden="true" />
+            {{ desktopRuntime ? 'Cabinet existant' : 'Rejoindre un cabinet' }}
         </TextLink>
     </div>
 </template>

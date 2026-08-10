@@ -571,13 +571,13 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                             >
                                 <span class="flex items-center gap-0.5">
                                     <span
-                                        class="size-3 rounded-full bg-blue-600"
+                                        class="size-3 rounded-full bg-brand"
                                     />
                                     <span
                                         class="size-3 rounded-full bg-orange-500"
                                     />
                                     <span
-                                        class="size-3 rounded-full bg-cyan-500"
+                                        class="bg-brand-soft0 size-3 rounded-full"
                                     />
                                 </span>
                                 <span
@@ -637,7 +637,7 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
 
                 <div class="mt-5 text-center">
                     <h1
-                        class="mx-auto max-w-[520px] text-center text-[16px] font-bold tracking-wide text-cyan-800"
+                        class="mx-auto max-w-[520px] text-center text-[16px] font-bold tracking-wide text-brand"
                         :class="
                             titleBox ? 'border border-slate-800 px-3 py-2' : ''
                         "
@@ -646,13 +646,23 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                     </h1>
                 </div>
 
-                <div
-                    class="courrier-content relative mt-8 min-h-80 text-[13px] leading-7"
-                    v-html="
-                        content ||
-                        '<p>Choisissez un modèle à gauche pour commencer.</p>'
-                    "
-                />
+                <div class="relative mt-8 min-h-80">
+                    <img
+                        v-if="logoUrl"
+                        :src="logoUrl"
+                        alt=""
+                        class="courrier-watermark"
+                        aria-hidden="true"
+                        contenteditable="false"
+                    />
+                    <div
+                        class="courrier-content relative z-[1] min-h-80 text-[13px] leading-7"
+                        v-html="
+                            content ||
+                            '<p>Choisissez un modèle à gauche pour commencer.</p>'
+                        "
+                    />
+                </div>
 
                 <footer
                     v-if="clinicName || contactFooter"
@@ -667,6 +677,20 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
 </template>
 
 <style scoped>
+.courrier-watermark {
+    position: absolute;
+    top: 8%;
+    left: 50%;
+    z-index: 0;
+    width: min(58%, 20rem);
+    max-height: 24rem;
+    object-fit: contain;
+    opacity: 0.055;
+    pointer-events: none;
+    transform: translateX(-50%);
+    user-select: none;
+}
+
 .courrier-content :deep(h1),
 .courrier-content :deep(h2),
 .courrier-content :deep(h3) {

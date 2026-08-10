@@ -66,4 +66,22 @@ describe('public showcase and gated desktop download contract', () => {
         );
         expect(source).not.toContain('/desktop/download/file');
     });
+
+    it('keeps the download dialog inside narrow and RTL viewports', () => {
+        const dialog = readFrontend('components/DesktopDownloadLeadDialog.vue');
+        const scrollContent = readFrontend(
+            'components/ui/dialog/DialogScrollContent.vue',
+        );
+
+        expect(dialog).toContain('dir="ltr"');
+        expect(dialog).toContain('lang="fr"');
+        expect(dialog).toContain('overflow-x-hidden');
+        expect(dialog).toContain('desktop-download-scroll-region');
+        expect(dialog).toContain('class="sr-only"');
+        expect(dialog).not.toContain('-left-[10000px]');
+
+        expect(scrollContent).toContain('overflow-x-hidden');
+        expect(scrollContent).toContain('p-2');
+        expect(scrollContent).toContain('size-10');
+    });
 });

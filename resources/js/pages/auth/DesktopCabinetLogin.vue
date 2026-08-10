@@ -35,7 +35,7 @@ defineOptions({
     <AuthBackLink :href="home()" label="Retour au choix initial" />
 
     <div
-        class="mb-7 flex gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950 dark:border-sky-900 dark:bg-sky-950/35 dark:text-sky-100"
+        class="mb-7 flex gap-3 rounded-2xl border border-brand bg-brand-soft p-4 text-sm text-brand dark:border-brand dark:bg-brand-deep/35 dark:text-brand-soft"
         role="note"
     >
         <CheckCircle2
@@ -56,13 +56,11 @@ defineOptions({
         class="flex flex-col gap-6"
         @success="markDesktopOnboardingComplete"
     >
-        <fieldset
-            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
-        >
+        <fieldset class="rounded-lg border border-border p-4 sm:p-5">
             <legend class="sr-only">Identification du cabinet</legend>
             <div class="mb-5 flex items-center gap-3">
                 <span
-                    class="flex size-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"
+                    class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand dark:bg-brand-deep dark:text-brand-mint"
                 >
                     <Building2 class="size-4.5" aria-hidden="true" />
                 </span>
@@ -111,9 +109,7 @@ defineOptions({
             </div>
         </fieldset>
 
-        <fieldset
-            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
-        >
+        <fieldset class="rounded-lg border border-border p-4 sm:p-5">
             <legend class="sr-only">Vos identifiants personnels</legend>
             <div class="mb-5 flex items-center gap-3">
                 <span
@@ -192,7 +188,7 @@ defineOptions({
         <Button
             type="submit"
             size="lg"
-            class="h-12 w-full bg-[#1268a5] text-white shadow-lg shadow-sky-800/15 hover:bg-[#0d578b]"
+            class="h-12 w-full bg-brand text-white shadow-lg shadow-brand-deep/15 hover:bg-brand-deep"
             :tabindex="5"
             :disabled="processing"
             data-test="desktop-cabinet-login-button"
@@ -217,7 +213,7 @@ defineOptions({
         </p>
         <p>
             Vous êtes le propriétaire ?
-            <TextLink :href="login()" class="font-bold text-[#1268a5]">
+            <TextLink :href="login()" class="font-bold text-brand">
                 Connexion classique
             </TextLink>
         </p>

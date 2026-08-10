@@ -6,11 +6,13 @@ use App\Http\Controllers\Appointments\AvailabilityController;
 use App\Http\Controllers\Appointments\OpenMonthController;
 use App\Http\Controllers\Appointments\ScheduleController;
 use App\Http\Controllers\Appointments\TimeOffController;
+use App\Http\Controllers\Auth\DesktopCabinetLoginController;
 use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
 use App\Http\Controllers\Auth\DesktopPinLoginController;
 use App\Http\Controllers\Auth\SessionLockController;
 use App\Http\Controllers\Cabinet\CabinetStatusController;
 use App\Http\Controllers\Cabinet\JoinCabinetController;
+use App\Http\Controllers\Cabinet\RedeemHostedLicenseCodeController;
 use App\Http\Controllers\Configuration\AccountingController;
 use App\Http\Controllers\Configuration\BackupController;
 use App\Http\Controllers\Configuration\ClinicIdentityController;
@@ -20,6 +22,7 @@ use App\Http\Controllers\Configuration\MedicationController;
 use App\Http\Controllers\Configuration\PrepareOfflineRestoreController;
 use App\Http\Controllers\Configuration\PrepareUpdateInstallController;
 use App\Http\Controllers\Configuration\ReferentialController;
+use App\Http\Controllers\Configuration\RolePermissionController;
 use App\Http\Controllers\Configuration\UploadSessionController;
 use App\Http\Controllers\Consultations\ClinicalDocumentController;
 use App\Http\Controllers\Consultations\ConsultationController;
@@ -35,11 +38,43 @@ use App\Http\Controllers\Staff\PendingMemberController;
 use App\Http\Controllers\Staff\StaffIndexController;
 use App\Http\Middleware\EnsureGoogleOAuthLoopback;
 use App\Http\Middleware\SecurePublicUploadHeaders;
+use App\Models\LandingSection;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', static fn () => Inertia::render('Welcome', [
     'canRegister' => true,
+    'landingSections' => LandingSection::query()
+        ->published()
+        ->orderBy('sort_order')
+        ->orderBy('id')
+        ->get([
+            'locale',
+            'slug',
+            'section_type',
+            'eyebrow',
+            'title',
+            'body',
+            'cta_label',
+            'cta_url',
+            'image_url',
+            'items',
+        ])
+        ->map(static fn (LandingSection $section): array => [
+            'locale' => $section->locale,
+            'slug' => $section->slug,
+            'section_type' => $section->section_type,
+            'eyebrow' => $section->eyebrow,
+            'title' => $section->title,
+            'body' => $section->body,
+            'cta_label' => $section->cta_label,
+            'cta_url' => $section->cta_url,
+            'image_url' => $section->image_url,
+            'items' => is_array($section->items) ? $section->items : [],
+        ])
+        ->values()
+        ->all(),
 ]))->name('home');
 
 Route::get('desktop/download', [DesktopDownloadLeadController::class, 'show'])
@@ -50,6 +85,14 @@ Route::post('desktop/download', [DesktopDownloadLeadController::class, 'store'])
 Route::get('desktop/download/file/{lead}', DesktopDownloadController::class)
     ->middleware(['signed', 'throttle:desktop-download-files'])
     ->name('desktop.download.file');
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('desktop/cabinet-login', [DesktopCabinetLoginController::class, 'create'])
+        ->name('desktop.cabinet-login');
+    Route::post('desktop/cabinet-login', [DesktopCabinetLoginController::class, 'store'])
+        ->middleware('throttle:desktop-cabinet-login')
+        ->name('desktop.cabinet-login.store');
+});
 
 // Desktop PIN authentication is separate from Fortify's email/password flow.
 Route::post('desktop/pin/login', DesktopPinLoginController::class)
@@ -72,6 +115,9 @@ Route::middleware('auth')->group(function (): void {
         ->name('cabinet.pending');
     Route::get('cabinet/awaiting-approval', [CabinetStatusController::class, 'awaitingApproval'])
         ->name('cabinet.awaiting-approval');
+    Route::post('cabinet/license/redeem', RedeemHostedLicenseCodeController::class)
+        ->middleware('throttle:license-activation')
+        ->name('cabinet.license.redeem');
 });
 
 Route::middleware('auth')->prefix('session')->name('session-lock.')->group(function (): void {
@@ -121,6 +167,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('appointments.check-in');
         Route::patch('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])
             ->name('appointments.cancel');
+        Route::post('appointments/mobile-sync', [AppointmentController::class, 'syncMobileDay'])
+            ->name('appointments.mobile-sync-day');
+        Route::post('appointments/{appointment}/mobile-sync', [AppointmentController::class, 'syncMobile'])
+            ->name('appointments.mobile-sync');
         Route::get('appointments/availability/month', [AvailabilityController::class, 'month'])
             ->name('appointments.availability.month');
         Route::get('appointments/availability/day', [AvailabilityController::class, 'day'])
@@ -181,6 +231,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('payments/{consultation}', [PaymentController::class, 'update'])
             ->middleware('permission:payments.create')
             ->name('payments.update');
+        Route::post('consultations/{consultation}/payments', [PaymentController::class, 'store'])
+            ->middleware('permission:payments.create')
+            ->name('consultations.payments.store');
 
         Route::prefix('configuration')->name('configuration.')->group(function () {
             Route::get('/', static function () {
@@ -188,11 +241,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                 abort_unless($user instanceof User, 401);
 
-                return $user->can(PermissionName::CONFIGURATION_BRANDING_MANAGE->value)
-                    ? to_route('app.configuration.identity.edit')
-                    : to_route('app.configuration.connectivity-backup.edit');
-            })->middleware('permission:configuration.manage|configuration.branding.manage|configuration.connectivity.manage|configuration.backups.manage|configuration.restore.manage|configuration.drive.manage|configuration.licensing.manage|configuration.diagnostics.view')
+                if ($user->can(PermissionName::CONFIGURATION_BRANDING_MANAGE->value)) {
+                    return to_route('app.configuration.identity.edit');
+                }
+
+                if ($user->can(PermissionName::CONFIGURATION_MANAGE->value)) {
+                    return to_route('app.configuration.medications.index');
+                }
+
+                if ($user->can(PermissionName::STAFF_MANAGE->value)) {
+                    return to_route('app.configuration.roles-permissions.index');
+                }
+
+                return to_route('app.configuration.connectivity-backup.edit');
+            })->middleware('permission:configuration.manage|configuration.branding.manage|configuration.connectivity.manage|configuration.backups.manage|configuration.restore.manage|configuration.drive.manage|configuration.licensing.manage|configuration.diagnostics.view|staff.manage')
                 ->name('index');
+
+            Route::get('roles-permissions', [RolePermissionController::class, 'index'])
+                ->name('roles-permissions.index');
+            Route::put('roles-permissions', [RolePermissionController::class, 'update'])
+                ->name('roles-permissions.update');
+            Route::put('roles-permissions/users/{user}', [RolePermissionController::class, 'assignRole'])
+                ->whereNumber('user')
+                ->name('roles-permissions.users.role.update');
 
             Route::middleware('permission:configuration.manage')->group(function (): void {
                 Route::get('medications', [MedicationController::class, 'index'])->name('medications.index');

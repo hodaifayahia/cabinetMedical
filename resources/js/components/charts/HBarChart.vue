@@ -12,12 +12,12 @@ const props = withDefaults(
 );
 
 const palette = [
-    '#6366f1',
-    '#10b981',
-    '#f59e0b',
-    '#06b6d4',
-    '#f43f5e',
-    '#8b5cf6',
+    '#00666f',
+    '#59f59b',
+    '#00424a',
+    '#279f79',
+    '#53c9b8',
+    '#8af8b9',
 ];
 
 const maxValue = computed(() =>

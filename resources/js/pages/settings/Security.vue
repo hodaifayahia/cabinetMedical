@@ -178,7 +178,7 @@ defineOptions({
         </div>
 
         <div
-            class="rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-sm leading-6 text-blue-950 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100"
+            class="rounded-2xl border border-brand bg-brand-soft/70 p-4 text-sm leading-6 text-brand dark:border-brand dark:bg-brand-deep/40 dark:text-brand-soft"
         >
             Cette page et chaque ajout, modification ou suppression du PIN sont
             protégés par une confirmation récente du mot de passe.

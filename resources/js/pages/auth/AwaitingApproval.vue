@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { ShieldCheck } from '@lucide/vue';
+import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import TextLink from '@/components/TextLink.vue';
 import { logout } from '@/routes';
 
@@ -18,6 +19,13 @@ defineOptions({
 
 <template>
     <Head title="En attente d’approbation" />
+
+    <AuthBackLink
+        :href="logout()"
+        method="post"
+        as="button"
+        label="Retour à la connexion"
+    />
 
     <div class="space-y-6 text-center">
         <div

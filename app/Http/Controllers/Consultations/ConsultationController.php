@@ -22,6 +22,7 @@ use App\Models\Exam;
 use App\Models\Medication;
 use App\Models\Patient;
 use App\Models\PatientMeasurement;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Prescription;
 use App\Models\User;
@@ -115,7 +116,8 @@ class ConsultationController extends Controller
         ClinicalDocumentOnlyOffice $onlyOffice,
         DocumentBrandingService $documentBranding,
     ): Response {
-        $consultation->load('patient');
+        $consultation->load(['patient', 'payments.receivedBy:id,name'])
+            ->loadSum('payments', 'amount_minor');
 
         /** @var Patient $patient */
         $patient = $consultation->patient;
@@ -143,6 +145,24 @@ class ConsultationController extends Controller
         $now = CarbonImmutable::now();
         $branding = $documentBranding->renderingIdentity();
         $canEdit = $request->user()?->can('consultations.update') ?? false;
+        $patientDebtRows = Consultation::query()
+            ->where('patient_id', $patient->getKey())
+            ->whereKeyNot($consultation->getKey())
+            ->whereNotNull('payment_amount_minor')
+            ->where('is_paid', false)
+            ->withSum('payments', 'amount_minor')
+            ->orderBy('consulted_at')
+            ->get()
+            ->filter(fn (Consultation $item): bool => $item->outstandingMinor() > 0)
+            ->map(fn (Consultation $item): array => [
+                'id' => $item->getKey(),
+                'date' => $item->consulted_at?->toDateString(),
+                'service' => $item->payment_service ?: ($item->motif ?: __('Consultation')),
+                'charged' => (int) ($item->payment_amount_minor ?? 0) / 100,
+                'paid' => $item->collectedMinor() / 100,
+                'outstanding' => $item->outstandingMinor() / 100,
+            ])
+            ->values();
         $documents = Document::query()
             ->where('patient_id', $patient->getKey())
             ->where('category', '!=', 'uploaded')
@@ -208,9 +228,26 @@ class ConsultationController extends Controller
                 'temperature_c' => $consultation->temperature_c,
                 'blood_pressure' => $consultation->blood_pressure,
                 'payment_amount' => $consultation->payment_amount_minor !== null ? $consultation->payment_amount_minor / 100 : null,
+                'payment_paid' => $consultation->collectedMinor() / 100,
+                'payment_adjustment' => (int) ($consultation->payment_adjustment_minor ?? 0) / 100,
+                'payment_outstanding' => $consultation->outstandingMinor() / 100,
+                'payment_status' => $consultation->paymentStatus(),
                 'payment_method' => $consultation->payment_method,
                 'payment_service' => $consultation->payment_service,
+                'payment_notes' => $consultation->payment_notes,
                 'is_paid' => $consultation->is_paid,
+                'payments' => $consultation->payments->map(fn (Payment $payment): array => [
+                    'id' => $payment->public_id,
+                    'amount' => $payment->amount_minor / 100,
+                    'method' => $payment->method,
+                    'notes' => $payment->notes,
+                    'received_at' => $payment->received_at?->toIso8601String(),
+                    'received_by' => $payment->receivedBy?->name,
+                ])->values()->all(),
+            ],
+            'patientDebt' => [
+                'total' => $patientDebtRows->sum('outstanding'),
+                'consultations' => $patientDebtRows->all(),
             ],
             'patient' => [
                 'id' => $patient->id,
@@ -345,6 +382,7 @@ class ConsultationController extends Controller
                 'appointments' => $appointments->count(),
             ],
             'canEdit' => $canEdit,
+            'canCollectPayment' => $request->user()?->can('payments.create') ?? false,
         ]);
     }
 
@@ -366,7 +404,7 @@ class ConsultationController extends Controller
             'payment_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'string', 'max:50'],
             'payment_service' => ['nullable', 'string', 'max:180'],
-            'is_paid' => ['boolean'],
+            'is_paid' => ['sometimes', 'boolean'],
             'complete' => ['boolean'],
         ]);
 
@@ -385,10 +423,22 @@ class ConsultationController extends Controller
             'payment_amount_minor' => $amount === null ? null : (int) round(((float) $amount) * 100),
             'payment_method' => $data['payment_method'] ?? null,
             'payment_service' => $data['payment_service'] ?? null,
-            'is_paid' => (bool) ($data['is_paid'] ?? false),
         ]);
 
+        if ($amount !== null) {
+            $chargeMinor = (int) round(((float) $amount) * 100);
+            $paidMinor = (int) $consultation->payments()->sum('amount_minor');
+            $adjustmentMinor = (int) ($consultation->payment_adjustment_minor ?? 0);
+            $consultation->is_paid = $chargeMinor === 0
+                || $paidMinor + $adjustmentMinor >= $chargeMinor;
+            $consultation->payment_settled_at = $consultation->is_paid
+                ? ($consultation->payment_settled_at ?? now())
+                : null;
+        }
+
         if (! empty($data['complete'])) {
+            abort_unless($request->user()?->can('consultations.complete'), 403);
+
             $consultation->status = 'completed';
             $consultation->completed_at = now();
 
@@ -598,7 +648,11 @@ class ConsultationController extends Controller
         Prescription $prescription,
         ClinicalDocumentManager $documentManager,
     ): RedirectResponse {
-        abort_if($prescription->patient_id !== $consultation->patient_id, 404);
+        abort_if(
+            (int) $prescription->patient_id !== (int) $consultation->patient_id
+            || (int) $prescription->consultation_id !== (int) $consultation->getKey(),
+            404,
+        );
 
         if ($prescription->document_id !== null) {
             return back();
@@ -724,7 +778,9 @@ class ConsultationController extends Controller
     public function destroyUploadedFile(Consultation $consultation, Document $document): RedirectResponse
     {
         abort_if(
-            $document->patient_id !== $consultation->patient_id || $document->category !== 'uploaded',
+            (int) $document->patient_id !== (int) $consultation->patient_id
+            || (int) $document->consultation_id !== (int) $consultation->getKey()
+            || $document->category !== 'uploaded',
             404,
         );
 

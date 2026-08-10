@@ -11,6 +11,7 @@ use App\Models\Consultation;
 use App\Models\ConsultationFee;
 use App\Models\DoctorProfile;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\Prescription;
 use App\Support\MedicalSpecialtyCatalog;
 use Carbon\CarbonImmutable;
@@ -29,12 +30,12 @@ class DashboardController extends Controller
      * Status swatches used across the appointment charts.
      */
     private const STATUS_COLORS = [
-        'scheduled' => '#3b82f6',
-        'confirmed' => '#6366f1',
-        'checked_in' => '#06b6d4',
-        'in_progress' => '#f59e0b',
-        'completed' => '#10b981',
-        'cancelled' => '#f43f5e',
+        'scheduled' => '#07545a',
+        'confirmed' => '#08746f',
+        'checked_in' => '#23927f',
+        'in_progress' => '#4fbd92',
+        'completed' => '#72e5b3',
+        'cancelled' => '#64748b',
         'no_show' => '#94a3b8',
     ];
 
@@ -118,15 +119,24 @@ class DashboardController extends Controller
     }
 
     /**
-     * Sum of paid consultation revenue (in minor units) within an optional window.
+     * Sum actual cash collections (in minor units) within an optional window.
+     * Legacy paid consultations without a ledger row remain represented.
      */
     private function revenueBetween(?CarbonImmutable $from, ?CarbonImmutable $to): int
     {
-        return (int) Consultation::query()
+        $ledgerMinor = (int) Payment::query()
+            ->when($from !== null, static fn ($query) => $query->where('received_at', '>=', $from))
+            ->when($to !== null, static fn ($query) => $query->where('received_at', '<=', $to))
+            ->sum('amount_minor');
+
+        $legacyMinor = (int) Consultation::query()
             ->where('is_paid', true)
+            ->whereDoesntHave('payments')
             ->when($from !== null, static fn ($query) => $query->where('consulted_at', '>=', $from))
             ->when($to !== null, static fn ($query) => $query->where('consulted_at', '<=', $to))
             ->sum('payment_amount_minor');
+
+        return $ledgerMinor + $legacyMinor;
     }
 
     /**
@@ -148,19 +158,33 @@ class DashboardController extends Controller
             ];
         }
 
-        $rows = Consultation::query()
-            ->where('is_paid', true)
-            ->where('consulted_at', '>=', $start)
-            ->get(['payment_amount_minor', 'consulted_at']);
+        $rows = Payment::query()
+            ->where('received_at', '>=', $start)
+            ->get(['amount_minor', 'received_at'])
+            ->map(fn (Payment $payment): array => [
+                'amount_minor' => $payment->amount_minor,
+                'received_at' => $payment->received_at,
+            ])
+            ->concat(
+                Consultation::query()
+                    ->where('is_paid', true)
+                    ->whereDoesntHave('payments')
+                    ->where('consulted_at', '>=', $start)
+                    ->get(['payment_amount_minor', 'consulted_at'])
+                    ->map(fn (Consultation $consultation): array => [
+                        'amount_minor' => (int) ($consultation->payment_amount_minor ?? 0),
+                        'received_at' => $consultation->consulted_at,
+                    ]),
+            );
 
         foreach ($rows as $row) {
-            $consultedAt = $row->getAttribute('consulted_at');
-            $key = $consultedAt instanceof CarbonInterface
-                ? $consultedAt->format('Y-m')
+            $receivedAt = $row['received_at'];
+            $key = $receivedAt instanceof CarbonInterface
+                ? $receivedAt->format('Y-m')
                 : null;
 
             if ($key !== null && isset($buckets[$key])) {
-                $buckets[$key]['value'] += (int) $row->payment_amount_minor / 100;
+                $buckets[$key]['value'] += (int) $row['amount_minor'] / 100;
             }
         }
 
@@ -251,33 +275,74 @@ class DashboardController extends Controller
     }
 
     /**
-     * The latest paid consultations for the "recent earnings" feed.
+     * The latest cash collections for the "recent earnings" feed.
      *
      * @return list<array{id: int, patient_name: string, patient_number: string|null, amount: float, method: string|null, date_label: string|null}>
      */
     private function recentPayments(): array
     {
-        $consultations = Consultation::query()
+        $ledger = Payment::query()
+            ->with('consultation.patient:id,first_name,last_name,patient_number')
+            ->orderByDesc('received_at')
+            ->limit(6)
+            ->get()
+            ->map(function (Payment $payment): array {
+                $consultation = $payment->consultation;
+                $patient = $consultation->patient;
+
+                return [
+                    'id' => (int) $consultation->id,
+                    'patient_name' => $patient->full_name,
+                    'patient_number' => $patient->patient_number,
+                    'amount' => (float) ($payment->amount_minor / 100),
+                    'method' => $payment->method,
+                    'date_label' => $payment->received_at?->translatedFormat('j M Y'),
+                    'sort_at' => $payment->received_at?->getTimestamp() ?? 0,
+                ];
+            });
+
+        $legacy = Consultation::query()
             ->where('is_paid', true)
+            ->whereDoesntHave('payments')
             ->with('patient:id,first_name,last_name,patient_number')
             ->orderByDesc('consulted_at')
             ->limit(6)
-            ->get();
+            ->get()
+            ->map(function (Consultation $consultation): array {
+                $patient = $consultation->patient;
+                $consultedAt = $consultation->getAttribute('consulted_at');
 
+                return [
+                    'id' => (int) $consultation->id,
+                    'patient_name' => $patient->full_name,
+                    'patient_number' => $patient->patient_number,
+                    'amount' => (float) ($consultation->payment_amount_minor / 100),
+                    'method' => $consultation->payment_method,
+                    'date_label' => $consultedAt instanceof CarbonInterface
+                        ? $consultedAt->translatedFormat('j M Y')
+                        : null,
+                    'sort_at' => $consultedAt instanceof CarbonInterface
+                        ? $consultedAt->getTimestamp()
+                        : 0,
+                ];
+            });
+
+        $rows = $ledger
+            ->concat($legacy)
+            ->sortByDesc('sort_at')
+            ->take(6);
+
+        /** @var list<array{id: int, patient_name: string, patient_number: string|null, amount: float, method: string|null, date_label: string|null}> $result */
         $result = [];
-        foreach ($consultations as $consultation) {
-            $patient = $consultation->patient;
-            $consultedAt = $consultation->getAttribute('consulted_at');
 
+        foreach ($rows as $row) {
             $result[] = [
-                'id' => $consultation->id,
-                'patient_name' => $patient->full_name,
-                'patient_number' => $patient->patient_number,
-                'amount' => (float) $consultation->payment_amount_minor / 100,
-                'method' => $consultation->payment_method,
-                'date_label' => $consultedAt instanceof CarbonInterface
-                    ? $consultedAt->translatedFormat('j M Y')
-                    : null,
+                'id' => $row['id'],
+                'patient_name' => $row['patient_name'],
+                'patient_number' => $row['patient_number'],
+                'amount' => $row['amount'],
+                'method' => $row['method'],
+                'date_label' => $row['date_label'],
             ];
         }
 

@@ -35,6 +35,7 @@ type ClinicIdentity = {
     address: string;
     footer_line: string;
     logo_url: string | null;
+    has_custom_logo: boolean;
 };
 
 const props = defineProps<{
@@ -49,6 +50,7 @@ const props = defineProps<{
 
 const logoInput = ref<HTMLInputElement | null>(null);
 const logoPreview = ref<string | null>(props.identity.logo_url);
+const customLogoPresent = ref(props.identity.has_custom_logo);
 
 const form = useForm({
     doctor_name: props.identity.doctor_name,
@@ -102,6 +104,7 @@ const onLogoSelected = (event: Event) => {
 
     if (file !== null) {
         logoPreview.value = URL.createObjectURL(file);
+        customLogoPresent.value = true;
     }
 };
 
@@ -110,6 +113,8 @@ const submit = () => {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
+            customLogoPresent.value =
+                customLogoPresent.value || form.logo !== null;
             form.logo = null;
         },
     });
@@ -127,7 +132,8 @@ const removeLogo = () => {
     router.delete('/app/configuration/identity/logo', {
         preserveScroll: true,
         onSuccess: () => {
-            logoPreview.value = null;
+            logoPreview.value = '/brand/drclick-mark.png';
+            customLogoPresent.value = false;
             form.logo = null;
         },
     });
@@ -174,7 +180,7 @@ const correctSpecialty = () => {
             <section class="med-panel p-6">
                 <div class="flex items-start gap-3">
                     <span
-                        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+                        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand dark:bg-brand-deep/40 dark:text-brand-mint"
                     >
                         <FileText class="size-5" />
                     </span>
@@ -204,7 +210,7 @@ const correctSpecialty = () => {
                         <Label>Logo du cabinet</Label>
                         <button
                             type="button"
-                            class="mt-2 flex aspect-square w-32 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-blue-300 bg-blue-50/60 transition hover:border-blue-500 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-800 dark:bg-blue-950/20"
+                            class="mt-2 flex aspect-square w-32 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-brand bg-brand-soft/60 transition hover:border-brand hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60 dark:border-brand dark:bg-brand-deep/20"
                             :disabled="!customBrandingCapability.available"
                             @click="selectLogo"
                         >
@@ -216,7 +222,7 @@ const correctSpecialty = () => {
                             />
                             <span
                                 v-else
-                                class="flex flex-col items-center gap-2 text-xs font-semibold text-blue-600"
+                                class="flex flex-col items-center gap-2 text-xs font-semibold text-brand"
                             >
                                 <ImageUp class="size-7" />
                                 Choisir un logo
@@ -241,7 +247,7 @@ const correctSpecialty = () => {
                                 <ImageUp class="size-4" /> Choisir
                             </Button>
                             <Button
-                                v-if="logoPreview"
+                                v-if="customLogoPresent"
                                 type="button"
                                 variant="outline"
                                 size="sm"
@@ -488,10 +494,10 @@ const correctSpecialty = () => {
 
         <Link
             href="/app/configuration/connectivity-backup"
-            class="flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-50/70 p-6 transition hover:border-blue-400 hover:bg-blue-50 sm:flex-row sm:items-center dark:border-blue-900 dark:bg-blue-950/25"
+            class="flex flex-col gap-4 rounded-2xl border border-brand bg-brand-soft/70 p-6 transition hover:border-brand hover:bg-brand-soft sm:flex-row sm:items-center dark:border-brand dark:bg-brand-deep/25"
         >
             <span
-                class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm dark:bg-slate-900"
+                class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-brand shadow-sm dark:bg-slate-900"
             >
                 <Wifi class="size-5" />
             </span>
@@ -504,9 +510,7 @@ const correctSpecialty = () => {
                     local, Google Drive et les politiques de sauvegarde.
                 </span>
             </span>
-            <span
-                class="text-sm font-semibold text-blue-700 dark:text-blue-300"
-            >
+            <span class="text-sm font-semibold text-brand dark:text-brand-mint">
                 Ouvrir →
             </span>
         </Link>

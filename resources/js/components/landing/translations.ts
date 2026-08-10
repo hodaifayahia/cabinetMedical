@@ -114,7 +114,13 @@ export const translations: Record<LandingLocale, LandingCopy> = {
             ],
         },
         mockup: {
-            sidebar: ['لوحة التحكم', 'المرضى', 'المواعيد', 'الاستشارات', 'الوصفات'],
+            sidebar: [
+                'لوحة التحكم',
+                'المرضى',
+                'المواعيد',
+                'الاستشارات',
+                'الوصفات',
+            ],
             agendaTitle: 'مواعيد اليوم',
             slots: [
                 { time: '08:30', name: 'أمينة بن علي', status: 'مؤكّد' },
@@ -250,7 +256,13 @@ export const translations: Record<LandingLocale, LandingCopy> = {
             ],
         },
         mockup: {
-            sidebar: ['Tableau de bord', 'Patients', 'Rendez-vous', 'Consultations', 'Ordonnances'],
+            sidebar: [
+                'Tableau de bord',
+                'Patients',
+                'Rendez-vous',
+                'Consultations',
+                'Ordonnances',
+            ],
             agendaTitle: 'Rendez-vous du jour',
             slots: [
                 { time: '08:30', name: 'Amina Ben Ali', status: 'Confirmé' },
@@ -293,7 +305,8 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         how: {
             eyebrow: 'Le démarrage est simple',
             title: 'Du téléchargement à la première consultation en trois étapes',
-            subtitle: 'Aucune compétence technique requise. Installation directe et activation rapide.',
+            subtitle:
+                'Aucune compétence technique requise. Installation directe et activation rapide.',
             steps: [
                 {
                     title: 'Téléchargez l’application',
@@ -386,7 +399,13 @@ export const translations: Record<LandingLocale, LandingCopy> = {
             ],
         },
         mockup: {
-            sidebar: ['Dashboard', 'Patients', 'Appointments', 'Consultations', 'Prescriptions'],
+            sidebar: [
+                'Dashboard',
+                'Patients',
+                'Appointments',
+                'Consultations',
+                'Prescriptions',
+            ],
             agendaTitle: 'Today’s appointments',
             slots: [
                 { time: '08:30', name: 'Amina Ben Ali', status: 'Confirmed' },
@@ -429,7 +448,8 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         how: {
             eyebrow: 'Getting started is simple',
             title: 'From download to first consultation in three steps',
-            subtitle: 'No technical skills needed. Straightforward install and fast activation.',
+            subtitle:
+                'No technical skills needed. Straightforward install and fast activation.',
             steps: [
                 {
                     title: 'Download the app',
@@ -496,7 +516,10 @@ export const translations: Record<LandingLocale, LandingCopy> = {
 };
 
 function isLandingLocale(value: unknown): value is LandingLocale {
-    return typeof value === 'string' && (LANDING_LOCALES as readonly string[]).includes(value);
+    return (
+        typeof value === 'string' &&
+        (LANDING_LOCALES as readonly string[]).includes(value)
+    );
 }
 
 /**
@@ -507,7 +530,9 @@ function isLandingLocale(value: unknown): value is LandingLocale {
 export function useLandingLocale() {
     const locale = ref<LandingLocale>('ar');
 
-    const dir = computed<'rtl' | 'ltr'>(() => (locale.value === 'ar' ? 'rtl' : 'ltr'));
+    const dir = computed<'rtl' | 'ltr'>(() =>
+        locale.value === 'ar' ? 'rtl' : 'ltr',
+    );
 
     const copy = computed<LandingCopy>(() => translations[locale.value]);
 

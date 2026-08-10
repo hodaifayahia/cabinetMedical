@@ -10,6 +10,8 @@ use Throwable;
 
 final class DocumentBrandingService
 {
+    public const DEFAULT_LOGO_URL = '/brand/drclick-mark.png';
+
     public function __construct(
         private readonly MedicalSpecialtyCatalog $specialties,
     ) {}
@@ -84,7 +86,7 @@ final class DocumentBrandingService
      *     footer_extra_line: string,
      *     receipt_footer: string,
      *     footer: string,
-     *     logo_url: string|null
+     *     logo_url: string
      * }
      */
     public function renderingIdentity(
@@ -135,18 +137,20 @@ final class DocumentBrandingService
         ]));
     }
 
-    private function logoUrl(?string $path): ?string
+    private function logoUrl(?string $path): string
     {
         if (! is_string($path) || trim($path) === '') {
-            return null;
+            return self::DEFAULT_LOGO_URL;
         }
 
         try {
             $disk = Storage::disk('public');
 
-            return $disk->exists($path) ? $disk->url($path) : null;
+            return $disk->exists($path)
+                ? $disk->url($path)
+                : self::DEFAULT_LOGO_URL;
         } catch (Throwable) {
-            return null;
+            return self::DEFAULT_LOGO_URL;
         }
     }
 }

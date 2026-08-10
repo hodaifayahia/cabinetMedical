@@ -7,7 +7,10 @@ import { configurationNavForPermissions } from '@/lib/configurationNav';
 const { isCurrentOrParentUrl } = useCurrentUrl();
 const page = usePage();
 const visibleConfigurationNav = computed(() =>
-    configurationNavForPermissions(page.props.auth.user?.permissions ?? []),
+    configurationNavForPermissions(
+        page.props.auth.user?.permissions ?? [],
+        page.props.auth.user?.can.manageRolePermissions ?? false,
+    ),
 );
 
 const activeGroupIndex = computed(() => {
@@ -52,7 +55,7 @@ const activeGroup = computed(
         </nav>
 
         <nav
-            class="flex flex-wrap items-center gap-1 rounded-xl bg-[#4c82b7] p-1.5 shadow-sm"
+            class="flex flex-wrap items-center gap-1 rounded-xl bg-brand p-1.5 shadow-sm"
         >
             <Link
                 v-for="link in activeGroup.links"

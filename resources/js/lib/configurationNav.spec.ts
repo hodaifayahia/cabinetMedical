@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { configurationNavForPermissions } from './configurationNav';
 
-const visibleLinks = (permissions: string[]) =>
-    configurationNavForPermissions(permissions)
+const visibleLinks = (permissions: string[], manageRolePermissions = false) =>
+    configurationNavForPermissions(permissions, manageRolePermissions)
         .flatMap((group) => group.links)
         .map((link) => link.href);
 
@@ -32,6 +32,18 @@ describe('configurationNavForPermissions', () => {
 
     it('does not expose clinic or catalog links through the old broad settings permission', () => {
         expect(visibleLinks(['settings.manage'])).toEqual([]);
+    });
+
+    it('shows the editable role matrix to staff managers', () => {
+        expect(visibleLinks(['staff.manage'])).toEqual([
+            '/app/configuration/roles-permissions',
+        ]);
+    });
+
+    it('shows the editable role matrix through the explicit doctor/owner capability', () => {
+        expect(visibleLinks([], true)).toEqual([
+            '/app/configuration/roles-permissions',
+        ]);
     });
 
     it('keeps appointment configuration independent from clinic settings', () => {

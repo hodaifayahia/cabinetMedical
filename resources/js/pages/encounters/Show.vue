@@ -53,7 +53,7 @@ const statusBadge = (status: string): string => {
         case 'signed':
             return `${base} bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300`;
         case 'in_progress':
-            return `${base} bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300`;
+            return `${base} bg-brand-soft text-brand dark:bg-brand-deep dark:text-brand-mint`;
         case 'void':
             return `${base} bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300`;
         default:

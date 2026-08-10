@@ -12,8 +12,8 @@ use tauri::{
     AppHandle, Manager,
 };
 
-const OPEN_MENU_ID: &str = "medismart-tray-open";
-const QUIT_MENU_ID: &str = "medismart-tray-quit";
+const OPEN_MENU_ID: &str = "drclick-tray-open";
+const QUIT_MENU_ID: &str = "drclick-tray-quit";
 
 #[derive(Default)]
 pub(crate) struct DesktopBehaviorState {
@@ -36,7 +36,7 @@ pub(crate) fn install_system_tray(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, OPEN_MENU_ID, "Ouvrir Drclick", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, QUIT_MENU_ID, "Quitter Drclick", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
-    let mut tray = TrayIconBuilder::with_id("medismart-main-tray")
+    let mut tray = TrayIconBuilder::with_id("drclick-main-tray")
         .menu(&menu)
         .tooltip("Drclick")
         .show_menu_on_left_click(false)

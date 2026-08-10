@@ -150,8 +150,8 @@ const paginationLabel = (label: string): string => {
                                         Aucun patient trouvé
                                     </p>
                                     <p class="med-empty-hint">
-                                        Ajustez votre recherche ou enregistrez un
-                                        nouveau dossier patient.
+                                        Ajustez votre recherche ou enregistrez
+                                        un nouveau dossier patient.
                                     </p>
                                 </div>
                             </td>

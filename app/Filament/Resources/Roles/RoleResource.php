@@ -22,6 +22,8 @@ class RoleResource extends Resource
 {
     protected static ?string $model = Role::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
     protected static string|UnitEnum|null $navigationGroup = 'Administration';

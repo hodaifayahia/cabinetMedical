@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AppointmentController;
+use App\Http\Controllers\Api\V1\AppointmentSyncController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CabinetController;
 use App\Http\Controllers\Api\V1\PatientController;
@@ -42,6 +43,9 @@ Route::prefix('v1')->group(function (): void {
             Route::get('appointments/{appointment}', [AppointmentController::class, 'show']);
             Route::patch('appointments/{appointment}', [AppointmentController::class, 'update']);
             Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy']);
+
+            Route::get('sync/appointments', [AppointmentSyncController::class, 'index']);
+            Route::post('sync/appointments/ack', [AppointmentSyncController::class, 'acknowledge']);
 
             Route::get('schedule', [ScheduleController::class, 'index']);
 

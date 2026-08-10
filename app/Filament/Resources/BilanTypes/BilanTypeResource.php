@@ -23,6 +23,8 @@ class BilanTypeResource extends Resource
 {
     protected static ?string $model = BilanType::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTicket;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Catalogue';

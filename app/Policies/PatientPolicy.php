@@ -15,7 +15,8 @@ class PatientPolicy
 
     public function view(User $user, Patient $patient): bool
     {
-        return $user->can(PermissionName::PATIENTS_VIEW->value);
+        return $this->sharesCabinetWith($user, $patient)
+            && $user->can(PermissionName::PATIENTS_VIEW->value);
     }
 
     public function create(User $user): bool
@@ -25,16 +26,33 @@ class PatientPolicy
 
     public function update(User $user, Patient $patient): bool
     {
-        return $user->can(PermissionName::PATIENTS_UPDATE->value);
+        return $this->sharesCabinetWith($user, $patient)
+            && $user->can(PermissionName::PATIENTS_UPDATE->value);
     }
 
     public function delete(User $user, Patient $patient): bool
     {
-        return $user->can(PermissionName::PATIENTS_DELETE->value);
+        return $this->sharesCabinetWith($user, $patient)
+            && $user->can(PermissionName::PATIENTS_DELETE->value);
     }
 
     public function viewMedicalRecord(User $user, Patient $patient): bool
     {
-        return $user->can(PermissionName::PATIENTS_VIEW_MEDICAL_RECORD->value);
+        return $this->sharesCabinetWith($user, $patient)
+            && $user->can(PermissionName::PATIENTS_VIEW_MEDICAL_RECORD->value);
+    }
+
+    private function sharesCabinetWith(User $user, Patient $patient): bool
+    {
+        if ($user->is_platform_admin) {
+            return true;
+        }
+
+        $patientCabinetId = $patient->getAttribute('cabinet_id');
+
+        return $user->cabinet_id === null
+            ? $patientCabinetId === null
+            : $patientCabinetId !== null
+                && (int) $user->cabinet_id === (int) $patientCabinetId;
     }
 }

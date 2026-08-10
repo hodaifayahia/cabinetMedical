@@ -58,6 +58,8 @@ export const e2eEnvironment = Object.freeze({
     LOG_LEVEL: 'warning',
     MAIL_MAILER: 'array',
     MEDISMART_BACKUP_MANAGED_DIRECTORY: backupDirectory,
+    MEDISMART_DESKTOP_DOWNLOAD_URL:
+        'https://downloads.example.test/DrClickDz-Desktop-Setup.exe',
     MEDISMART_DESKTOP_SUPERVISED: 'true',
     MEDISMART_ENABLE_LEGACY_SQLITE_RESTORE: 'false',
     MEDISMART_LAN_LISTENER_STATUS: 'active',

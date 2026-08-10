@@ -88,6 +88,7 @@ class DocumentBrandingIntegrationTest extends TestCase
         $document = Document::query()->sole();
         $documentXml = $this->wordPart($document, 'word/document.xml');
         $footerXml = $this->wordPart($document, 'word/footer1.xml');
+        $headerXml = $this->wordPart($document, 'word/header1.xml');
 
         $this->assertStringContainsString('Dr Nadia Amrane', $documentXml);
         $this->assertStringContainsString('Cardiologie', $documentXml);
@@ -98,7 +99,15 @@ class DocumentBrandingIntegrationTest extends TestCase
         $this->assertStringContainsString('12 rue Didouche Mourad — Liberté, الجزائر', $footerXml);
         $this->assertStringContainsString('Sur rendez-vous — الاستقبال', $footerXml);
         $this->assertSame($logo, $this->wordPart($document, 'word/media/clinic-logo.png'));
-        $this->assertStringContainsString('rId3', $this->wordPart($document, 'word/_rels/document.xml.rels'));
+        $documentRelationships = $this->wordPart($document, 'word/_rels/document.xml.rels');
+        $this->assertStringContainsString('rId3', $documentRelationships);
+        $this->assertStringContainsString('Target="header1.xml"', $documentRelationships);
+        $this->assertStringContainsString('behindDoc="1"', $headerXml);
+        $this->assertStringContainsString('<a:alphaModFix amt="6000"/>', $headerXml);
+        $this->assertStringContainsString(
+            'Target="media/clinic-logo.png"',
+            $this->wordPart($document, 'word/_rels/header1.xml.rels'),
+        );
     }
 
     public function test_one_identity_update_flows_to_every_new_clinical_document_without_rewriting_existing_files(): void

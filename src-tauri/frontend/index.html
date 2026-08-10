@@ -15,14 +15,14 @@
             }
 
             :root {
-                --accent: #0669c9;
-                --accent-strong: #0756a2;
-                --bg: #eef5f8;
+                --accent: #00666f;
+                --accent-strong: #003d49;
+                --bg: #f1f8f6;
                 --card-bg: #ffffff;
-                --surface: #f5f8fb;
-                --text: #102033;
-                --muted: #637083;
-                --border: #dbe4ec;
+                --surface: #f2faf7;
+                --text: #07333a;
+                --muted: #567075;
+                --border: #d4e6e1;
                 --danger: #b42318;
                 --success: #047857;
                 --radius: 18px;
@@ -30,12 +30,12 @@
 
             @media (prefers-color-scheme: dark) {
                 :root {
-                    --bg: #0f141d;
-                    --card-bg: #181e29;
-                    --surface: #202735;
-                    --text: #eef4fa;
-                    --muted: #aab5c3;
-                    --border: #303a4a;
+                    --bg: #071b20;
+                    --card-bg: #0b262c;
+                    --surface: #123139;
+                    --text: #effcf7;
+                    --muted: #a2bbb5;
+                    --border: #25464d;
                     --danger: #ff9b92;
                     --success: #5ee3b0;
                 }
@@ -44,13 +44,7 @@
             html,
             body {
                 min-height: 100%;
-                background:
-                    radial-gradient(
-                        circle at 10% 10%,
-                        rgba(6, 105, 201, 0.1),
-                        transparent 38%
-                    ),
-                    var(--bg);
+                background: var(--bg);
                 color: var(--text);
                 font-family:
                     system-ui,
@@ -90,13 +84,8 @@
                 flex-shrink: 0;
                 align-items: center;
                 justify-content: center;
-                border-radius: 16px;
-                background: linear-gradient(145deg, #0877df, #0758ad);
-                color: #fff;
-                font-size: 29px;
-                font-weight: 800;
-                letter-spacing: -1px;
-                box-shadow: 0 12px 30px rgba(6, 105, 201, 0.24);
+                object-fit: contain;
+                user-select: none;
             }
 
             .spinner {
@@ -244,7 +233,7 @@
 
             .server-input:focus {
                 border-color: var(--accent);
-                box-shadow: 0 0 0 3px rgba(6, 105, 201, 0.14);
+                box-shadow: 0 0 0 3px rgba(0, 102, 111, 0.14);
             }
 
             .actions {
@@ -340,7 +329,12 @@
     </head>
     <body>
         <div class="spinner-wrap visible" id="spinner">
-            <div class="mark">D</div>
+            <img
+                class="mark"
+                src="./brand/drclick-mark.png"
+                alt="Drclick"
+                draggable="false"
+            />
             <div
                 class="spinner"
                 role="status"
@@ -351,7 +345,13 @@
 
         <main class="offline-card" id="offline-card" aria-live="polite">
             <header class="card-header">
-                <div class="mark" aria-hidden="true">D</div>
+                <img
+                    class="mark"
+                    src="./brand/drclick-mark.png"
+                    alt=""
+                    aria-hidden="true"
+                    draggable="false"
+                />
                 <div>
                     <p class="eyebrow">Drclick · Connexion du cabinet</p>
                     <h1>Choisissez où se trouve votre cabinet</h1>
@@ -460,10 +460,11 @@
             (function () {
                 'use strict';
 
+                const cloudServerUrl =
+                    window.__DRCLICK_CLOUD_SERVER_URL ||
+                    'https://seagreen-turkey-468004.hostingersite.com/';
                 const currentServerUrl =
-                    window.__MEDISMART_SERVER_URL ||
-                    'https://app.medismart.dz/';
-                const cloudServerUrl = 'https://app.medismart.dz/';
+                    window.__DRCLICK_SERVER_URL || cloudServerUrl;
                 const localServerUrl = 'http://localhost:8000/';
                 const INITIAL_DELAY_MS = 2_000;
                 const MAX_DELAY_MS = 30_000;
@@ -574,6 +575,32 @@
                     return nativeRequest || fallbackProbe(url);
                 }
 
+                function sameOrigin(left, right) {
+                    try {
+                        return new URL(left).origin === new URL(right).origin;
+                    } catch (_error) {
+                        return false;
+                    }
+                }
+
+                async function openLocalDrclickWhenAvailable() {
+                    if (sameOrigin(currentServerUrl, localServerUrl)) {
+                        return false;
+                    }
+
+                    const request = invoke('configure_server_connection', {
+                        url: localServerUrl,
+                    });
+                    if (!request) {
+                        return false;
+                    }
+
+                    const result = await request;
+                    window.location.replace(authenticationEntryUrl(result.url));
+
+                    return true;
+                }
+
                 async function attemptCurrent() {
                     if (busy) {
                         return;
@@ -585,6 +612,14 @@
                             authenticationEntryUrl(result.url || currentServerUrl),
                         );
                     } catch (error) {
+                        try {
+                            if (await openLocalDrclickWhenAvailable()) {
+                                return;
+                            }
+                        } catch (_localError) {
+                            // Keep the original server error. The setup screen
+                            // still lets the user retry or choose another Hub.
+                        }
                         showSetup(readableError(error));
                         scheduleRetry();
                     }

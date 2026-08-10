@@ -13,6 +13,7 @@ import {
     Stethoscope,
     UsersRound,
 } from '@lucide/vue';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { login, register } from '@/routes';
 
 defineProps<{
@@ -37,9 +38,7 @@ const profileDetails = [
         data-test="desktop-onboarding"
         class="fixed inset-0 z-20 grid min-h-screen place-items-center overflow-y-auto bg-slate-950/94 px-4 py-8 text-slate-950 backdrop-blur-xl sm:px-6"
     >
-        <div
-            class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_12%,rgba(14,165,233,0.22),transparent_28%),radial-gradient(circle_at_90%_85%,rgba(16,185,129,0.2),transparent_30%)]"
-        />
+        <div class="pointer-events-none absolute inset-0 bg-brand-deep/30" />
 
         <div
             class="relative w-full max-w-4xl overflow-hidden rounded-[2rem] border border-white/15 bg-white shadow-[0_35px_100px_rgba(2,8,23,0.55)]"
@@ -71,17 +70,13 @@ const profileDetails = [
                 <div
                     class="hidden items-center border-l border-slate-200 px-9 lg:flex"
                 >
-                    <div
-                        class="flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/25"
-                    >
-                        <Stethoscope class="size-9" />
-                    </div>
+                    <AppLogoIcon class="size-20 object-contain" />
                 </div>
             </div>
 
             <div class="p-7 sm:p-9">
                 <p
-                    class="text-xs font-black tracking-[0.16em] text-blue-600 uppercase"
+                    class="text-xs font-black tracking-[0.16em] text-brand uppercase"
                 >
                     Étape 1 · Choisissez votre situation
                 </p>
@@ -91,10 +86,10 @@ const profileDetails = [
                         v-if="canRegister"
                         :href="register()"
                         data-test="desktop-create-cabinet"
-                        class="group flex min-h-52 flex-col rounded-3xl border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6 transition duration-200 hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-950/10 focus-visible:ring-4 focus-visible:ring-blue-200 focus-visible:outline-none"
+                        class="group flex min-h-52 flex-col rounded-3xl border-2 border-brand/15 bg-brand-soft/60 p-6 transition duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-xl hover:shadow-brand-deep/10 focus-visible:ring-4 focus-visible:ring-brand/20 focus-visible:outline-none"
                     >
                         <span
-                            class="flex size-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                            class="flex size-12 items-center justify-center rounded-2xl bg-brand text-white shadow-lg shadow-brand-deep/20"
                         >
                             <Building2 class="size-6" />
                         </span>
@@ -106,7 +101,7 @@ const profileDetails = [
                             devenez son propriétaire.
                         </span>
                         <span
-                            class="mt-auto flex items-center gap-2 pt-5 text-sm font-bold text-blue-700"
+                            class="mt-auto flex items-center gap-2 pt-5 text-sm font-bold text-brand"
                         >
                             Commencer l’inscription
                             <ArrowRight
@@ -136,7 +131,7 @@ const profileDetails = [
                     <Link
                         href="/desktop/cabinet-login"
                         data-test="desktop-existing-cabinet"
-                        class="group flex min-h-52 flex-col rounded-3xl border-2 border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-6 transition duration-200 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-950/10 focus-visible:ring-4 focus-visible:ring-emerald-200 focus-visible:outline-none"
+                        class="group flex min-h-52 flex-col rounded-3xl border-2 border-brand-mint/30 bg-white p-6 transition duration-200 hover:-translate-y-1 hover:border-brand-mint hover:shadow-xl hover:shadow-brand-deep/10 focus-visible:ring-4 focus-visible:ring-brand-mint/20 focus-visible:outline-none"
                     >
                         <span
                             class="flex size-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
@@ -190,7 +185,7 @@ const profileDetails = [
                             >
                                 <component
                                     :is="detail.icon"
-                                    class="size-3.5 text-blue-600"
+                                    class="size-3.5 text-brand"
                                 />
                                 {{ detail.label }}
                             </span>
@@ -208,7 +203,7 @@ const profileDetails = [
                     <Link
                         :href="login()"
                         data-test="desktop-existing-account"
-                        class="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:outline-none"
+                        class="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-brand focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
                     >
                         <LockKeyhole class="size-4" />
                         J’ai déjà un compte

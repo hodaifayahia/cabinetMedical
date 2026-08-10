@@ -29,8 +29,8 @@ import CourriersPanel from '@/components/consultations/CourriersPanel.vue';
 import DocumentsPanel from '@/components/consultations/DocumentsPanel.vue';
 import OrdonnancesPanel from '@/components/consultations/OrdonnancesPanel.vue';
 import RendezVousPanel from '@/components/consultations/RendezVousPanel.vue';
+import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -133,14 +133,38 @@ type ConsultationData = {
     temperature_c: string | number | null;
     blood_pressure: string | null;
     payment_amount: number | null;
+    payment_paid: number;
+    payment_adjustment: number;
+    payment_outstanding: number;
+    payment_status: 'paid' | 'partial' | 'unpaid';
     payment_method: string | null;
     payment_service: string | null;
+    payment_notes: string | null;
     is_paid: boolean;
+    payments: {
+        id: string;
+        amount: number;
+        method: string | null;
+        notes: string | null;
+        received_at: string | null;
+        received_by: string | null;
+    }[];
 };
 
 const props = defineProps<{
     consultation: ConsultationData;
     patient: PatientInfo;
+    patientDebt: {
+        total: number;
+        consultations: {
+            id: number;
+            date: string | null;
+            service: string;
+            charged: number;
+            paid: number;
+            outstanding: number;
+        }[];
+    };
     options: {
         genders: Option[];
         bloodGroups: Option[];
@@ -174,6 +198,7 @@ const props = defineProps<{
     cabinet: DocumentBranding;
     stats: { consultations: number; appointments: number };
     canEdit: boolean;
+    canCollectPayment: boolean;
 }>();
 
 type SectionKey =
@@ -353,8 +378,49 @@ const consultationForm = useForm({
             : '',
     payment_method: props.consultation.payment_method ?? '',
     payment_service: props.consultation.payment_service ?? '',
-    is_paid: props.consultation.is_paid ?? false,
 });
+
+const newPaymentReference = (): string => {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
+
+    return 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/[x]/g, () =>
+        Math.floor(Math.random() * 16).toString(16),
+    );
+};
+
+const paymentForm = useForm({
+    amount:
+        props.consultation.payment_amount != null
+            ? String(props.consultation.payment_amount)
+            : '',
+    paid_today: '',
+    method: props.consultation.payment_method ?? '',
+    service: props.consultation.payment_service ?? '',
+    notes: '',
+    settlement: 'debt' as 'debt' | 'settled',
+    client_reference: newPaymentReference(),
+});
+
+const projectedOutstanding = computed(() =>
+    Math.max(
+        0,
+        Number(paymentForm.amount || 0) -
+            props.consultation.payment_paid -
+            Number(paymentForm.paid_today || 0),
+    ),
+);
+const patientDebtUrl = computed(
+    () =>
+        `/app/payments?status=debt&search=${encodeURIComponent(props.patient.patient_number)}`,
+);
+
+const formatPaymentMoney = (amount: number): string =>
+    new Intl.NumberFormat('fr-DZ', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount) + ' DA';
 
 const isCompleted = computed(() => props.consultation.status === 'completed');
 
@@ -396,7 +462,6 @@ const consultationDraft = () => ({
     payment_amount: consultationForm.payment_amount,
     payment_method: consultationForm.payment_method,
     payment_service: consultationForm.payment_service,
-    is_paid: consultationForm.is_paid,
 });
 
 const saveOfflineDraft = () => {
@@ -513,7 +578,6 @@ watch(
         payment_amount: consultationForm.payment_amount,
         payment_method: consultationForm.payment_method,
         payment_service: consultationForm.payment_service,
-        is_paid: consultationForm.is_paid,
     }),
     scheduleConsultationAutosave,
     { deep: true },
@@ -615,11 +679,29 @@ const confirmConsultation = () => {
 
 const selectPaymentService = (value: string) => {
     consultationForm.payment_service = value;
+    paymentForm.service = value;
     const prestation = props.prestations.find((item) => item.label === value);
 
     if (prestation?.amount != null) {
         consultationForm.payment_amount = String(prestation.amount);
+        paymentForm.amount = String(prestation.amount);
     }
+};
+
+const collectPayment = () => {
+    if (!isOnline.value || !props.canCollectPayment) {
+        return;
+    }
+
+    paymentForm.post(`/app/consultations/${props.consultation.id}/payments`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            paymentForm.paid_today = '';
+            paymentForm.notes = '';
+            paymentForm.settlement = 'debt';
+            paymentForm.client_reference = newPaymentReference();
+        },
+    });
 };
 
 const openQuickSection = (section: SectionKey) => {
@@ -788,7 +870,7 @@ const tabClass = (activeTab: boolean): string =>
                     class="flex items-center gap-3 rounded-lg px-3 py-2 text-left transition"
                     :class="
                         active === item.key
-                            ? 'bg-[#4c82b7] text-white shadow-sm'
+                            ? 'bg-brand text-white shadow-sm'
                             : 'text-foreground hover:bg-accent'
                     "
                     @click="active = item.key"
@@ -967,19 +1049,17 @@ const tabClass = (activeTab: boolean): string =>
                 </div>
             </div>
 
-            <div class="min-h-0 flex-1 overflow-y-auto">
+            <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
                 <!-- DOSSIER -->
                 <div
                     v-if="active === 'dossier'"
-                    class="grid h-full min-h-0 gap-4 lg:grid-cols-[13.5rem_minmax(0,1fr)_minmax(0,1.05fr)] lg:overflow-hidden"
+                    class="grid min-h-0 min-w-0 gap-4 xl:h-full xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1.05fr)] xl:overflow-hidden"
                 >
                     <!-- Column 1 · important note + quick access -->
-                    <div class="flex min-h-0 flex-col gap-3">
+                    <div class="flex min-h-0 min-w-0 flex-col gap-3">
                         <div
-                            :class="[
-                                cardClass,
-                                'flex min-h-0 flex-1 flex-col gap-2',
-                            ]"
+                            :class="[cardClass, 'flex min-w-0 flex-col gap-3']"
+                            data-testid="consultation-important-note"
                         >
                             <p
                                 class="flex items-center gap-1.5 text-sm font-semibold text-red-600 dark:text-red-400"
@@ -991,49 +1071,51 @@ const tabClass = (activeTab: boolean): string =>
                                 v-model="patientForm.allergies"
                                 :disabled="!canEdit"
                                 placeholder="Notes importantes, allergies…"
-                                class="min-h-24 flex-1 resize-none"
+                                rows="6"
+                                class="h-36 max-h-56 min-h-28 w-full resize-y overflow-y-auto"
                             />
                         </div>
                         <div
-                            class="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4"
+                            class="grid min-w-0 shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2"
+                            data-testid="consultation-document-shortcuts"
                         >
                             <Button
                                 variant="outline"
                                 size="sm"
-                                class="h-auto flex-col gap-1 py-2"
+                                class="h-auto min-w-0 flex-col gap-1 px-2 py-2.5"
                                 @click="active = 'ordonnances'"
                                 ><Pill class="size-4" /><span
-                                    class="text-[11px]"
+                                    class="w-full text-center text-[11px] leading-tight"
                                     >Ordonnances</span
                                 ></Button
                             >
                             <Button
                                 variant="outline"
                                 size="sm"
-                                class="h-auto flex-col gap-1 py-2"
+                                class="h-auto min-w-0 flex-col gap-1 px-2 py-2.5"
                                 @click="active = 'bilans'"
                                 ><FlaskConical class="size-4" /><span
-                                    class="text-[11px]"
+                                    class="w-full text-center text-[11px] leading-tight"
                                     >Bilans</span
                                 ></Button
                             >
                             <Button
                                 variant="outline"
                                 size="sm"
-                                class="h-auto flex-col gap-1 py-2"
+                                class="h-auto min-w-0 flex-col gap-1 px-2 py-2.5"
                                 @click="active = 'courriers'"
                                 ><Mail class="size-4" /><span
-                                    class="text-[11px]"
+                                    class="w-full text-center text-[11px] leading-tight"
                                     >Courriers</span
                                 ></Button
                             >
                             <Button
                                 variant="outline"
                                 size="sm"
-                                class="h-auto flex-col gap-1 py-2"
+                                class="h-auto min-w-0 flex-col gap-1 px-2 py-2.5"
                                 @click="active = 'documents'"
                                 ><FileText class="size-4" /><span
-                                    class="text-[11px]"
+                                    class="w-full text-center text-[11px] leading-tight"
                                     >Documents</span
                                 ></Button
                             >
@@ -1322,7 +1404,7 @@ const tabClass = (activeTab: boolean): string =>
                             <div class="grid gap-3 sm:grid-cols-2">
                                 <div class="grid gap-1.5">
                                     <Label
-                                        class="text-blue-700 dark:text-blue-300"
+                                        class="text-brand dark:text-brand-mint"
                                         >Motif de visite</Label
                                     ><Textarea
                                         v-model="consultationForm.motif"
@@ -1355,7 +1437,7 @@ const tabClass = (activeTab: boolean): string =>
                                 </div>
                                 <div class="grid gap-1.5">
                                     <Label
-                                        class="text-sky-700 dark:text-sky-300"
+                                        class="text-brand dark:text-brand-mint"
                                         >Traitement</Label
                                     ><Textarea
                                         v-model="consultationForm.traitement"
@@ -1436,107 +1518,404 @@ const tabClass = (activeTab: boolean): string =>
                     :can-edit="canEdit"
                 />
 
-                <!-- Caisse : editable payment -->
-                <section v-else-if="active === 'caisse'" :class="cardClass">
-                    <h3 class="text-base font-semibold text-foreground">
-                        Caisse — cette consultation
-                    </h3>
-                    <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <div class="grid gap-1.5">
-                            <Label>Service</Label>
-                            <Select
-                                :model-value="
-                                    consultationForm.payment_service ||
-                                    undefined
-                                "
-                                @update:model-value="
-                                    (v) => selectPaymentService(v as string)
-                                "
-                            >
-                                <SelectTrigger
-                                    class="w-full"
-                                    :disabled="!canEdit"
-                                >
-                                    <SelectValue
-                                        placeholder="Choisir un service"
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem
-                                        v-for="prestation in prestations"
-                                        :key="prestation.label"
-                                        :value="prestation.label"
-                                    >
-                                        {{ prestation.label }}
-                                        <template
-                                            v-if="prestation.amount != null"
-                                        >
-                                            — {{ prestation.amount }} DA
-                                        </template>
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
+                <!-- Caisse : charge + immutable installments + patient debt -->
+                <section
+                    v-else-if="active === 'caisse'"
+                    :class="[cardClass, 'space-y-5']"
+                >
+                    <div
+                        class="flex flex-wrap items-start justify-between gap-3"
+                    >
+                        <div>
+                            <h3 class="text-base font-semibold text-foreground">
+                                Caisse — cette consultation
+                            </h3>
+                            <p class="mt-1 text-sm text-muted-foreground">
+                                Chaque versement est conservé. Le prix de la
+                                prestation et le reste dû ne sont jamais
+                                écrasés.
+                            </p>
                         </div>
-                        <div class="grid gap-1.5">
-                            <Label for="c-amount">Montant (DA)</Label>
-                            <Input
-                                id="c-amount"
-                                v-model="consultationForm.payment_amount"
-                                type="number"
-                                step="any"
-                                min="0"
-                                :disabled="!canEdit"
-                            />
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label>Moyen de paiement</Label>
-                            <Select
-                                :model-value="consultationForm.payment_method"
-                                @update:model-value="
-                                    (v) =>
-                                        (consultationForm.payment_method =
-                                            (v as string) ?? '')
-                                "
-                            >
-                                <SelectTrigger
-                                    class="w-full"
-                                    :disabled="!canEdit"
-                                    ><SelectValue placeholder="—"
-                                /></SelectTrigger>
-                                <SelectContent
-                                    ><SelectItem
-                                        v-for="method in options.paymentMethods"
-                                        :key="method"
-                                        :value="method"
-                                        >{{ method }}</SelectItem
-                                    ></SelectContent
-                                >
-                            </Select>
-                        </div>
-                        <div class="flex items-end">
-                            <label class="flex items-center gap-2 pb-2">
-                                <Checkbox
-                                    :model-value="consultationForm.is_paid"
-                                    :disabled="!canEdit"
-                                    @update:model-value="
-                                        (v) =>
-                                            (consultationForm.is_paid =
-                                                v === true)
-                                    "
-                                />
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            as-child
+                            class="bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100"
+                        >
+                            <Link :href="patientDebtUrl">
+                                <Wallet class="size-4" />
+                                Dettes du patient
                                 <span
-                                    class="text-sm font-medium text-foreground"
-                                    >Payé</span
+                                    v-if="patientDebt.total > 0"
+                                    class="rounded-full bg-white/80 px-2 py-0.5 text-xs text-slate-900 tabular-nums"
                                 >
-                            </label>
+                                    {{ formatPaymentMoney(patientDebt.total) }}
+                                </span>
+                            </Link>
+                        </Button>
+                    </div>
+
+                    <div
+                        v-if="patientDebt.total > 0"
+                        class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+                    >
+                        <div class="flex items-start gap-3">
+                            <TriangleAlert class="mt-0.5 size-5 shrink-0" />
+                            <div class="min-w-0 flex-1">
+                                <p class="font-semibold">
+                                    Dette antérieure :
+                                    {{ formatPaymentMoney(patientDebt.total) }}
+                                </p>
+                                <p class="mt-1 text-sm opacity-80">
+                                    Encaissez d’abord le reste des anciennes
+                                    prestations, puis enregistrez la prestation
+                                    d’aujourd’hui séparément.
+                                </p>
+                                <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                                    <div
+                                        v-for="debt in patientDebt.consultations"
+                                        :key="debt.id"
+                                        class="rounded-lg border border-amber-200 bg-white/70 px-3 py-2 text-sm dark:border-amber-900 dark:bg-slate-950/30"
+                                    >
+                                        <p class="font-medium">
+                                            {{ debt.service }}
+                                        </p>
+                                        <p class="mt-0.5 text-xs opacity-75">
+                                            {{ displayDate(debt.date) }} · versé
+                                            {{ formatPaymentMoney(debt.paid) }}
+                                            · reste
+                                            <strong>
+                                                {{
+                                                    formatPaymentMoney(
+                                                        debt.outstanding,
+                                                    )
+                                                }}
+                                            </strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div v-if="canEdit" class="mt-4 flex justify-end">
-                        <Button
-                            :disabled="consultationForm.processing"
-                            @click="saveConsultation(false)"
-                            ><Wallet class="size-4" /> Encaisser</Button
+
+                    <div class="grid gap-3 sm:grid-cols-3">
+                        <div class="rounded-xl border bg-muted/25 p-4">
+                            <p
+                                class="text-xs font-medium text-muted-foreground"
+                            >
+                                Prix de la prestation
+                            </p>
+                            <p class="mt-1 text-xl font-bold tabular-nums">
+                                {{
+                                    formatPaymentMoney(
+                                        Number(paymentForm.amount || 0),
+                                    )
+                                }}
+                            </p>
+                        </div>
+                        <div class="rounded-xl border bg-muted/25 p-4">
+                            <p
+                                class="text-xs font-medium text-muted-foreground"
+                            >
+                                Déjà encaissé
+                            </p>
+                            <p
+                                class="mt-1 text-xl font-bold text-brand tabular-nums"
+                            >
+                                {{
+                                    formatPaymentMoney(
+                                        consultation.payment_paid,
+                                    )
+                                }}
+                            </p>
+                        </div>
+                        <div class="rounded-xl border bg-muted/25 p-4">
+                            <p
+                                class="text-xs font-medium text-muted-foreground"
+                            >
+                                Reste après ce versement
+                            </p>
+                            <p
+                                class="mt-1 text-xl font-bold tabular-nums"
+                                :class="
+                                    projectedOutstanding > 0
+                                        ? 'text-amber-700 dark:text-amber-300'
+                                        : 'text-emerald-700 dark:text-emerald-300'
+                                "
+                            >
+                                {{ formatPaymentMoney(projectedOutstanding) }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <form class="space-y-4" @submit.prevent="collectPayment">
+                        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            <div class="grid gap-1.5 xl:col-span-2">
+                                <Label>Prestation du jour</Label>
+                                <Select
+                                    :model-value="
+                                        paymentForm.service || undefined
+                                    "
+                                    @update:model-value="
+                                        (v) => selectPaymentService(v as string)
+                                    "
+                                >
+                                    <SelectTrigger
+                                        class="w-full"
+                                        :disabled="!canCollectPayment"
+                                    >
+                                        <SelectValue
+                                            placeholder="Choisir une prestation"
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            v-for="prestation in prestations"
+                                            :key="prestation.label"
+                                            :value="prestation.label"
+                                        >
+                                            {{ prestation.label }}
+                                            <template
+                                                v-if="prestation.amount != null"
+                                            >
+                                                — {{ prestation.amount }} DA
+                                            </template>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Input
+                                    v-model="paymentForm.service"
+                                    :disabled="!canCollectPayment"
+                                    placeholder="Ou saisir une prestation"
+                                />
+                                <InputError
+                                    :message="paymentForm.errors.service"
+                                />
+                            </div>
+                            <div class="grid gap-1.5">
+                                <Label for="c-amount">Prix total (DA)</Label>
+                                <Input
+                                    id="c-amount"
+                                    v-model="paymentForm.amount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    :disabled="!canCollectPayment"
+                                />
+                                <InputError
+                                    :message="paymentForm.errors.amount"
+                                />
+                            </div>
+                            <div class="grid gap-1.5">
+                                <Label for="c-paid-today"
+                                    >Versé aujourd’hui (DA)</Label
+                                >
+                                <Input
+                                    id="c-paid-today"
+                                    v-model="paymentForm.paid_today"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    :max="
+                                        Math.max(
+                                            0,
+                                            Number(paymentForm.amount || 0) -
+                                                consultation.payment_paid,
+                                        )
+                                    "
+                                    :disabled="!canCollectPayment"
+                                />
+                                <InputError
+                                    :message="paymentForm.errors.paid_today"
+                                />
+                            </div>
+                            <div class="grid gap-1.5">
+                                <Label>Moyen de paiement</Label>
+                                <Select
+                                    :model-value="
+                                        paymentForm.method || undefined
+                                    "
+                                    @update:model-value="
+                                        (v) =>
+                                            (paymentForm.method =
+                                                (v as string) ?? '')
+                                    "
+                                >
+                                    <SelectTrigger
+                                        class="w-full"
+                                        :disabled="!canCollectPayment"
+                                    >
+                                        <SelectValue placeholder="Choisir" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            v-for="method in options.paymentMethods"
+                                            :key="method"
+                                            :value="method"
+                                        >
+                                            {{ method }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError
+                                    :message="paymentForm.errors.method"
+                                />
+                            </div>
+                            <div
+                                class="grid gap-1.5 sm:col-span-1 xl:col-span-3"
+                            >
+                                <Label>Traitement du solde</Label>
+                                <div class="grid gap-2 sm:grid-cols-2">
+                                    <label
+                                        class="flex cursor-pointer items-start gap-3 rounded-xl border p-3"
+                                        :class="
+                                            paymentForm.settlement === 'debt'
+                                                ? 'border-brand bg-brand-soft'
+                                                : 'border-border'
+                                        "
+                                    >
+                                        <input
+                                            v-model="paymentForm.settlement"
+                                            type="radio"
+                                            value="debt"
+                                            class="mt-1 accent-brand"
+                                            :disabled="!canCollectPayment"
+                                        />
+                                        <span>
+                                            <span
+                                                class="block text-sm font-semibold"
+                                                >Garder le reste en dette</span
+                                            >
+                                            <span
+                                                class="text-xs text-muted-foreground"
+                                                >Le patient pourra payer plus
+                                                tard.</span
+                                            >
+                                        </span>
+                                    </label>
+                                    <label
+                                        class="flex cursor-pointer items-start gap-3 rounded-xl border p-3"
+                                        :class="
+                                            paymentForm.settlement === 'settled'
+                                                ? 'border-brand bg-brand-soft'
+                                                : 'border-border'
+                                        "
+                                    >
+                                        <input
+                                            v-model="paymentForm.settlement"
+                                            type="radio"
+                                            value="settled"
+                                            class="mt-1 accent-brand"
+                                            :disabled="!canCollectPayment"
+                                        />
+                                        <span>
+                                            <span
+                                                class="block text-sm font-semibold"
+                                                >Accepter moins et solder</span
+                                            >
+                                            <span
+                                                class="text-xs text-muted-foreground"
+                                                >Le reliquat sera enregistré
+                                                comme remise.</span
+                                            >
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-1.5">
+                            <Label for="payment-notes">
+                                Note
+                                <span
+                                    v-if="
+                                        paymentForm.settlement === 'settled' &&
+                                        projectedOutstanding > 0
+                                    "
+                                    class="text-destructive"
+                                >
+                                    (obligatoire pour une remise)
+                                </span>
+                            </Label>
+                            <Textarea
+                                id="payment-notes"
+                                v-model="paymentForm.notes"
+                                :disabled="!canCollectPayment"
+                                placeholder="Détail du versement, motif de remise ou accord avec le patient…"
+                            />
+                            <InputError :message="paymentForm.errors.notes" />
+                        </div>
+
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-3"
                         >
+                            <p v-if="!isOnline" class="text-sm text-amber-700">
+                                La connexion au serveur est requise pour
+                                enregistrer un mouvement de caisse sans doublon.
+                            </p>
+                            <span v-else />
+                            <Button
+                                type="submit"
+                                :disabled="
+                                    !canCollectPayment ||
+                                    !isOnline ||
+                                    paymentForm.processing
+                                "
+                            >
+                                <Wallet class="size-4" />
+                                Enregistrer le versement
+                            </Button>
+                        </div>
+                    </form>
+
+                    <div
+                        v-if="consultation.payments.length"
+                        class="border-t pt-4"
+                    >
+                        <h4 class="text-sm font-semibold">
+                            Historique des versements
+                        </h4>
+                        <div class="med-table-wrap mt-3">
+                            <table class="med-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Montant</th>
+                                        <th>Mode</th>
+                                        <th>Enregistré par</th>
+                                        <th>Note</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="installment in consultation.payments"
+                                        :key="installment.id"
+                                    >
+                                        <td>
+                                            {{
+                                                displayDate(
+                                                    installment.received_at,
+                                                )
+                                            }}
+                                        </td>
+                                        <td class="font-semibold tabular-nums">
+                                            {{
+                                                formatPaymentMoney(
+                                                    installment.amount,
+                                                )
+                                            }}
+                                        </td>
+                                        <td>{{ installment.method || '—' }}</td>
+                                        <td>
+                                            {{ installment.received_by || '—' }}
+                                        </td>
+                                        <td class="max-w-64">
+                                            {{ installment.notes || '—' }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
@@ -1773,7 +2152,7 @@ const tabClass = (activeTab: boolean): string =>
                 >
                     Rendez-vous
                     <span
-                        class="flex size-9 items-center justify-center rounded-full bg-blue-600 text-white"
+                        class="flex size-9 items-center justify-center rounded-full bg-brand text-white"
                     >
                         <CalendarDays class="size-4" />
                     </span>
@@ -1821,7 +2200,7 @@ const tabClass = (activeTab: boolean): string =>
             </div>
             <button
                 type="button"
-                class="flex size-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:outline-none"
+                class="flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-brand-deep/25 transition hover:-translate-y-0.5 hover:bg-brand focus-visible:ring-4 focus-visible:ring-brand focus-visible:outline-none"
                 :aria-expanded="showQuickActions"
                 aria-label="Actions rapides"
                 @click="showQuickActions = !showQuickActions"

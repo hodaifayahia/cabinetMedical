@@ -4,11 +4,15 @@ namespace Tests\Feature\Cabinet;
 
 use App\Enums\CabinetStatus;
 use App\Enums\RoleName;
+use App\Models\Appointment;
 use App\Models\Cabinet;
+use App\Models\Encounter;
 use App\Models\Patient;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
 class TenancyIsolationTest extends TestCase
@@ -97,9 +101,9 @@ class TenancyIsolationTest extends TestCase
         $this->assertNotSame($cabinetB->getKey(), $unscoped->cabinet_id);
     }
 
-    public function test_an_explicit_cabinet_is_preserved_and_the_relation_resolves(): void
+    public function test_an_explicit_foreign_cabinet_is_replaced_with_the_actors_cabinet(): void
     {
-        [, $userA] = $this->makeCabinetWithUser('explicit-a@example.com');
+        [$cabinetA, $userA] = $this->makeCabinetWithUser('explicit-a@example.com');
         [$cabinetB] = $this->makeCabinetWithUser('explicit-b@example.com');
 
         $this->actingAs($userA);
@@ -107,7 +111,69 @@ class TenancyIsolationTest extends TestCase
             'cabinet_id' => $cabinetB->getKey(),
         ]);
 
-        $this->assertSame($cabinetB->getKey(), $patient->cabinet_id);
-        $this->assertTrue($patient->cabinet->is($cabinetB));
+        $this->assertSame($cabinetA->getKey(), $patient->cabinet_id);
+        $this->assertTrue($patient->cabinet->is($cabinetA));
+    }
+
+    public function test_console_style_creation_can_still_assign_an_explicit_cabinet(): void
+    {
+        [$cabinet] = $this->makeCabinetWithUser('console-cabinet@example.com');
+        auth()->logout();
+
+        $patient = Patient::factory()->create([
+            'cabinet_id' => $cabinet->getKey(),
+        ]);
+
+        $this->assertSame($cabinet->getKey(), $patient->cabinet_id);
+    }
+
+    public function test_a_cabinet_member_cannot_move_a_record_to_another_cabinet(): void
+    {
+        [$cabinetA, $userA] = $this->makeCabinetWithUser('immutable-a@example.com');
+        [$cabinetB] = $this->makeCabinetWithUser('immutable-b@example.com');
+
+        $this->actingAs($userA);
+        $patient = Patient::factory()->create();
+        $patient->forceFill(['cabinet_id' => $cabinetB->getKey()])->save();
+
+        $this->assertSame($cabinetA->getKey(), $patient->fresh()->cabinet_id);
+    }
+
+    public function test_a_tenant_cannot_save_a_foreign_record_loaded_through_an_escape_hatch(): void
+    {
+        [, $userA] = $this->makeCabinetWithUser('foreign-save-a@example.com');
+        [, $userB] = $this->makeCabinetWithUser('foreign-save-b@example.com');
+
+        $this->actingAs($userB);
+        $foreignPatient = Patient::factory()->create(['first_name' => 'Original']);
+
+        $this->actingAs($userA);
+        $loaded = Patient::withoutCabinetScope()->findOrFail($foreignPatient->getKey());
+        $loaded->first_name = 'Forbidden change';
+
+        $this->expectException(AuthorizationException::class);
+        $loaded->save();
+    }
+
+    public function test_resource_policies_reject_models_from_another_cabinet(): void
+    {
+        [, $userA] = $this->makeCabinetWithUser('policy-a@example.com');
+        [, $userB] = $this->makeCabinetWithUser('policy-b@example.com');
+
+        $this->actingAs($userB);
+        $patient = Patient::factory()->create();
+        $appointment = Appointment::factory()->create([
+            'patient_id' => $patient->getKey(),
+            'created_by' => $userB->getKey(),
+        ]);
+        $encounter = Encounter::factory()->create([
+            'patient_id' => $patient->getKey(),
+            'provider_id' => $userB->getKey(),
+        ]);
+
+        foreach ([$patient, $appointment, $encounter] as $resource) {
+            $this->assertTrue(Gate::forUser($userB)->allows('view', $resource));
+            $this->assertFalse(Gate::forUser($userA)->allows('view', $resource));
+        }
     }
 }

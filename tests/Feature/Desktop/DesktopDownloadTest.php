@@ -17,7 +17,7 @@ final class DesktopDownloadTest extends TestCase
     public function test_default_desktop_installer_uses_the_drclick_filename(): void
     {
         $this->assertSame(
-            'Drclick-Desktop-Setup.exe',
+            'DrClickDz-Desktop-Setup.exe',
             config('medismart.desktop_download.installer_path'),
         );
     }

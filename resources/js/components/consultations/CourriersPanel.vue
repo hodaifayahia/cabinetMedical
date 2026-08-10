@@ -243,7 +243,7 @@ const saveCourrier = () => {
                         <p
                             class="flex items-center gap-2 text-sm font-bold tracking-wide text-foreground uppercase"
                         >
-                            <Mail class="size-4 text-cyan-700" />
+                            <Mail class="size-4 text-brand" />
                             Documents &amp; certificats
                         </p>
                         <p class="mt-1 text-xs leading-5 text-muted-foreground">
@@ -252,7 +252,7 @@ const saveCourrier = () => {
                         </p>
                     </div>
                     <span
-                        class="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-200"
+                        class="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand dark:bg-brand-deep/40 dark:text-brand-mint"
                     >
                         {{ savedDocuments.length }} enregistré{{
                             savedDocuments.length === 1 ? '' : 's'
@@ -275,7 +275,7 @@ const saveCourrier = () => {
                     class="relative flex-1 px-2 py-2 text-xs font-medium transition"
                     :class="
                         mainTab === tab.key
-                            ? 'text-foreground after:absolute after:right-2 after:bottom-0 after:left-2 after:h-0.5 after:bg-cyan-600'
+                            ? 'text-foreground after:absolute after:right-2 after:bottom-0 after:left-2 after:h-0.5 after:bg-brand'
                             : 'text-muted-foreground hover:text-foreground'
                     "
                     @click="mainTab = tab.key as MainTab"
@@ -360,7 +360,7 @@ const saveCourrier = () => {
                     :key="document.id"
                     class="flex items-center gap-3 rounded-lg border border-sidebar-border/70 p-3 dark:border-sidebar-border"
                 >
-                    <FileText class="size-4 shrink-0 text-cyan-700" />
+                    <FileText class="size-4 shrink-0 text-brand" />
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold">
                             {{ document.title }}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { LANDING_LOCALES, type LandingLocale, translations } from './translations';
+import { LANDING_LOCALES, translations } from './translations';
+import type { LandingLocale } from './translations';
 
 const props = defineProps<{
     locale: LandingLocale;

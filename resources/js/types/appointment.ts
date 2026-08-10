@@ -39,6 +39,8 @@ export type DayAppointment = {
 
 export type AppointmentListItem = {
     id: number;
+    public_id: string;
+    sync_version: number;
     date: string | null;
     starts_at: string | null;
     time_label: string | null;
@@ -56,6 +58,12 @@ export type AppointmentListItem = {
     can_start: boolean;
     consultation_id: number | null;
     consultation_status: string | null;
+    mobile_sync: {
+        state: 'not_published' | 'pending' | 'synced' | 'failed';
+        version: number | null;
+        last_attempted_at: string | null;
+        acknowledged_at: string | null;
+    };
 };
 
 export type AppointmentStatusOption = {

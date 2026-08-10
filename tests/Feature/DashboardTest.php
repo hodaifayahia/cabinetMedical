@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Consultation;
 use App\Models\DoctorProfile;
+use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -34,5 +36,40 @@ class DashboardTest extends TestCase
                 ->where('profile.specialty', 'Médecine générale')
                 ->where('appointmentsByStatus.0.label', 'Planifié')
                 ->where('appointmentsByStatus.6.label', 'Absent'));
+    }
+
+    public function test_dashboard_revenue_uses_actual_installments_instead_of_the_full_charge(): void
+    {
+        $user = User::factory()->create();
+        $patient = Patient::factory()->create();
+        $consultation = Consultation::query()->create([
+            'patient_id' => $patient->getKey(),
+            'consulted_at' => now(),
+            'status' => 'completed',
+            'payment_amount_minor' => 100000,
+            'payment_service' => 'Consultation',
+            'is_paid' => false,
+            'created_by' => $user->getKey(),
+        ]);
+
+        $this->actingAs($user);
+        $consultation->payments()->create([
+            'patient_id' => $patient->getKey(),
+            'amount_minor' => 30000,
+            'method' => 'Cash',
+            'received_at' => now(),
+            'received_by' => $user->getKey(),
+        ]);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('stats.revenue_this_month', 300)
+                ->where('stats.revenue_total', 300)
+                ->where('revenueTrend.5.value', 300)
+                ->has('recentPayments', 1)
+                ->where('recentPayments.0.amount', 300)
+                ->where('recentPayments.0.id', $consultation->getKey())
+            );
     }
 }

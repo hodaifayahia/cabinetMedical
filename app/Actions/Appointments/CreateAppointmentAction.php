@@ -74,6 +74,8 @@ class CreateAppointmentAction
                 'prestation' => $attributes['prestation'] ?? null,
                 'created_by' => $createdBy->getKey(),
                 'confirmed_at' => $status === AppointmentStatus::CONFIRMED ? now() : null,
+                'mobile_idempotency_key_hash' => $attributes['mobile_idempotency_key_hash'] ?? null,
+                'mobile_idempotency_fingerprint' => $attributes['mobile_idempotency_fingerprint'] ?? null,
             ]);
         });
     }

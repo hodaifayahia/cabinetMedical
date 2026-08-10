@@ -1595,7 +1595,7 @@ const testDriveConnection = () => {
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <span
-                        class="inline-flex w-fit items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700"
+                        class="inline-flex w-fit items-center gap-2 rounded-full border border-brand bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand"
                     >
                         <RefreshCw
                             class="size-3.5"
@@ -1632,7 +1632,7 @@ const testDriveConnection = () => {
                 >
                     <div class="flex items-start justify-between gap-3">
                         <span
-                            class="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+                            class="flex size-9 items-center justify-center rounded-lg bg-brand-soft text-brand dark:bg-brand-deep/40 dark:text-brand-mint"
                         >
                             <component :is="card.icon" class="size-4" />
                         </span>
@@ -1727,7 +1727,7 @@ const testDriveConnection = () => {
                         <h2
                             class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
                         >
-                            <QrCode class="size-5 text-violet-600" />
+                            <QrCode class="size-5 text-brand" />
                             Politique de téléversement
                         </h2>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -1874,7 +1874,7 @@ const testDriveConnection = () => {
                         <h2
                             class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
                         >
-                            <Network class="size-5 text-blue-600" />
+                            <Network class="size-5 text-brand" />
                             Réseau local
                         </h2>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -1910,7 +1910,7 @@ const testDriveConnection = () => {
                         :class="
                             permissions.manage_settings &&
                             capabilities.lan.available
-                                ? 'cursor-pointer hover:border-blue-300'
+                                ? 'cursor-pointer hover:border-brand'
                                 : 'opacity-60'
                         "
                     >
@@ -1997,15 +1997,15 @@ const testDriveConnection = () => {
 
                 <div
                     v-if="desktopShell"
-                    class="mt-5 flex gap-3 rounded-xl border border-blue-200 bg-blue-50/70 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/25 dark:text-blue-100"
+                    class="mt-5 flex gap-3 rounded-xl border border-brand bg-brand-soft/70 p-4 text-sm text-brand dark:border-brand dark:bg-brand-deep/25 dark:text-brand-soft"
                 >
                     <Cloud class="mt-0.5 size-5 shrink-0" />
                     <div>
                         <p class="font-semibold">Configuration hébergée</p>
                         <p class="mt-1">
                             Le client de bureau enregistre ces préférences sur
-                            le serveur Drclick. Il n’exécute aucun listener
-                            LAN et ne modifie pas le pare-feu Windows.
+                            le serveur Drclick. Il n’exécute aucun listener LAN
+                            et ne modifie pas le pare-feu Windows.
                         </p>
                     </div>
                 </div>
@@ -2014,7 +2014,7 @@ const testDriveConnection = () => {
                     class="mt-5 flex max-w-xl items-start gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700"
                     :class="
                         permissions.manage_settings
-                            ? 'cursor-pointer hover:border-blue-300'
+                            ? 'cursor-pointer hover:border-brand'
                             : 'opacity-60'
                     "
                 >
@@ -2569,7 +2569,7 @@ const testDriveConnection = () => {
                     <h2
                         class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
                     >
-                        <QrCode class="size-5 text-violet-600" />
+                        <QrCode class="size-5 text-brand" />
                         Lien de téléversement temporaire
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
@@ -2599,7 +2599,7 @@ const testDriveConnection = () => {
                 class="mt-6 grid gap-6 lg:grid-cols-[180px_minmax(0,1fr)]"
             >
                 <div
-                    class="flex aspect-square max-w-[180px] items-center justify-center rounded-2xl border border-violet-200 bg-white p-3 dark:border-violet-900 dark:bg-slate-900"
+                    class="flex aspect-square max-w-[180px] items-center justify-center rounded-2xl border border-brand bg-white p-3 dark:border-brand dark:bg-slate-900"
                 >
                     <img
                         v-if="effectiveQrDataUrl"
@@ -2611,7 +2611,7 @@ const testDriveConnection = () => {
                         v-else
                         class="flex flex-col items-center gap-2 text-center text-xs text-muted-foreground"
                     >
-                        <QrCode class="size-12 text-violet-400" />
+                        <QrCode class="size-12 text-brand-mint" />
                         URL disponible, QR graphique non fourni
                     </div>
                 </div>
@@ -2811,7 +2811,7 @@ const testDriveConnection = () => {
 
             <div v-if="activeUploadSessions.length > 0" class="mt-6">
                 <h3 class="mb-3 flex items-center gap-2 font-semibold">
-                    <QrCode class="size-4 text-violet-600" />
+                    <QrCode class="size-4 text-brand" />
                     Sessions encore actives ({{ activeUploadSessions.length }})
                 </h3>
                 <p class="mb-3 text-sm text-muted-foreground">
@@ -3045,7 +3045,7 @@ const testDriveConnection = () => {
             </div>
 
             <p
-                class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200"
+                class="mt-4 rounded-xl border border-brand bg-brand-soft p-4 text-sm text-brand dark:border-brand dark:bg-brand-deep/30 dark:text-brand-mint"
             >
                 Aucun numéro de série ni certificat machine n’est requis. Pour
                 renouveler un essai ou passer à une licence à vie, contactez
@@ -3142,7 +3142,7 @@ const testDriveConnection = () => {
                         dossiers et sauvegardes locales restent accessibles.
                     </p>
                     <p
-                        class="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200"
+                        class="mt-4 rounded-lg border border-brand bg-brand-soft p-3 text-xs text-brand dark:border-brand dark:bg-brand-deep/30 dark:text-brand-mint"
                     >
                         Les dossiers existants, l’export et les sauvegardes
                         locales restent accessibles même si une vérification
@@ -3269,7 +3269,7 @@ const testDriveConnection = () => {
                 <h2
                     class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
                 >
-                    <HardDrive class="size-5 text-blue-600" />
+                    <HardDrive class="size-5 text-brand" />
                     Sauvegarde immédiate vérifiée
                 </h2>
                 <p class="mt-1 text-sm text-muted-foreground">
@@ -3281,11 +3281,11 @@ const testDriveConnection = () => {
             <div class="mt-6 grid gap-4 lg:grid-cols-2">
                 <article
                     v-if="permissions.manage_backups"
-                    class="rounded-xl border border-blue-200 bg-blue-50/60 p-5 dark:border-blue-900 dark:bg-blue-950/20"
+                    class="rounded-xl border border-brand bg-brand-soft/60 p-5 dark:border-brand dark:bg-brand-deep/20"
                 >
                     <div class="flex items-start justify-between gap-3">
                         <h3 class="flex items-center gap-2 font-semibold">
-                            <HardDrive class="size-4 text-blue-600" />
+                            <HardDrive class="size-4 text-brand" />
                             Archive Drclick (.msbackup)
                         </h3>
                         <span
@@ -3382,14 +3382,14 @@ const testDriveConnection = () => {
                         <a
                             v-if="permissions.sensitive_actions_confirmed"
                             href="/app/configuration/backup/local"
-                            class="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-700 hover:bg-blue-50 dark:bg-slate-900"
+                            class="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-brand bg-white px-4 text-sm font-semibold text-brand hover:bg-brand-soft dark:bg-slate-900"
                         >
                             <Download class="size-4" /> Archive locale non
                             chiffrée
                         </a>
                         <span
                             v-else
-                            class="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500"
+                            class="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-brand bg-slate-50 px-4 text-sm font-semibold text-slate-500"
                         >
                             <Download class="size-4" /> Confirmation requise
                         </span>
@@ -3400,7 +3400,7 @@ const testDriveConnection = () => {
                             legacyRestoreEnabled &&
                             capabilities.local_backups.available
                         "
-                        class="mt-4 border-t border-blue-200 pt-4 dark:border-blue-900"
+                        class="mt-4 border-t border-brand pt-4 dark:border-brand"
                     >
                         <Label for="restore-backup">
                             Restauration SQLite experte
@@ -3727,8 +3727,7 @@ const testDriveConnection = () => {
                             v-if="remoteDriveBackups.length === 0"
                             class="text-xs text-muted-foreground"
                         >
-                            Aucune archive chiffrée Drclick v2 dans ce
-                            dossier.
+                            Aucune archive chiffrée Drclick v2 dans ce dossier.
                         </p>
                         <div
                             v-else
@@ -3893,7 +3892,7 @@ const testDriveConnection = () => {
 
             <div
                 v-if="desktopShell && capabilities.offline_restore.available"
-                class="mt-4 flex gap-3 rounded-xl border border-blue-200 bg-blue-50/70 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/25 dark:text-blue-100"
+                class="mt-4 flex gap-3 rounded-xl border border-brand bg-brand-soft/70 p-4 text-sm text-brand dark:border-brand dark:bg-brand-deep/25 dark:text-brand-soft"
             >
                 <Cloud class="mt-0.5 size-5 shrink-0" />
                 <div>
@@ -4209,7 +4208,7 @@ const testDriveConnection = () => {
                 <h2
                     class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
                 >
-                    <DatabaseBackup class="size-5 text-blue-600" />
+                    <DatabaseBackup class="size-5 text-brand" />
                     Historique des sauvegardes
                 </h2>
                 <p class="mt-1 text-sm text-muted-foreground">
@@ -4268,7 +4267,7 @@ const testDriveConnection = () => {
                                                       entry.drive_upload_status ===
                                                           'cancel_requested'
                                                     ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300'
-                                                    : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300'
+                                                    : 'border-brand bg-brand-soft text-brand dark:border-brand dark:bg-brand-deep/30 dark:text-brand-mint'
                                         "
                                     >
                                         {{
@@ -4402,7 +4401,7 @@ const testDriveConnection = () => {
                                             ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300'
                                             : entry.status === 'failed'
                                               ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300'
-                                              : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300'
+                                              : 'border-brand bg-brand-soft text-brand dark:border-brand dark:bg-brand-deep/30 dark:text-brand-mint'
                                     "
                                 >
                                     {{

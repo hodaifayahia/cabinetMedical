@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Desktop;
 
+use App\ClinicalDocuments\DocxDocumentBuilder;
 use App\Models\CabinetSetting;
 use App\Models\DoctorProfile;
 use App\Models\User;
@@ -9,10 +10,50 @@ use App\Services\DocumentBrandingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use ZipArchive;
 
 class DocumentBrandingServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_it_uses_the_product_mark_when_no_custom_logo_exists(): void
+    {
+        Storage::fake('public');
+
+        $identity = app(DocumentBrandingService::class)->renderingIdentity();
+
+        $this->assertFileExists(public_path('brand/drclick-mark.png'));
+        $this->assertSame('/brand/drclick-mark.png', $identity['logo_url']);
+    }
+
+    public function test_word_documents_embed_the_product_mark_as_the_default_watermark(): void
+    {
+        Storage::fake('public');
+        $path = tempnam(sys_get_temp_dir(), 'drclick-docx-');
+        $this->assertIsString($path);
+
+        try {
+            app(DocxDocumentBuilder::class)->build(
+                $path,
+                'Ordonnance',
+                'Contenu',
+                ['document.date' => '09/08/2026'],
+                'A4',
+            );
+
+            $zip = new ZipArchive;
+            $this->assertTrue($zip->open($path) === true);
+            $logo = $zip->getFromName('word/media/clinic-logo.png');
+            $header = $zip->getFromName('word/header1.xml');
+            $zip->close();
+
+            $this->assertSame(file_get_contents(public_path('brand/drclick-mark.png')), $logo);
+            $this->assertIsString($header);
+            $this->assertStringContainsString('behindDoc="1"', $header);
+        } finally {
+            @unlink($path);
+        }
+    }
 
     public function test_it_reads_the_persisted_canonical_identity_and_preserves_a_utf8_footer(): void
     {

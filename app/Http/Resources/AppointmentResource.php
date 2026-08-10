@@ -19,6 +19,8 @@ class AppointmentResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'public_id' => $this->public_id,
+            'sync_version' => (int) $this->sync_version,
             'patient_id' => $this->patient_id,
             'patient' => new PatientResource($this->whenLoaded('patient')),
             'appointment_date' => $this->appointment_date?->toDateString(),
@@ -36,6 +38,7 @@ class AppointmentResource extends JsonResource
             'checked_in_at' => $this->checked_in_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }

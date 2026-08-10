@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { LockKeyhole, ShieldCheck } from '@lucide/vue';
+import { LockKeyhole } from '@lucide/vue';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
 
 const { title = '', description = '' } = defineProps<{
     title?: string;
@@ -16,11 +17,7 @@ const { title = '', description = '' } = defineProps<{
                 class="mb-6 flex items-center justify-center gap-3"
                 aria-hidden="true"
             >
-                <div
-                    class="flex size-11 items-center justify-center rounded-2xl bg-[#173f5d] text-white shadow-sm"
-                >
-                    <ShieldCheck class="size-6" />
-                </div>
+                <AppLogoIcon class="size-11 object-contain" />
                 <span
                     class="text-lg font-bold tracking-tight text-slate-800 dark:text-white"
                 >
@@ -32,7 +29,7 @@ const { title = '', description = '' } = defineProps<{
                 class="rounded-3xl border border-white bg-white p-7 shadow-[0_18px_60px_rgba(28,60,79,0.12)] sm:p-10 dark:border-slate-800 dark:bg-slate-900"
             >
                 <div
-                    class="mb-6 flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-[#173f5d] dark:bg-blue-950 dark:text-blue-200"
+                    class="mb-6 flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand"
                     aria-hidden="true"
                 >
                     <LockKeyhole class="size-6" />

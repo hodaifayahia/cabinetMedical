@@ -10,12 +10,13 @@ import {
     Ban,
     CalendarDays,
     Check,
+    ChevronDown,
     ChevronsUpDown,
     Clock,
-    Eye,
+    CloudUpload,
+    LoaderCircle,
     MoreVertical,
     Pencil,
-    Play,
     Printer,
     Plus,
     RefreshCw,
@@ -97,6 +98,7 @@ const props = defineProps<{
         configure: boolean;
         manageActs: boolean;
         startConsultation: boolean;
+        syncMobile: boolean;
     };
     today: string;
 }>();
@@ -223,8 +225,10 @@ const statusStyles: Record<string, string> = {
         'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
     confirmed:
         'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
-    checked_in: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
-    in_progress: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+    checked_in:
+        'bg-brand-soft text-brand dark:bg-brand-deep/40 dark:text-brand-mint',
+    in_progress:
+        'bg-brand-soft text-brand dark:bg-brand-deep/40 dark:text-brand-mint',
     completed:
         'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
     cancelled:
@@ -264,10 +268,10 @@ const statChips = computed(() => [
 ]);
 
 const avatarStyles = [
-    'bg-[#e8aa1b] text-white',
-    'bg-[#f3ba2f] text-white',
-    'bg-[#d89416] text-white',
-    'bg-[#efb63b] text-white',
+    'bg-brand text-brand-foreground',
+    'bg-brand-deep text-white',
+    'bg-brand-mint text-brand-deep',
+    'bg-brand/80 text-brand-foreground',
 ];
 
 const patientInitials = (name: string | null): string =>
@@ -281,6 +285,7 @@ const patientInitials = (name: string | null): string =>
 const waitingAppointments = computed(() =>
     props.appointments.data.filter(
         (appointment) =>
+            appointment.date === props.today &&
             !['cancelled', 'completed', 'no_show'].includes(appointment.status),
     ),
 );
@@ -312,9 +317,29 @@ const checkInAppointment = (appointment: AppointmentListItem) => {
     );
 };
 
-// Start (or resume) the consultation. The new-consultation button is only
-// rendered for checked-in patients; confirm/check-in actions stay on this
-// appointment list.
+const syncingMobileAppointments = ref(false);
+
+const syncMobileAppointments = () => {
+    if (syncingMobileAppointments.value) {
+        return;
+    }
+
+    syncingMobileAppointments.value = true;
+    router.post(
+        '/app/appointments/mobile-sync',
+        { date: props.filters.date },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => {
+                syncingMobileAppointments.value = false;
+            },
+        },
+    );
+};
+
+// Start (or resume) a consultation from the expanded waiting-room card only.
+// Confirm/check-in controls remain on the appointment list.
 const startConsultation = (appointment: AppointmentListItem) => {
     if (appointment.consultation_id) {
         router.visit(`/app/consultations/${appointment.consultation_id}`);
@@ -329,9 +354,26 @@ const startConsultation = (appointment: AppointmentListItem) => {
     );
 };
 
-const consultationIsCompleted = (appointment: AppointmentListItem): boolean =>
-    appointment.consultation_status === 'completed' ||
-    appointment.status === 'completed';
+const selectedWaitingAppointmentId = ref<number | null>(null);
+
+const toggleWaitingAppointment = (appointment: AppointmentListItem) => {
+    selectedWaitingAppointmentId.value =
+        selectedWaitingAppointmentId.value === appointment.id
+            ? null
+            : appointment.id;
+};
+
+const canOpenWaitingConsultation = (
+    appointment: AppointmentListItem,
+): boolean =>
+    props.permissions.startConsultation &&
+    (appointment.consultation_id !== null || appointment.can_start);
+
+const hasWaitingAppointmentAction = (
+    appointment: AppointmentListItem,
+): boolean =>
+    canOpenWaitingConsultation(appointment) ||
+    (props.permissions.cancel && appointment.can_cancel);
 
 const cancelTarget = ref<AppointmentListItem | null>(null);
 const cancelForm = useForm<{ reason: string }>({ reason: '' });
@@ -793,7 +835,7 @@ const printAppointments = () => {
     <Head title="Rendez-vous" />
 
     <div
-        class="min-h-full w-full min-w-0 flex-1 bg-[#edf3f6] px-4 py-5 text-slate-900 lg:px-7 lg:py-6"
+        class="min-h-full w-full min-w-0 flex-1 bg-canvas px-4 py-5 text-slate-900 lg:px-7 lg:py-6"
     >
         <section class="mx-auto max-w-[1800px]">
             <div
@@ -805,7 +847,7 @@ const printAppointments = () => {
                     >
                         Rendez-vous
                     </h1>
-                    <div class="mt-3 h-1 w-20 rounded-full bg-[#e2a719]" />
+                    <div class="mt-3 h-1 w-20 rounded-full bg-brand" />
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
@@ -816,7 +858,7 @@ const printAppointments = () => {
                         <Input
                             v-model="search"
                             type="search"
-                            class="h-10 rounded-xl border-white/80 bg-white pl-9 text-sm shadow-sm placeholder:text-slate-400 focus-visible:ring-[#4c82b7]"
+                            class="h-10 rounded-xl border-white/80 bg-white pl-9 text-sm shadow-sm placeholder:text-slate-400 focus-visible:ring-brand"
                             placeholder="Rechercher..."
                             aria-label="Rechercher un rendez-vous"
                         />
@@ -827,7 +869,7 @@ const printAppointments = () => {
                         @update:model-value="onStatusChange"
                     >
                         <SelectTrigger
-                            class="h-10 w-[136px] rounded-xl border-white/80 bg-white shadow-sm focus:ring-[#4c82b7]"
+                            class="h-10 w-[136px] rounded-xl border-white/80 bg-white shadow-sm focus:ring-brand"
                         >
                             <SelectValue placeholder="Tous" />
                         </SelectTrigger>
@@ -867,7 +909,7 @@ const printAppointments = () => {
                     <Button
                         variant="outline"
                         size="icon"
-                        class="h-10 w-10 rounded-xl border-white/80 bg-white text-slate-600 shadow-sm hover:bg-white hover:text-[#3e739f]"
+                        class="h-10 w-10 rounded-xl border-white/80 bg-white text-slate-600 shadow-sm hover:bg-white hover:text-brand"
                         title="Actualiser"
                         aria-label="Actualiser les rendez-vous"
                         @click="applyFilters({})"
@@ -877,7 +919,7 @@ const printAppointments = () => {
                     <Button
                         variant="outline"
                         size="icon"
-                        class="h-10 w-10 rounded-xl border-white/80 bg-white text-slate-600 shadow-sm hover:bg-white hover:text-[#3e739f]"
+                        class="h-10 w-10 rounded-xl border-white/80 bg-white text-slate-600 shadow-sm hover:bg-white hover:text-brand"
                         title="Imprimer"
                         aria-label="Imprimer les rendez-vous"
                         @click="printAppointments"
@@ -885,8 +927,24 @@ const printAppointments = () => {
                         <Printer class="size-4" />
                     </Button>
                     <Button
+                        v-if="permissions.syncMobile"
+                        data-testid="appointments-mobile-sync"
+                        variant="secondary"
+                        class="h-10 rounded-xl bg-slate-200 px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-300 hover:text-slate-900"
+                        :disabled="syncingMobileAppointments"
+                        title="Synchroniser les rendez-vous de la journée avec l’application mobile"
+                        @click="syncMobileAppointments"
+                    >
+                        <LoaderCircle
+                            v-if="syncingMobileAppointments"
+                            class="size-4 animate-spin"
+                        />
+                        <CloudUpload v-else class="size-4" />
+                        Synchroniser l’app mobile
+                    </Button>
+                    <Button
                         v-if="permissions.book"
-                        class="h-10 rounded-xl bg-[#1268a5] px-4 text-sm font-bold text-white shadow-sm hover:bg-[#0d578b]"
+                        class="h-10 rounded-xl bg-brand px-4 text-sm font-bold text-white shadow-sm hover:bg-brand-deep"
                         @click="openBooking"
                     >
                         <Plus class="size-4" />
@@ -900,7 +958,7 @@ const printAppointments = () => {
             >
                 <div class="min-w-0">
                     <div
-                        class="flex min-h-12 flex-wrap items-center rounded-full bg-[#4c82b7] p-1 shadow-sm"
+                        class="flex min-h-12 flex-wrap items-center rounded-full bg-brand p-1 shadow-sm"
                         role="tablist"
                         aria-label="Filtrer les rendez-vous par statut"
                     >
@@ -911,7 +969,7 @@ const printAppointments = () => {
                             class="flex min-w-[104px] flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                             :class="
                                 statusFilter === chip.key
-                                    ? 'bg-white text-[#1d507c] shadow-sm'
+                                    ? 'bg-white text-brand shadow-sm'
                                     : 'text-white/90 hover:bg-white/10 hover:text-white'
                             "
                             role="tab"
@@ -920,7 +978,7 @@ const printAppointments = () => {
                         >
                             <span>{{ chip.label }}</span>
                             <span
-                                class="inline-flex min-w-6 items-center justify-center rounded-full bg-[#e3aa1a] px-1.5 py-0.5 text-xs font-bold text-white"
+                                class="inline-flex min-w-6 items-center justify-center rounded-full bg-brand-mint px-1.5 py-0.5 text-xs font-bold text-brand-deep"
                             >
                                 {{ chip.value }}
                             </span>
@@ -939,7 +997,7 @@ const printAppointments = () => {
                             v-if="!isFilterToday"
                             variant="ghost"
                             size="sm"
-                            class="h-8 rounded-lg text-[#3e739f] hover:bg-white/70 hover:text-[#24557d]"
+                            class="h-8 rounded-lg text-brand hover:bg-white/70 hover:text-brand"
                             @click="applyFilters({ date: today })"
                         >
                             <CalendarDays class="size-4" />
@@ -963,7 +1021,7 @@ const printAppointments = () => {
                             <button
                                 v-if="permissions.book"
                                 type="button"
-                                class="mt-2 text-sm font-semibold text-[#3e739f] hover:underline"
+                                class="mt-2 text-sm font-semibold text-brand hover:underline"
                                 @click="openBooking"
                             >
                                 Prendre un rendez-vous
@@ -973,7 +1031,7 @@ const printAppointments = () => {
                         <article
                             v-for="(appointment, index) in appointments.data"
                             :key="appointment.id"
-                            class="group grid gap-3 rounded-2xl border border-white/80 bg-white p-3 shadow-[0_4px_18px_rgba(38,70,91,0.07)] transition hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(38,70,91,0.12)] sm:grid-cols-[44px_minmax(0,1fr)_92px_128px_40px] sm:items-center sm:gap-4 sm:px-4"
+                            class="group grid gap-3 rounded-2xl border border-white/80 bg-white p-3 shadow-[0_4px_18px_rgba(38,70,91,0.07)] transition hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(38,70,91,0.12)] sm:grid-cols-[44px_minmax(0,1fr)_92px_128px_minmax(88px,auto)] sm:items-center sm:gap-4 sm:px-4"
                         >
                             <div
                                 class="flex size-11 items-center justify-center rounded-full text-sm font-bold shadow-inner"
@@ -988,7 +1046,7 @@ const printAppointments = () => {
                                 <Link
                                     v-if="appointment.patient_id"
                                     :href="`/app/patients/${appointment.patient_id}`"
-                                    class="block truncate text-sm font-bold text-slate-800 hover:text-[#3e739f] hover:underline"
+                                    class="block truncate text-sm font-bold text-slate-800 hover:text-brand hover:underline"
                                 >
                                     {{ appointment.patient_name }}
                                 </Link>
@@ -1028,49 +1086,10 @@ const printAppointments = () => {
                                 {{ statusLabel(appointment.status) }}
                             </span>
 
-                            <div class="flex items-center justify-end gap-0.5">
-                                <Button
-                                    v-if="
-                                        permissions.startConsultation &&
-                                        consultationIsCompleted(appointment) &&
-                                        appointment.consultation_id
-                                    "
-                                    variant="outline"
-                                    size="sm"
-                                    class="rounded-lg"
-                                    title="Voir la consultation"
-                                    @click="startConsultation(appointment)"
-                                >
-                                    <Eye class="size-4" />
-                                    Voir
-                                </Button>
-                                <Button
-                                    v-else-if="
-                                        permissions.startConsultation &&
-                                        appointment.consultation_id
-                                    "
-                                    variant="secondary"
-                                    size="sm"
-                                    class="rounded-lg"
-                                    title="Continuer la consultation"
-                                    @click="startConsultation(appointment)"
-                                >
-                                    <Stethoscope class="size-4" />
-                                    Continuer
-                                </Button>
-                                <Button
-                                    v-else-if="
-                                        permissions.startConsultation &&
-                                        appointment.can_start
-                                    "
-                                    size="sm"
-                                    class="rounded-lg bg-[#3e739f] text-white hover:bg-[#24557d]"
-                                    title="Démarrer la consultation"
-                                    @click="startConsultation(appointment)"
-                                >
-                                    <Play class="size-4" />
-                                    Consultation
-                                </Button>
+                            <div
+                                data-testid="appointment-list-actions"
+                                class="flex items-center justify-end gap-0.5"
+                            >
                                 <Button
                                     v-if="
                                         permissions.confirm &&
@@ -1092,7 +1111,7 @@ const printAppointments = () => {
                                     "
                                     variant="ghost"
                                     size="icon-sm"
-                                    class="rounded-lg text-[#3e739f] hover:bg-sky-50 hover:text-[#24557d]"
+                                    class="rounded-lg text-brand hover:bg-brand-soft hover:text-brand"
                                     title="Faire entrer le patient"
                                     aria-label="Faire entrer le patient"
                                     @click="checkInAppointment(appointment)"
@@ -1189,7 +1208,7 @@ const printAppointments = () => {
                             class="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100"
                         >
                             <div
-                                class="h-full rounded-full bg-[#4c82b7] transition-all"
+                                class="h-full rounded-full bg-brand transition-all"
                                 :style="{ width: `${progressPercent}%` }"
                             />
                         </div>
@@ -1199,11 +1218,11 @@ const printAppointments = () => {
                         class="rounded-2xl border border-white/80 bg-white p-4 shadow-[0_4px_18px_rgba(38,70,91,0.07)]"
                     >
                         <div class="flex items-center justify-between gap-3">
-                            <h2 class="text-xl font-bold text-[#1d659e]">
+                            <h2 class="text-xl font-bold text-brand">
                                 Salle d'attente d'aujourd'hui
                             </h2>
                             <span
-                                class="rounded-full bg-[#e9f2f8] px-2.5 py-1 text-xs font-bold text-[#3e739f]"
+                                class="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-bold text-brand"
                             >
                                 {{ waitingAppointments.length }}
                             </span>
@@ -1231,39 +1250,116 @@ const printAppointments = () => {
                                     />
                                 </div>
                                 <div
-                                    class="relative rounded-r-xl border-l-4 border-[#4c82b7] bg-[#fff7e8] px-3 py-3 shadow-sm"
+                                    class="relative overflow-hidden rounded-r-xl border-l-4 border-brand bg-[#fff7e8] shadow-sm transition-shadow hover:shadow-md"
                                     :class="
                                         index === waitingAppointments.length - 1
                                             ? ''
                                             : 'mb-2'
                                     "
                                 >
-                                    <div class="flex items-start gap-2">
-                                        <div
-                                            class="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e8aa1b] text-[11px] font-bold text-white"
+                                    <button
+                                        type="button"
+                                        data-testid="waiting-room-patient"
+                                        class="flex w-full items-center gap-2 px-3 py-3 text-left focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none focus-visible:ring-inset"
+                                        :aria-expanded="
+                                            selectedWaitingAppointmentId ===
+                                            appointment.id
+                                        "
+                                        :aria-controls="`waiting-actions-${appointment.id}`"
+                                        @click="
+                                            toggleWaitingAppointment(
+                                                appointment,
+                                            )
+                                        "
+                                    >
+                                        <span
+                                            class="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-white"
                                         >
                                             {{
                                                 patientInitials(
                                                     appointment.patient_name,
                                                 )
                                             }}
-                                        </div>
-                                        <div class="min-w-0">
-                                            <p
-                                                class="truncate text-sm font-bold text-slate-800"
+                                        </span>
+                                        <span class="min-w-0 flex-1">
+                                            <span
+                                                class="block truncate text-sm font-bold text-slate-800"
                                             >
                                                 {{ appointment.patient_name }}
-                                            </p>
-                                            <p
-                                                class="mt-0.5 text-xs text-slate-600"
+                                            </span>
+                                            <span
+                                                class="mt-0.5 block text-xs text-slate-600"
                                             >
                                                 {{
                                                     statusLabel(
                                                         appointment.status,
                                                     )
                                                 }}
-                                            </p>
-                                        </div>
+                                            </span>
+                                        </span>
+                                        <ChevronDown
+                                            class="size-4 shrink-0 text-slate-500 transition-transform"
+                                            :class="
+                                                selectedWaitingAppointmentId ===
+                                                appointment.id
+                                                    ? 'rotate-180'
+                                                    : ''
+                                            "
+                                        />
+                                    </button>
+
+                                    <div
+                                        v-if="
+                                            selectedWaitingAppointmentId ===
+                                            appointment.id
+                                        "
+                                        :id="`waiting-actions-${appointment.id}`"
+                                        data-testid="waiting-room-actions"
+                                        class="flex flex-wrap gap-2 border-t border-amber-100 bg-white/75 px-3 py-2.5"
+                                    >
+                                        <Button
+                                            v-if="
+                                                canOpenWaitingConsultation(
+                                                    appointment,
+                                                )
+                                            "
+                                            size="sm"
+                                            class="flex-1 rounded-lg bg-brand text-white hover:bg-brand-deep"
+                                            @click="
+                                                startConsultation(appointment)
+                                            "
+                                        >
+                                            <Stethoscope class="size-4" />
+                                            {{
+                                                appointment.consultation_id
+                                                    ? 'Continuer la consultation'
+                                                    : 'Démarrer la consultation'
+                                            }}
+                                        </Button>
+                                        <Button
+                                            v-if="
+                                                permissions.cancel &&
+                                                appointment.can_cancel
+                                            "
+                                            variant="outline"
+                                            size="sm"
+                                            class="flex-1 rounded-lg border-red-200 bg-white text-red-700 hover:bg-red-50 hover:text-red-800"
+                                            @click="openCancel(appointment)"
+                                        >
+                                            <Ban class="size-4" />
+                                            Annuler
+                                        </Button>
+                                        <p
+                                            v-if="
+                                                !hasWaitingAppointmentAction(
+                                                    appointment,
+                                                )
+                                            "
+                                            class="w-full py-1 text-center text-xs text-slate-500"
+                                        >
+                                            Aucune action disponible pour votre
+                                            rôle.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -1504,48 +1600,6 @@ const printAppointments = () => {
                                         class="flex items-center justify-end gap-1"
                                     >
                                         <Button
-                                            v-if="
-                                                permissions.startConsultation &&
-                                                consultationIsCompleted(
-                                                    appointment,
-                                                ) &&
-                                                appointment.consultation_id
-                                            "
-                                            variant="outline"
-                                            size="sm"
-                                            title="Voir la consultation"
-                                            @click="startConsultation(appointment)"
-                                        >
-                                            <Eye class="size-4" />
-                                            Voir
-                                        </Button>
-                                        <Button
-                                            v-else-if="
-                                                permissions.startConsultation &&
-                                                appointment.consultation_id
-                                            "
-                                            variant="secondary"
-                                            size="sm"
-                                            title="Continuer la consultation"
-                                            @click="startConsultation(appointment)"
-                                        >
-                                            <Stethoscope class="size-4" />
-                                            Continuer
-                                        </Button>
-                                        <Button
-                                            v-else-if="
-                                                permissions.startConsultation &&
-                                                appointment.can_start
-                                            "
-                                            size="sm"
-                                            class="bg-[#3e739f] text-white hover:bg-[#24557d]"
-                                            title="Démarrer la consultation"
-                                            @click="startConsultation(appointment)"
-                                        >
-                                            <Play class="size-4" />
-                                            Consultation
-                                        </Button>
-                                        <Button
                                             v-if="permissions.confirm"
                                             variant="ghost"
                                             size="icon-sm"
@@ -1572,7 +1626,7 @@ const printAppointments = () => {
                                             "
                                         >
                                             <UserCheck
-                                                class="size-4 text-indigo-600 dark:text-indigo-400"
+                                                class="size-4 text-brand dark:text-brand-mint"
                                             />
                                         </Button>
                                         <Button
@@ -1591,8 +1645,7 @@ const printAppointments = () => {
                                             v-if="
                                                 !permissions.confirm &&
                                                 !permissions.checkIn &&
-                                                !permissions.cancel &&
-                                                !permissions.startConsultation
+                                                !permissions.cancel
                                             "
                                             class="text-xs text-muted-foreground"
                                         >

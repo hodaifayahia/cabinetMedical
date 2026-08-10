@@ -66,6 +66,31 @@ class AppointmentController extends Controller
 
         /** @var User $user */
         $user = $request->user();
+        $startsAt = CarbonImmutable::parse((string) $request->string('starts_at'));
+        $idempotency = $this->idempotencyContext($request, $startsAt);
+
+        if ($idempotency !== null) {
+            $existing = Appointment::query()
+                ->withTrashed()
+                ->where('mobile_idempotency_key_hash', $idempotency['key_hash'])
+                ->first();
+
+            if ($existing !== null) {
+                if (! hash_equals(
+                    (string) $existing->mobile_idempotency_fingerprint,
+                    $idempotency['fingerprint'],
+                )) {
+                    return response()->json([
+                        'message' => "Cette cle d'idempotence a deja ete utilisee avec une autre demande.",
+                        'reason' => 'idempotency_key_reused',
+                    ], 409);
+                }
+
+                return (new AppointmentResource($existing->load('patient')))
+                    ->response()
+                    ->header('Idempotency-Replayed', 'true');
+            }
+        }
 
         $availability = AvailabilityService::forCurrentDoctor();
 
@@ -74,8 +99,6 @@ class AppointmentController extends Controller
                 'doctor' => "Aucun médecin actif n'est configuré pour ce cabinet.",
             ]);
         }
-
-        $startsAt = CarbonImmutable::parse((string) $request->string('starts_at'));
 
         $slot = collect($availability->slotsForDate($startsAt)['slots'])
             ->first(static fn (array $slot): bool => $slot['starts_at'] === $startsAt->toIso8601String());
@@ -95,6 +118,8 @@ class AppointmentController extends Controller
             'reception_notes' => $request->input('reception_notes'),
             'prestation' => $request->input('prestation'),
             'status' => $request->input('status'),
+            'mobile_idempotency_key_hash' => $idempotency['key_hash'] ?? null,
+            'mobile_idempotency_fingerprint' => $idempotency['fingerprint'] ?? null,
         ]);
 
         return (new AppointmentResource($appointment->load('patient')))
@@ -106,11 +131,17 @@ class AppointmentController extends Controller
      * Update mutable fields and/or perform a status transition, applying the
      * same guard rails as the web confirm/check-in/cancel endpoints.
      */
-    public function update(UpdateAppointmentRequest $request, Appointment $appointment): AppointmentResource
+    public function update(UpdateAppointmentRequest $request, Appointment $appointment): AppointmentResource|JsonResponse
     {
         $this->authorize('update', $appointment);
 
         $data = $request->validated();
+        $expectedVersion = $this->expectedVersion($request, $data['expected_version'] ?? null);
+
+        if ($expectedVersion !== null && $expectedVersion !== (int) $appointment->sync_version) {
+            return $this->versionConflict($appointment);
+        }
+
         $attributes = [];
 
         foreach (['reason', 'reception_notes', 'prestation'] as $field) {
@@ -132,9 +163,15 @@ class AppointmentController extends Controller
     /**
      * Delete an appointment record.
      */
-    public function destroy(Appointment $appointment): JsonResponse
+    public function destroy(Request $request, Appointment $appointment): JsonResponse
     {
         $this->authorize('cancel', $appointment);
+
+        $expectedVersion = $this->expectedVersion($request);
+
+        if ($expectedVersion !== null && $expectedVersion !== (int) $appointment->sync_version) {
+            return $this->versionConflict($appointment);
+        }
 
         $appointment->delete();
 
@@ -191,5 +228,72 @@ class AppointmentController extends Controller
         }
 
         return [];
+    }
+
+    /**
+     * @return array{key_hash: string, fingerprint: string}|null
+     */
+    private function idempotencyContext(StoreAppointmentRequest $request, CarbonImmutable $startsAt): ?array
+    {
+        $key = trim((string) ($request->header('Idempotency-Key') ?: $request->input('client_request_id', '')));
+
+        if ($key === '') {
+            return null;
+        }
+
+        if (mb_strlen($key) < 8 || mb_strlen($key) > 200) {
+            throw ValidationException::withMessages([
+                'client_request_id' => "La cle d'idempotence doit contenir entre 8 et 200 caracteres.",
+            ]);
+        }
+
+        $fingerprintPayload = [
+            'patient_id' => $request->integer('patient_id'),
+            'starts_at' => $startsAt->utc()->toIso8601String(),
+            'reason' => $request->input('reason'),
+            'reception_notes' => $request->input('reception_notes'),
+            'prestation' => $request->input('prestation'),
+            'status' => $request->input('status', AppointmentStatus::SCHEDULED->value),
+        ];
+        $encoded = json_encode(
+            $fingerprintPayload,
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+        );
+
+        return [
+            'key_hash' => hash('sha256', 'appointment|'.$key),
+            'fingerprint' => hash('sha256', $encoded),
+        ];
+    }
+
+    private function expectedVersion(Request $request, mixed $bodyVersion = null): ?int
+    {
+        if ($bodyVersion !== null) {
+            return (int) $bodyVersion;
+        }
+
+        $header = trim((string) $request->header('If-Match', ''));
+
+        if ($header === '') {
+            return null;
+        }
+
+        if (preg_match('/^(?:W\/)?"?(\d+)"?$/', $header, $matches) !== 1) {
+            throw ValidationException::withMessages([
+                'expected_version' => "L'en-tete If-Match doit contenir une version numerique.",
+            ]);
+        }
+
+        return (int) $matches[1];
+    }
+
+    private function versionConflict(Appointment $appointment): JsonResponse
+    {
+        return response()->json([
+            'message' => 'Le rendez-vous a ete modifie sur un autre appareil. Rechargez-le avant de reessayer.',
+            'reason' => 'sync_version_conflict',
+            'public_id' => $appointment->public_id,
+            'current_version' => (int) $appointment->sync_version,
+        ], 409);
     }
 }

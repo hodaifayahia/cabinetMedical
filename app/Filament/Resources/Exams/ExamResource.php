@@ -22,6 +22,8 @@ class ExamResource extends Resource
 {
     protected static ?string $model = Exam::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Catalogue';

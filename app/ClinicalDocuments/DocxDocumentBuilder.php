@@ -46,6 +46,8 @@ final class DocxDocumentBuilder
 
         if ($logo !== null) {
             $zip->addFromString('word/media/'.$logo['filename'], $logo['bytes']);
+            $zip->addFromString('word/header1.xml', $this->watermarkHeaderXml($logo));
+            $zip->addFromString('word/_rels/header1.xml.rels', $this->headerRelationshipsXml($logo));
         }
 
         $zip->close();
@@ -120,6 +122,7 @@ final class DocxDocumentBuilder
             .'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
             .'<w:body>'.$bodyXml
             .'<w:sectPr>'
+            .($logo !== null ? '<w:headerReference w:type="default" r:id="rId4"/>' : '')
             .'<w:footerReference w:type="default" r:id="rId2"/>'
             .'<w:pgSz w:w="'.$width.'" w:h="'.$height.'"/>'
             .'<w:pgMar w:top="'.$margin.'" w:right="'.$margin.'" w:bottom="'.$margin.'" w:left="'.$margin.'" w:header="360" w:footer="360" w:gutter="0"/>'
@@ -182,24 +185,23 @@ final class DocxDocumentBuilder
     private function logo(array $variables): ?array
     {
         $path = trim($variables['cabinet.logo_path'] ?? '');
+        $bytes = null;
 
-        if ($path === '') {
-            return null;
-        }
-
-        try {
-            $disk = Storage::disk('public');
-
-            if (! $disk->exists($path)) {
-                return null;
+        if ($path !== '') {
+            try {
+                $disk = Storage::disk('public');
+                $bytes = $disk->exists($path) ? $disk->get($path) : null;
+            } catch (Throwable) {
+                $bytes = null;
             }
-
-            $bytes = $disk->get($path);
-        } catch (Throwable) {
-            return null;
         }
 
-        if ($bytes === '' || strlen($bytes) > 5 * 1024 * 1024) {
+        if (! is_string($bytes) || $bytes === '') {
+            $fallback = @file_get_contents(public_path('brand/drclick-mark.png'));
+            $bytes = is_string($fallback) ? $fallback : null;
+        }
+
+        if (! is_string($bytes) || $bytes === '' || strlen($bytes) > 5 * 1024 * 1024) {
             return null;
         }
 
@@ -296,6 +298,9 @@ final class DocxDocumentBuilder
             .'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
             .'<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
             .'<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'
+            .($logo !== null
+                ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>'
+                : '')
             .'<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
             .'<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
             .'</Types>';
@@ -323,6 +328,51 @@ final class DocxDocumentBuilder
             .($logo !== null
                 ? '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/'.$logo['filename'].'"/>'
                 : '')
+            .($logo !== null
+                ? '<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>'
+                : '')
+            .'</Relationships>';
+    }
+
+    /**
+     * @param  array{filename: string, bytes: string, extension: string, content_type: string, width_emu: int, height_emu: int}  $logo
+     */
+    private function watermarkHeaderXml(array $logo): string
+    {
+        $scale = min(
+            3_400_000 / max(1, $logo['width_emu']),
+            3_400_000 / max(1, $logo['height_emu']),
+        );
+        $width = max(1, (int) round($logo['width_emu'] * $scale));
+        $height = max(1, (int) round($logo['height_emu'] * $scale));
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+            .'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+            .'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" '
+            .'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+            .'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+            .'<w:p><w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="0" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1">'
+            .'<wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:align>center</wp:align></wp:positionH>'
+            .'<wp:positionV relativeFrom="page"><wp:align>center</wp:align></wp:positionV>'
+            .'<wp:extent cx="'.$width.'" cy="'.$height.'"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/>'
+            .'<wp:docPr id="2" name="Clinic logo watermark"/><wp:cNvGraphicFramePr/>'
+            .'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+            .'<pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="Clinic logo watermark"/><pic:cNvPicPr/></pic:nvPicPr>'
+            .'<pic:blipFill><a:blip r:embed="rId1"><a:alphaModFix amt="6000"/></a:blip><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+            .'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'.$width.'" cy="'.$height.'"/></a:xfrm>'
+            .'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'
+            .'</a:graphicData></a:graphic></wp:anchor></w:drawing></w:r></w:p></w:hdr>';
+    }
+
+    /**
+     * @param  array{filename: string, bytes: string, extension: string, content_type: string, width_emu: int, height_emu: int}  $logo
+     */
+    private function headerRelationshipsXml(array $logo): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/'.$logo['filename'].'"/>'
             .'</Relationships>';
     }
 

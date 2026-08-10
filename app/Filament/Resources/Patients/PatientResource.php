@@ -22,6 +22,8 @@ class PatientResource extends Resource
 {
     protected static ?string $model = Patient::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Dossiers patients';

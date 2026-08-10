@@ -59,11 +59,19 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if ($user->hasRole(RoleName::SUPER_ADMINISTRATOR->value)
-            && User::role(RoleName::SUPER_ADMINISTRATOR->value)->count() <= 1) {
-            throw ValidationException::withMessages([
-                'password' => 'Créez un autre super administrateur avant de supprimer ce compte.',
-            ]);
+        if ($user->hasRole(RoleName::SUPER_ADMINISTRATOR->value)) {
+            $superAdministratorCount = User::role(RoleName::SUPER_ADMINISTRATOR->value)
+                ->when(
+                    ! $user->is_platform_admin,
+                    fn ($query) => $query->where('cabinet_id', $user->cabinet_id),
+                )
+                ->count();
+
+            if ($superAdministratorCount <= 1) {
+                throw ValidationException::withMessages([
+                    'password' => 'Créez un autre super administrateur avant de supprimer ce compte.',
+                ]);
+            }
         }
 
         Auth::logout();

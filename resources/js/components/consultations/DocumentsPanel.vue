@@ -163,7 +163,7 @@ const refreshPreview = () => {
                 <h2 class="text-2xl font-bold tracking-tight text-foreground">
                     Documents
                 </h2>
-                <div class="mt-2 h-1 w-20 rounded-full bg-[#e2a719]" />
+                <div class="mt-2 h-1 w-20 rounded-full bg-brand" />
             </div>
             <div class="flex items-center gap-2">
                 <input
@@ -176,7 +176,7 @@ const refreshPreview = () => {
                 />
                 <Button
                     v-if="canEdit"
-                    class="bg-[#087f4f] text-white shadow-sm hover:bg-[#076b43]"
+                    class="bg-brand text-brand-foreground shadow-sm hover:bg-brand-deep hover:text-white"
                     @click="openFilePicker"
                 >
                     <FileUp class="size-4" />
@@ -221,12 +221,12 @@ const refreshPreview = () => {
             <div class="flex min-h-0 flex-col gap-4">
                 <form
                     v-if="canEdit && form.file"
-                    class="rounded-xl border border-dashed border-[#4c82b7]/50 bg-[#f4f8fb] p-4"
+                    class="rounded-xl border border-dashed border-brand/50 bg-canvas p-4"
                     @submit.prevent="submitUpload"
                 >
                     <div class="flex items-start gap-3">
                         <div
-                            class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#e8f1f7] text-[#3e739f]"
+                            class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand"
                         >
                             <FileText class="size-5" />
                         </div>
@@ -275,11 +275,11 @@ const refreshPreview = () => {
                 <button
                     v-else-if="canEdit"
                     type="button"
-                    class="flex min-h-28 items-center justify-center rounded-xl border border-dashed border-sidebar-border/80 bg-muted/20 p-4 text-center transition hover:border-[#4c82b7] hover:bg-[#f4f8fb]"
+                    class="flex min-h-28 items-center justify-center rounded-xl border border-dashed border-sidebar-border/80 bg-muted/20 p-4 text-center transition hover:border-brand hover:bg-canvas"
                     @click="openFilePicker"
                 >
                     <span>
-                        <UploadCloud class="mx-auto size-6 text-[#3e739f]" />
+                        <UploadCloud class="mx-auto size-6 text-brand" />
                         <span
                             class="mt-2 block text-sm font-semibold text-foreground"
                         >
@@ -305,8 +305,8 @@ const refreshPreview = () => {
                             class="flex w-full items-center gap-3 rounded-xl border p-3 text-left transition"
                             :class="
                                 selectedFile?.id === file.id
-                                    ? 'border-[#e2a719] bg-[#fffaf0] shadow-sm'
-                                    : 'border-sidebar-border/70 hover:border-[#4c82b7]/50 hover:bg-muted/30 dark:border-sidebar-border'
+                                    ? 'border-brand bg-brand-soft shadow-sm'
+                                    : 'border-sidebar-border/70 hover:border-brand/50 hover:bg-muted/30 dark:border-sidebar-border'
                             "
                             @click="selectedFile = file"
                         >
@@ -437,7 +437,7 @@ const refreshPreview = () => {
                         </p>
                     </object>
                     <div v-else-if="selectedFile" class="text-center">
-                        <FileIcon class="mx-auto size-12 text-[#3e739f]" />
+                        <FileIcon class="mx-auto size-12 text-brand" />
                         <p class="mt-3 text-sm font-semibold text-foreground">
                             Aperçu non disponible pour ce format.
                         </p>
@@ -445,7 +445,7 @@ const refreshPreview = () => {
                             :href="selectedFile.download_url"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#3e739f] px-3 py-2 text-sm font-semibold text-white hover:bg-[#2f638b]"
+                            class="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-deep"
                         >
                             <Download class="size-4" />
                             Télécharger le fichier
@@ -470,7 +470,7 @@ const refreshPreview = () => {
                     v-for="file in files"
                     :key="file.id"
                     type="button"
-                    class="rounded-xl border border-sidebar-border/70 bg-background p-4 text-left transition hover:-translate-y-px hover:border-[#4c82b7]/60 hover:shadow-sm dark:border-sidebar-border"
+                    class="rounded-xl border border-sidebar-border/70 bg-background p-4 text-left transition hover:-translate-y-px hover:border-brand/60 hover:shadow-sm dark:border-sidebar-border"
                     @click="
                         selectedFile = file;
                         activeTab = 'documents';
@@ -478,7 +478,7 @@ const refreshPreview = () => {
                 >
                     <div class="flex items-start justify-between gap-3">
                         <div
-                            class="flex size-10 items-center justify-center rounded-lg bg-[#e8f1f7] text-[#3e739f]"
+                            class="flex size-10 items-center justify-center rounded-lg bg-brand-soft text-brand"
                         >
                             <Image v-if="isImage(file)" class="size-5" />
                             <FileText v-else class="size-5" />

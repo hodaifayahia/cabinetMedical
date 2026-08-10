@@ -16,12 +16,7 @@ import {
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 defineOptions({
     layout: {
@@ -142,7 +137,9 @@ const measurements = computed(() =>
             label: 'Tension',
             value: props.consultation.blood_pressure,
         },
-    ].filter((measurement) => measurement.value !== null && measurement.value !== ''),
+    ].filter(
+        (measurement) => measurement.value !== null && measurement.value !== '',
+    ),
 );
 
 const generatedDocuments = computed(() =>
@@ -228,7 +225,9 @@ const categoryLabel = (category: string | null): string =>
                             </Link>
                         </Button>
                         <Button
-                            v-if="canEdit && consultation.status === 'in_progress'"
+                            v-if="
+                                canEdit && consultation.status === 'in_progress'
+                            "
                             size="sm"
                             as-child
                         >
@@ -249,7 +248,7 @@ const categoryLabel = (category: string | null): string =>
                     <Card>
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
-                                <Activity class="size-4 text-[#3e739f]" />
+                                <Activity class="size-4 text-brand" />
                                 Contenu clinique
                             </CardTitle>
                         </CardHeader>
@@ -283,7 +282,7 @@ const categoryLabel = (category: string | null): string =>
                     <Card>
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
-                                <Pill class="size-4 text-[#3e739f]" />
+                                <Pill class="size-4 text-brand" />
                                 Ordonnances
                             </CardTitle>
                         </CardHeader>
@@ -333,7 +332,9 @@ const categoryLabel = (category: string | null): string =>
                                     class="space-y-2"
                                 >
                                     <li
-                                        v-for="(item, index) in prescription.items"
+                                        v-for="(
+                                            item, index
+                                        ) in prescription.items"
                                         :key="index"
                                         class="rounded-lg bg-muted/40 px-3 py-2 text-sm"
                                     >
@@ -375,7 +376,7 @@ const categoryLabel = (category: string | null): string =>
                     <Card>
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
-                                <FileText class="size-4 text-[#3e739f]" />
+                                <FileText class="size-4 text-brand" />
                                 Documents générés
                             </CardTitle>
                         </CardHeader>
@@ -446,7 +447,9 @@ const categoryLabel = (category: string | null): string =>
                                         <p
                                             class="text-xs text-muted-foreground"
                                         >
-                                            {{ formatDate(document.created_at) }}
+                                            {{
+                                                formatDate(document.created_at)
+                                            }}
                                         </p>
                                     </div>
                                     <Button
@@ -475,7 +478,7 @@ const categoryLabel = (category: string | null): string =>
                     <Card v-if="measurements.length">
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
-                                <HeartPulse class="size-4 text-[#3e739f]" />
+                                <HeartPulse class="size-4 text-brand" />
                                 Constantes
                             </CardTitle>
                         </CardHeader>
@@ -486,9 +489,7 @@ const categoryLabel = (category: string | null): string =>
                                     :key="measurement.label"
                                     class="rounded-lg bg-muted/40 px-3 py-2"
                                 >
-                                    <dt
-                                        class="text-xs text-muted-foreground"
-                                    >
+                                    <dt class="text-xs text-muted-foreground">
                                         {{ measurement.label }}
                                     </dt>
                                     <dd
@@ -505,7 +506,7 @@ const categoryLabel = (category: string | null): string =>
                     <Card>
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
-                                <CircleDollarSign class="size-4 text-[#3e739f]" />
+                                <CircleDollarSign class="size-4 text-brand" />
                                 Règlement
                             </CardTitle>
                         </CardHeader>
@@ -517,7 +518,11 @@ const categoryLabel = (category: string | null): string =>
                                 <span
                                     class="text-lg font-semibold text-foreground"
                                 >
-                                    {{ formatAmount(consultation.payment_amount) }}
+                                    {{
+                                        formatAmount(
+                                            consultation.payment_amount,
+                                        )
+                                    }}
                                 </span>
                             </div>
                             <div
@@ -557,7 +562,9 @@ const categoryLabel = (category: string | null): string =>
                                             : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
                                     "
                                 >
-                                    {{ consultation.is_paid ? 'Payé' : 'Impayé' }}
+                                    {{
+                                        consultation.is_paid ? 'Payé' : 'Impayé'
+                                    }}
                                 </span>
                             </div>
                         </CardContent>

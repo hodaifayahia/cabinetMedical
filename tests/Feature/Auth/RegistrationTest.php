@@ -5,9 +5,11 @@ namespace Tests\Feature\Auth;
 use App\Enums\CabinetStatus;
 use App\Enums\RoleName;
 use App\Models\Cabinet;
+use App\Models\DesktopPinCredential;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
@@ -97,6 +99,57 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->get(route('dashboard'))->assertRedirect(route('cabinet.pending'));
+    }
+
+    public function test_desktop_registration_can_configure_the_device_pin_in_the_same_flow(): void
+    {
+        $deviceToken = str_repeat('a', 64);
+
+        $this->post(route('register.store'), [
+            'name' => 'Desktop Owner',
+            'cabinet_name' => 'Cabinet Desktop',
+            'specialization' => 'Cardiologie',
+            'phone' => '0555 00 00 04',
+            'email' => 'desktop-owner@example.com',
+            'wilaya' => 16,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'device_token' => $deviceToken,
+            'device_name' => 'Poste Drclick · Windows',
+            'pin' => '2468',
+            'pin_confirmation' => '2468',
+        ])->assertRedirect();
+
+        $owner = User::query()->where('email', 'desktop-owner@example.com')->sole();
+        $credential = DesktopPinCredential::query()->sole();
+
+        $this->assertSame($owner->getKey(), $credential->user_id);
+        $this->assertSame($owner->cabinet_id, $credential->cabinet_id);
+        $this->assertSame('Poste Drclick · Windows', $credential->device_name);
+        $this->assertTrue(Hash::check('2468', $credential->pin_hash));
+        $this->assertNotSame($deviceToken, $credential->device_token_hash);
+    }
+
+    public function test_invalid_desktop_pin_does_not_create_a_partial_cabinet(): void
+    {
+        $this->post(route('register.store'), [
+            'name' => 'Invalid Pin Owner',
+            'cabinet_name' => 'Cabinet Invalid Pin',
+            'specialization' => 'Cardiologie',
+            'phone' => '0555 00 00 05',
+            'email' => 'invalid-pin@example.com',
+            'wilaya' => 16,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'device_token' => str_repeat('b', 64),
+            'device_name' => 'Poste Drclick',
+            'pin' => '123',
+            'pin_confirmation' => '123',
+        ])->assertSessionHasErrors('pin');
+
+        $this->assertDatabaseCount('users', 0);
+        $this->assertDatabaseCount('cabinets', 0);
+        $this->assertDatabaseCount('desktop_pin_credentials', 0);
     }
 
     public function test_registration_requires_a_valid_wilaya(): void

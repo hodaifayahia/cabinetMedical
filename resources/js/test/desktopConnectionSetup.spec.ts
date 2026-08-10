@@ -44,6 +44,9 @@ test('the offline shell offers cloud, cabinet hub, retry, and an explicit local 
 });
 
 test('server selection is verified and persisted by narrow native commands', () => {
+    expect(offlinePage).toContain(
+        'https://seagreen-turkey-468004.hostingersite.com/',
+    );
     expect(offlinePage).toContain("invoke('probe_server_connection'");
     expect(offlinePage).toContain("invoke('configure_server_connection'");
     expect(rustShell).toContain('mod connection;');
@@ -52,6 +55,8 @@ test('server selection is verified and persisted by narrow native commands', () 
     expect(rustConnection).toContain('.join("health")');
     expect(rustConnection).toContain('health.application.name != "Drclick"');
     expect(rustConnection).toContain('persist_server_url');
+    expect(offlinePage).toContain('openLocalDrclickWhenAvailable');
+    expect(offlinePage).toContain("url: localServerUrl");
 });
 
 test('connection setup is local-only and LAN HTTP remains forbidden', () => {

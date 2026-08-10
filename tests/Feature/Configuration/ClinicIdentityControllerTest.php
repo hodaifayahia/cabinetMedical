@@ -53,7 +53,10 @@ class ClinicIdentityControllerTest extends TestCase
                 ->component('configuration/ClinicIdentity')
                 ->where('identity.doctor_name', $user->name)
                 ->where('identity.specialty', 'Médecine générale')
-                ->where('customBrandingCapability.available', false)
+                ->where('identity.logo_url', '/brand/drclick-mark.png')
+                ->where('identity.has_custom_logo', false)
+                ->where('customBrandingCapability.available', true)
+                ->where('customBrandingCapability.reason', null)
                 ->where('permissions.can_correct_specialty', false)
                 ->where('permissions.sensitive_actions_confirmed', false),
             );
@@ -122,10 +125,9 @@ class ClinicIdentityControllerTest extends TestCase
             ->assertSessionHasErrors('confirmation');
     }
 
-    public function test_administrator_can_update_identity_and_logo(): void
+    public function test_administrator_can_update_identity_and_logo_as_a_common_feature(): void
     {
         Storage::fake('public');
-        $this->activateSignedLicenseFeatures(['custom_branding' => true]);
 
         $user = User::factory()->create();
         $user->assignRole(RoleName::ADMINISTRATOR->value);
@@ -228,7 +230,7 @@ class ClinicIdentityControllerTest extends TestCase
         ]);
     }
 
-    public function test_unlicensed_custom_branding_changes_are_rejected_without_hiding_existing_assets(): void
+    public function test_custom_branding_is_available_without_a_license_entitlement(): void
     {
         Storage::fake('public');
         Storage::disk('public')->put('cabinet/existing-logo.png', 'existing-logo');
@@ -252,37 +254,36 @@ class ClinicIdentityControllerTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('identity.footer_line', 'Existing footer')
                 ->where('identity.logo_url', fn ($value): bool => is_string($value) && str_contains($value, 'existing-logo.png'))
-                ->where('customBrandingCapability.available', false)
-                ->where('customBrandingCapability.reason', fn ($value): bool => is_string($value) && $value !== ''),
+                ->where('identity.has_custom_logo', true)
+                ->where('customBrandingCapability.available', true)
+                ->where('customBrandingCapability.reason', null),
             );
 
         $this->actingAs($user)
             ->post(route('app.configuration.identity.update'), [
-                'clinic_name' => 'Forged Clinic',
-                'footer_line' => 'Forged footer',
-                'logo' => UploadedFile::fake()->image('forged-logo.png', 200, 200),
-            ])
-            ->assertSessionHasErrors(['footer_line', 'logo']);
-
-        $this->actingAs($user)
-            ->delete(route('app.configuration.identity.logo.destroy'))
-            ->assertForbidden();
-
-        $this->assertSame('Existing Clinic', $cabinet->refresh()->name);
-        $this->assertSame('Existing footer', $cabinet->prescription_footer);
-        $this->assertSame('cabinet/existing-logo.png', $cabinet->logo_path);
-        Storage::disk('public')->assertExists('cabinet/existing-logo.png');
-
-        $this->actingAs($user)
-            ->post(route('app.configuration.identity.update'), [
-                'clinic_name' => 'Updated Core Identity',
-                'footer_line' => 'Existing footer',
+                'clinic_name' => 'Updated Clinic',
+                'footer_line' => 'Updated footer',
+                'logo' => UploadedFile::fake()->image('updated-logo.png', 200, 200),
             ])
             ->assertSessionHasNoErrors()
             ->assertRedirect();
 
-        $this->assertSame('Updated Core Identity', $cabinet->refresh()->name);
-        $this->assertSame('Existing footer', $cabinet->prescription_footer);
-        $this->assertSame('cabinet/existing-logo.png', $cabinet->logo_path);
+        $cabinet->refresh();
+        $this->assertSame('Updated Clinic', $cabinet->name);
+        $this->assertSame('Updated footer', $cabinet->prescription_footer);
+        $this->assertNotNull($cabinet->logo_path);
+        $this->assertNotSame('cabinet/existing-logo.png', $cabinet->logo_path);
+        $updatedLogoPath = (string) $cabinet->logo_path;
+        Storage::disk('public')->assertExists($updatedLogoPath);
+        Storage::disk('public')->assertMissing('cabinet/existing-logo.png');
+
+        $this->actingAs($user)
+            ->delete(route('app.configuration.identity.logo.destroy'))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertNull($cabinet->refresh()->logo_path);
+        $this->assertNull(DoctorProfile::query()->active()->first()?->logo_path);
+        Storage::disk('public')->assertMissing($updatedLogoPath);
     }
 }

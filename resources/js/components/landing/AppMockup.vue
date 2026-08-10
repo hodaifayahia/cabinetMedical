@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Stethoscope } from '@lucide/vue';
 import { computed } from 'vue';
-import { type LandingLocale, translations } from './translations';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import type { LandingLocale } from './translations';
+import { translations } from './translations';
 
 const props = defineProps<{
     locale: LandingLocale;
@@ -21,23 +22,25 @@ const statusTone = (index: number): string =>
         class="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_20px_50px_-24px_rgba(38,70,91,0.45)]"
     >
         <!-- window chrome -->
-        <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-3">
+        <div
+            class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-3"
+        >
             <span class="size-3 rounded-full bg-red-300"></span>
             <span class="size-3 rounded-full bg-amber-300"></span>
             <span class="size-3 rounded-full bg-emerald-300"></span>
-            <span class="ms-3 text-xs font-medium text-muted-foreground">Drclick</span>
+            <span class="ms-3 text-xs font-medium text-muted-foreground"
+                >Drclick</span
+            >
         </div>
 
         <div class="grid grid-cols-[130px_1fr] sm:grid-cols-[150px_1fr]">
             <!-- sidebar -->
             <div class="border-e border-border bg-sidebar p-3">
                 <div class="mb-4 flex items-center gap-2">
-                    <span
-                        class="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+                    <AppLogoIcon class="size-7 object-contain" />
+                    <span class="text-xs font-bold text-sidebar-foreground"
+                        >Drclick</span
                     >
-                        <Stethoscope class="size-4" />
-                    </span>
-                    <span class="text-xs font-bold text-sidebar-foreground">Drclick</span>
                 </div>
                 <ul class="space-y-1">
                     <li
@@ -71,7 +74,9 @@ const statusTone = (index: number): string =>
                         >
                             {{ slot.time }}
                         </span>
-                        <span class="min-w-0 flex-1 truncate text-sm text-foreground">
+                        <span
+                            class="min-w-0 flex-1 truncate text-sm text-foreground"
+                        >
                             {{ slot.name }}
                         </span>
                         <span

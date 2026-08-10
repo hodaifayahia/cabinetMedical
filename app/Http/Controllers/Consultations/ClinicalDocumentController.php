@@ -49,7 +49,11 @@ class ClinicalDocumentController extends Controller
         Document $document,
         ClinicalDocumentManager $manager,
     ): RedirectResponse {
-        abort_if($document->patient_id !== $consultation->patient_id, 404);
+        abort_if(
+            (int) $document->patient_id !== (int) $consultation->patient_id
+            || (int) $document->consultation_id !== (int) $consultation->getKey(),
+            404,
+        );
 
         $data = $request->validate([
             'paper_size' => ['required', Rule::in(['A4', 'A5'])],

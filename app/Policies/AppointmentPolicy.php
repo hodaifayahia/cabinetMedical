@@ -15,7 +15,8 @@ class AppointmentPolicy
 
     public function view(User $user, Appointment $appointment): bool
     {
-        return $user->can(PermissionName::APPOINTMENTS_VIEW->value);
+        return $this->sharesCabinetWith($user, $appointment)
+            && $user->can(PermissionName::APPOINTMENTS_VIEW->value);
     }
 
     public function create(User $user): bool
@@ -25,16 +26,33 @@ class AppointmentPolicy
 
     public function update(User $user, Appointment $appointment): bool
     {
-        return $user->can(PermissionName::APPOINTMENTS_UPDATE->value);
+        return $this->sharesCabinetWith($user, $appointment)
+            && $user->can(PermissionName::APPOINTMENTS_UPDATE->value);
     }
 
     public function cancel(User $user, Appointment $appointment): bool
     {
-        return $user->can(PermissionName::APPOINTMENTS_CANCEL->value);
+        return $this->sharesCabinetWith($user, $appointment)
+            && $user->can(PermissionName::APPOINTMENTS_CANCEL->value);
     }
 
     public function checkIn(User $user, Appointment $appointment): bool
     {
-        return $user->can(PermissionName::APPOINTMENTS_CHECK_IN->value);
+        return $this->sharesCabinetWith($user, $appointment)
+            && $user->can(PermissionName::APPOINTMENTS_CHECK_IN->value);
+    }
+
+    private function sharesCabinetWith(User $user, Appointment $appointment): bool
+    {
+        if ($user->is_platform_admin) {
+            return true;
+        }
+
+        $appointmentCabinetId = $appointment->getAttribute('cabinet_id');
+
+        return $user->cabinet_id === null
+            ? $appointmentCabinetId === null
+            : $appointmentCabinetId !== null
+                && (int) $user->cabinet_id === (int) $appointmentCabinetId;
     }
 }

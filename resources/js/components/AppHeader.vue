@@ -19,6 +19,7 @@ import {
 } from '@lucide/vue';
 import { isTauri } from '@tauri-apps/api/core';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import ClinicLogo from '@/components/ClinicLogo.vue';
 import PageBackButton from '@/components/PageBackButton.vue';
@@ -91,7 +92,10 @@ const canConfigureAppointments = computed(
 );
 
 const visibleConfigurationNav = computed(() =>
-    configurationNavForPermissions(auth.value.user?.permissions ?? []),
+    configurationNavForPermissions(
+        auth.value.user?.permissions ?? [],
+        auth.value.user?.can.manageRolePermissions ?? false,
+    ),
 );
 const canManageConfiguration = computed(
     () => visibleConfigurationNav.value.length > 0,
@@ -220,7 +224,7 @@ onBeforeUnmount(() => {
             data-session-lock-no-activity
         >
             <div class="max-w-sm px-6 text-center text-white">
-                <Shield class="mx-auto mb-4 size-10 text-blue-300" />
+                <Shield class="mx-auto mb-4 size-10 text-brand-mint" />
                 <p class="text-lg font-semibold">Session verrouillée</p>
                 <p class="mt-2 text-sm text-slate-300">
                     Protection de l’écran en cours…
@@ -256,19 +260,18 @@ onBeforeUnmount(() => {
                         </SheetTitle>
                         <SheetHeader class="px-0 text-left">
                             <div class="flex items-center gap-2">
-                                <ClinicLogo
-                                    :src="clinicLogoUrl"
-                                    image-class="size-8 rounded-lg object-contain"
-                                >
-                                    <Stethoscope
-                                        class="h-6 w-6 text-[#d89d16]"
-                                    />
-                                </ClinicLogo>
+                                <AppLogoIcon class="size-9 object-contain" />
                                 <span
                                     class="text-lg font-bold tracking-tight text-slate-800 dark:text-white"
                                 >
                                     {{ clinicName }}
                                 </span>
+                                <ClinicLogo
+                                    v-if="clinicLogoUrl"
+                                    :src="clinicLogoUrl"
+                                    :alt="`Logo ${clinicName}`"
+                                    image-class="size-7 rounded-lg border border-border bg-white object-contain p-0.5"
+                                />
                             </div>
                         </SheetHeader>
                         <nav class="mt-6 flex flex-col gap-1">
@@ -279,7 +282,7 @@ onBeforeUnmount(() => {
                                 class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium"
                                 :class="
                                     isCurrentUrl(item.href)
-                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+                                        ? 'bg-brand-soft text-brand'
                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                 "
                             >
@@ -300,7 +303,7 @@ onBeforeUnmount(() => {
                                     class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium"
                                     :class="
                                         isCurrentUrl(link.href)
-                                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
+                                            ? 'bg-brand-soft text-brand'
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                     "
                                 >
@@ -370,17 +373,18 @@ onBeforeUnmount(() => {
                 :href="dashboard()"
                 class="flex min-w-0 shrink-0 items-center gap-2 pr-1"
             >
-                <ClinicLogo
-                    :src="clinicLogoUrl"
-                    image-class="size-9 rounded-xl object-contain"
-                >
-                    <Stethoscope class="h-7 w-7 text-[#d89d16]" />
-                </ClinicLogo>
+                <AppLogoIcon class="size-10 object-contain" />
                 <span
                     class="hidden max-w-40 truncate text-lg font-bold tracking-tight whitespace-nowrap text-slate-800 sm:inline xl:hidden 2xl:inline dark:text-white"
                 >
                     {{ clinicName }}
                 </span>
+                <ClinicLogo
+                    v-if="clinicLogoUrl"
+                    :src="clinicLogoUrl"
+                    :alt="`Logo ${clinicName}`"
+                    image-class="hidden size-7 rounded-lg border border-border bg-white object-contain p-0.5 2xl:block"
+                />
             </Link>
 
             <!-- Desktop primary nav -->
@@ -394,7 +398,7 @@ onBeforeUnmount(() => {
                     class="flex h-10 min-w-0 shrink items-center gap-2 rounded-xl border px-2.5 text-sm font-semibold whitespace-nowrap transition-all 2xl:px-3"
                     :class="
                         isCurrentUrl(item.href)
-                            ? 'border-blue-400 bg-blue-50 text-blue-600 shadow-sm dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                            ? 'border-brand/40 bg-brand-soft text-brand shadow-sm'
                             : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-800'
                     "
                 >
@@ -410,8 +414,8 @@ onBeforeUnmount(() => {
                             class="flex h-10 shrink-0 items-center gap-2 rounded-xl border px-2.5 text-sm font-semibold whitespace-nowrap transition-all 2xl:px-3"
                             :class="
                                 isConfigurationActive
-                                    ? 'border-blue-400 bg-blue-50 text-blue-600 shadow-sm dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                                    : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900 data-[state=open]:border-blue-300 data-[state=open]:bg-blue-50 data-[state=open]:text-blue-600 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-800'
+                                    ? 'border-brand bg-brand-soft text-brand shadow-sm dark:border-brand dark:bg-brand-deep dark:text-brand-mint'
+                                    : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900 data-[state=open]:border-brand data-[state=open]:bg-brand-soft data-[state=open]:text-brand dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-800'
                             "
                         >
                             <Settings class="h-4 w-4 shrink-0" />
@@ -437,7 +441,7 @@ onBeforeUnmount(() => {
                                 class="flex items-center rounded-md px-2.5 py-2 text-sm font-medium transition-colors"
                                 :class="
                                     isCurrentUrl(link.href)
-                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+                                        ? 'bg-brand-soft text-brand dark:bg-brand-deep dark:text-brand-mint'
                                         : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                 "
                             >
@@ -570,7 +574,7 @@ onBeforeUnmount(() => {
                     :title="
                         isOnline
                             ? 'En ligne'
-                            : 'Hors ligne · les modifications locales restent sur cet appareil'
+                            : 'Connexion indisponible · aucun changement ne peut être enregistré tant que le serveur est inaccessible'
                     "
                 >
                     <Cloud v-if="isOnline" class="h-4 w-4 shrink-0" />
@@ -586,7 +590,7 @@ onBeforeUnmount(() => {
                     :class="
                         isSessionExpiringSoon
                             ? 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400'
-                            : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+                            : 'bg-brand-soft text-brand dark:bg-brand-deep dark:text-brand-mint'
                     "
                     role="timer"
                     :title="`Verrouillage automatique après inactivité · ${formattedSessionTime} restante`"
@@ -600,7 +604,7 @@ onBeforeUnmount(() => {
                     <DropdownMenuTrigger :as-child="true">
                         <button
                             type="button"
-                            class="flex min-w-0 items-center gap-2 rounded-full p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                            class="flex min-w-0 items-center gap-2 rounded-full p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                         >
                             <Avatar class="h-9 w-9">
                                 <AvatarImage
@@ -609,7 +613,7 @@ onBeforeUnmount(() => {
                                     :alt="auth.user.name"
                                 />
                                 <AvatarFallback
-                                    class="bg-blue-600 text-sm font-semibold text-white"
+                                    class="bg-brand text-sm font-semibold text-white"
                                 >
                                     {{ getInitials(auth.user.name) }}
                                 </AvatarFallback>

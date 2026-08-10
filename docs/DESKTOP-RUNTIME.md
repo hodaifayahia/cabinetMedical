@@ -1,4 +1,26 @@
-# Drclick desktop runtime foundation
+# Drclick desktop runtime foundation (historical)
+
+> **Superseded:** this document describes the removed bundled PHP/SQLite
+> runtime and is retained only as implementation history. It is not the
+> architecture shipped by the current installer.
+
+## Current shipped boundary
+
+The current Tauri application is a thin HTTPS client. It bundles no PHP
+runtime, clinical database, queue worker, scheduler, LAN listener, or offline
+restore engine. It opens the configured Drclick server and therefore requires
+that server to be reachable. A hosted server provides shared same-cabinet data
+while Internet connectivity is available; a separately installed Cabinet Hub
+can provide the same server boundary on a cabinet LAN.
+
+The Cabinet Hub installer/service, PostgreSQL deployment, signed pairing,
+certificate pinning, and two-Windows-PC disconnected acceptance test are not
+part of this repository's current desktop bundle. Shared offline/LAN operation
+must not be advertised from this installer until those deliverables satisfy
+the acceptance criteria in
+[`ADR-002`](architecture/ADR-002-cabinet-hub-offline-lan.md).
+
+The sections below document the former runtime only.
 
 ## Implemented boundary
 

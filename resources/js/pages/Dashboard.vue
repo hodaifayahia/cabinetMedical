@@ -123,7 +123,7 @@ const kpis = computed(() => [
         label: 'Rendez-vous',
         value: formatNumber(props.stats.appointments_total),
         icon: CalendarCheck,
-        accent: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+        accent: 'bg-brand-soft0/10 text-brand dark:text-brand-mint',
         change: null,
         footnote: `${formatNumber(props.stats.appointments_this_month)} ce mois-ci`,
     },
@@ -132,7 +132,7 @@ const kpis = computed(() => [
         label: 'Consultations',
         value: formatNumber(props.stats.consultations_total),
         icon: Stethoscope,
-        accent: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+        accent: 'bg-brand-soft0/10 text-brand dark:text-brand-mint',
         change: null,
         footnote:
             formatNumber(props.stats.prestations_total) +
@@ -178,17 +178,17 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
             class="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(300px,0.8fr)]"
         >
             <section
-                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-800 via-blue-700 to-cyan-600 p-6 text-white shadow-lg shadow-blue-900/10"
+                class="relative overflow-hidden rounded-2xl bg-brand-deep p-6 text-white shadow-lg shadow-brand-deep/10"
             >
                 <div
                     class="absolute -top-20 -right-16 size-64 rounded-full bg-white/10 blur-2xl"
                 />
                 <div
-                    class="absolute -bottom-24 left-1/3 size-56 rounded-full bg-cyan-300/15 blur-3xl"
+                    class="absolute -bottom-24 left-1/3 size-56 rounded-full bg-brand-mint/15 blur-3xl"
                 />
                 <div class="relative">
                     <div
-                        class="flex items-center gap-2 text-sm font-medium text-blue-100"
+                        class="flex items-center gap-2 text-sm font-medium text-brand-soft"
                     >
                         <Building2 class="size-4" />
                         {{ profile.clinic_name }}
@@ -198,20 +198,20 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
                     >
                         Bienvenue, {{ profile.welcome_name }}
                     </h2>
-                    <p class="mt-2 max-w-2xl text-sm leading-6 text-blue-100">
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-brand-soft">
                         Retrouvez les rendez-vous du jour, l’activité des
                         patients et les paiements depuis un espace de travail
                         unique.
                     </p>
                     <p
-                        class="mt-4 text-xs font-semibold tracking-wide text-cyan-100 uppercase"
+                        class="mt-4 text-xs font-semibold tracking-wide text-brand-soft uppercase"
                     >
                         {{ todayLabel }}
                     </p>
                     <div class="mt-6 flex flex-wrap gap-2">
                         <Link
                             href="/app/appointments"
-                            class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold whitespace-nowrap text-blue-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-white/70"
+                            class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold whitespace-nowrap text-brand shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-soft focus-visible:ring-2 focus-visible:ring-white/70"
                         >
                             Rendez-vous du jour
                             <ArrowRight class="size-4 shrink-0" />
@@ -230,7 +230,7 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
             <section class="med-panel p-5">
                 <div class="flex items-center gap-3">
                     <div
-                        class="flex size-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-base font-bold text-white"
+                        class="flex size-14 shrink-0 items-center justify-center rounded-full bg-brand text-base font-bold text-white"
                     >
                         {{
                             initials(
@@ -244,7 +244,7 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
                         <p class="truncate text-base font-bold">
                             {{ profile.doctor_name ?? profile.welcome_name }}
                         </p>
-                        <p class="truncate text-sm font-medium text-blue-600">
+                        <p class="truncate text-sm font-medium text-brand">
                             {{ profile.specialty ?? 'Professionnel de santé' }}
                         </p>
                         <p class="truncate text-xs text-muted-foreground">
@@ -343,7 +343,7 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
                 <CardContent>
                     <AreaChart
                         :data="revenueTrend"
-                        color="#10b981"
+                        color="#00666f"
                         :format-value="formatMoney"
                     />
                 </CardContent>
@@ -398,7 +398,7 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <BarChart :data="appointmentsTrend" color="#3b82f6" />
+                    <BarChart :data="appointmentsTrend" color="#59f59b" />
                 </CardContent>
             </Card>
 

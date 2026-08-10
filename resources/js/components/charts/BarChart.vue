@@ -11,7 +11,7 @@ const props = withDefaults(
         formatValue?: (value: number) => string;
     }>(),
     {
-        color: '#3b82f6',
+        color: '#00666f',
         height: 240,
         formatValue: (value: number) => String(value),
     },

@@ -12,8 +12,8 @@
             :root {
                 color-scheme: light;
                 font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                color: #172033;
-                background: #f3f6fb;
+                color: #00424a;
+                background: #eef7f5;
                 font-synthesis: none;
                 text-rendering: optimizeLegibility;
             }
@@ -30,7 +30,7 @@
                 min-width: 320px;
                 min-height: 100vh;
                 margin: 0;
-                background: linear-gradient(180deg, #eaf2ff 0, #f7f9fc 18rem, #f3f6fb 100%);
+                background: #f1f8f6;
             }
 
             button,
@@ -61,9 +61,9 @@
                 height: 3.25rem;
                 flex: 0 0 auto;
                 place-items: center;
-                border: 1px solid #bfd5ff;
+                border: 1px solid #bdd8d5;
                 border-radius: 1rem;
-                color: #0758c9;
+                color: #00666f;
                 background: #fff;
                 box-shadow: 0 0.45rem 1.4rem rgba(22, 78, 159, 0.12);
                 font-size: 1.6rem;
@@ -86,7 +86,7 @@
             .clinic-copy p {
                 overflow: hidden;
                 margin: 0.2rem 0 0;
-                color: #60708a;
+                color: #667085;
                 font-size: 0.82rem;
                 line-height: 1.45;
                 text-overflow: ellipsis;
@@ -99,7 +99,7 @@
             }
 
             .card {
-                border: 1px solid #d9e2ef;
+                border: 1px solid #d5e4e2;
                 border-radius: 1.25rem;
                 background: #fff;
                 box-shadow: 0 0.5rem 1.7rem rgba(27, 50, 83, 0.07);
@@ -121,8 +121,8 @@
                 margin: 0 auto 1rem;
                 place-items: center;
                 border-radius: 50%;
-                background: #eaf2ff;
-                color: #0758c9;
+                background: #e7f5f1;
+                color: #00666f;
                 font-size: 1.55rem;
                 font-weight: 900;
             }
@@ -146,7 +146,7 @@
             .status-card p {
                 max-width: 31rem;
                 margin: 0.65rem auto 0;
-                color: #5c6a80;
+                color: #667085;
                 font-size: 0.92rem;
                 line-height: 1.65;
             }
@@ -154,8 +154,8 @@
             .spinner {
                 width: 1.7rem;
                 height: 1.7rem;
-                border: 0.2rem solid #bdd2f4;
-                border-top-color: #0758c9;
+                border: 0.2rem solid #bdd8d5;
+                border-top-color: #00666f;
                 border-radius: 50%;
                 animation: spin 0.8s linear infinite;
             }
@@ -181,14 +181,14 @@
 
             .eyebrow {
                 margin: 0;
-                color: #26364d;
+                color: #00424a;
                 font-size: 0.88rem;
                 font-weight: 750;
             }
 
             .muted {
                 margin: 0.25rem 0 0;
-                color: #68778d;
+                color: #667085;
                 font-size: 0.78rem;
                 line-height: 1.5;
             }
@@ -197,8 +197,8 @@
                 min-width: 5rem;
                 padding: 0.55rem 0.7rem;
                 border-radius: 99rem;
-                color: #064daa;
-                background: #e8f1ff;
+                color: #00666f;
+                background: #e7f5f1;
                 font-variant-numeric: tabular-nums;
                 font-size: 0.9rem;
                 font-weight: 800;
@@ -218,10 +218,10 @@
                 margin-top: 1rem;
                 padding: 1.2rem;
                 place-items: center;
-                border: 2px dashed #89afe8;
+                border: 2px dashed #279f79;
                 border-radius: 1rem;
-                color: #0758c9;
-                background: #f2f7ff;
+                color: #00666f;
+                background: #eef8f5;
                 cursor: pointer;
                 font-weight: 750;
                 line-height: 1.5;
@@ -230,9 +230,9 @@
 
             .picker:hover,
             .picker:focus-visible {
-                border-color: #0758c9;
+                border-color: #00666f;
                 outline: none;
-                background: #e9f2ff;
+                background: #e7f5f1;
             }
 
             .picker:disabled {
@@ -285,7 +285,7 @@
 
             .file-size {
                 flex: 0 0 auto;
-                color: #6a788c;
+                color: #667085;
                 font-size: 0.74rem;
             }
 
@@ -297,7 +297,7 @@
                 border: 0;
                 border-radius: 0.8rem;
                 color: #fff;
-                background: #0865d8;
+                background: #00666f;
                 cursor: pointer;
                 font-weight: 800;
             }
@@ -306,7 +306,7 @@
             .button:focus-visible {
                 outline: 3px solid rgba(8, 101, 216, 0.22);
                 outline-offset: 2px;
-                background: #0758bd;
+                background: #00424a;
             }
 
             .button:disabled {
@@ -328,7 +328,7 @@
                 overflow: hidden;
                 margin-top: 0.85rem;
                 border-radius: 99rem;
-                background: #dfe9f7;
+                background: #d5e4e2;
             }
 
             .progress::after {
@@ -336,7 +336,7 @@
                 width: 45%;
                 height: 100%;
                 border-radius: inherit;
-                background: #0865d8;
+                background: #00666f;
                 animation: progress 1.1s ease-in-out infinite alternate;
                 content: "";
             }
@@ -387,7 +387,7 @@
             .privacy-note {
                 margin: 0;
                 padding: 0.25rem 0.7rem;
-                color: #68778d;
+                color: #667085;
                 font-size: 0.75rem;
                 line-height: 1.6;
                 text-align: center;

@@ -18,10 +18,12 @@ import {
     Wifi,
 } from '@lucide/vue';
 import { isTauri } from '@tauri-apps/api/core';
-import { computed, onMounted, ref, type Component } from 'vue';
-import AppMockup from '@/components/landing/AppMockup.vue';
+import type { Component } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import DesktopDownloadLeadDialog from '@/components/DesktopDownloadLeadDialog.vue';
 import DesktopOnboarding from '@/components/DesktopOnboarding.vue';
+import AppMockup from '@/components/landing/AppMockup.vue';
 import DownloadButton from '@/components/landing/DownloadButton.vue';
 import LanguageSwitcher from '@/components/landing/LanguageSwitcher.vue';
 import { useLandingLocale } from '@/components/landing/translations';
@@ -34,9 +36,28 @@ import { dashboard, login } from '@/routes';
 // `canRegister` is still provided by the home route and asserted by the
 // feature test, but the public landing page intentionally exposes no
 // sign-in / sign-up / join links — its only conversion goal is the download.
-defineProps<{
+const props = defineProps<{
     canRegister: boolean;
+    landingSections?: LandingSection[];
 }>();
+
+type LandingSectionItem = {
+    title?: string;
+    body?: string;
+};
+
+type LandingSection = {
+    locale: string;
+    slug: string;
+    section_type: string;
+    eyebrow: string | null;
+    title: string;
+    body: string | null;
+    cta_label: string | null;
+    cta_url: string | null;
+    image_url: string | null;
+    items: LandingSectionItem[];
+};
 
 const page = usePage();
 const desktopDownload = computed(() => page.props.desktopDownload);
@@ -68,6 +89,12 @@ const redirectRememberedDesktopToLogin = computed(
 
 const { locale, dir, copy, setLocale } = useLandingLocale();
 
+const visibleLandingSections = computed(() =>
+    (props.landingSections ?? []).filter(
+        (section) => section.locale === locale.value,
+    ),
+);
+
 const mobileNavOpen = ref(false);
 
 // Icons paired with the six benefits, in the same order as the copy.
@@ -84,10 +111,10 @@ const roleIcons: Component[] = [Stethoscope, UserCog];
 const requirementIcons: Component[] = [Monitor, Wifi, Building2];
 
 const navLinks = computed(() => [
-    { href: '#features', label: copy.value.nav.features },
-    { href: '#how', label: copy.value.nav.how },
+    { href: '#solution', label: copy.value.nav.features },
+    { href: '#fonctionnement', label: copy.value.nav.how },
     { href: '#roles', label: copy.value.nav.roles },
-    { href: '#requirements', label: copy.value.nav.requirements },
+    { href: '#telecharger', label: copy.value.nav.requirements },
     { href: '#contact', label: copy.value.nav.contact },
 ]);
 
@@ -188,12 +215,8 @@ onMounted(() => {
             <div
                 class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"
             >
-                <a href="#top" class="flex items-center gap-2.5">
-                    <span
-                        class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm"
-                    >
-                        <Stethoscope class="size-5" />
-                    </span>
+                <a href="#accueil" class="flex items-center gap-2.5">
+                    <AppLogoIcon class="size-10 object-contain" />
                     <span class="flex flex-col leading-tight">
                         <span class="text-base font-bold tracking-tight"
                             >Drclick</span
@@ -275,11 +298,11 @@ onMounted(() => {
             </div>
         </header>
 
-        <main id="top">
+        <main id="accueil">
             <!-- Hero -->
             <section class="relative overflow-hidden">
                 <div
-                    class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(60%_120%_at_50%_0%,hsl(202_85%_95%),transparent)]"
+                    class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-brand-soft/50"
                 ></div>
                 <div
                     class="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-24"
@@ -321,6 +344,7 @@ onMounted(() => {
                             class="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center"
                         >
                             <DownloadButton
+                                data-testid="open-desktop-download-form"
                                 :available="desktopDownload?.available ?? false"
                                 :url="desktopDownload?.url ?? null"
                                 :reason="desktopDownload?.reason ?? null"
@@ -342,7 +366,7 @@ onMounted(() => {
             </section>
 
             <!-- Benefits -->
-            <section id="features" class="border-t border-border bg-card">
+            <section id="solution" class="border-t border-border bg-card">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
                     <div class="max-w-2xl">
                         <p
@@ -361,6 +385,14 @@ onMounted(() => {
                             {{ copy.benefits.subtitle }}
                         </p>
                     </div>
+                    <ul class="sr-only" aria-label="Fonctionnalités Drclick">
+                        <li>Dossiers patients</li>
+                        <li>Agenda du cabinet</li>
+                        <li>Consultation structurée</li>
+                        <li>Ordonnances et documents</li>
+                        <li>Paiements lisibles</li>
+                        <li>Équipe et accès contrôlés</li>
+                    </ul>
 
                     <div
                         class="mt-12 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3"
@@ -394,7 +426,7 @@ onMounted(() => {
             </section>
 
             <!-- How it works -->
-            <section id="how" class="border-t border-border">
+            <section id="fonctionnement" class="border-t border-border">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
                     <div class="max-w-2xl">
                         <p
@@ -508,8 +540,94 @@ onMounted(() => {
                 </div>
             </section>
 
+            <!-- Managed landing content -->
+            <section
+                v-for="section in visibleLandingSections"
+                :id="`landing-${section.slug}`"
+                :key="`${section.locale}-${section.slug}`"
+                class="border-t border-border"
+                :class="
+                    section.section_type === 'cta'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background'
+                "
+            >
+                <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
+                    <div class="max-w-3xl">
+                        <p
+                            v-if="section.eyebrow"
+                            class="text-sm font-semibold tracking-wide text-primary uppercase"
+                            :class="
+                                section.section_type === 'cta'
+                                    ? 'text-primary-foreground/80'
+                                    : ''
+                            "
+                        >
+                            {{ section.eyebrow }}
+                        </p>
+                        <h2
+                            class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl"
+                            :class="
+                                section.section_type === 'cta'
+                                    ? 'text-primary-foreground'
+                                    : 'text-foreground'
+                            "
+                        >
+                            {{ section.title }}
+                        </h2>
+                        <p
+                            v-if="section.body"
+                            class="mt-4 text-base leading-7 whitespace-pre-line"
+                            :class="
+                                section.section_type === 'cta'
+                                    ? 'text-primary-foreground/85'
+                                    : 'text-muted-foreground'
+                            "
+                        >
+                            {{ section.body }}
+                        </p>
+                    </div>
+
+                    <div
+                        v-if="section.items.length"
+                        class="mt-10 grid gap-4 md:grid-cols-3"
+                    >
+                        <article
+                            v-for="(item, index) in section.items"
+                            :key="`${section.slug}-${index}`"
+                            class="rounded-2xl border border-border bg-card p-6"
+                        >
+                            <h3 class="font-semibold text-foreground">
+                                {{ item.title }}
+                            </h3>
+                            <p
+                                v-if="item.body"
+                                class="mt-2 text-sm leading-6 text-muted-foreground"
+                            >
+                                {{ item.body }}
+                            </p>
+                        </article>
+                    </div>
+
+                    <img
+                        v-if="section.image_url"
+                        :src="section.image_url"
+                        :alt="section.title"
+                        class="mt-10 max-h-80 w-full rounded-2xl border border-border object-cover"
+                    />
+
+                    <a
+                        v-if="section.cta_label && section.cta_url"
+                        :href="section.cta_url"
+                        class="mt-8 inline-flex rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
+                    >
+                        {{ section.cta_label }}
+                    </a>
+                </div>
+            </section>
+
             <!-- System requirements -->
-            <section id="requirements" class="border-t border-border">
+            <section id="telecharger" class="border-t border-border">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
                     <div
                         class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
@@ -592,11 +710,7 @@ onMounted(() => {
                 <div class="grid gap-10 md:grid-cols-[1.2fr_1fr]">
                     <div>
                         <div class="flex items-center gap-2.5">
-                            <span
-                                class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground"
-                            >
-                                <Stethoscope class="size-5" />
-                            </span>
+                            <AppLogoIcon class="size-10 object-contain" />
                             <span class="text-base font-bold tracking-tight"
                                 >Drclick</span
                             >

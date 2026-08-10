@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "drclick-desktop"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hmac",
  "reqwest 0.12.28",

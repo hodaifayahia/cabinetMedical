@@ -1,6 +1,6 @@
 [package]
 name = "drclick-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Drclick thin-client desktop shell"
 authors = ["Drclick"]
 edition = "2021"

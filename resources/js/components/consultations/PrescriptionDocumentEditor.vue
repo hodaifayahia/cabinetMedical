@@ -563,13 +563,13 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                             >
                                 <span class="flex items-center gap-0.5">
                                     <span
-                                        class="size-3 rounded-full bg-blue-600"
+                                        class="size-3 rounded-full bg-brand"
                                     />
                                     <span
                                         class="size-3 rounded-full bg-orange-500"
                                     />
                                     <span
-                                        class="size-3 rounded-full bg-cyan-500"
+                                        class="bg-brand-soft0 size-3 rounded-full"
                                     />
                                 </span>
                                 <span
@@ -627,7 +627,7 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
 
                 <div class="mt-5 text-center">
                     <h1
-                        class="mx-auto max-w-[430px] text-center text-[16px] font-bold tracking-wide text-cyan-800"
+                        class="mx-auto max-w-[430px] text-center text-[16px] font-bold tracking-wide text-brand"
                         :class="
                             titleBox ? 'border border-slate-800 px-3 py-2' : ''
                         "
@@ -637,9 +637,14 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                 </div>
 
                 <div class="relative mt-6">
-                    <div class="prescription-watermark" aria-hidden="true">
-                        ✚
-                    </div>
+                    <img
+                        v-if="logoUrl"
+                        :src="logoUrl"
+                        alt=""
+                        class="prescription-watermark"
+                        aria-hidden="true"
+                        contenteditable="false"
+                    />
                     <div
                         v-if="items.some((item) => item.medication.trim())"
                         class="relative space-y-4"
@@ -704,10 +709,11 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
     top: 15%;
     left: 50%;
     z-index: 0;
-    color: rgb(37 99 235 / 0.06);
-    font-size: 13rem;
-    font-weight: 900;
-    line-height: 1;
+    width: min(58%, 20rem);
+    max-height: 24rem;
+    object-fit: contain;
+    opacity: 0.055;
+    pointer-events: none;
     transform: translateX(-50%);
     user-select: none;
 }

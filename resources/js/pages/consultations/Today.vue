@@ -50,11 +50,11 @@ const sortDirection = ref<'asc' | 'desc'>('asc');
 
 const statusStyles: Record<string, string> = {
     scheduled:
-        'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
+        'bg-brand-soft text-brand dark:bg-brand-deep/40 dark:text-brand-mint',
     confirmed:
         'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
     checked_in:
-        'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
+        'bg-brand-soft text-brand dark:bg-brand-deep/40 dark:text-brand-mint',
     in_progress:
         'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
     completed:

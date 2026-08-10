@@ -54,7 +54,7 @@ return [
         // under storage/app/private/desktop instead.
         'url' => env('MEDISMART_DESKTOP_DOWNLOAD_URL'),
         // Absolute path, or a filename relative to storage/app/private/desktop.
-        'installer_path' => env('MEDISMART_DESKTOP_INSTALLER_PATH', 'Drclick-Desktop-Setup.exe'),
+        'installer_path' => env('MEDISMART_DESKTOP_INSTALLER_PATH', 'DrClickDz-Desktop-Setup.exe'),
     ],
 
     'health' => [

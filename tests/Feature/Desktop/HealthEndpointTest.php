@@ -117,7 +117,7 @@ class HealthEndpointTest extends TestCase
             ->assertJsonPath('database.pending_migrations', 1)
             ->assertJsonPath(
                 'database.latest_available_migration',
-                '2026_08_09_000010_add_license_type_to_hosted_licenses',
+                '2026_08_09_140000_create_landing_sections_table',
             );
     }
 

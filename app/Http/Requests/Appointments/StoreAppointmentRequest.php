@@ -23,6 +23,7 @@ class StoreAppointmentRequest extends FormRequest
             'reception_notes' => ['nullable', 'string', 'max:2000'],
             'prestation' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', 'string', Rule::in(AppointmentStatus::creatableValues())],
+            'client_request_id' => ['nullable', 'string', 'min:8', 'max:200'],
         ];
     }
 }

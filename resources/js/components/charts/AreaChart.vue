@@ -11,7 +11,7 @@ const props = withDefaults(
         formatValue?: (value: number) => string;
     }>(),
     {
-        color: '#6366f1',
+        color: '#00666f',
         height: 260,
         formatValue: (value: number) => String(value),
     },
@@ -88,8 +88,6 @@ const areaPath = computed(() => {
 
     return `${linePath.value} L ${pts[pts.length - 1].x} ${baseline.value} L ${pts[0].x} ${baseline.value} Z`;
 });
-
-const gradientId = `area-gradient-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 
 <template>
@@ -102,13 +100,6 @@ const gradientId = `area-gradient-${Math.random().toString(36).slice(2, 9)}`;
             preserveAspectRatio="none"
             class="overflow-visible"
         >
-            <defs>
-                <linearGradient :id="gradientId" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" :stop-color="color" stop-opacity="0.32" />
-                    <stop offset="100%" :stop-color="color" stop-opacity="0" />
-                </linearGradient>
-            </defs>
-
             <g
                 v-for="(line, index) in gridLines"
                 :key="`grid-${index}`"
@@ -126,7 +117,7 @@ const gradientId = `area-gradient-${Math.random().toString(36).slice(2, 9)}`;
                 />
             </g>
 
-            <path :d="areaPath" :fill="`url(#${gradientId})`" />
+            <path :d="areaPath" :fill="color" fill-opacity="0.12" />
             <path
                 :d="linePath"
                 fill="none"

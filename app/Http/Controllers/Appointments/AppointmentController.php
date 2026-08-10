@@ -10,10 +10,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Appointments\StoreAppointmentRequest;
 use App\Models\Act;
 use App\Models\Appointment;
+use App\Models\AppointmentSyncEvent;
 use App\Models\Consultation;
 use App\Models\ConsultationFee;
 use App\Models\Patient;
 use App\Models\User;
+use App\Services\Appointments\AppointmentSyncService;
 use App\Services\Appointments\AvailabilityService;
 use App\Services\DocumentBrandingService;
 use Carbon\CarbonImmutable;
@@ -81,6 +83,7 @@ class AppointmentController extends Controller
                 'configure' => $user->can('appointments.configure'),
                 'manageActs' => $user->can('configuration.manage'),
                 'startConsultation' => $user->can('consultations.create'),
+                'syncMobile' => $user->can('appointments.update'),
             ],
             'today' => $today->toDateString(),
         ]);
@@ -269,6 +272,80 @@ class AppointmentController extends Controller
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Appointment cancelled.')]);
+
+        return back();
+    }
+
+    /**
+     * Publish the current snapshot again for a companion client. Normal model
+     * changes are published automatically; this endpoint is the explicit
+     * retry requested by the operator.
+     */
+    public function syncMobile(
+        Appointment $appointment,
+        AppointmentSyncService $sync,
+    ): RedirectResponse {
+        $this->authorize('update', $appointment);
+
+        $event = $sync->publishOrRetry($appointment);
+
+        if (! $event instanceof AppointmentSyncEvent) {
+            throw ValidationException::withMessages([
+                'sync' => "Ce rendez-vous n'est pas rattache a un cabinet synchronisable.",
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Rendez-vous place dans la file de synchronisation mobile.',
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Requeue every appointment for the selected day from the single toolbar
+     * action. The tenant scope and per-record policy check prevent a bulk
+     * request from ever publishing another cabinet's appointments.
+     */
+    public function syncMobileDay(
+        Request $request,
+        AppointmentSyncService $sync,
+    ): RedirectResponse {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user->can('appointments.update'), 403);
+
+        $validated = $request->validate([
+            'date' => ['required', 'date_format:Y-m-d'],
+        ]);
+
+        $appointments = Appointment::query()
+            ->whereDate('appointment_date', $validated['date'])
+            ->orderBy('starts_at')
+            ->get();
+
+        $published = 0;
+
+        foreach ($appointments as $appointment) {
+            $this->authorize('update', $appointment);
+
+            if ($sync->publishOrRetry($appointment) instanceof AppointmentSyncEvent) {
+                $published++;
+            }
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $published === 0
+                ? 'Aucun rendez-vous à synchroniser pour cette journée.'
+                : trans_choice(
+                    '{1} :count rendez-vous envoyé vers l’application mobile.|[2,*] :count rendez-vous envoyés vers l’application mobile.',
+                    $published,
+                    ['count' => $published],
+                ),
+        ]);
 
         return back();
     }
@@ -511,7 +588,10 @@ class AppointmentController extends Controller
     private function appointmentList(CarbonImmutable $date, string $search, ?AppointmentStatus $status, int $perPage, CarbonImmutable $today): LengthAwarePaginator
     {
         $paginator = Appointment::query()
-            ->with('patient:id,first_name,last_name,patient_number')
+            ->with([
+                'patient:id,first_name,last_name,patient_number',
+                'latestSyncEvent',
+            ])
             ->when($search === '', static fn (Builder $query): Builder => $query->whereDate('appointment_date', $date->toDateString()))
             ->when($search !== '', $this->patientSearchFilter($search))
             ->when($status !== null, static fn (Builder $query): Builder => $query->where('status', $status->value))
@@ -537,9 +617,12 @@ class AppointmentController extends Controller
             // been checked in. Confirming an appointment must never open the
             // consultation workspace.
             $startableStatus = $appointment->status === AppointmentStatus::CHECKED_IN;
+            $syncEvent = $appointment->latestSyncEvent;
 
             return [
                 'id' => $appointment->id,
+                'public_id' => $appointment->public_id,
+                'sync_version' => (int) $appointment->sync_version,
                 'date' => $appointment->appointment_date?->toDateString(),
                 'starts_at' => $appointment->starts_at?->toIso8601String(),
                 'time_label' => $appointment->starts_at?->format('H:i'),
@@ -559,6 +642,17 @@ class AppointmentController extends Controller
                 'can_start' => $isToday && $startableStatus,
                 'consultation_id' => $consultation?->id,
                 'consultation_status' => $consultation?->status,
+                'mobile_sync' => [
+                    'state' => match ($syncEvent?->status) {
+                        AppointmentSyncEvent::STATUS_ACKNOWLEDGED => 'synced',
+                        AppointmentSyncEvent::STATUS_FAILED => 'failed',
+                        AppointmentSyncEvent::STATUS_PENDING => 'pending',
+                        default => 'not_published',
+                    },
+                    'version' => $syncEvent?->version,
+                    'last_attempted_at' => $syncEvent?->last_attempted_at?->toIso8601String(),
+                    'acknowledged_at' => $syncEvent?->acknowledged_at?->toIso8601String(),
+                ],
             ];
         });
     }

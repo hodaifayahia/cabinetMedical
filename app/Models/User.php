@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\PermissionName;
+use App\Services\Authorization\CabinetRolePermissionService;
+use BackedEnum;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -16,10 +18,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Contracts\Permission as PermissionContract;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -45,7 +49,37 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable {
+        HasRoles::getAllPermissions as private getAllPermissionsUsingGlobalRoles;
+        HasRoles::hasPermissionTo as private hasPermissionToUsingGlobalRoles;
+    }
+
+    /**
+     * Apply cabinet-specific role profiles to every Gate and permission
+     * middleware check without mutating Spatie's globally seeded role rows.
+     */
+    public function hasPermissionTo(
+        string|int|PermissionContract|BackedEnum $permission,
+        ?string $guardName = null,
+    ): bool {
+        if ($this->cabinet_id === null) {
+            return $this->hasPermissionToUsingGlobalRoles($permission, $guardName);
+        }
+
+        $storedPermission = $this->filterPermission($permission, $guardName);
+
+        return app(CabinetRolePermissionService::class)->allows($this, $storedPermission);
+    }
+
+    /** @return Collection<int, PermissionContract> */
+    public function getAllPermissions(): Collection
+    {
+        if ($this->cabinet_id === null) {
+            return $this->getAllPermissionsUsingGlobalRoles();
+        }
+
+        return app(CabinetRolePermissionService::class)->effectivePermissions($this);
+    }
 
     /**
      * Get the attributes that should be cast.

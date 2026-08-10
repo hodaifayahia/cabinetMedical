@@ -103,7 +103,9 @@ function reject(member: PendingMember): void {
                                     :id="`role-${member.id}`"
                                     class="w-48"
                                 >
-                                    <SelectValue placeholder="Choisir un rôle" />
+                                    <SelectValue
+                                        placeholder="Choisir un rôle"
+                                    />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem

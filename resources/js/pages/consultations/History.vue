@@ -216,7 +216,7 @@ const formatAmount = (amount: number | null): string =>
                         >
                             <Link
                                 :href="`/app/consultation-history/${consultation.id}`"
-                                class="group flex items-start gap-4 rounded-xl border border-sidebar-border/70 bg-background p-4 transition-colors hover:border-[#3e739f]/50 hover:bg-muted/30 dark:border-sidebar-border"
+                                class="group flex items-start gap-4 rounded-xl border border-sidebar-border/70 bg-background p-4 transition-colors hover:border-brand/50 hover:bg-muted/30 dark:border-sidebar-border"
                             >
                                 <div
                                     class="flex items-center gap-1.5 text-sm font-semibold text-foreground tabular-nums"
@@ -228,7 +228,9 @@ const formatAmount = (amount: number | null): string =>
                                 </div>
 
                                 <div class="min-w-0 flex-1 space-y-1">
-                                    <div class="flex flex-wrap items-center gap-2">
+                                    <div
+                                        class="flex flex-wrap items-center gap-2"
+                                    >
                                         <span
                                             class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
                                             :class="
@@ -238,7 +240,9 @@ const formatAmount = (amount: number | null): string =>
                                                 'bg-muted text-muted-foreground'
                                             "
                                         >
-                                            {{ statusLabel(consultation.status) }}
+                                            {{
+                                                statusLabel(consultation.status)
+                                            }}
                                         </span>
                                         <span
                                             v-if="consultation.provider_name"
@@ -256,8 +260,17 @@ const formatAmount = (amount: number | null): string =>
                                             "
                                         >
                                             <Wallet class="size-3" />
-                                            {{ formatAmount(consultation.payment_amount) }}
-                                            <span v-if="consultation.payment_amount !== null">
+                                            {{
+                                                formatAmount(
+                                                    consultation.payment_amount,
+                                                )
+                                            }}
+                                            <span
+                                                v-if="
+                                                    consultation.payment_amount !==
+                                                    null
+                                                "
+                                            >
                                                 ·
                                                 {{
                                                     consultation.is_paid
@@ -270,7 +283,10 @@ const formatAmount = (amount: number | null): string =>
                                     <p
                                         class="truncate text-sm font-medium text-foreground"
                                     >
-                                        {{ consultation.motif ?? 'Motif non renseigné' }}
+                                        {{
+                                            consultation.motif ??
+                                            'Motif non renseigné'
+                                        }}
                                     </p>
                                     <p
                                         v-if="consultation.diagnostic"

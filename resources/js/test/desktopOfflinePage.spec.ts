@@ -11,9 +11,11 @@ const applicationShell = readFileSync(
     resolve(process.cwd(), 'resources/views/app.blade.php'),
     'utf8',
 );
-const desktopIcon = readFileSync(
-    resolve(process.cwd(), 'src-tauri/icons/source.svg'),
-    'utf8',
+const productMark = readFileSync(
+    resolve(process.cwd(), 'public/brand/drclick-mark.png'),
+);
+const desktopShellMark = readFileSync(
+    resolve(process.cwd(), 'src-tauri/frontend/brand/drclick-mark.png'),
 );
 const tauriConfig = JSON.parse(
     readFileSync(resolve(process.cwd(), 'src-tauri/tauri.conf.json'), 'utf8'),
@@ -61,11 +63,13 @@ test('the offline shell and icon use the Drclick brand', () => {
     expect(visibleShell).toContain('Drclick');
     expect(visibleShell).not.toContain('MediSmart');
     expect(
-        [...parsedPage.querySelectorAll<HTMLElement>('.mark')].map(
-            (mark) => mark.textContent,
+        [...parsedPage.querySelectorAll<HTMLImageElement>('img.mark')].map(
+            (mark) => mark.getAttribute('src'),
         ),
-    ).toEqual(['D', 'D']);
-    expect(desktopIcon).toContain('<title id="title">Drclick</title>');
+    ).toEqual(['./brand/drclick-mark.png', './brand/drclick-mark.png']);
+    expect(desktopShellMark.equals(productMark)).toBe(true);
+    expect(offlinePage).not.toContain('gradient(');
+    expect(applicationShell).toContain('/brand/drclick-mark.png');
 });
 
 test('desktop entry points bypass the public landing page', () => {

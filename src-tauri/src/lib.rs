@@ -43,10 +43,14 @@ use crate::updates::SignedUpdaterState;
 // Server URL configuration
 // ---------------------------------------------------------------------------
 
-/// Compile-time default server URL. Override at runtime by placing a JSON file
+/// Hosted Drclick control-plane origin used by production desktop releases.
+const CLOUD_SERVER_URL: &str = "https://seagreen-turkey-468004.hostingersite.com/";
+
+/// Compile-time default server URL. Production releases start against the
+/// hosted Drclick service. Override it at runtime by placing a JSON file
 /// at `<app-local-data>/config/server.json` with content `{"url": "https://..."}`.
 /// The override is read once at startup and never re-read while the app is running.
-const DEFAULT_SERVER_URL: &str = "https://app.medismart.dz";
+const DEFAULT_SERVER_URL: &str = CLOUD_SERVER_URL;
 
 #[cfg(debug_assertions)]
 const LOCAL_DEVELOPMENT_SERVER_ENV: &str = "DRCLICKDZ_DEV_SERVER_URL";
@@ -75,8 +79,9 @@ fn is_valid_local_development_server_url(url: &Url) -> bool {
 /// the compiled-in constant.  The override file is optional and silently ignored
 /// on any parse/IO error so a misconfigured file cannot prevent startup.
 fn resolve_server_url(app: &AppHandle) -> Url {
-    // Local HTTP is an explicit debug-build escape hatch only. The entire
-    // branch is compiled out of release installers, which remain HTTPS-only.
+    // A debug build may explicitly override the server with the exact local
+    // development origin. Release builds still use the persisted endpoint or
+    // DEFAULT_SERVER_URL; URL validation limits HTTP to loopback port 8000.
     #[cfg(debug_assertions)]
     if let Some(url) = local_development_server_url() {
         return url;
@@ -88,6 +93,16 @@ fn resolve_server_url(app: &AppHandle) -> Url {
             if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
                 if let Some(url_str) = value.get("url").and_then(|v| v.as_str()) {
                     if let Ok(url) = validate_server_url(url_str) {
+                        // Older connected-client installers persisted the
+                        // technician-only localhost endpoint as their release
+                        // default. Do not let that stale value strand an
+                        // upgraded production install on an absent dev server.
+                        #[cfg(not(debug_assertions))]
+                        if crate::connection::is_exact_loopback_development_url(&url) {
+                            return Url::parse(DEFAULT_SERVER_URL)
+                                .expect("DEFAULT_SERVER_URL is a valid HTTPS URL");
+                        }
+
                         return url;
                     }
                 }
@@ -135,7 +150,7 @@ async fn configure_server_connection(
 ///     system browser by the on_navigation handler instead
 #[derive(Clone, Default)]
 struct NavigationPolicy {
-    /// The server origin, e.g. `https://app.medismart.dz`. Set once on startup.
+    /// The server origin, e.g. `http://localhost:8000`. Set once on startup.
     server_origin: Arc<RwLock<Option<Url>>>,
 }
 
@@ -284,8 +299,9 @@ fn build_main_window(app: &mut tauri::App, server_url: Url) -> tauri::Result<()>
         .maximizable(true)
         // Inject the server URL into window so the loader page can read it.
         .initialization_script(format!(
-            "window.__MEDISMART_SERVER_URL = {};",
-            serde_json::to_string(server_url.as_str()).unwrap_or_default()
+            "window.__DRCLICK_SERVER_URL = {}; window.__DRCLICK_CLOUD_SERVER_URL = {};",
+            serde_json::to_string(server_url.as_str()).unwrap_or_default(),
+            serde_json::to_string(CLOUD_SERVER_URL).unwrap_or_default()
         ))
         .build()?;
 
@@ -295,7 +311,7 @@ fn build_main_window(app: &mut tauri::App, server_url: Url) -> tauri::Result<()>
 /// Tauri plugin that enforces the NavigationPolicy and opens external links in
 /// the system browser.
 fn navigation_guard(policy: NavigationPolicy) -> TauriPlugin<tauri::Wry> {
-    PluginBuilder::new("medismart-navigation-guard")
+    PluginBuilder::new("drclick-navigation-guard")
         .on_navigation(move |webview, url| {
             if policy.allows(url) {
                 return true;
@@ -330,39 +346,40 @@ mod tests {
 
     #[test]
     fn server_origin_and_subpaths_are_allowed() {
-        let policy = make_policy("https://app.medismart.dz");
+        let policy = make_policy("https://app.drclick.dz");
 
-        assert!(policy.allows(&Url::parse("https://app.medismart.dz").unwrap()));
-        assert!(policy.allows(&Url::parse("https://app.medismart.dz/").unwrap()));
-        assert!(policy.allows(&Url::parse("https://app.medismart.dz/login").unwrap()));
-        assert!(policy
-            .allows(&Url::parse("https://app.medismart.dz/patients/123/consultation").unwrap()));
+        assert!(policy.allows(&Url::parse("https://app.drclick.dz").unwrap()));
+        assert!(policy.allows(&Url::parse("https://app.drclick.dz/").unwrap()));
+        assert!(policy.allows(&Url::parse("https://app.drclick.dz/login").unwrap()));
+        assert!(
+            policy.allows(&Url::parse("https://app.drclick.dz/patients/123/consultation").unwrap())
+        );
     }
 
     #[test]
     fn different_origin_is_blocked() {
-        let policy = make_policy("https://app.medismart.dz");
+        let policy = make_policy("https://app.drclick.dz");
 
         // Different host
         assert!(!policy.allows(&Url::parse("https://evil.example.com/").unwrap()));
         // Different scheme
-        assert!(!policy.allows(&Url::parse("http://app.medismart.dz/").unwrap()));
+        assert!(!policy.allows(&Url::parse("http://app.drclick.dz/").unwrap()));
         // Subdomain is NOT the same origin
-        assert!(!policy.allows(&Url::parse("https://sub.app.medismart.dz/").unwrap()));
+        assert!(!policy.allows(&Url::parse("https://sub.app.drclick.dz/").unwrap()));
         // Port mismatch
-        assert!(!policy.allows(&Url::parse("https://app.medismart.dz:8443/").unwrap()));
+        assert!(!policy.allows(&Url::parse("https://app.drclick.dz:8443/").unwrap()));
     }
 
     #[test]
     fn credentials_in_url_are_always_blocked() {
-        let policy = make_policy("https://app.medismart.dz");
+        let policy = make_policy("https://app.drclick.dz");
 
-        assert!(!policy.allows(&Url::parse("https://user:pass@app.medismart.dz/").unwrap()));
+        assert!(!policy.allows(&Url::parse("https://user:pass@app.drclick.dz/").unwrap()));
     }
 
     #[test]
     fn tauri_and_asset_schemes_are_always_allowed() {
-        let policy = make_policy("https://app.medismart.dz");
+        let policy = make_policy("https://app.drclick.dz");
 
         assert!(policy.allows(&Url::parse("tauri://localhost/").unwrap()));
         assert!(policy.allows(&Url::parse("asset://localhost/").unwrap()));
@@ -373,28 +390,28 @@ mod tests {
     fn no_server_configured_blocks_everything_except_internal_schemes() {
         let policy = NavigationPolicy::default(); // no server URL set
 
-        assert!(!policy.allows(&Url::parse("https://app.medismart.dz/").unwrap()));
+        assert!(!policy.allows(&Url::parse("https://app.drclick.dz/").unwrap()));
         // Internal schemes still pass
         assert!(policy.allows(&Url::parse("tauri://localhost/").unwrap()));
     }
 
     #[test]
     fn external_link_detection_is_correct() {
-        let policy = make_policy("https://app.medismart.dz");
+        let policy = make_policy("https://app.drclick.dz");
 
         // External HTTPS on a different host → should be opened in browser
         assert!(policy.is_external_link(&Url::parse("https://example.com/docs").unwrap()));
         // Same origin → not external
-        assert!(!policy.is_external_link(&Url::parse("https://app.medismart.dz/login").unwrap()));
+        assert!(!policy.is_external_link(&Url::parse("https://app.drclick.dz/login").unwrap()));
         // HTTP (non-HTTPS) on different host → not treated as an openable external link
         assert!(!policy.is_external_link(&Url::parse("http://example.com/").unwrap()));
     }
 
     #[test]
-    fn default_server_url_is_valid_https() {
+    fn default_server_url_is_the_hosted_drclick_origin() {
         let url = Url::parse(DEFAULT_SERVER_URL).unwrap();
         assert_eq!(url.scheme(), "https");
-        assert!(url.host_str().is_some());
+        assert_eq!(url.as_str(), CLOUD_SERVER_URL);
     }
 
     #[cfg(debug_assertions)]

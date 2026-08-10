@@ -56,13 +56,11 @@ defineOptions({
         class="flex flex-col gap-6"
         @success="markDesktopOnboardingComplete"
     >
-        <fieldset
-            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
-        >
+        <fieldset class="rounded-lg border border-border p-4 sm:p-5">
             <legend class="sr-only">Vos informations</legend>
             <div class="mb-5 flex items-center gap-3">
                 <span
-                    class="flex size-9 items-center justify-center rounded-xl bg-sky-100 text-[#1268a5] dark:bg-sky-950 dark:text-sky-300"
+                    class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand dark:bg-brand-deep dark:text-brand-mint"
                 >
                     <UserRound class="size-4.5" aria-hidden="true" />
                 </span>
@@ -123,13 +121,11 @@ defineOptions({
             </div>
         </fieldset>
 
-        <fieldset
-            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
-        >
+        <fieldset class="rounded-lg border border-border p-4 sm:p-5">
             <legend class="sr-only">Cabinet à rejoindre</legend>
             <div class="mb-5 flex items-center gap-3">
                 <span
-                    class="flex size-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"
+                    class="flex size-9 items-center justify-center rounded-xl bg-brand-soft text-brand dark:bg-brand-deep dark:text-brand-mint"
                 >
                     <Building2 class="size-4.5" aria-hidden="true" />
                 </span>
@@ -179,9 +175,7 @@ defineOptions({
             </div>
         </fieldset>
 
-        <fieldset
-            class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/40"
-        >
+        <fieldset class="rounded-lg border border-border p-4 sm:p-5">
             <legend class="sr-only">Sécurisation du compte</legend>
             <div class="mb-5 flex items-center gap-3">
                 <span
@@ -255,7 +249,7 @@ defineOptions({
         <Button
             type="submit"
             size="lg"
-            class="h-12 w-full bg-[#1268a5] text-white shadow-lg shadow-sky-800/15 hover:bg-[#0d578b]"
+            class="h-12 w-full bg-brand text-white shadow-lg shadow-brand-deep/15 hover:bg-brand-deep"
             tabindex="6"
             :disabled="processing"
             data-test="join-cabinet-button"
@@ -273,11 +267,7 @@ defineOptions({
 
     <p class="mt-7 text-center text-sm text-slate-500 dark:text-slate-400">
         Vous avez déjà un compte ?
-        <TextLink
-            :href="login()"
-            class="font-bold text-[#1268a5]"
-            :tabindex="7"
-        >
+        <TextLink :href="login()" class="font-bold text-brand" :tabindex="7">
             Se connecter
         </TextLink>
     </p>

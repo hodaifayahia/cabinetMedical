@@ -49,6 +49,10 @@ describe('Drclick authentication and onboarding contract', () => {
             'wilaya',
             'password',
             'password_confirmation',
+            'device_token',
+            'device_name',
+            'pin',
+            'pin_confirmation',
         ]) {
             expect(source).toContain(`name="${field}"`);
         }
@@ -70,12 +74,7 @@ describe('Drclick authentication and onboarding contract', () => {
     });
 
     it('marks successful desktop setup entry points as complete', () => {
-        for (const page of [
-            'Login',
-            'Register',
-            'JoinCabinet',
-            'DesktopCabinetLogin',
-        ]) {
+        for (const page of ['Login', 'JoinCabinet', 'DesktopCabinetLogin']) {
             const source = readAuthPage(page);
 
             expect(source).toContain('markDesktopOnboardingComplete');
@@ -83,6 +82,23 @@ describe('Drclick authentication and onboarding contract', () => {
                 '@success="markDesktopOnboardingComplete"',
             );
         }
+
+        const registration = readAuthPage('Register');
+
+        expect(registration).toContain('handleRegistrationSuccess');
+        expect(registration).toContain('@success="handleRegistrationSuccess"');
+        expect(registration).toContain('markDesktopOnboardingComplete');
+        expect(registration).toContain('saveDesktopPinEnrollment');
+    });
+
+    it('uses one simple centered shadcn card without a split marketing panel', () => {
+        const layout = readFrontendFile('layouts/auth/AuthSimpleLayout.vue');
+
+        expect(layout).toContain('<Card');
+        expect(layout).toContain('<CardHeader');
+        expect(layout).toContain('<CardContent');
+        expect(layout).not.toContain('lg:grid-cols-');
+        expect(layout).not.toContain('Votre cabinet, fluide');
     });
 
     it('requires cabinet and staff credentials for an existing desktop cabinet', () => {

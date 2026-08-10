@@ -2,6 +2,7 @@ export type ConfigLink = {
     title: string;
     href: string;
     permissions: string[];
+    capability?: 'manageRolePermissions';
 };
 export type ConfigGroup = { label: string; links: ConfigLink[] };
 
@@ -29,6 +30,12 @@ export const configurationNav: ConfigGroup[] = [
                 title: 'Connexion & sauvegardes',
                 href: '/app/configuration/connectivity-backup',
                 permissions: sensitiveConfigurationPermissions,
+            },
+            {
+                title: 'Rôles & permissions',
+                href: '/app/configuration/roles-permissions',
+                permissions: ['staff.manage'],
+                capability: 'manageRolePermissions',
             },
         ],
     },
@@ -91,14 +98,20 @@ export const configurationNav: ConfigGroup[] = [
 
 export const configurationNavForPermissions = (
     grantedPermissions: readonly string[],
+    manageRolePermissions = false,
 ): ConfigGroup[] => {
     const granted = new Set(grantedPermissions);
 
     return configurationNav
         .map((group) => ({
             ...group,
-            links: group.links.filter((link) =>
-                link.permissions.some((permission) => granted.has(permission)),
+            links: group.links.filter(
+                (link) =>
+                    link.permissions.some((permission) =>
+                        granted.has(permission),
+                    ) ||
+                    (link.capability === 'manageRolePermissions' &&
+                        manageRolePermissions),
             ),
         }))
         .filter((group) => group.links.length > 0);

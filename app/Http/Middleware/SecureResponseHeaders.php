@@ -11,6 +11,13 @@ final class SecureResponseHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // A forgotten public/hot file must never make a production response
+        // load scripts or styles from a developer machine. Point Vite at an
+        // intentionally absent marker before the view is rendered.
+        if (! in_array(config('app.env'), ['local', 'development', 'testing', 'e2e'], true)) {
+            Vite::useHotFile(storage_path('framework/vite-production-disabled.hot'));
+        }
+
         $nonce = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
         Vite::useCspNonce($nonce);
 

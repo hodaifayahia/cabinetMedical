@@ -28,6 +28,20 @@ final class NormalContentSecurityPolicyTest extends TestCase
         File::delete($this->testHotFile);
         Vite::useHotFile($this->testHotFile);
 
+        // Laravel's withoutVite() test double intentionally makes
+        // useHotFile() a no-op, while its real fonts() method still checks
+        // public/hot. Point the inherited property at our isolated marker so
+        // a developer's running Vite server cannot change this test output.
+        $hotFileProperty = new \ReflectionProperty(
+            \Illuminate\Foundation\Vite::class,
+            'hotFile',
+        );
+        $hotFileProperty->setAccessible(true);
+        $hotFileProperty->setValue(
+            app(\Illuminate\Foundation\Vite::class),
+            $this->testHotFile,
+        );
+
         Route::get('/_security/csp/plain', static fn () => response(
             '<!doctype html><html><body>CSP test</body></html>',
             200,
@@ -201,6 +215,7 @@ final class NormalContentSecurityPolicyTest extends TestCase
 
     public function test_nonproduction_hmr_uses_only_the_validated_hot_origin_and_derived_websocket(): void
     {
+        $this->useRealViteWithTestHotFile();
         $hotOrigin = 'http://127.0.0.1:5173';
         File::put($this->testHotFile, $hotOrigin."\n");
         config([
@@ -236,6 +251,7 @@ final class NormalContentSecurityPolicyTest extends TestCase
 
     public function test_untrusted_hot_file_values_are_not_added_to_the_policy(): void
     {
+        $this->useRealViteWithTestHotFile();
         config([
             'app.env' => 'testing',
             'onlyoffice.url' => '',
@@ -257,6 +273,7 @@ final class NormalContentSecurityPolicyTest extends TestCase
 
     public function test_production_policy_ignores_a_stale_valid_hot_file(): void
     {
+        $this->useRealViteWithTestHotFile();
         File::put($this->testHotFile, 'http://127.0.0.1:5173');
         config([
             'app.env' => 'production',
@@ -390,5 +407,14 @@ final class NormalContentSecurityPolicyTest extends TestCase
         }
 
         $this->assertGreaterThan(0, $protectedLinkCount);
+    }
+
+    private function useRealViteWithTestHotFile(): void
+    {
+        // The base test case disables Vite's renderer. Restore the real
+        // instance for tests that exercise hot-file discovery itself.
+        $this->withVite();
+        Vite::clearResolvedInstance();
+        Vite::useHotFile($this->testHotFile);
     }
 }

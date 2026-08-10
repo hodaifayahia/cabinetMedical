@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCabinet;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
+    'cabinet_id',
     'currency',
     'vat_rate',
     'default_consultation_fee_minor',
@@ -14,6 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class AccountingSetting extends Model
 {
+    use BelongsToCabinet;
+
     /**
      * @return array<string, string>
      */
@@ -26,10 +30,19 @@ class AccountingSetting extends Model
     }
 
     /**
-     * Resolve (or create) the single accounting settings row.
+     * Resolve (or create) the accounting settings shared by one cabinet.
      */
-    public static function current(): self
+    public static function current(?int $cabinetId = null): self
     {
-        return static::query()->firstOrCreate([]);
+        $resolvedCabinetId = $cabinetId ?? auth()->user()?->cabinet_id;
+
+        return static::query()->firstOrCreate([
+            'cabinet_id' => $resolvedCabinetId,
+        ], [
+            'currency' => 'DA',
+            'vat_rate' => 0,
+            'receipt_prefix' => 'FACT-',
+            'fiscal_year_start' => '01-01',
+        ]);
     }
 }

@@ -169,4 +169,73 @@ class ConsultationControllerTest extends TestCase
                 ->where('appointments.0.consultation_status', 'completed'),
             );
     }
+
+    public function test_workspace_exposes_prior_debt_and_the_current_payment_ledger(): void
+    {
+        $user = $this->userWithRole(RoleName::ADMINISTRATOR);
+        $patient = Patient::factory()->create();
+        $older = Consultation::query()->create([
+            'patient_id' => $patient->getKey(),
+            'consulted_at' => now()->subMonth(),
+            'status' => 'completed',
+            'payment_amount_minor' => 150000,
+            'payment_service' => 'Ancienne consultation',
+            'is_paid' => false,
+            'created_by' => $user->getKey(),
+        ]);
+        $current = Consultation::query()->create([
+            'patient_id' => $patient->getKey(),
+            'consulted_at' => now(),
+            'status' => 'in_progress',
+            'payment_amount_minor' => 100000,
+            'payment_service' => 'Consultation du jour',
+            'is_paid' => false,
+            'created_by' => $user->getKey(),
+        ]);
+
+        $this->actingAs($user);
+        $older->payments()->create([
+            'patient_id' => $patient->getKey(),
+            'amount_minor' => 50000,
+            'method' => 'Espèces',
+            'received_at' => now()->subWeeks(2),
+            'received_by' => $user->getKey(),
+        ]);
+
+        $this->get(route('app.consultations.show', $current))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('consultations/Workspace')
+                ->where('patientDebt.total', 1000)
+                ->has('patientDebt.consultations', 1)
+                ->where('patientDebt.consultations.0.id', $older->getKey())
+                ->where('patientDebt.consultations.0.paid', 500)
+                ->where('patientDebt.consultations.0.outstanding', 1000)
+                ->where('consultation.payment_paid', 0)
+                ->where('consultation.payment_outstanding', 1000)
+                ->where('consultation.payment_status', 'unpaid')
+                ->where('canCollectPayment', true)
+            );
+    }
+
+    public function test_completing_a_consultation_requires_the_dedicated_permission(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo('consultations.update');
+        $patient = Patient::factory()->create();
+        $consultation = Consultation::query()->create([
+            'patient_id' => $patient->getKey(),
+            'consulted_at' => now(),
+            'status' => 'in_progress',
+            'created_by' => $user->getKey(),
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('app.consultations.update', $consultation), [
+                'complete' => true,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('in_progress', $consultation->fresh()->status);
+    }
 }

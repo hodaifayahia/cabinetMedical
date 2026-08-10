@@ -42,15 +42,14 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        <link rel="icon" href="/brand/drclick-mark.png?v=20260810" type="image/png" sizes="512x512">
+        <link rel="apple-touch-icon" href="/brand/drclick-mark.png?v=20260810" sizes="512x512">
 
         @fonts
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         <x-nonce-bound-inertia-head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ config('app.name', 'Drclick') }}</title>
         </x-nonce-bound-inertia-head>
     </head>
     <body class="font-sans antialiased">

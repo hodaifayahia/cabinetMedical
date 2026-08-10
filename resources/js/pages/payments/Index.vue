@@ -32,6 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
     createFrDzMoneyFormatter,
     paymentDateLabel,
@@ -51,8 +52,19 @@ type Payment = {
     method: string | null;
     amount: number;
     paid: number;
+    adjustment: number;
     outstanding: number;
+    status: 'paid' | 'partial' | 'unpaid';
     is_paid: boolean;
+    notes: string | null;
+    installments: {
+        id: string;
+        amount: number;
+        method: string | null;
+        notes: string | null;
+        received_at: string | null;
+        received_by: string | null;
+    }[];
     date: string | null;
     date_label: string | null;
 };
@@ -101,11 +113,24 @@ const localFilters = reactive({ ...props.filters });
 const showEditor = ref(false);
 const selectedPayment = ref<Payment | null>(null);
 
+const newPaymentReference = (): string => {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
+
+    return 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/[x]/g, () =>
+        Math.floor(Math.random() * 16).toString(16),
+    );
+};
+
 const paymentForm = useForm({
     amount: '',
+    paid_today: '',
     method: '',
     service: '',
-    is_paid: true,
+    notes: '',
+    settlement: 'debt' as 'debt' | 'settled',
+    client_reference: newPaymentReference(),
 });
 
 const formatMoney = createFrDzMoneyFormatter(props.currency);
@@ -155,9 +180,27 @@ const openEditor = (payment: Payment) => {
     paymentForm.amount = String(payment.amount);
     paymentForm.method = payment.method ?? '';
     paymentForm.service = payment.service;
-    paymentForm.is_paid = payment.is_paid;
+    paymentForm.paid_today = '';
+    paymentForm.notes = '';
+    paymentForm.settlement = 'debt';
+    paymentForm.client_reference = newPaymentReference();
     paymentForm.clearErrors();
     showEditor.value = true;
+};
+
+const projectedOutstanding = computed(() =>
+    Math.max(
+        0,
+        (selectedPayment.value?.outstanding ?? 0) -
+            Number(paymentForm.paid_today || 0),
+    ),
+);
+
+const showAllDebts = () => {
+    localFilters.from = '';
+    localFilters.to = '';
+    localFilters.status = 'debt';
+    applyFilters();
 };
 
 const chooseService = (value: string) => {
@@ -194,7 +237,7 @@ const savePayment = () => {
                 >
                     Paiements
                 </h1>
-                <div class="mt-3 h-1 w-20 rounded-full bg-[#e2a719]" />
+                <div class="mt-3 h-1 w-20 rounded-full bg-brand" />
                 <p class="mt-3 text-sm text-muted-foreground">
                     Suivez les règlements des consultations, les impayés et les
                     rapports imprimables.
@@ -202,15 +245,18 @@ const savePayment = () => {
             </div>
             <div class="flex items-center gap-2">
                 <Button
-                    variant="outline"
-                    class="border-amber-300 text-amber-700 hover:bg-amber-50"
-                    @click="
-                        localFilters.status = 'unpaid';
-                        applyFilters();
-                    "
+                    variant="secondary"
+                    class="bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100"
+                    @click="showAllDebts"
                 >
                     <CircleDollarSign class="size-4" />
-                    Impayés
+                    Dettes
+                    <span
+                        v-if="summary.outstanding > 0"
+                        class="rounded-full bg-white/80 px-2 py-0.5 text-xs text-slate-900 tabular-nums"
+                    >
+                        {{ formatMoney(summary.outstanding) }}
+                    </span>
                 </Button>
                 <Button as-child class="bg-emerald-600 hover:bg-emerald-700">
                     <a :href="reportUrl" target="_blank" rel="noopener">
@@ -235,7 +281,7 @@ const savePayment = () => {
                         </p>
                     </div>
                     <span
-                        class="flex size-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+                        class="flex size-11 items-center justify-center rounded-xl bg-brand-soft text-brand"
                     >
                         <Banknote class="size-5" />
                     </span>
@@ -286,10 +332,10 @@ const savePayment = () => {
         </section>
 
         <section class="med-panel overflow-hidden">
-            <div class="bg-[#4c82b7] p-4 text-white">
+            <div class="bg-brand p-4 text-white">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
                     <label class="grid gap-1.5">
-                        <span class="text-xs font-semibold text-blue-50"
+                        <span class="text-xs font-semibold text-brand-soft"
                             >Du</span
                         >
                         <Input
@@ -299,7 +345,7 @@ const savePayment = () => {
                         />
                     </label>
                     <label class="grid gap-1.5">
-                        <span class="text-xs font-semibold text-blue-50"
+                        <span class="text-xs font-semibold text-brand-soft"
                             >Au</span
                         >
                         <Input
@@ -309,7 +355,7 @@ const savePayment = () => {
                         />
                     </label>
                     <label class="grid gap-1.5">
-                        <span class="text-xs font-semibold text-blue-50"
+                        <span class="text-xs font-semibold text-brand-soft"
                             >Utilisateur</span
                         >
                         <select
@@ -327,7 +373,7 @@ const savePayment = () => {
                         </select>
                     </label>
                     <label class="grid gap-1.5">
-                        <span class="text-xs font-semibold text-blue-50"
+                        <span class="text-xs font-semibold text-brand-soft"
                             >Statut</span
                         >
                         <select
@@ -343,10 +389,12 @@ const savePayment = () => {
                             <option value="unpaid">
                                 {{ paymentStatusLabel('unpaid') }}
                             </option>
+                            <option value="partial">Partiellement payé</option>
+                            <option value="debt">Toutes les dettes</option>
                         </select>
                     </label>
                     <label class="grid gap-1.5">
-                        <span class="text-xs font-semibold text-blue-50"
+                        <span class="text-xs font-semibold text-brand-soft"
                             >Mode de paiement</span
                         >
                         <select
@@ -468,18 +516,45 @@ const savePayment = () => {
                                         {{ paymentMethodLabel(payment.method) }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 font-bold tabular-nums">
-                                    {{ formatMoney(payment.amount) }}
+                                <td class="px-4 py-3 tabular-nums">
+                                    <div class="font-bold">
+                                        {{ formatMoney(payment.amount) }}
+                                    </div>
+                                    <div
+                                        class="mt-1 text-[11px] font-medium text-muted-foreground"
+                                    >
+                                        Versé {{ formatMoney(payment.paid) }}
+                                        <template v-if="payment.adjustment > 0">
+                                            · remise
+                                            {{
+                                                formatMoney(payment.adjustment)
+                                            }}
+                                        </template>
+                                        <template
+                                            v-if="payment.outstanding > 0"
+                                        >
+                                            · reste
+                                            <span class="text-amber-700">{{
+                                                formatMoney(payment.outstanding)
+                                            }}</span>
+                                        </template>
+                                    </div>
                                     <span
-                                        class="ml-2 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                                        class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold"
                                         :class="
-                                            payment.is_paid
+                                            payment.status === 'paid'
                                                 ? 'bg-emerald-50 text-emerald-700'
-                                                : 'bg-amber-50 text-amber-700'
+                                                : payment.status === 'partial'
+                                                  ? 'bg-amber-50 text-amber-700'
+                                                  : 'bg-slate-100 text-slate-700'
                                         "
                                     >
                                         {{
-                                            payment.is_paid ? 'Payé' : 'À payer'
+                                            payment.status === 'paid'
+                                                ? 'Soldé'
+                                                : payment.status === 'partial'
+                                                  ? 'Paiement partiel'
+                                                  : 'Dette'
                                         }}
                                     </span>
                                 </td>
@@ -622,14 +697,12 @@ const savePayment = () => {
 
     <Dialog v-model:open="showEditor">
         <DialogContent class="overflow-hidden p-0 sm:max-w-2xl">
-            <div
-                class="bg-gradient-to-r from-blue-700 to-cyan-600 px-6 py-5 text-white"
-            >
+            <div class="bg-brand px-6 py-5 text-brand-foreground">
                 <DialogHeader>
                     <DialogTitle class="text-xl text-white"
                         >Prestation et montant</DialogTitle
                     >
-                    <DialogDescription class="text-blue-100">
+                    <DialogDescription class="text-brand-foreground/80">
                         {{ selectedPayment?.patient_name }} · Paiement n°{{
                             selectedPayment?.id
                         }}
@@ -638,6 +711,31 @@ const savePayment = () => {
             </div>
 
             <form class="grid gap-5 p-6" @submit.prevent="savePayment">
+                <div
+                    class="grid gap-3 rounded-xl border bg-muted/25 p-4 sm:grid-cols-3"
+                >
+                    <div>
+                        <p class="text-xs text-muted-foreground">Facturé</p>
+                        <p class="font-bold tabular-nums">
+                            {{ formatMoney(selectedPayment?.amount ?? 0) }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-muted-foreground">Déjà versé</p>
+                        <p class="font-bold text-brand tabular-nums">
+                            {{ formatMoney(selectedPayment?.paid ?? 0) }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-muted-foreground">
+                            Reste après versement
+                        </p>
+                        <p class="font-bold text-amber-700 tabular-nums">
+                            {{ formatMoney(projectedOutstanding) }}
+                        </p>
+                    </div>
+                </div>
+
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="grid gap-2 sm:col-span-2">
                         <Label>Prestation</Label>
@@ -670,7 +768,7 @@ const savePayment = () => {
                         <InputError :message="paymentForm.errors.service" />
                     </div>
                     <div class="grid gap-2">
-                        <Label for="payment-amount">Montant</Label>
+                        <Label for="payment-amount">Prix total</Label>
                         <Input
                             id="payment-amount"
                             v-model="paymentForm.amount"
@@ -679,6 +777,20 @@ const savePayment = () => {
                             step="0.01"
                         />
                         <InputError :message="paymentForm.errors.amount" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="payment-paid-today">
+                            Montant versé aujourd’hui
+                        </Label>
+                        <Input
+                            id="payment-paid-today"
+                            v-model="paymentForm.paid_today"
+                            type="number"
+                            min="0"
+                            :max="selectedPayment?.outstanding ?? undefined"
+                            step="0.01"
+                        />
+                        <InputError :message="paymentForm.errors.paid_today" />
                     </div>
                     <div class="grid gap-2">
                         <Label>Mode de paiement</Label>
@@ -708,26 +820,106 @@ const savePayment = () => {
                     </div>
                 </div>
 
-                <label
-                    class="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4"
-                >
-                    <span>
-                        <span class="block text-sm font-semibold"
-                            >Paiement reçu</span
+                <div class="grid gap-2">
+                    <Label>Traitement du reste</Label>
+                    <div class="grid gap-2 sm:grid-cols-2">
+                        <label
+                            class="flex cursor-pointer items-start gap-3 rounded-xl border p-3"
+                            :class="
+                                paymentForm.settlement === 'debt'
+                                    ? 'border-brand bg-brand-soft'
+                                    : 'border-border'
+                            "
                         >
+                            <input
+                                v-model="paymentForm.settlement"
+                                type="radio"
+                                value="debt"
+                                class="mt-1 accent-brand"
+                            />
+                            <span>
+                                <span class="block text-sm font-semibold">
+                                    Conserver comme dette
+                                </span>
+                                <span class="text-xs text-muted-foreground">
+                                    Le solde restera à payer.
+                                </span>
+                            </span>
+                        </label>
+                        <label
+                            class="flex cursor-pointer items-start gap-3 rounded-xl border p-3"
+                            :class="
+                                paymentForm.settlement === 'settled'
+                                    ? 'border-brand bg-brand-soft'
+                                    : 'border-border'
+                            "
+                        >
+                            <input
+                                v-model="paymentForm.settlement"
+                                type="radio"
+                                value="settled"
+                                class="mt-1 accent-brand"
+                            />
+                            <span>
+                                <span class="block text-sm font-semibold">
+                                    Accepter moins et solder
+                                </span>
+                                <span class="text-xs text-muted-foreground">
+                                    Le reliquat devient une remise documentée.
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="payment-notes">
+                        Note
                         <span
-                            class="mt-0.5 block text-xs text-muted-foreground"
+                            v-if="
+                                paymentForm.settlement === 'settled' &&
+                                projectedOutstanding > 0
+                            "
+                            class="text-destructive"
                         >
-                            Décochez cette option pour conserver le montant
-                            comme impayé.
+                            (obligatoire pour solder avec une remise)
                         </span>
-                    </span>
-                    <input
-                        v-model="paymentForm.is_paid"
-                        type="checkbox"
-                        class="size-5 accent-emerald-600"
+                    </Label>
+                    <Textarea
+                        id="payment-notes"
+                        v-model="paymentForm.notes"
+                        placeholder="Motif de remise, accord du patient ou détail du versement…"
                     />
-                </label>
+                    <InputError :message="paymentForm.errors.notes" />
+                </div>
+
+                <details
+                    v-if="selectedPayment?.installments.length"
+                    class="rounded-xl border p-3"
+                >
+                    <summary class="cursor-pointer text-sm font-semibold">
+                        {{ selectedPayment.installments.length }} versement(s)
+                        déjà enregistré(s)
+                    </summary>
+                    <div class="mt-3 space-y-2">
+                        <div
+                            v-for="installment in selectedPayment.installments"
+                            :key="installment.id"
+                            class="flex flex-wrap justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 text-sm"
+                        >
+                            <span>{{
+                                paymentDateLabel(installment.received_at)
+                            }}</span>
+                            <strong>{{
+                                formatMoney(installment.amount)
+                            }}</strong>
+                            <span class="text-muted-foreground">
+                                {{ installment.method || '—' }} ·
+                                {{ installment.received_by || '—' }}
+                            </span>
+                        </div>
+                    </div>
+                </details>
 
                 <DialogFooter>
                     <Button
@@ -737,11 +929,7 @@ const savePayment = () => {
                     >
                         Annuler
                     </Button>
-                    <Button
-                        type="submit"
-                        class="bg-emerald-600 hover:bg-emerald-700"
-                        :disabled="paymentForm.processing"
-                    >
+                    <Button type="submit" :disabled="paymentForm.processing">
                         <Banknote class="size-4" />
                         Enregistrer le paiement
                     </Button>

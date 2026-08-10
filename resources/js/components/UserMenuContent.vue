@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
+import { LockKeyhole, LogOut, Settings } from '@lucide/vue';
 import { isTauri } from '@tauri-apps/api/core';
 import { onMounted, ref } from 'vue';
-import { LockKeyhole, LogOut, Settings } from '@lucide/vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
