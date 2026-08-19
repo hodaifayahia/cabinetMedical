@@ -13,6 +13,7 @@ use App\Services\Auth\DesktopPinService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class DesktopPinAuthenticationTest extends TestCase
@@ -240,6 +241,18 @@ class DesktopPinAuthenticationTest extends TestCase
         $this->assertSame(CabinetStatus::PENDING, $cabinet->fresh()->status);
     }
 
+    public function test_a_pending_owner_is_told_desktop_pin_enrollment_is_available(): void
+    {
+        [, $owner] = $this->cabinetWithOwner(status: CabinetStatus::PENDING);
+
+        $this->actingAs($owner)
+            ->get(route('cabinet.pending'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.user.can.enrollDesktopPin', true),
+            );
+    }
+
     public function test_a_pending_non_owner_cannot_use_the_enrollment_exemption(): void
     {
         [$cabinet] = $this->cabinetWithOwner(status: CabinetStatus::PENDING);
@@ -253,6 +266,22 @@ class DesktopPinAuthenticationTest extends TestCase
             ->assertForbidden();
 
         $this->assertDatabaseCount('desktop_pin_credentials', 0);
+    }
+
+    public function test_a_pending_non_owner_is_not_told_desktop_pin_enrollment_is_available(): void
+    {
+        [$cabinet] = $this->cabinetWithOwner(status: CabinetStatus::PENDING);
+        $staff = User::factory()->create([
+            'cabinet_id' => $cabinet->getKey(),
+            'approved_at' => now(),
+        ]);
+
+        $this->actingAs($staff)
+            ->get(route('cabinet.pending'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.user.can.enrollDesktopPin', false),
+            );
     }
 
     public function test_suspended_credentials_are_revoked_and_inactive_cabinets_remain_middleware_gated(): void

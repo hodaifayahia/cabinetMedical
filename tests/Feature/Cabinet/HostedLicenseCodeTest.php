@@ -23,6 +23,17 @@ class HostedLicenseCodeTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_pending_owner_can_always_sign_out_to_the_login_page(): void
+    {
+        [$owner] = $this->pendingCabinet('pending-sign-out@example.com');
+
+        $this->actingAs($owner)
+            ->post(route('cabinet.sign-out'))
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+    }
+
     public function test_issuing_a_code_does_not_activate_the_cabinet_and_never_stores_plaintext(): void
     {
         Mail::fake();

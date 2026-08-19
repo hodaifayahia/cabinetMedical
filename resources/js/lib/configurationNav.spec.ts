@@ -24,9 +24,10 @@ describe('configurationNavForPermissions', () => {
         'configuration.drive.manage',
         'configuration.licensing.manage',
         'configuration.diagnostics.view',
-    ])('routes %s to the shared connectivity page only', (permission) => {
+    ])('routes %s to connectivity and licence status', (permission) => {
         expect(visibleLinks([permission])).toEqual([
             '/app/configuration/connectivity-backup',
+            '/app/configuration/connectivity-backup#license',
         ]);
     });
 

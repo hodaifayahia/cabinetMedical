@@ -63,11 +63,31 @@ class LandingContentManagementTest extends TestCase
         $this->assertFalse(AuditLogResource::shouldRegisterNavigation());
         $this->assertFalse(RoleResource::shouldRegisterNavigation());
         $this->assertFalse(MedicationResource::shouldRegisterNavigation());
+        $this->assertFalse(MedicationResource::canAccess());
         $this->assertFalse(ActResource::shouldRegisterNavigation());
+        $this->assertFalse(ActResource::canAccess());
         $this->assertFalse(ExamResource::shouldRegisterNavigation());
+        $this->assertFalse(ExamResource::canAccess());
         $this->assertFalse(BilanTypeResource::shouldRegisterNavigation());
+        $this->assertFalse(BilanTypeResource::canAccess());
         $this->assertFalse(ConsultationFeeResource::shouldRegisterNavigation());
+        $this->assertFalse(ConsultationFeeResource::canAccess());
         $this->assertFalse(PaymentMethodResource::shouldRegisterNavigation());
+        $this->assertFalse(PaymentMethodResource::canAccess());
         $this->assertFalse(PractitionerResource::shouldRegisterNavigation());
+        $this->assertFalse(PractitionerResource::canAccess());
+
+        foreach ([
+            MedicationResource::class,
+            ActResource::class,
+            ExamResource::class,
+            BilanTypeResource::class,
+            ConsultationFeeResource::class,
+            PaymentMethodResource::class,
+            PractitionerResource::class,
+        ] as $resource) {
+            $this->get($resource::getUrl('index'))
+                ->assertForbidden();
+        }
     }
 }

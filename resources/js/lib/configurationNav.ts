@@ -32,6 +32,11 @@ export const configurationNav: ConfigGroup[] = [
                 permissions: sensitiveConfigurationPermissions,
             },
             {
+                title: 'Licence',
+                href: '/app/configuration/connectivity-backup#license',
+                permissions: sensitiveConfigurationPermissions,
+            },
+            {
                 title: 'Rôles & permissions',
                 href: '/app/configuration/roles-permissions',
                 permissions: ['staff.manage'],

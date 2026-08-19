@@ -48,7 +48,8 @@ const CLOUD_SERVER_URL: &str = "https://seagreen-turkey-468004.hostingersite.com
 
 /// Compile-time default server URL. Production releases start against the
 /// hosted Drclick service. Override it at runtime by placing a JSON file
-/// at `<app-local-data>/config/server.json` with content `{"url": "https://..."}`.
+/// at `<app-local-data>/config/server.json` with content
+/// `{"url": "https://..."}` or the explicitly allowed local development URL.
 /// The override is read once at startup and never re-read while the app is running.
 const DEFAULT_SERVER_URL: &str = CLOUD_SERVER_URL;
 
@@ -80,8 +81,8 @@ fn is_valid_local_development_server_url(url: &Url) -> bool {
 /// on any parse/IO error so a misconfigured file cannot prevent startup.
 fn resolve_server_url(app: &AppHandle) -> Url {
     // A debug build may explicitly override the server with the exact local
-    // development origin. Release builds still use the persisted endpoint or
-    // DEFAULT_SERVER_URL; URL validation limits HTTP to loopback port 8000.
+    // development origin. Every build otherwise respects the persisted
+    // endpoint; URL validation limits HTTP to loopback port 8000.
     #[cfg(debug_assertions)]
     if let Some(url) = local_development_server_url() {
         return url;
@@ -93,16 +94,6 @@ fn resolve_server_url(app: &AppHandle) -> Url {
             if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
                 if let Some(url_str) = value.get("url").and_then(|v| v.as_str()) {
                     if let Ok(url) = validate_server_url(url_str) {
-                        // Older connected-client installers persisted the
-                        // technician-only localhost endpoint as their release
-                        // default. Do not let that stale value strand an
-                        // upgraded production install on an absent dev server.
-                        #[cfg(not(debug_assertions))]
-                        if crate::connection::is_exact_loopback_development_url(&url) {
-                            return Url::parse(DEFAULT_SERVER_URL)
-                                .expect("DEFAULT_SERVER_URL is a valid HTTPS URL");
-                        }
-
                         return url;
                     }
                 }

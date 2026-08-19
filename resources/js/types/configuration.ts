@@ -358,6 +358,7 @@ export type HostedEntitlementPresentation = {
     status: LicenseRuntimeStatus['state'] | 'inactive';
     status_label: string;
     expires_at: string | null;
+    remaining_days: number | null;
 };
 
 /**

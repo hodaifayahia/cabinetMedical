@@ -7,6 +7,7 @@ use App\Models\Cabinet;
 use App\Models\LicenseType;
 use App\Services\CabinetFulfillmentService;
 use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
@@ -18,10 +19,12 @@ class ListLicenses extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            CreateAction::make()
+                ->label('Créer une licence locale'),
             Action::make('generateLicense')
-                ->label('Générer une licence')
-                ->modalHeading('Envoyer une licence au client')
-                ->modalDescription('Sélectionnez le client et le type. Un code sera généré et envoyé à son adresse e-mail.')
+                ->label('Générer un code client')
+                ->modalHeading('Envoyer un code d’activation au client')
+                ->modalDescription('Sélectionnez le client et le type. Un code à usage unique sera généré et envoyé à son adresse e-mail.')
                 ->modalSubmitActionLabel('Générer et envoyer')
                 ->schema([
                     Select::make('cabinet_id')
@@ -41,10 +44,17 @@ class ListLicenses extends ListRecords
                     $cabinet = Cabinet::query()->findOrFail((int) $data['cabinet_id']);
                     $type = LicenseType::query()->where('is_active', true)->findOrFail((int) $data['license_type_id']);
                     $issued = app(CabinetFulfillmentService::class)->issueLicenseCode($cabinet, $type);
+                    $javascriptCode = json_encode($issued->code, JSON_THROW_ON_ERROR);
 
                     Notification::make()
                         ->title('Licence générée et envoyée')
-                        ->body('Le code a été envoyé au client par e-mail : '.$issued->code)
+                        ->body('Le code a été envoyé au client par e-mail : **'.$issued->code.'**')
+                        ->actions([
+                            Action::make('copyLicenseCode')
+                                ->label('Copier le code')
+                                ->button()
+                                ->alpineClickHandler("navigator.clipboard.writeText({$javascriptCode})"),
+                        ])
                         ->success()
                         ->persistent()
                         ->send();

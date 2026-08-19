@@ -40,6 +40,10 @@ describe('desktop PIN user-flow contract', () => {
         const appLayout = read('layouts/AppLayout.vue');
         const pending = read('pages/auth/PendingActivation.vue');
 
+        expect(overlay).toContain('AuthBackLink');
+        expect(overlay).toContain(':href="logout()"');
+        expect(overlay).toContain('method="post"');
+        expect(overlay).toContain('label="Retour à la connexion"');
         expect(overlay).toContain('role="dialog"');
         expect(overlay).toContain('aria-modal="true"');
         expect(overlay).toContain('pattern="[0-9]{4}"');
@@ -49,7 +53,7 @@ describe('desktop PIN user-flow contract', () => {
             2,
         );
         expect(overlay).toContain('form.pin_confirmation !== form.pin');
-        expect(overlay).toContain('!user?.can.accessAdminPanel');
+        expect(overlay).toContain('user?.can.enrollDesktopPin');
         expect(overlay).toContain(
             'isDesktopPinEnrollmentForUser(localEnrollment.value, user?.id)',
         );

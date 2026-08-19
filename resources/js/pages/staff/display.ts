@@ -1,11 +1,6 @@
 const roleLabels: Readonly<Record<string, string>> = {
-    administrator: 'Administrateur',
-    cashier: 'Caissier',
-    doctor: 'Médecin',
-    pharmacist: 'Pharmacien',
-    receptionist: 'Réceptionniste',
-    stock_manager: 'Gestionnaire de stock',
-    super_administrator: 'Super-administrateur',
+    doctor: 'Médecin (Super administrateur)',
+    assistant: 'Assistant',
 };
 
 const normalizeTechnicalValue = (value: string): string =>

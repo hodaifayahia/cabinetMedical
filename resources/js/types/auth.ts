@@ -11,6 +11,7 @@ export type User = {
     permissions: string[];
     can: {
         accessAdminPanel: boolean;
+        enrollDesktopPin: boolean;
         manageStaff: boolean;
         [key: string]: boolean;
     };

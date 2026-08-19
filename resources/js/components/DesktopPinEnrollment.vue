@@ -9,6 +9,7 @@ import {
 } from '@lucide/vue';
 import { isTauri } from '@tauri-apps/api/core';
 import { computed, nextTick, onMounted, ref } from 'vue';
+import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import InputError from '@/components/InputError.vue';
 import { markDesktopOnboardingComplete } from '@/lib/desktopOnboarding';
 import {
@@ -20,6 +21,7 @@ import {
     readDesktopPinEnrollment,
     saveDesktopPinEnrollment,
 } from '@/lib/desktopPin';
+import { logout } from '@/routes';
 import type { DesktopPinEnrollment } from '@/lib/desktopPin';
 
 const desktopRuntime = ref(false);
@@ -41,8 +43,7 @@ const shouldEnroll = computed(() => {
 
     return (
         desktopRuntime.value &&
-        Boolean(user) &&
-        !user?.can.accessAdminPanel &&
+        Boolean(user?.can.enrollDesktopPin) &&
         !isDesktopPinEnrollmentForUser(localEnrollment.value, user?.id)
     );
 });
@@ -112,7 +113,7 @@ function validate(): boolean {
 function enroll(): void {
     const enrollingUser = authenticatedUser.value;
 
-    if (!enrollingUser || enrollingUser.can.accessAdminPanel) {
+    if (!enrollingUser?.can.enrollDesktopPin) {
         return;
     }
 
@@ -191,6 +192,13 @@ onMounted(async () => {
                 />
 
                 <div class="p-6 sm:p-9">
+                    <AuthBackLink
+                        :href="logout()"
+                        method="post"
+                        as="button"
+                        label="Retour à la connexion"
+                    />
+
                     <div class="flex items-start gap-4">
                         <span
                             class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-brand-deep text-white shadow-lg shadow-brand-deep/20"

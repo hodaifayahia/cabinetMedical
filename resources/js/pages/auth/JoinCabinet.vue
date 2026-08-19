@@ -206,13 +206,22 @@ defineOptions({
                         :tabindex="4"
                         autocomplete="new-password"
                         name="password"
-                        placeholder="8 caractères minimum"
+                        placeholder="12 caractères minimum"
+                        minlength="12"
+                        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}"
+                        title="12 caractères minimum avec majuscule, minuscule, chiffre et symbole"
                         class="h-11"
                         :aria-invalid="Boolean(errors.password)"
                         :aria-describedby="
-                            errors.password ? 'password-error' : undefined
+                            errors.password
+                                ? 'password-help password-error'
+                                : 'password-help'
                         "
                     />
+                    <p id="password-help" class="text-xs text-muted-foreground">
+                        12 caractères minimum, avec majuscule, minuscule,
+                        chiffre et symbole.
+                    </p>
                     <InputError
                         id="password-error"
                         :message="errors.password"

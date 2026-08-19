@@ -5,6 +5,7 @@ namespace App\Services\Cabinet;
 use App\Models\License;
 use App\Models\User;
 use App\Services\LicenseService;
+use Carbon\CarbonImmutable;
 
 /**
  * Resolves feature flags without mixing centrally hosted cabinet plans with
@@ -48,5 +49,14 @@ final class CabinetEntitlementService
         $license = $user->cabinet?->license;
 
         return $license?->isHostedEntitlement() === true ? $license : null;
+    }
+
+    public function remainingDays(?License $license): ?int
+    {
+        if ($license === null || $license->expires_at === null) {
+            return null;
+        }
+
+        return max(0, (int) ceil(CarbonImmutable::now()->diffInSeconds($license->expires_at, false) / 86400));
     }
 }

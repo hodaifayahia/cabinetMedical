@@ -6,6 +6,7 @@ use App\Enums\PermissionName;
 use App\Models\CabinetSetting;
 use App\Models\User;
 use App\Services\Authorization\CabinetRolePermissionAuthorizer;
+use App\Services\Auth\DesktopPinService;
 use App\Services\DesktopDownloadService;
 use App\Services\SessionLockService;
 use Illuminate\Http\Request;
@@ -102,7 +103,7 @@ class HandleInertiaRequests extends Middleware
      *     updated_at: string|null,
      *     roles: list<string>,
      *     permissions: list<string>,
-     *     can: array{accessAdminPanel: bool, manageStaff: bool, manageRolePermissions: bool}
+    *     can: array{accessAdminPanel: bool, enrollDesktopPin: bool, manageStaff: bool, manageRolePermissions: bool}
      * }|null
      */
     protected function resolveAuthenticatedUser(mixed $user): ?array
@@ -136,6 +137,7 @@ class HandleInertiaRequests extends Middleware
             'permissions' => $permissions,
             'can' => [
                 'accessAdminPanel' => $user->canAccessAdminPanel(),
+                'enrollDesktopPin' => app(DesktopPinService::class)->canEnroll($user),
                 'manageStaff' => $user->can(PermissionName::STAFF_MANAGE->value),
                 'manageRolePermissions' => app(CabinetRolePermissionAuthorizer::class)->canManage($user),
             ],

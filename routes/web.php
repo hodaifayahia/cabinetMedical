@@ -77,6 +77,13 @@ Route::get('/', static fn () => Inertia::render('Welcome', [
         ->all(),
 ]))->name('home');
 
+// Compatibility aliases for links retained by older desktop builds.
+Route::get('home', fn (): \Illuminate\Http\RedirectResponse => to_route('home'))
+    ->name('legacy.home');
+Route::get('password/confirm', fn (): \Illuminate\Http\RedirectResponse => redirect('/user/confirm-password'))
+    ->middleware('auth')
+    ->name('legacy.password.confirm');
+
 Route::get('desktop/download', [DesktopDownloadLeadController::class, 'show'])
     ->name('desktop.download');
 Route::post('desktop/download', [DesktopDownloadLeadController::class, 'store'])
@@ -113,8 +120,13 @@ Route::middleware('throttle:cabinet-join')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::get('cabinet/pending', [CabinetStatusController::class, 'pending'])
         ->name('cabinet.pending');
+    // Allow installers and email links to open the activation URL directly.
+    Route::get('cabinet/license/redeem', fn (): \Illuminate\Http\RedirectResponse => to_route('cabinet.pending'))
+        ->name('cabinet.license.redeem.form');
     Route::get('cabinet/awaiting-approval', [CabinetStatusController::class, 'awaitingApproval'])
         ->name('cabinet.awaiting-approval');
+    Route::post('cabinet/sign-out', [CabinetStatusController::class, 'signOut'])
+        ->name('cabinet.sign-out');
     Route::post('cabinet/license/redeem', RedeemHostedLicenseCodeController::class)
         ->middleware('throttle:license-activation')
         ->name('cabinet.license.redeem');

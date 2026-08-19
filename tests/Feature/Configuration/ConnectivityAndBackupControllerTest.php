@@ -97,6 +97,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
                 ->where('hostedEntitlement.plan', 'trial')
                 ->where('hostedEntitlement.plan_label', 'Essai de 7 jours')
                 ->where('hostedEntitlement.status', 'active')
+                ->where('hostedEntitlement.remaining_days', 7)
                 ->where('license.state', 'not_activated')
                 ->where('licenseActivation.configured', false)
                 ->where('licenseActivation.refresh_configured', false)

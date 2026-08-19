@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Services\Auth\DesktopPinService;
 use App\Models\User;
-use App\Services\Cabinet\CabinetAccessService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class EnrollDesktopPinRequest extends FormRequest
@@ -12,18 +12,8 @@ class EnrollDesktopPinRequest extends FormRequest
     {
         $user = $this->user();
 
-        if (! $user instanceof User
-            || $user->is_platform_admin
-            || $user->cabinet_id === null
-            || $user->cabinet === null) {
-            return false;
-        }
-
-        $isPendingOwner = $user->cabinet->isPending()
-            && $user->cabinet->owner_user_id === $user->getKey();
-
-        return $isPendingOwner
-            || app(CabinetAccessService::class)->denialReason($user) === null;
+        return $user instanceof User
+            && app(DesktopPinService::class)->canEnroll($user);
     }
 
     /** @return array<string, mixed> */

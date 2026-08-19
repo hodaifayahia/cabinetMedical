@@ -416,6 +416,7 @@ final class ConnectivityAndBackupController extends Controller
                 'status' => $hostedLicense->effectiveStatus(),
                 'status_label' => $hostedLicense->effectiveStatusLabel(),
                 'expires_at' => $hostedLicense->expires_at?->toIso8601String(),
+                'remaining_days' => $cabinetEntitlements->remainingDays($hostedLicense),
             ],
             'licenseActivation' => $canManageLicense && $hostedLicense === null
                 ? $licenseActivation->status()

@@ -117,7 +117,12 @@ class CabinetFulfillmentService
                 'issued_by_user_id' => $actor->getKey(),
                 'plan' => $this->planForType($plan)?->value,
                 'license_type_id' => $plan instanceof LicenseType ? $plan->getKey() : $this->typeForPlan($plan)?->getKey(),
-                'duration_days' => $plan instanceof LicenseType ? $plan->duration_days : $plan->expiresAt(CarbonImmutable::now())?->diffInDays(CarbonImmutable::now()),
+                // Keep the configured duration exact. Calculating this with
+                // diffInDays() can produce 6.999... for a seven-day plan and
+                // truncating that float would incorrectly issue six days.
+                'duration_days' => $plan instanceof LicenseType
+                    ? $plan->duration_days
+                    : ($plan === LicensePlan::TRIAL ? LicensePlan::TRIAL_DAYS : null),
                 'type_name' => $plan instanceof LicenseType ? $plan->name : $plan->label(),
                 'code_hash' => $this->hashLicenseCode($normalizedCode),
                 'code_suffix' => Str::substr($normalizedCode, -4),
@@ -237,7 +242,7 @@ class CabinetFulfillmentService
 
                 AuditLog::record('cabinet.license_renewed', $lockedCabinet, [
                     'previous_plan' => $previousPlan->value,
-                'new_plan' => $grant->typeLabel(),
+                    'new_plan' => $grant->typeLabel(),
                     'previous_expires_at' => $previousExpiry?->toIso8601String(),
                     'expires_at' => $license->expires_at?->toIso8601String(),
                     'grant_id' => $grant->getKey(),

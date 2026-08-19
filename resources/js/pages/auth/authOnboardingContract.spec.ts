@@ -49,10 +49,6 @@ describe('Drclick authentication and onboarding contract', () => {
             'wilaya',
             'password',
             'password_confirmation',
-            'device_token',
-            'device_name',
-            'pin',
-            'pin_confirmation',
         ]) {
             expect(source).toContain(`name="${field}"`);
         }
@@ -60,6 +56,8 @@ describe('Drclick authentication and onboarding contract', () => {
         expect(source).toContain('type="tel"');
         expect(source).toContain('autocomplete="tel"');
         expect(source).toContain(':aria-invalid="Boolean(errors.phone)"');
+        expect(source).toContain('minlength="12"');
+        expect(source).toContain('N’utilisez pas votre adresse e-mail.');
     });
 
     it('does not expose a platform administration destination on public auth pages', () => {
@@ -85,10 +83,10 @@ describe('Drclick authentication and onboarding contract', () => {
 
         const registration = readAuthPage('Register');
 
-        expect(registration).toContain('handleRegistrationSuccess');
-        expect(registration).toContain('@success="handleRegistrationSuccess"');
+        expect(registration).toContain(
+            '@success="markDesktopOnboardingComplete"',
+        );
         expect(registration).toContain('markDesktopOnboardingComplete');
-        expect(registration).toContain('saveDesktopPinEnrollment');
     });
 
     it('uses one simple centered shadcn card without a split marketing panel', () => {
@@ -134,12 +132,20 @@ describe('Drclick authentication and onboarding contract', () => {
     it('gives the cabinet owner a one-time licence-code redemption form', () => {
         const source = readAuthPage('PendingActivation');
 
-        expect(source).toContain('v-if="can_redeem_license"');
+        expect(source).toContain(
+            'v-if="can_redeem_license && pending_license_grant"',
+        );
         expect(source).toContain('pending_license_grant');
-        expect(source).toContain("licenseForm.post('/cabinet/license/redeem'");
+        expect(source).toContain('action="/cabinet/license/redeem"');
+        expect(source).toContain('method="post"');
+        expect(source).toContain('name="_token"');
         expect(source).toContain('name="license_code"');
         expect(source).toContain('autocomplete="one-time-code"');
         expect(source).toContain('data-test="redeem-license-code"');
+        expect(source).toContain('data-test="hosted-license-redemption-unavailable"');
+        expect(source).toContain('Aucun code actif disponible');
+        expect(source).toContain('action="/cabinet/sign-out"');
+        expect(source).toContain('data-test="activation-sign-in-return"');
         expect(source).toContain('markDesktopOnboardingComplete');
     });
 

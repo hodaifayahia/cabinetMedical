@@ -34,10 +34,6 @@ class CabinetRolePermissionAuthorizer
     /** @return list<RoleName> */
     public function assignableRoles(User $user): array
     {
-        return array_values(array_filter(
-            RoleName::cases(),
-            static fn (RoleName $role): bool => $role !== RoleName::SUPER_ADMINISTRATOR
-                || $user->hasRole(RoleName::SUPER_ADMINISTRATOR->value),
-        ));
+        return [RoleName::ASSISTANT];
     }
 }

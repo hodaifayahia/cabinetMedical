@@ -84,6 +84,9 @@ class LicensesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
+            ->emptyStateIcon(Heroicon::OutlinedKey)
+            ->emptyStateHeading('Aucune licence locale')
+            ->emptyStateDescription('Cette liste affiche uniquement les licences locales signées. Les codes client générés par e-mail n’ajoutent pas de ligne ici.')
             ->filters([
                 SelectFilter::make('status')
                     ->label('Statut')

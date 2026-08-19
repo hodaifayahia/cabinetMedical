@@ -52,7 +52,6 @@ class LicenseResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return (string) License::query()
-            ->whereNull('plan')
             ->where('edition', '!=', 'hosted')
             ->where('status', 'active')
             ->count();
@@ -60,13 +59,13 @@ class LicenseResource extends Resource
 
     /**
      * Hosted entitlements are cabinet-linked and may only be managed through
-     * the Cabinets resource. Keeping them out of this legacy signed-licence
-     * resource prevents edits or deletes from bypassing cabinet access rules.
+     * the Cabinets resource. The decisive boundary is the hosted edition; some
+     * legacy local rows may still carry plan metadata and must remain visible
+     * in this resource.
      */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereNull('plan')
             ->where('edition', '!=', 'hosted');
     }
 

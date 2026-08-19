@@ -92,6 +92,21 @@ const props = withDefaults(defineProps<ConnectivityBackupPageProps>(), {
     qrDataUrl: null,
 });
 const page = usePage();
+const licenseNow = ref(Date.now());
+const hostedRemainingDays = computed(() => {
+    if (!props.hostedEntitlement?.expires_at) {
+        return null;
+    }
+
+    return Math.max(
+        0,
+        Math.ceil(
+            (new Date(props.hostedEntitlement.expires_at).getTime() -
+                licenseNow.value) /
+                86400000,
+        ),
+    );
+});
 
 const settingsUrl = '/app/configuration/connectivity-backup';
 const uploadSessionsUrl = settingsUrl + '/upload-sessions';
@@ -183,6 +198,7 @@ const remainingSeconds = ref<number | null>(
 );
 let countdownTimer: number | null = null;
 let runtimePollingTimer: number | null = null;
+let licenseTimer: number | null = null;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null;
@@ -961,6 +977,9 @@ const installPendingSignedUpdate = async () => {
 };
 
 onMounted(() => {
+    licenseTimer = window.setInterval(() => {
+        licenseNow.value = Date.now();
+    }, 60_000);
     browserOnline.value = navigator.onLine;
     window.addEventListener('online', updateBrowserState);
     window.addEventListener('offline', updateBrowserState);
@@ -989,6 +1008,10 @@ onBeforeUnmount(() => {
 
     if (runtimePollingTimer !== null) {
         window.clearInterval(runtimePollingTimer);
+    }
+
+    if (licenseTimer !== null) {
+        window.clearInterval(licenseTimer);
     }
 });
 watch(
@@ -2987,7 +3010,7 @@ const testDriveConnection = () => {
             </div>
         </section>
 
-        <section v-if="hostedEntitlement" class="med-panel p-6">
+        <section v-if="hostedEntitlement" id="license" class="med-panel p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2
@@ -3039,6 +3062,22 @@ const testDriveConnection = () => {
                             hostedEntitlement.expires_at
                                 ? formatDate(hostedEntitlement.expires_at)
                                 : 'À vie'
+                        }}
+                    </p>
+                </div>
+                <div
+                    class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
+                >
+                    <p class="text-xs font-medium text-muted-foreground">
+                        Jours restants
+                    </p>
+                    <p
+                        class="mt-1 text-lg font-bold text-slate-900 dark:text-white"
+                    >
+                        {{
+                            hostedRemainingDays === null
+                                ? 'À vie'
+                                : `${hostedRemainingDays} jour${hostedRemainingDays > 1 ? 's' : ''}`
                         }}
                     </p>
                 </div>

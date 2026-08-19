@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import {
+    ArrowLeft,
     CalendarX2,
     CircleAlert,
     Clock3,
@@ -10,12 +11,12 @@ import {
     ShieldX,
     Sparkles,
 } from '@lucide/vue';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import DesktopPinEnrollment from '@/components/DesktopPinEnrollment.vue';
 import InputError from '@/components/InputError.vue';
 import { markDesktopOnboardingComplete } from '@/lib/desktopOnboarding';
-import { dashboard, logout } from '@/routes';
+import { dashboard } from '@/routes';
 import { pending } from '@/routes/cabinet';
 
 type AccessStatus =
@@ -49,8 +50,14 @@ const props = defineProps<{
     } | null;
 }>();
 
-const licenseInput = ref<HTMLInputElement | null>(null);
-const licenseForm = useForm({ license_code: '' });
+const page = usePage();
+const licenseCode = ref('');
+const csrfToken = ref('');
+const licenseError = computed(
+    () =>
+        (page.props.errors as Record<string, string | undefined> | undefined)
+            ?.license_code,
+);
 
 const accessStatus = computed<AccessStatus>(() => {
     if (props.cabinet?.access_status) {
@@ -102,17 +109,13 @@ function formatDate(value: string): string {
     }).format(new Date(value));
 }
 
-function redeemLicense(): void {
-    licenseForm.post('/cabinet/license/redeem', {
-        preserveScroll: true,
-        onError: async () => {
-            await nextTick();
-            licenseInput.value?.focus();
-        },
-    });
-}
-
-onMounted(markDesktopOnboardingComplete);
+onMounted(() => {
+    csrfToken.value =
+        document
+            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? '';
+    markDesktopOnboardingComplete();
+});
 
 defineOptions({
     layout: {
@@ -131,13 +134,26 @@ defineOptions({
         :href="dashboard()"
         label="Retour au tableau de bord"
     />
-    <AuthBackLink
+    <form
         v-else
-        :href="logout()"
+        action="/cabinet/sign-out"
         method="post"
-        as="button"
-        label="Retour à la connexion"
-    />
+        class="mb-6 w-full"
+        data-test="activation-sign-in-return"
+    >
+        <input type="hidden" name="_token" :value="csrfToken" />
+        <button
+            type="submit"
+            class="group inline-flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-border bg-muted px-5 text-sm font-semibold text-foreground shadow-sm transition hover:border-brand hover:bg-brand-soft hover:text-brand focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:outline-none dark:hover:text-brand-mint"
+        >
+            <span
+                class="flex size-7 items-center justify-center rounded-full border border-slate-300 bg-background text-muted-foreground transition group-hover:-translate-x-0.5 group-hover:border-brand group-hover:text-brand dark:border-slate-700"
+            >
+                <ArrowLeft class="size-4" aria-hidden="true" />
+            </span>
+            <span>Retour à la page de connexion</span>
+        </button>
+    </form>
 
     <section class="space-y-5 text-center" aria-labelledby="status-title">
         <div
@@ -185,11 +201,13 @@ defineOptions({
     </section>
 
     <form
-        v-if="can_redeem_license"
+        v-if="can_redeem_license && pending_license_grant"
+        action="/cabinet/license/redeem"
+        method="post"
         class="mt-6 rounded-2xl border border-border bg-card p-5 text-left"
         data-test="hosted-license-redemption"
-        @submit.prevent="redeemLicense"
     >
+        <input type="hidden" name="_token" :value="csrfToken" />
         <div class="flex items-start gap-3">
             <span
                 class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white"
@@ -231,8 +249,7 @@ defineOptions({
         <div class="mt-2 flex flex-col gap-3 sm:flex-row">
             <input
                 id="license_code"
-                ref="licenseInput"
-                v-model="licenseForm.license_code"
+                v-model="licenseCode"
                 name="license_code"
                 type="text"
                 autocomplete="one-time-code"
@@ -240,27 +257,44 @@ defineOptions({
                 spellcheck="false"
                 maxlength="80"
                 class="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 font-mono text-sm uppercase outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-                :aria-invalid="Boolean(licenseForm.errors.license_code)"
-                :disabled="licenseForm.processing"
+                :aria-invalid="Boolean(licenseError)"
             />
             <button
                 type="submit"
                 class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white disabled:opacity-60"
-                :disabled="
-                    licenseForm.processing || !licenseForm.license_code.trim()
-                "
+                :disabled="!licenseCode.trim() || !csrfToken"
                 data-test="redeem-license-code"
             >
-                <RefreshCw
-                    class="size-4"
-                    :class="{ 'animate-spin': licenseForm.processing }"
-                    aria-hidden="true"
-                />
-                {{ licenseForm.processing ? 'Vérification…' : 'Activer' }}
+                <RefreshCw class="size-4" aria-hidden="true" />
+                Activer
             </button>
         </div>
-        <InputError class="mt-2" :message="licenseForm.errors.license_code" />
+        <InputError class="mt-2" :message="licenseError" />
     </form>
+
+    <section
+        v-else-if="can_redeem_license"
+        class="mt-6 rounded-2xl border border-dashed border-border bg-muted/40 p-5 text-left"
+        data-test="hosted-license-redemption-unavailable"
+    >
+        <div class="flex items-start gap-3">
+            <span
+                class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"
+            >
+                <KeyRound class="size-5" aria-hidden="true" />
+            </span>
+            <div>
+                <h3 class="font-bold text-foreground">
+                    Aucun code actif disponible
+                </h3>
+                <p class="mt-1 text-sm text-muted-foreground">
+                    Demandez à l’administration Drclick de générer un nouveau
+                    code pour ce cabinet. Tant qu’aucun code actif n’est en
+                    attente, la saisie d’un ancien code sera refusée.
+                </p>
+            </div>
+        </div>
+    </section>
 
     <dl
         v-if="cabinet?.license"

@@ -86,6 +86,20 @@ final class DesktopPinService
         }
     }
 
+    public function canEnroll(User $user): bool
+    {
+        $cabinet = $user->cabinet;
+
+        if ($user->is_platform_admin || $cabinet === null || $user->cabinet_id === null) {
+            return false;
+        }
+
+        $isPendingOwner = $cabinet->isPending()
+            && $cabinet->owner_user_id === $user->getKey();
+
+        return $isPendingOwner || $this->access->denialReason($user) === null;
+    }
+
     /**
      * Resolve a guest desktop PIN attempt. All failure modes intentionally share
      * one message; the opaque device token is the high-entropy device factor.
@@ -195,16 +209,11 @@ final class DesktopPinService
 
     private function assertMayEnroll(User $user): void
     {
-        $cabinet = $user->cabinet;
-
-        if ($user->is_platform_admin || $cabinet === null || $user->cabinet_id === null) {
+        if ($user->is_platform_admin || $user->cabinet === null || $user->cabinet_id === null) {
             throw new AuthorizationException('A cabinet account is required.');
         }
 
-        $isPendingOwner = $cabinet->isPending()
-            && $cabinet->owner_user_id === $user->getKey();
-
-        if (! $isPendingOwner && $this->access->denialReason($user) !== null) {
+        if (! $this->canEnroll($user)) {
             throw new AuthorizationException('This cabinet account cannot enroll a desktop PIN.');
         }
     }

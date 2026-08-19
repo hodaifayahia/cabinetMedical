@@ -159,7 +159,26 @@ class AppServiceProvider extends ServiceProvider
                 (string) $request->ip(),
             ]));
 
-            return Limit::perMinute(5)->by($key);
+            return Limit::perMinute(10)
+                ->by($key)
+                ->response(static function (Request $request, array $headers) {
+                    $message = 'Trop de tentatives d’activation. Patientez une minute puis réessayez.';
+
+                    if ($request->expectsJson()) {
+                        return response()->json([
+                            'message' => $message,
+                            'errors' => ['license_code' => [$message]],
+                        ], 429, $headers);
+                    }
+
+                    $errorKey = $request->routeIs('cabinet.license.redeem')
+                        ? 'license_code'
+                        : 'license_activation';
+                    $response = back()->withErrors([$errorKey => $message]);
+                    $response->headers->add($headers);
+
+                    return $response;
+                });
         });
 
         RateLimiter::for('offline-restore-prepare', static function (Request $request): Limit {
