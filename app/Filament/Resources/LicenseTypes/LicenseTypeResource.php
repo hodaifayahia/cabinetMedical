@@ -20,14 +20,32 @@ use UnitEnum;
 class LicenseTypeResource extends Resource
 {
     protected static ?string $model = LicenseType::class;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
-    protected static string|UnitEnum|null $navigationGroup = 'Licences & ventes';
-    protected static ?int $navigationSort = 11;
 
-    public static function getNavigationLabel(): string { return 'Types de licences'; }
-    public static function getModelLabel(): string { return 'type de licence'; }
-    public static function getPluralModelLabel(): string { return 'types de licences'; }
-    public static function canAccess(): bool { return auth()->user()?->is_platform_admin === true; }
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Licences & activations';
+
+    protected static ?int $navigationSort = 30;
+
+    public static function getNavigationLabel(): string
+    {
+        return 'Types de licences';
+    }
+
+    public static function getModelLabel(): string
+    {
+        return 'type de licence';
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return 'types de licences';
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->is_platform_admin === true;
+    }
 
     public static function form(Schema $schema): Schema
     {

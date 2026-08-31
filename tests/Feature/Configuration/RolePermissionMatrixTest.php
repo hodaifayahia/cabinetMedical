@@ -57,7 +57,23 @@ class RolePermissionMatrixTest extends TestCase
     {
         $doctor = $this->cabinetUser($this->cabinet, RoleName::DOCTOR);
 
+        // The seeder now syncs every permission onto the canonical Doctor role,
+        // so the precondition has to be built explicitly: this cabinet overrides
+        // the Doctor profile to everything except staff.manage. The doctor must
+        // still reach the matrix through the owner/doctor path in
+        // CabinetRolePermissionAuthorizer, never through staff.manage.
+        CabinetRolePermissionSet::withoutCabinetScope()->create([
+            'cabinet_id' => $this->cabinet->getKey(),
+            'role_name' => RoleName::DOCTOR->value,
+            'permissions' => array_values(array_diff(
+                PermissionName::values(),
+                [PermissionName::STAFF_MANAGE->value],
+            )),
+        ]);
+
         $this->assertFalse($doctor->hasPermissionTo(PermissionName::STAFF_MANAGE->value));
+        // Not the owner either, so access can only come from the DOCTOR branch.
+        $this->assertNotSame($doctor->getKey(), $this->cabinet->fresh()->owner_user_id);
 
         $this->actingAs($doctor)
             ->get(route('app.configuration.roles-permissions.index'))
@@ -139,7 +155,10 @@ class RolePermissionMatrixTest extends TestCase
     public function test_doctor_can_assign_a_canonical_non_privileged_role_to_a_same_cabinet_user(): void
     {
         $doctor = $this->cabinetUser($this->cabinet, RoleName::DOCTOR);
-        $member = $this->cabinetUser($this->cabinet, RoleName::RECEPTIONIST);
+        // Start with no role at all so the assignment genuinely changes state:
+        // RECEPTIONIST and CASHIER are both aliases of ASSISTANT, so seeding the
+        // member with one of them would make the assignment a no-op.
+        $member = $this->cabinetUser($this->cabinet);
         $payload = $this->matrixPayload();
         $this->setRolePermissions($payload, RoleName::CASHIER, [
             PermissionName::PATIENTS_VIEW->value,
@@ -157,10 +176,26 @@ class RolePermissionMatrixTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertTrue($member->fresh()->hasRole(RoleName::CASHIER->value));
-        $this->assertFalse($member->fresh()->hasRole(RoleName::RECEPTIONIST->value));
+        // The member ends up holding exactly the assigned canonical role and
+        // nothing else, and above all not the privileged Doctor role.
+        $this->assertSame(
+            [RoleName::ASSISTANT->value],
+            $member->fresh()->getRoleNames()->all(),
+        );
+        $this->assertFalse($member->fresh()->hasRole(RoleName::DOCTOR->value));
+
+        // This cabinet narrowed the Assistant profile to patients.view only, so
+        // the assignee inherits the cabinet override rather than the globally
+        // seeded Assistant defaults (which do include payments.view).
         $this->assertTrue($member->fresh()->can(PermissionName::PATIENTS_VIEW->value));
         $this->assertFalse($member->fresh()->can(PermissionName::PAYMENTS_VIEW->value));
+
+        // And no privileged capability comes with the assignment: the assignee
+        // gains neither staff management nor access to the matrix itself.
+        $this->assertFalse($member->fresh()->can(PermissionName::STAFF_MANAGE->value));
+        $this->actingAs($member->fresh())
+            ->get(route('app.configuration.roles-permissions.index'))
+            ->assertForbidden();
     }
 
     public function test_doctor_cannot_assign_or_edit_the_super_administrator_role(): void

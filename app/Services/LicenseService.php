@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Licensing\VerificationKey;
 use App\Models\AuditLog;
 use App\Models\License;
 use App\Models\LicenseActivation;
@@ -28,6 +29,7 @@ final class LicenseService
     public function __construct(
         private readonly MachineFingerprintService $fingerprint,
         private readonly LicenseClockService $clock,
+        private readonly VerificationKey $verificationKey,
     ) {}
 
     public function normalizeSerial(#[SensitiveParameter] string $serial): string
@@ -521,38 +523,7 @@ final class LicenseService
 
     private function publicKey(): \OpenSSLAsymmetricKey
     {
-        $path = (string) config('medismart.licensing.public_key_path');
-
-        if ($path === '') {
-            throw new RuntimeException('No license verification public key is configured.');
-        }
-
-        if (! str_starts_with($path, DIRECTORY_SEPARATOR) && preg_match('/^[A-Za-z]:[\\\\\/]/', $path) !== 1) {
-            $path = base_path($path);
-        }
-
-        $contents = is_file($path) ? file_get_contents($path) : false;
-
-        if (is_string($contents) && str_contains($contents, 'PRIVATE KEY-----')) {
-            throw new RuntimeException('A private license signing key must never be configured in the client.');
-        }
-
-        $key = is_string($contents) ? openssl_pkey_get_public($contents) : false;
-
-        if ($key === false) {
-            throw new RuntimeException('The license verification public key could not be loaded.');
-        }
-
-        $details = openssl_pkey_get_details($key);
-
-        if (! is_array($details)
-            || ($details['type'] ?? null) !== OPENSSL_KEYTYPE_RSA
-            || ! is_int($details['bits'] ?? null)
-            || $details['bits'] < 2048) {
-            throw new RuntimeException('The license verification public key is not an approved RSA key.');
-        }
-
-        return $key;
+        return $this->verificationKey->load();
     }
 
     private function base64UrlDecode(#[SensitiveParameter] string $value): string

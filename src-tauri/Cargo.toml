@@ -19,6 +19,7 @@ tauri-build = { version = "2.6.3", features = [] }
 url = "2.5"
 
 [dependencies]
+drclick-runtime = { path = "runtime-core" }
 hmac = "0.12"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-native-roots"] }
 semver = "1.0"

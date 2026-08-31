@@ -31,7 +31,7 @@ function select(code: LandingLocale): void {
     <div
         role="group"
         :aria-label="label"
-        class="inline-flex items-center gap-0.5 rounded-full border border-border bg-white/80 p-0.5 text-sm shadow-sm backdrop-blur"
+        class="inline-flex items-center gap-0.5 rounded-full border border-border bg-background/80 p-0.5 text-sm shadow-sm backdrop-blur"
     >
         <button
             v-for="option in options"

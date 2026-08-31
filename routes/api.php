@@ -46,6 +46,9 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('sync/appointments', [AppointmentSyncController::class, 'index']);
             Route::post('sync/appointments/ack', [AppointmentSyncController::class, 'acknowledge']);
+            // Mirror of the pull stream: a local-first desktop delivers its own
+            // appointment changes here.
+            Route::post('sync/appointments/push', [AppointmentSyncController::class, 'push']);
 
             Route::get('schedule', [ScheduleController::class, 'index']);
 

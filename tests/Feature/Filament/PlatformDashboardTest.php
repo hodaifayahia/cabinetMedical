@@ -5,6 +5,8 @@ namespace Tests\Feature\Filament;
 use App\Enums\CabinetStatus;
 use App\Enums\LicensePlan;
 use App\Filament\Pages\PlatformDashboard;
+use App\Filament\Resources\Users\Pages\CreateUser;
+use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\UserResource;
 use App\Filament\Widgets\AdminOverview;
 use App\Filament\Widgets\PendingCabinets;
@@ -92,6 +94,7 @@ class PlatformDashboardTest extends TestCase
             'Essais en cours' => 1,
             'Licences à vie' => 1,
             'Licences expirées' => 1,
+            'Clés non utilisées' => 0,
             'Demandes desktop' => 0,
         ], $stats->all());
     }
@@ -152,20 +155,72 @@ class PlatformDashboardTest extends TestCase
         $this->assertTrue(PendingCabinets::canView());
     }
 
-    public function test_platform_user_directory_is_read_only_and_cannot_create_unscoped_accounts(): void
+    public function test_user_directory_lists_platform_accounts_only(): void
     {
-        $platformAdmin = User::factory()->create(['is_platform_admin' => true]);
-        $tenantUser = User::factory()->create();
+        $platformAdmin = User::factory()->create([
+            'is_platform_admin' => true,
+            'email' => 'admin@admin.com',
+        ]);
+        $cabinet = Cabinet::query()->create([
+            'name' => 'Cabinet local',
+            'status' => CabinetStatus::ACTIVE,
+        ]);
+        $cabinetStaff = User::factory()->create([
+            'is_platform_admin' => false,
+            'cabinet_id' => $cabinet->getKey(),
+        ]);
         $this->actingAs($platformAdmin);
 
-        $this->assertFalse(UserResource::canCreate());
-        $this->assertFalse(UserResource::canEdit($tenantUser));
-        $this->assertFalse(UserResource::canDelete($tenantUser));
-        $this->assertFalse(UserResource::canDeleteAny());
-        $this->assertSame(['index', 'view'], array_keys(UserResource::getPages()));
+        $listed = UserResource::getEloquentQuery()->pluck('id')->all();
 
-        $this->get('/admin/users/create')->assertNotFound();
-        $this->get("/admin/users/{$tenantUser->getKey()}/edit")->assertNotFound();
+        $this->assertContains($platformAdmin->getKey(), $listed);
+        $this->assertNotContains($cabinetStaff->getKey(), $listed);
+
+        Livewire::actingAs($platformAdmin)
+            ->test(ListUsers::class)
+            ->assertCanSeeTableRecords([$platformAdmin])
+            ->assertCanNotSeeTableRecords([$cabinetStaff]);
+    }
+
+    public function test_platform_admin_can_create_a_platform_account_from_the_panel(): void
+    {
+        $platformAdmin = User::factory()->create(['is_platform_admin' => true]);
+        $this->actingAs($platformAdmin);
+
+        $this->assertTrue(UserResource::canCreate());
+        $this->assertSame(['index', 'create', 'view', 'edit'], array_keys(UserResource::getPages()));
+
+        Livewire::actingAs($platformAdmin)
+            ->test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Nouvel administrateur',
+                'email' => 'Nouveau@Admin.com',
+                'password' => 'Drclick!Platform7',
+                'password_confirmation' => 'Drclick!Platform7',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $created = User::query()->where('email', 'nouveau@admin.com')->firstOrFail();
+
+        $this->assertTrue($created->is_platform_admin);
+        $this->assertNull($created->cabinet_id);
+        $this->assertNotNull($created->email_verified_at);
+    }
+
+    public function test_an_administrator_cannot_delete_their_own_or_the_last_platform_account(): void
+    {
+        $onlyAdmin = User::factory()->create(['is_platform_admin' => true]);
+        $this->actingAs($onlyAdmin);
+
+        $this->assertFalse(UserResource::canDelete($onlyAdmin));
+        $this->assertFalse(UserResource::canDeleteAny());
+
+        $secondAdmin = User::factory()->create(['is_platform_admin' => true]);
+
+        // Still not your own account, but the colleague may now be removed.
+        $this->assertFalse(UserResource::canDelete($onlyAdmin));
+        $this->assertTrue(UserResource::canDelete($secondAdmin));
     }
 
     private function licensedCabinet(string $name, LicensePlan $plan, mixed $expiresAt = null): Cabinet

@@ -1,29 +1,51 @@
 use std::{
     fs::{self, OpenOptions},
     io::Write,
-    net::{Ipv4Addr, Ipv6Addr},
     time::Duration,
 };
 
 use reqwest::{redirect::Policy, StatusCode};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use url::{Host, Url};
+use url::Url;
 
 const HEALTH_RESPONSE_LIMIT: u64 = 64 * 1024;
-const LOOPBACK_DEVELOPMENT_PORT: u16 = 8000;
 
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct ServerProbe {
     pub(crate) url: String,
     pub(crate) status: String,
     pub(crate) version: String,
+    /// Present only when the endpoint is a Cabinet Hub. The connection screen
+    /// shows which cabinet was reached so the operator confirms the Hub before
+    /// anyone signs in to it (ADR-002: discovery is not trust).
+    pub(crate) hub: Option<HubIdentity>,
 }
+
+/// The Hub identity advertised by `/health`. It is deliberately readable
+/// without credentials: a desktop must establish which cabinet's Hub it found
+/// before it can authenticate against it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct HubIdentity {
+    pub(crate) mode: String,
+    pub(crate) protocol_version: u32,
+    pub(crate) hub_id: Option<String>,
+    pub(crate) cabinet_id: Option<u64>,
+    pub(crate) hostname: Option<String>,
+    pub(crate) tls_spki_sha256: Option<String>,
+    pub(crate) ready: bool,
+    pub(crate) reason: Option<String>,
+}
+
+/// Highest advertisement version this build knows how to read.
+const SUPPORTED_HUB_PROTOCOL_VERSION: u32 = 1;
 
 #[derive(Debug, Deserialize)]
 struct HealthResponse {
     status: String,
     application: HealthApplication,
+    #[serde(default)]
+    hub: Option<HubIdentity>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,32 +75,12 @@ pub(crate) fn validate_server_url(value: &str) -> Result<Url, String> {
 
     match url.scheme() {
         "https" if url.host().is_some() => {}
-        "http" if is_exact_loopback_development_url(&url) => {}
-        "http" => {
-            return Err(
-                "Un Hub du cabinet doit utiliser HTTPS. HTTP est limité à localhost:8000 pour le test local."
-                    .to_owned(),
-            )
-        }
         _ => return Err("Le serveur doit utiliser HTTPS.".to_owned()),
     }
 
     url.set_path("/");
 
     Ok(url)
-}
-
-pub(crate) fn is_exact_loopback_development_url(url: &Url) -> bool {
-    if url.scheme() != "http" || url.port() != Some(LOOPBACK_DEVELOPMENT_PORT) {
-        return false;
-    }
-
-    matches!(
-        url.host(),
-        Some(Host::Domain("localhost"))
-            | Some(Host::Ipv4(Ipv4Addr::LOCALHOST))
-            | Some(Host::Ipv6(Ipv6Addr::LOCALHOST))
-    )
 }
 
 pub(crate) async fn probe_server(url: &Url) -> Result<ServerProbe, String> {
@@ -132,11 +134,40 @@ pub(crate) async fn probe_server(url: &Url) -> Result<ServerProbe, String> {
         return Err("Cette adresse ne répond pas comme un serveur Drclick.".to_owned());
     }
 
+    // A Hub that cannot say which cabinet it serves is refused here rather
+    // than after someone has typed their password into it.
+    if let Some(hub) = health.hub.as_ref() {
+        validate_hub_identity(hub)?;
+    }
+
     Ok(ServerProbe {
         url: url.as_str().to_owned(),
         status: health.status,
         version: health.application.version,
+        hub: health.hub,
     })
+}
+
+/// Reject a Hub this build cannot safely talk to, before any credential is
+/// offered to it.
+pub(crate) fn validate_hub_identity(hub: &HubIdentity) -> Result<(), String> {
+    if hub.mode != "hub" {
+        return Err("Cette adresse ne répond pas comme un Hub Drclick.".to_owned());
+    }
+
+    if hub.protocol_version > SUPPORTED_HUB_PROTOCOL_VERSION {
+        return Err(
+            "Ce Hub utilise une version plus récente de Drclick. Mettez ce poste à jour.".to_owned(),
+        );
+    }
+
+    if !hub.ready || hub.hub_id.is_none() || hub.cabinet_id.is_none() {
+        return Err(
+            "Ce Hub n’est relié à aucun cabinet valide. Contactez le support Drclick.".to_owned(),
+        );
+    }
+
+    Ok(())
 }
 
 pub(crate) fn persist_server_url(app: &AppHandle, url: &Url) -> Result<(), String> {
@@ -178,6 +209,71 @@ pub(crate) fn persist_server_url(app: &AppHandle, url: &Url) -> Result<(), Strin
 mod tests {
     use super::*;
 
+    fn hub() -> HubIdentity {
+        HubIdentity {
+            mode: "hub".to_owned(),
+            protocol_version: SUPPORTED_HUB_PROTOCOL_VERSION,
+            hub_id: Some("hub-01HZ".to_owned()),
+            cabinet_id: Some(42),
+            hostname: Some("hub-cabinet.drclick.local".to_owned()),
+            tls_spki_sha256: Some("ab".repeat(32)),
+            ready: true,
+            reason: None,
+        }
+    }
+
+    #[test]
+    fn a_complete_hub_identity_is_accepted() {
+        assert!(validate_hub_identity(&hub()).is_ok());
+    }
+
+    #[test]
+    fn a_hub_that_names_no_cabinet_is_refused() {
+        let mut unbound = hub();
+        unbound.cabinet_id = None;
+        unbound.ready = false;
+        unbound.reason = Some("hub_cabinet_missing".to_owned());
+
+        assert!(validate_hub_identity(&unbound).is_err());
+    }
+
+    #[test]
+    fn a_hub_without_an_identity_is_refused() {
+        let mut anonymous = hub();
+        anonymous.hub_id = None;
+        anonymous.ready = false;
+
+        assert!(validate_hub_identity(&anonymous).is_err());
+    }
+
+    #[test]
+    fn a_newer_protocol_is_refused_rather_than_guessed_at() {
+        let mut newer = hub();
+        newer.protocol_version = SUPPORTED_HUB_PROTOCOL_VERSION + 1;
+
+        assert!(validate_hub_identity(&newer).is_err());
+    }
+
+    #[test]
+    fn health_without_a_hub_block_parses_as_the_hosted_service() {
+        let body = r#"{"status":"healthy","application":{"name":"Drclick","version":"0.1.1"}}"#;
+        let health: HealthResponse = serde_json::from_str(body).unwrap();
+
+        assert!(health.hub.is_none());
+    }
+
+    #[test]
+    fn health_with_a_hub_block_parses_the_identity() {
+        let body = r#"{"status":"healthy","application":{"name":"Drclick","version":"0.1.1"},
+            "hub":{"mode":"hub","protocol_version":1,"hub_id":"hub-01HZ","cabinet_id":42,
+            "hostname":"hub.local","tls_spki_sha256":null,"ready":true,"reason":null}}"#;
+        let health: HealthResponse = serde_json::from_str(body).unwrap();
+        let identity = health.hub.expect("hub identity");
+
+        assert_eq!(identity.cabinet_id, Some(42));
+        assert!(validate_hub_identity(&identity).is_ok());
+    }
+
     #[test]
     fn https_cloud_and_hub_origins_are_valid() {
         for accepted in [
@@ -190,19 +286,12 @@ mod tests {
     }
 
     #[test]
-    fn http_is_limited_to_exact_loopback_development_origins() {
-        for accepted in [
+    fn http_and_non_https_origins_are_rejected() {
+        for rejected in [
             "http://localhost:8000/",
             "http://127.0.0.1:8000/",
             "http://[::1]:8000/",
-        ] {
-            assert!(validate_server_url(accepted).is_ok(), "{accepted}");
-        }
-
-        for rejected in [
             "http://192.168.1.20:8000/",
-            "http://localhost:8001/",
-            "http://127.0.0.2:8000/",
             "ftp://localhost:8000/",
         ] {
             assert!(validate_server_url(rejected).is_err(), "{rejected}");

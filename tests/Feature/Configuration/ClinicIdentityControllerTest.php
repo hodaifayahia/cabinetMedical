@@ -4,6 +4,7 @@ namespace Tests\Feature\Configuration;
 
 use App\Enums\CabinetStatus;
 use App\Enums\LicensePlan;
+use App\Enums\PermissionName;
 use App\Enums\RoleName;
 use App\Models\Cabinet;
 use App\Models\CabinetSetting;
@@ -38,10 +39,10 @@ class ClinicIdentityControllerTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_administrator_can_view_clinic_document_settings(): void
+    public function test_doctor_can_view_clinic_document_settings(): void
     {
         $user = User::factory()->create();
-        $user->assignRole(RoleName::ADMINISTRATOR->value);
+        $user->assignRole(RoleName::DOCTOR->value);
         DoctorProfile::factory()->for($user)->create([
             'specialty' => 'General Medicine',
         ]);
@@ -57,9 +58,39 @@ class ClinicIdentityControllerTest extends TestCase
                 ->where('identity.has_custom_logo', false)
                 ->where('customBrandingCapability.available', true)
                 ->where('customBrandingCapability.reason', null)
-                ->where('permissions.can_correct_specialty', false)
+                // The locked specialty is unlocked by the Doctor (cabinet owner)
+                // role itself, so the practising doctor sees the affordance.
+                ->where('permissions.can_correct_specialty', true)
                 ->where('permissions.sensitive_actions_confirmed', false),
             );
+    }
+
+    public function test_branding_manager_without_the_doctor_role_cannot_correct_the_specialty(): void
+    {
+        $doctor = User::factory()->create();
+        $doctor->assignRole(RoleName::DOCTOR->value);
+        DoctorProfile::factory()->for($doctor)->create([
+            'specialty' => 'General Medicine',
+        ]);
+
+        // Managing the clinic branding is a permission; correcting the locked
+        // specialty stays reserved to the Doctor role. This assistant is granted
+        // the broader branding permission and must still be refused.
+        $brandingManager = User::factory()->create();
+        $brandingManager->assignRole(RoleName::ASSISTANT->value);
+        $brandingManager->givePermissionTo(PermissionName::CONFIGURATION_BRANDING_MANAGE->value);
+
+        $this->actingAs($brandingManager)
+            ->get(route('app.configuration.identity.edit'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('configuration/ClinicIdentity')
+                ->where('permissions.can_correct_specialty', false),
+            );
+
+        $this->actingAs($brandingManager)
+            ->get(route('app.configuration.identity.specialty.confirm'))
+            ->assertForbidden();
     }
 
     public function test_owner_can_correct_a_locked_specialty_after_password_confirmation(): void
@@ -99,13 +130,17 @@ class ClinicIdentityControllerTest extends TestCase
         ]);
     }
 
-    public function test_specialty_correction_requires_owner_role_and_explicit_confirmation(): void
+    public function test_specialty_correction_requires_the_doctor_role_and_explicit_confirmation(): void
     {
-        $administrator = User::factory()->create();
-        $administrator->assignRole(RoleName::ADMINISTRATOR->value);
-        DoctorProfile::factory()->for($administrator)->create();
+        // A branding manager who is not the Doctor may edit the clinic identity,
+        // yet the locked specialty stays out of reach even with a fresh password
+        // confirmation in session.
+        $brandingManager = User::factory()->create();
+        $brandingManager->assignRole(RoleName::ASSISTANT->value);
+        $brandingManager->givePermissionTo(PermissionName::CONFIGURATION_BRANDING_MANAGE->value);
+        DoctorProfile::factory()->create(['specialty' => 'General Medicine']);
 
-        $this->actingAs($administrator)
+        $this->actingAs($brandingManager)
             ->withSession(['auth.password_confirmed_at' => time()])
             ->patch(route('app.configuration.identity.specialty.correct'), [
                 'specialty' => 'Cardiologie',
@@ -114,7 +149,7 @@ class ClinicIdentityControllerTest extends TestCase
             ->assertForbidden();
 
         $owner = User::factory()->create();
-        $owner->assignRole(RoleName::SUPER_ADMINISTRATOR->value);
+        $owner->assignRole(RoleName::DOCTOR->value);
         $this->flushSession();
 
         $this->actingAs($owner)

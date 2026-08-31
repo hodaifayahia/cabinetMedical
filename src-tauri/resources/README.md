@@ -1,61 +1,71 @@
 # Desktop release resources
 
-This directory is a staging area, not a place for mutable clinic data.
-Release builds intentionally fail until the following allowlisted resources
-have been prepared:
+This directory is a staging area, not a place for mutable clinic data. It holds
+the read-only payload that makes the installer a working offline application.
+Everything here is produced by:
 
-- `laravel/`: the production Laravel application, Composer dependencies, and
-  built Vite assets. It must not contain `.env`, development databases, logs,
-  backups, uploaded documents, Telescope data, Node dependencies, tests, or
-  private signing material. Queue supervision additionally requires the
-  reviewed `config/queue.php`, the database jobs migration, and Laravel's
-  `Queue/Console/WorkCommand.php` and `Queue/Worker.php`; the release gate
-  refuses an application staging tree without them. Scheduler supervision also
-  requires `routes/console.php` and Laravel's reviewed
-  `Console/Scheduling/ScheduleWorkCommand.php`, `ScheduleRunCommand.php`, and
-  `Schedule.php`. Native restore additionally requires
-  `Console/Commands/NativeApplyOfflineRestore.php` and the reviewed
-  `Backups/OfflineRestoreExecutor.php`, `PreparedRestore.php`, and
-  `SupervisorOfflineRestoreGuard.php` bridge classes.
-- `php/`: the reviewed Windows PHP runtime headed by `php.exe`, with only the
-  extensions required by Drclick.
-- `cloudflared/`: an approved official Windows `cloudflared.exe` and
-  `cloudflared.manifest.json`. The strict manifest contains `schema_version: 1`,
-  the exact reported `version`, and the lowercase SHA-256 of the executable.
-  Release builds compare the staged bytes with that digest, and the launcher
-  repeats the hash check and a bounded `--version` probe before supervision.
-- `initial/database.sqlite`: an empty, migrated SQLite template containing no
-  clinic or patient data.
-- `initial/storage/`: optional non-sensitive initial mutable files.
+```
+node scripts/desktop/stage-local-payload.mjs --php-runtime <reviewed-php-dir> [--force]
+```
 
-At runtime these packaged resources remain read-only. The supervisor creates
-the database, Laravel storage, temporary files, and logs under Tauri's
-per-install local application-data directory. Never stage the active
-`database/database.sqlite` from a development or clinic installation here.
+The whole directory is git-ignored: it is a build-machine artifact, rebuilt per
+release, never committed.
 
-The native queue worker always runs the database connection with the exact
-priority list `backups,default`. Do not stage a supervisor configuration,
-command wrapper, queue credential, or alternate executable. Installation
-secrets and writable database/storage locations are supplied only through the
-child environment at runtime and are never command-line arguments.
+Release builds fail until it is present. `src-tauri/build.rs` checks for each
+item below and refuses to produce an installer that looks fine but can only work
+online — the regression that shipped a 7 MB shell.
 
-The native scheduler independently runs the fixed command
-`php artisan schedule:work --no-interaction --quiet`. Do not stage a wrapper,
-alternate scheduler executable, cron task, or Task Scheduler entry. The same
-installation secrets and writable paths are inherited through its hardened
-environment, and its transient process state belongs only under the launcher's
-runtime directory.
+## What must be staged
 
-Obtain cloudflared from the official Cloudflare release channel on the
-controlled build machine, verify its provenance before creating the manifest,
-and pin the reviewed bytes for that installer build. Do not stage a tunnel
-token, credentials file, local Cloudflare configuration, origin certificate,
-or `.env` file. Connector credentials are installation-specific and belong
-only in the launcher's protected-secret store.
+- **`php/`** — a reviewed Windows PHP runtime headed by `php.exe`, with `ext/`.
+  Use the official `windows.php.net` NTS x64 build matching the `php`
+  constraint in `composer.json`, verified against the published
+  `sha256sum.txt`. Only the extensions the application uses are kept:
+  `curl`, `exif`, `fileinfo`, `gd`, `intl`, `mbstring`, `openssl`,
+  `pdo_sqlite`, `sodium`, `sqlite3`, `zip`. `intl` is required by
+  `filament/support` and brings the ICU data files with it.
 
-The optional phone-upload listener is a native, attestation-gated reverse proxy
-configured only by the per-install `config/lan-listener.json` documented in
-`docs/DESKTOP-RUNTIME.md`. Never stage a clinic adapter name, IP address, port,
-or mutable listener settings in release resources. It binds one explicitly
-selected private IPv4 and exposes only the fixed public upload route set; it is
-not a generic Laravel proxy and does not alter firewall or router settings.
+  Do **not** stage a `php.ini` here. The launcher generates one per
+  installation, because `extension_dir` must be an absolute path that is only
+  known once the install directory is known. A relative value resolves against
+  the supervisor's working directory, and an absent one falls back to the
+  compile-time `C:\php\ext`; either way no extension loads.
+
+- **`laravel/`** — the production Laravel application, its Composer
+  dependencies (`--no-dev`), and the built Vite assets. It must not contain
+  `.env`, development databases, logs, backups, uploaded documents, Telescope
+  data, Node dependencies, tests, `public/hot`, or private signing material.
+
+  `bootstrap/cache/` must contain nothing but `.gitignore`. A `services.php` or
+  `packages.php` generated on the build machine records that machine's absolute
+  provider paths; shipped to a clinic PC, Laravel cannot register its own
+  providers and every request fails with `Class "view" does not exist`. The
+  staging script asserts this and scrubs the directory.
+
+- **`initial/database.sqlite`** — an empty, migrated SQLite template containing
+  no clinic or patient data. The staging script builds it from scratch and
+  refuses to stage one holding rows in any clinical table. Never stage the
+  active `database/database.sqlite` from a development or clinic installation.
+
+- **`initial/storage/`** — optional, non-sensitive initial mutable files.
+
+## What is deliberately no longer staged
+
+The local-first architecture in [ADR-003](../../docs/architecture/ADR-003-local-first-desktop-restored.md)
+runs no tunnel, no LAN upload listener, and no Composer on the clinic's
+machine. Staging a `cloudflared.exe` or a `composer.phar` would put unused
+network and code-execution binaries next to a patient database, so the build
+gate does not ask for them and the staging script does not copy them.
+
+## Runtime ownership
+
+Packaged resources stay read-only. The launcher creates the database, Laravel
+storage, framework caches, temporary files, and logs under Tauri's per-install
+local application-data directory, and points Laravel at them through
+`DB_DATABASE`, `LARAVEL_STORAGE_PATH`, and the `APP_*_CACHE` variables.
+
+Installation secrets and writable locations are supplied only through the child
+environment at runtime; they are never command-line arguments and never staged
+here. Every installation generates its own `APP_KEY` on first run — a staged
+`resources/laravel/.env` fails the release build, because one shared key would
+make every clinic's encrypted data readable with the same secret.

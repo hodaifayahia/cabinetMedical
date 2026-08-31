@@ -4,6 +4,7 @@ namespace App\Services\Appointments;
 
 use App\Models\Appointment;
 use App\Models\AppointmentSyncEvent;
+use App\Models\Patient;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -77,7 +78,11 @@ class AppointmentSyncService
     {
         Appointment::query()
             ->withTrashed()
-            ->with('latestSyncEvent')
+            // `patientIdentity()` reads the patient with trashed rows
+            // included. Eager-loading without them would yield a null identity
+            // here, a different hash, and a needless republish on every poll
+            // for every appointment whose patient has been archived.
+            ->with(['latestSyncEvent', 'patient' => fn ($query) => $query->withTrashed()])
             ->orderByDesc('updated_at')
             ->limit($limit)
             ->get()
@@ -101,7 +106,12 @@ class AppointmentSyncService
         return [
             'public_id' => $appointment->public_id,
             'legacy_id' => (int) $appointment->getKey(),
+            // `patient_id` is this installation's auto-increment key and is
+            // meaningless anywhere else. `patient` carries the portable
+            // identity a consumer needs to attach the appointment to its own
+            // record, or to create it when the patient is not known yet.
             'patient_id' => (int) $appointment->patient_id,
+            'patient' => $this->patientIdentity($appointment),
             'appointment_date' => $appointment->appointment_date?->toDateString(),
             'starts_at' => $appointment->starts_at?->toIso8601String(),
             'ends_at' => $appointment->ends_at?->toIso8601String(),
@@ -122,13 +132,61 @@ class AppointmentSyncService
         ];
     }
 
+    /**
+     * The portable patient identity carried alongside every appointment.
+     *
+     * This exposes nothing the cabinet's own clients cannot already read from
+     * `GET /api/v1/patients`; it is inlined so a consumer can resolve or create
+     * the patient without a second round trip per appointment.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function patientIdentity(Appointment $appointment): ?array
+    {
+        $patient = $appointment->relationLoaded('patient')
+            ? $appointment->getRelation('patient')
+            : Patient::withoutCabinetScope()->withTrashed()->find($appointment->patient_id);
+
+        if (! $patient instanceof Patient) {
+            return null;
+        }
+
+        return [
+            'public_id' => $patient->public_id,
+            'patient_number' => $patient->patient_number,
+            'first_name' => $patient->first_name,
+            'last_name' => $patient->last_name,
+            'date_of_birth' => $patient->date_of_birth?->toDateString(),
+            'gender' => $patient->gender?->value,
+            'phone' => $patient->phone,
+            'email' => $patient->email,
+        ];
+    }
+
     public function payloadSha256(Appointment $appointment): string
     {
         return hash('sha256', $this->encodedPayload($appointment));
     }
 
-    private function publish(Appointment $appointment, string $action): ?AppointmentSyncEvent
+    /**
+     * Record a change that arrived from another installation.
+     *
+     * The event is written so this cabinet's history stays complete and
+     * {@see self::reconcileRecent()} does not mistake an imported appointment
+     * for an unpublished one. It is marked `imported` rather than `pending`,
+     * because the installation that sent it already has it: pushing it back
+     * would bounce the same appointment between the two forever.
+     */
+    public function recordImported(Appointment $appointment, string $action): ?AppointmentSyncEvent
     {
+        return $this->publish($appointment, $action, AppointmentSyncEvent::STATUS_IMPORTED);
+    }
+
+    private function publish(
+        Appointment $appointment,
+        string $action,
+        string $status = AppointmentSyncEvent::STATUS_PENDING,
+    ): ?AppointmentSyncEvent {
         if ($appointment->cabinet_id === null || $appointment->public_id === null) {
             return null;
         }
@@ -148,7 +206,7 @@ class AppointmentSyncService
                 'action' => $action,
                 'payload' => $payload,
                 'payload_sha256' => hash('sha256', $encodedPayload),
-                'status' => AppointmentSyncEvent::STATUS_PENDING,
+                'status' => $status,
                 'attempts' => 1,
                 'last_attempted_at' => now(),
             ],

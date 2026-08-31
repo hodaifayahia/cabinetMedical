@@ -319,6 +319,10 @@ const checkInAppointment = (appointment: AppointmentListItem) => {
 
 const syncingMobileAppointments = ref(false);
 
+// A two-way exchange with the online service the mobile app uses: appointments
+// booked or updated on the phone come down into this installation, and local
+// changes go up. It is the only moment a local-first desktop needs Internet,
+// and it only runs because the user asked for it.
 const syncMobileAppointments = () => {
     if (syncingMobileAppointments.value) {
         return;
@@ -326,8 +330,8 @@ const syncMobileAppointments = () => {
 
     syncingMobileAppointments.value = true;
     router.post(
-        '/app/appointments/mobile-sync',
-        { date: props.filters.date },
+        '/app/appointments/sync-with-mobile',
+        {},
         {
             preserveScroll: true,
             preserveState: true,

@@ -1,32 +1,39 @@
-// Drclick Desktop — thin connected-client shell
+// Drclick Desktop — local-first shell
 //
-// Architecture change (2025): The app no longer bundles a local PHP/Laravel runtime.
-// It simply loads the central hosted server (SERVER_URL) in a Tauri webview window.
-// Internet connectivity is required. This eliminates:
-//   - Bug 1 (migration_resources_invalid): the bundled-resource validation no longer exists.
-//   - Bug 2 (visible console): main.rs now has #![windows_subsystem = "windows"] and no
-//     external processes are spawned by the desktop shell.
+// Architecture (2026): the desktop application owns the clinic's data. On a
+// fresh installation the shell supervises the bundled PHP/Laravel runtime
+// against a SQLite database under the per-install application-data directory,
+// and the webview loads that loopback origin. Every clinical workflow works
+// with the machine offline; nothing is stored on the hosted service.
 //
-// Kept:
+// Three ownership modes are supported (see `runtime_mode`):
+//   - Local  — this PC owns the database (default for a new installation)
+//   - Attach — another Drclick PC or Cabinet Hub on the LAN owns it, for
+//              cabinets where several machines must share one record set
+//   - Cloud  — the hosted control plane owns it (pre-2026 thin-client
+//              behaviour, preserved for existing installations)
+//
+// This reverses the 2025 thin-client change, which removed the bundled runtime
+// and made internet connectivity mandatory. The supervision core it depends on
+// lives in the `drclick-runtime` crate and is wired back in by `local_runtime`.
+//
+// Kept from the thin client:
 //   - System tray + hide-to-tray behaviour (desktop_behavior.rs)
 //   - Signed updater (updates.rs)
-//   - NavigationPolicy — rewritten for the hosted server origin
-//
-// Removed:
-//   - desktop.rs (PHP supervisor preparation)
-//   - runtime-core dependency
-//   - oauth_opener.rs Google Drive loopback flow (tied to local runtime port)
-//   - All LAN / offline-restore / tunnel commands
+//   - NavigationPolicy, now covering the loopback origin as well
 
 mod connection;
 mod desktop_behavior;
+mod local_runtime;
+mod runtime_mode;
 mod updates;
 
 use std::{
-    fs,
-    sync::{Arc, RwLock},
+    path::PathBuf,
+    sync::{Arc, Mutex, RwLock},
 };
 
+use serde::Serialize;
 use tauri::{
     plugin::{Builder as PluginBuilder, TauriPlugin},
     webview::WebviewWindowBuilder,
@@ -37,72 +44,124 @@ use url::Url;
 
 use crate::connection::{persist_server_url, probe_server, validate_server_url, ServerProbe};
 use crate::desktop_behavior::{install_system_tray, show_desktop_window, DesktopBehaviorState};
+use crate::local_runtime::{LocalRuntime, LocalRuntimeError};
+use crate::runtime_mode::{persist_runtime_mode, resolve_runtime_mode, RuntimeMode};
 use crate::updates::SignedUpdaterState;
 
 // ---------------------------------------------------------------------------
 // Server URL configuration
 // ---------------------------------------------------------------------------
 
-/// Hosted Drclick control-plane origin used by production desktop releases.
-const CLOUD_SERVER_URL: &str = "https://seagreen-turkey-468004.hostingersite.com/";
+/// Fallback hosted origin, used when the build supplies no override.
+///
+/// Kept as the shipped default so an unconfigured checkout still builds and
+/// points at the current control plane.
+const DEFAULT_CLOUD_SERVER_URL: &str = "https://seagreen-turkey-468004.hostingersite.com/";
 
-/// Compile-time default server URL. Production releases start against the
-/// hosted Drclick service. Override it at runtime by placing a JSON file
-/// at `<app-local-data>/config/server.json` with content
-/// `{"url": "https://..."}` or the explicitly allowed local development URL.
-/// The override is read once at startup and never re-read while the app is running.
-const DEFAULT_SERVER_URL: &str = CLOUD_SERVER_URL;
+/// Hosted Drclick control-plane origin. Only used in `Cloud` mode and as the
+/// "use the Cloud" option on the connection page.
+///
+/// The value is a *deployment input*, not a source constant: `build.rs` reads
+/// `DRCLICK_CLOUD_SERVER_URL`, validates it, and normalises it into the binary,
+/// exactly as it already does for `MEDISMART_UPDATER_ENDPOINT`. Moving the
+/// control plane to another host, standing up a staging plane, or building for
+/// a reseller is therefore a build-environment change rather than a code patch.
+const CLOUD_SERVER_URL: &str = match option_env!("DRCLICK_CLOUD_SERVER_URL") {
+    Some(url) => url,
+    None => DEFAULT_CLOUD_SERVER_URL,
+};
 
-#[cfg(debug_assertions)]
-const LOCAL_DEVELOPMENT_SERVER_ENV: &str = "DRCLICKDZ_DEV_SERVER_URL";
+/// Shown when the stored runtime mode exists but cannot be understood. The
+/// clinic is asked where its data lives rather than being dropped onto a new,
+/// empty local database.
+const DAMAGED_CONFIGURATION_MESSAGE: &str =
+    "La configuration de ce poste est illisible. Indiquez où se trouvent les données du cabinet      avant de continuer, afin de ne pas créer une base vide par erreur.";
 
-#[cfg(debug_assertions)]
-fn local_development_server_url() -> Option<Url> {
-    let value = std::env::var(LOCAL_DEVELOPMENT_SERVER_ENV).ok()?;
-    let url = Url::parse(value.trim()).ok()?;
-
-    is_valid_local_development_server_url(&url).then_some(url)
+fn cloud_server_url() -> Url {
+    Url::parse(CLOUD_SERVER_URL).expect("CLOUD_SERVER_URL is validated by build.rs")
 }
 
-#[cfg(debug_assertions)]
-fn is_valid_local_development_server_url(url: &Url) -> bool {
-    url.scheme() == "http"
-        && url.host_str() == Some("localhost")
-        && url.port() == Some(8000)
-        && url.path() == "/"
-        && url.query().is_none()
-        && url.fragment().is_none()
-        && url.username().is_empty()
-        && url.password().is_none()
+/// `<app-local-data>/config`, where runtime mode and installation identity live.
+fn configuration_directory(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_local_data_dir()
+        .map(|root| root.join("config"))
+        .map_err(|_| "Impossible d’ouvrir le dossier de configuration.".to_owned())
 }
 
-/// Load the server URL: first checks the runtime override file, falls back to
-/// the compiled-in constant.  The override file is optional and silently ignored
-/// on any parse/IO error so a misconfigured file cannot prevent startup.
-fn resolve_server_url(app: &AppHandle) -> Url {
-    // A debug build may explicitly override the server with the exact local
-    // development origin. Every build otherwise respects the persisted
-    // endpoint; URL validation limits HTTP to loopback port 8000.
-    #[cfg(debug_assertions)]
-    if let Some(url) = local_development_server_url() {
-        return url;
-    }
+// ---------------------------------------------------------------------------
+// Local runtime state
+// ---------------------------------------------------------------------------
 
-    if let Ok(data_dir) = app.path().app_local_data_dir() {
-        let override_path = data_dir.join("config/server.json");
-        if let Ok(bytes) = fs::read(&override_path) {
-            if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
-                if let Some(url_str) = value.get("url").and_then(|v| v.as_str()) {
-                    if let Ok(url) = validate_server_url(url_str) {
-                        return url;
-                    }
-                }
+/// Holds the supervised local runtime so the exit path can stop PHP, the queue
+/// worker, and the scheduler with the window.
+#[derive(Default)]
+struct LocalRuntimeState {
+    running: Mutex<Option<LocalRuntime>>,
+    /// Set when local mode was selected but could not start; surfaced to the
+    /// connection page so the clinic sees why, instead of a blank window.
+    failure: Mutex<Option<LocalRuntimeError>>,
+}
+
+impl LocalRuntimeState {
+    fn shutdown(&self) {
+        if let Ok(running) = self.running.lock() {
+            if let Some(runtime) = running.as_ref() {
+                runtime.shutdown();
             }
         }
     }
-    // Fallback: compile-time constant (always valid, panics only in tests if
-    // the constant itself is malformed — caught at development time).
-    Url::parse(DEFAULT_SERVER_URL).expect("DEFAULT_SERVER_URL is a valid HTTPS URL")
+}
+
+#[derive(Serialize)]
+struct RuntimeModeStatus {
+    mode: &'static str,
+    url: Option<String>,
+    local_error: Option<String>,
+}
+
+#[tauri::command]
+fn runtime_mode_status(
+    app: AppHandle,
+    local: State<'_, LocalRuntimeState>,
+) -> Result<RuntimeModeStatus, String> {
+    let directory = configuration_directory(&app)?;
+    let Ok(mode) = resolve_runtime_mode(&directory, &cloud_server_url()) else {
+        return Ok(RuntimeModeStatus {
+            mode: "damaged",
+            url: None,
+            local_error: Some(DAMAGED_CONFIGURATION_MESSAGE.to_owned()),
+        });
+    };
+    let url = match &mode {
+        RuntimeMode::Local => local
+            .running
+            .lock()
+            .ok()
+            .and_then(|running| running.as_ref().map(|runtime| runtime.url().to_string())),
+        other => other.remote_url().map(|url| url.to_string()),
+    };
+    let local_error = local
+        .failure
+        .lock()
+        .ok()
+        .and_then(|failure| failure.as_ref().map(|error| error.message.clone()));
+
+    Ok(RuntimeModeStatus {
+        mode: mode.as_str(),
+        url,
+        local_error,
+    })
+}
+
+/// Hand data ownership back to this PC. Takes effect on the next start: the
+/// database owner cannot be swapped underneath a running session.
+#[tauri::command]
+fn configure_local_mode(app: AppHandle) -> Result<bool, String> {
+    let directory = configuration_directory(&app)?;
+    persist_runtime_mode(&directory, &RuntimeMode::Local)?;
+
+    Ok(true)
 }
 
 #[tauri::command]
@@ -112,6 +171,8 @@ async fn probe_server_connection(url: String) -> Result<ServerProbe, String> {
     probe_server(&url).await
 }
 
+/// Point this PC at a machine that owns the database — a Cabinet Hub, another
+/// Drclick PC running locally, or the hosted service.
 #[tauri::command]
 async fn configure_server_connection(
     app: AppHandle,
@@ -121,6 +182,16 @@ async fn configure_server_connection(
     let url = validate_server_url(&url)?;
     let probe = probe_server(&url).await?;
 
+    let cloud = cloud_server_url();
+    let mode = if url.host_str() == cloud.host_str() {
+        RuntimeMode::Cloud { url: url.clone() }
+    } else {
+        RuntimeMode::Attach { url: url.clone() }
+    };
+
+    let directory = configuration_directory(&app)?;
+    persist_runtime_mode(&directory, &mode)?;
+    // Kept in step so a downgrade to a thin-client build still finds its origin.
     persist_server_url(&app, &url)?;
     policy.set_server_url(url);
 
@@ -128,20 +199,21 @@ async fn configure_server_connection(
 }
 
 // ---------------------------------------------------------------------------
-// NavigationPolicy — rewritten for hosted-server origin
+// NavigationPolicy
 // ---------------------------------------------------------------------------
 
-/// Holds the server origin (scheme + host + optional port) and decides which
-/// navigations the webview may perform.
+/// Holds the origin the webview is allowed to stay on and decides which
+/// navigations may proceed.
 ///
 /// Rules:
-///   - Allow:   the configured server origin and all its sub-paths
+///   - Allow:   the configured origin and all its sub-paths. In local mode that
+///     is `http://127.0.0.1:<port>`; otherwise an HTTPS server origin.
 ///   - Allow:   tauri://, asset://, about: (internal Tauri schemes)
 ///   - Block:   everything else — external http(s) links are opened in the
 ///     system browser by the on_navigation handler instead
 #[derive(Clone, Default)]
 struct NavigationPolicy {
-    /// The server origin, e.g. `http://localhost:8000`. Set once on startup.
+    /// The origin (scheme + host + optional port). Set once on startup.
     server_origin: Arc<RwLock<Option<Url>>>,
 }
 
@@ -206,15 +278,18 @@ pub fn run() {
                 show_desktop_window(app);
             },
         ))
-        // Navigation guard: allow server origin + tauri/asset schemes;
+        // Navigation guard: allow the owning origin + tauri/asset schemes;
         // open external HTTPS links in the system browser.
         .plugin(navigation_guard(policy_for_guard))
         .manage(DesktopBehaviorState::default())
         .manage(SignedUpdaterState::compiled())
+        .manage(LocalRuntimeState::default())
         .manage(policy_for_commands)
         .invoke_handler(tauri::generate_handler![
             probe_server_connection,
             configure_server_connection,
+            configure_local_mode,
+            runtime_mode_status,
             updates::signed_updater_status,
             updates::check_for_signed_update,
             updates::install_signed_update
@@ -226,14 +301,60 @@ pub fn run() {
 
             install_system_tray(app.handle())?;
 
-            // Resolve which server URL to load (compile-time default or override file)
-            let server_url = resolve_server_url(app.handle());
-            navigation_policy.set_server_url(server_url.clone());
+            let handle = app.handle().clone();
+            let directory = configuration_directory(&handle)
+                .map_err(|error| -> Box<dyn std::error::Error> { error.into() })?;
+            // A damaged configuration is presented to the clinic, never
+            // silently replaced with the default.
+            let mode = match resolve_runtime_mode(&directory, &cloud_server_url()) {
+                Ok(mode) => mode,
+                Err(_) => {
+                    let state = handle.state::<LocalRuntimeState>();
+                    if let Ok(mut failure) = state.failure.lock() {
+                        *failure = Some(LocalRuntimeError::damaged_configuration());
+                    }
+                    build_main_window(app, None, &RuntimeMode::Local)?;
 
-            // Build the main window. It loads `index.html` (the offline/redirect
-            // page bundled as frontendDist) which immediately tries to navigate to
-            // the server URL and shows an offline error page on failure.
-            build_main_window(app, server_url)?;
+                    return Ok(());
+                }
+            };
+
+            // Resolve the origin that will own this session's data.
+            let resolved = match &mode {
+                RuntimeMode::Local => match local_runtime::start(&handle) {
+                    Ok(runtime) => {
+                        let url = runtime.url().clone();
+                        let state = handle.state::<LocalRuntimeState>();
+                        if let Ok(mut running) = state.running.lock() {
+                            *running = Some(runtime);
+                        }
+                        Some(url)
+                    }
+                    Err(error) => {
+                        // Never silently fall back to the hosted service: that
+                        // would move a clinic's data off the machine without
+                        // consent. Show the failure and let them choose.
+                        let state = handle.state::<LocalRuntimeState>();
+                        if let Ok(mut failure) = state.failure.lock() {
+                            *failure = Some(error);
+                        }
+                        None
+                    }
+                },
+                other => other.remote_url().cloned(),
+            };
+
+            match resolved {
+                Some(url) => {
+                    navigation_policy.set_server_url(url.clone());
+                    build_main_window(app, Some(url), &mode)?;
+                }
+                None => {
+                    // No usable origin. The bundled connection page explains the
+                    // problem and offers Cloud / Hub alternatives.
+                    build_main_window(app, None, &mode)?;
+                }
+            }
 
             Ok(())
         })
@@ -249,37 +370,39 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("failed to build the Drclick desktop shell");
 
-    // No runtime shutdown needed — there are no supervised processes.
-    application.run(|_app, _event| {
-        if matches!(_event, RunEvent::ExitRequested { .. } | RunEvent::Exit) {
-            // Nothing to clean up in thin-client mode.
+    application.run(|app, event| {
+        if matches!(event, RunEvent::ExitRequested { .. } | RunEvent::Exit) {
+            // Stop PHP, the queue worker, and the scheduler with the window so
+            // no orphan process keeps the SQLite database open.
+            app.state::<LocalRuntimeState>().shutdown();
         }
     });
 }
 
 /// Build the single main application window.
-/// The window loads the bundled `index.html` (frontendDist) as its initial
-/// page; that page's JavaScript immediately redirects to `server_url`.
-fn build_main_window(app: &mut tauri::App, server_url: Url) -> tauri::Result<()> {
-    #[cfg(debug_assertions)]
-    let initial_url = if is_valid_local_development_server_url(&server_url) {
-        // Chromium can reject the local loader's cross-origin loopback probe
-        // under its Private Network Access rules. The exact debug-only origin
-        // has already been validated, so navigate to its authentication page
-        // directly. The public root is the marketing landing page and must
-        // never be the desktop app's entry point.
-        let mut authentication_url = server_url.clone();
-        if authentication_url.path() == "" || authentication_url.path() == "/" {
-            authentication_url.set_path("/login");
-        }
+///
+/// In local mode the supervisor has already confirmed the application is
+/// healthy, so the window opens straight onto the loopback origin. Otherwise it
+/// loads the bundled `index.html`, which probes the remote origin and offers
+/// the Cloud / Hub connection choices.
+fn build_main_window(
+    app: &mut tauri::App,
+    origin: Option<Url>,
+    mode: &RuntimeMode,
+) -> tauri::Result<()> {
+    let local_failure = app
+        .handle()
+        .state::<LocalRuntimeState>()
+        .failure
+        .lock()
+        .ok()
+        .and_then(|failure| failure.as_ref().map(|error| error.message.clone()));
 
-        WebviewUrl::External(authentication_url)
-    } else {
-        WebviewUrl::App("index.html".into())
+    let initial_url = match (&origin, mode) {
+        // A healthy local runtime: no loader page, no probe, no flash.
+        (Some(url), RuntimeMode::Local) => WebviewUrl::External(url.clone()),
+        _ => WebviewUrl::App("index.html".into()),
     };
-
-    #[cfg(not(debug_assertions))]
-    let initial_url = WebviewUrl::App("index.html".into());
 
     WebviewWindowBuilder::new(app, "main", initial_url)
         .title("Drclick")
@@ -288,11 +411,16 @@ fn build_main_window(app: &mut tauri::App, server_url: Url) -> tauri::Result<()>
         .center()
         .resizable(true)
         .maximizable(true)
-        // Inject the server URL into window so the loader page can read it.
+        // Inject context so the loader page knows what it is connecting to.
         .initialization_script(format!(
-            "window.__DRCLICK_SERVER_URL = {}; window.__DRCLICK_CLOUD_SERVER_URL = {};",
-            serde_json::to_string(server_url.as_str()).unwrap_or_default(),
-            serde_json::to_string(CLOUD_SERVER_URL).unwrap_or_default()
+            "window.__DRCLICK_SERVER_URL = {}; \
+             window.__DRCLICK_CLOUD_SERVER_URL = {}; \
+             window.__DRCLICK_RUNTIME_MODE = {}; \
+             window.__DRCLICK_LOCAL_ERROR = {};",
+            serde_json::to_string(&origin.as_ref().map(Url::to_string)).unwrap_or_default(),
+            serde_json::to_string(CLOUD_SERVER_URL).unwrap_or_default(),
+            serde_json::to_string(mode.as_str()).unwrap_or_default(),
+            serde_json::to_string(&local_failure).unwrap_or_default(),
         ))
         .build()?;
 
@@ -315,7 +443,7 @@ fn navigation_guard(policy: NavigationPolicy) -> TauriPlugin<tauri::Wry> {
                     let _ = app.opener().open_url(&url_str, None::<&str>);
                 });
             }
-            // Block in-webview navigation for anything not on the server origin
+            // Block in-webview navigation for anything not on the owning origin
             false
         })
         .build()
@@ -379,7 +507,7 @@ mod tests {
 
     #[test]
     fn no_server_configured_blocks_everything_except_internal_schemes() {
-        let policy = NavigationPolicy::default(); // no server URL set
+        let policy = NavigationPolicy::default(); // no origin set
 
         assert!(!policy.allows(&Url::parse("https://app.drclick.dz/").unwrap()));
         // Internal schemes still pass
@@ -399,31 +527,36 @@ mod tests {
     }
 
     #[test]
-    fn default_server_url_is_the_hosted_drclick_origin() {
-        let url = Url::parse(DEFAULT_SERVER_URL).unwrap();
-        assert_eq!(url.scheme(), "https");
-        assert_eq!(url.as_str(), CLOUD_SERVER_URL);
+    fn the_local_loopback_origin_is_allowed_in_local_mode() {
+        let policy = make_policy("http://127.0.0.1:51234/");
+
+        assert!(policy.allows(&Url::parse("http://127.0.0.1:51234/").unwrap()));
+        assert!(policy.allows(&Url::parse("http://127.0.0.1:51234/dashboard").unwrap()));
     }
 
-    #[cfg(debug_assertions)]
     #[test]
-    fn local_development_url_is_strictly_loopback_port_8000() {
-        assert!(is_valid_local_development_server_url(
-            &Url::parse("http://localhost:8000").unwrap()
-        ));
+    fn another_loopback_port_is_not_the_local_origin() {
+        let policy = make_policy("http://127.0.0.1:51234/");
 
-        for rejected in [
-            "http://127.0.0.1:8000/",
-            "http://[::1]:8000/",
-            "https://localhost:8000/",
-            "http://localhost:5173/",
-            "http://localhost:8000/login",
-            "http://localhost:8000/?debug=1",
-            "http://user@localhost:8000/",
-        ] {
-            assert!(!is_valid_local_development_server_url(
-                &Url::parse(rejected).unwrap()
-            ));
-        }
+        // A different local server must not borrow the desktop's privileges.
+        assert!(!policy.allows(&Url::parse("http://127.0.0.1:8000/").unwrap()));
+        assert!(!policy.allows(&Url::parse("http://localhost:51234/").unwrap()));
+        assert!(!policy.allows(&Url::parse("https://127.0.0.1:51234/").unwrap()));
+    }
+
+    #[test]
+    fn the_hosted_origin_is_blocked_while_local_mode_owns_the_session() {
+        let policy = make_policy("http://127.0.0.1:51234/");
+
+        // Local-first means the webview never wanders onto the hosted service.
+        assert!(!policy.allows(&Url::parse(CLOUD_SERVER_URL).unwrap()));
+    }
+
+    #[test]
+    fn the_cloud_server_url_constant_is_a_valid_https_origin() {
+        let url = cloud_server_url();
+
+        assert_eq!(url.scheme(), "https");
+        assert_eq!(url.as_str(), CLOUD_SERVER_URL);
     }
 }

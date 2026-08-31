@@ -23,11 +23,11 @@ withDefaults(
     <a
         v-if="available && url"
         :href="url"
-        class="inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        class="inline-flex items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         :class="[
             size === 'lg' ? 'h-13 px-7 text-base' : 'h-11 px-5 text-sm',
             variant === 'inverse'
-                ? 'bg-white text-primary shadow-sm ring-offset-primary hover:bg-white/90 focus-visible:ring-white'
+                ? 'bg-white text-brand-deep shadow-sm ring-offset-primary hover:bg-white/90 focus-visible:ring-white'
                 : 'bg-primary text-primary-foreground shadow-sm shadow-primary/20 ring-offset-background hover:bg-primary/90 focus-visible:ring-ring',
         ]"
     >
@@ -39,11 +39,11 @@ withDefaults(
         type="button"
         disabled
         :title="reason ?? undefined"
-        class="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl font-semibold opacity-60"
+        class="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap opacity-60"
         :class="[
             size === 'lg' ? 'h-13 px-7 text-base' : 'h-11 px-5 text-sm',
             variant === 'inverse'
-                ? 'bg-white/80 text-primary'
+                ? 'bg-white/80 text-brand-deep'
                 : 'bg-primary/50 text-primary-foreground',
         ]"
     >

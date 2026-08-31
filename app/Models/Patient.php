@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Actions\Patients\GeneratePatientNumberAction;
+use App\Casts\RetiredTolerantGender;
 use App\Enums\BloodGroup;
 use App\Enums\Gender;
 use App\Models\Concerns\BelongsToCabinet;
@@ -16,8 +17,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 /**
+ * @property string|null $public_id
  * @property CarbonImmutable|null $date_of_birth
  * @property Gender|null $gender
  * @property BloodGroup|null $blood_group
@@ -61,6 +64,14 @@ class Patient extends Model
             if (blank($patient->patient_number)) {
                 $patient->patient_number = app(GeneratePatientNumberAction::class)->handle();
             }
+
+            // A cross-installation identity. The desktop, the hosted service,
+            // and the mobile app all refer to a patient by this value, so an
+            // appointment synced in from elsewhere attaches to the row that
+            // already exists here instead of creating a duplicate.
+            if (blank($patient->public_id)) {
+                $patient->public_id = (string) Str::uuid7();
+            }
         });
     }
 
@@ -71,7 +82,9 @@ class Patient extends Model
     {
         return [
             'date_of_birth' => 'date',
-            'gender' => Gender::class,
+            // Not Gender::class directly: the column still holds values from
+            // before the enum was trimmed, and a strict cast throws on them.
+            'gender' => RetiredTolerantGender::class,
             'blood_group' => BloodGroup::class,
         ];
     }

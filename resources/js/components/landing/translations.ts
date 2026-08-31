@@ -24,6 +24,7 @@ type LandingCopy = {
     localeShort: string;
     switcherLabel: string;
     nav: {
+        menuLabel: string;
         features: string;
         how: string;
         roles: string;
@@ -39,13 +40,15 @@ type LandingCopy = {
     hero: {
         eyebrow: string;
         title: string;
+        titleLead: string;
+        titleRotating: string[];
         subtitle: string;
         highlights: string[];
+        stats: { value: string; label: string }[];
     };
-    mockup: {
-        sidebar: string[];
-        agendaTitle: string;
-        slots: { time: string; name: string; status: string }[];
+    photos: {
+        documents: string;
+        roles: string;
     };
     benefits: {
         eyebrow: string;
@@ -64,6 +67,19 @@ type LandingCopy = {
         title: string;
         subtitle: string;
         items: Role[];
+    };
+    mobileApp: {
+        badge: string;
+        title: string;
+        body: string;
+        points: string[];
+        mock: {
+            header: string;
+            chooseSlot: string;
+            slots: string[];
+            confirm: string;
+            confirmed: string;
+        };
     };
     requirements: {
         eyebrow: string;
@@ -90,6 +106,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         localeShort: 'ع',
         switcherLabel: 'تغيير لغة الصفحة',
         nav: {
+            menuLabel: 'فتح قائمة التنقل',
             features: 'المميزات',
             how: 'طريقة العمل',
             roles: 'الفريق',
@@ -105,6 +122,8 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         hero: {
             eyebrow: 'برنامج مكتبي للعيادات في الجزائر',
             title: 'تحكّم كامل في عيادتك، من تطبيق واحد.',
+            titleLead: 'تحكّم كامل في عيادتك.',
+            titleRotating: ['تطبيق واحد', 'مكان واحد', 'حياة أسهل'],
             subtitle:
                 'المرضى، المواعيد، الاستشارات والوصفات الطبية في مكان واحد. برنامج مكتبي مصمّم للطبيب والسكرتارية، مع ثلاثة حسابات لكل عيادة وبيانات محفوظة بأمان.',
             highlights: [
@@ -112,21 +131,15 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 'أجندة مواعيد واضحة',
                 'وصفات وشهادات في نقرة واحدة',
             ],
+            stats: [
+                { value: '3', label: 'حسابات لكل عيادة' },
+                { value: '24 سا', label: 'لتفعيل عيادتك' },
+                { value: '1', label: 'ملف تثبيت لكل شيء' },
+            ],
         },
-        mockup: {
-            sidebar: [
-                'لوحة التحكم',
-                'المرضى',
-                'المواعيد',
-                'الاستشارات',
-                'الوصفات',
-            ],
-            agendaTitle: 'مواعيد اليوم',
-            slots: [
-                { time: '08:30', name: 'أمينة بن علي', status: 'مؤكّد' },
-                { time: '09:15', name: 'كريم حدّاد', status: 'في الانتظار' },
-                { time: '10:00', name: 'سامية مرزوق', status: 'مؤكّد' },
-            ],
+        photos: {
+            documents: 'يد طبيب تحرّر وثيقة طبية على المكتب',
+            roles: 'طبيب بمعطف أبيض يستعمل تطبيقه على الهاتف داخل العيادة',
         },
         benefits: {
             eyebrow: 'كل ما تحتاجه العيادة',
@@ -205,6 +218,23 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 },
             ],
         },
+        mobileApp: {
+            badge: 'قريبًا',
+            title: 'تطبيق موبايل لمرضاك لحجز المواعيد',
+            body: 'نحضّر تطبيقًا للهواتف يتيح لمرضى عيادتك طلب مواعيدهم من هواتفهم مباشرة، مع مزامنة فورية مع أجندة Drclick في عيادتك.',
+            points: [
+                'حجز الموعد من الهاتف في ثوانٍ',
+                'تذكيرات تقلّل مواعيد الغياب',
+                'الأجندة تبقى بيد السكرتارية',
+            ],
+            mock: {
+                header: 'حجز موعد',
+                chooseSlot: 'اختر وقتًا متاحًا',
+                slots: ['09:00', '09:30', '10:15'],
+                confirm: 'تأكيد الموعد',
+                confirmed: 'تم إرسال الطلب',
+            },
+        },
         requirements: {
             eyebrow: 'متطلبات التشغيل',
             title: 'يعمل على أجهزة العيادة العادية',
@@ -232,6 +262,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         localeShort: 'FR',
         switcherLabel: 'Changer la langue de la page',
         nav: {
+            menuLabel: 'Ouvrir le menu de navigation',
             features: 'Fonctionnalités',
             how: 'Comment ça marche',
             roles: 'Équipe',
@@ -247,6 +278,12 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         hero: {
             eyebrow: 'Application bureau pour cabinets en Algérie',
             title: 'Gérez tout votre cabinet depuis une seule application.',
+            titleLead: 'Gérez tout votre cabinet.',
+            titleRotating: [
+                'Une seule application',
+                'Un seul endroit',
+                'Une vie plus simple',
+            ],
             subtitle:
                 'Patients, rendez-vous, consultations et ordonnances au même endroit. Une application bureau pensée pour le médecin et le secrétariat, avec trois comptes par cabinet et des données conservées en sécurité.',
             highlights: [
@@ -254,21 +291,15 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 'Agenda de rendez-vous clair',
                 'Ordonnances et documents en un clic',
             ],
+            stats: [
+                { value: '3', label: 'comptes par cabinet' },
+                { value: '24 h', label: 'pour activer votre cabinet' },
+                { value: '1', label: 'fichier d’installation pour tout' },
+            ],
         },
-        mockup: {
-            sidebar: [
-                'Tableau de bord',
-                'Patients',
-                'Rendez-vous',
-                'Consultations',
-                'Ordonnances',
-            ],
-            agendaTitle: 'Rendez-vous du jour',
-            slots: [
-                { time: '08:30', name: 'Amina Ben Ali', status: 'Confirmé' },
-                { time: '09:15', name: 'Karim Haddad', status: 'En attente' },
-                { time: '10:00', name: 'Samia Merzouk', status: 'Confirmé' },
-            ],
+        photos: {
+            documents: 'Main d’un praticien remplissant un document au bureau',
+            roles: 'Médecin en blouse blanche utilisant son téléphone au cabinet',
         },
         benefits: {
             eyebrow: 'Tout ce dont le cabinet a besoin',
@@ -348,6 +379,23 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 },
             ],
         },
+        mobileApp: {
+            badge: 'Bientôt disponible',
+            title: 'Une application mobile pour vos patients',
+            body: 'Nous préparons une application mobile qui permettra à vos patients de demander leurs rendez-vous depuis leur téléphone, synchronisée avec l’agenda Drclick du cabinet.',
+            points: [
+                'Prise de rendez-vous en quelques secondes',
+                'Des rappels qui réduisent les absences',
+                'Le secrétariat garde la main sur l’agenda',
+            ],
+            mock: {
+                header: 'Prendre rendez-vous',
+                chooseSlot: 'Choisissez un créneau',
+                slots: ['09:00', '09:30', '10:15'],
+                confirm: 'Confirmer le rendez-vous',
+                confirmed: 'Demande envoyée',
+            },
+        },
         requirements: {
             eyebrow: 'Configuration requise',
             title: 'Fonctionne sur les postes habituels du cabinet',
@@ -375,6 +423,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         localeShort: 'EN',
         switcherLabel: 'Change page language',
         nav: {
+            menuLabel: 'Open the navigation menu',
             features: 'Features',
             how: 'How it works',
             roles: 'Team',
@@ -390,6 +439,8 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         hero: {
             eyebrow: 'Desktop app for medical practices in Algeria',
             title: 'Run your whole practice from a single app.',
+            titleLead: 'Run your whole practice.',
+            titleRotating: ['One application', 'One place', 'An easier life'],
             subtitle:
                 'Patients, appointments, consultations and prescriptions in one place. A desktop app built for the doctor and the front desk, with three accounts per practice and data kept safely.',
             highlights: [
@@ -397,21 +448,15 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 'Clear appointment agenda',
                 'Prescriptions and documents in one click',
             ],
+            stats: [
+                { value: '3', label: 'accounts per practice' },
+                { value: '24 h', label: 'to activate your practice' },
+                { value: '1', label: 'installer file for everything' },
+            ],
         },
-        mockup: {
-            sidebar: [
-                'Dashboard',
-                'Patients',
-                'Appointments',
-                'Consultations',
-                'Prescriptions',
-            ],
-            agendaTitle: 'Today’s appointments',
-            slots: [
-                { time: '08:30', name: 'Amina Ben Ali', status: 'Confirmed' },
-                { time: '09:15', name: 'Karim Haddad', status: 'Waiting' },
-                { time: '10:00', name: 'Samia Merzouk', status: 'Confirmed' },
-            ],
+        photos: {
+            documents: 'Practitioner’s hand filling in a document at a desk',
+            roles: 'Doctor in a white coat using their phone at the practice',
         },
         benefits: {
             eyebrow: 'Everything the practice needs',
@@ -490,6 +535,23 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                     ],
                 },
             ],
+        },
+        mobileApp: {
+            badge: 'Coming soon',
+            title: 'A mobile app for your patients',
+            body: 'We are building a mobile app that lets your patients request their appointments from their phone, synced with your practice’s Drclick agenda.',
+            points: [
+                'Appointments booked from the phone in seconds',
+                'Reminders that cut no-shows',
+                'The front desk stays in control of the agenda',
+            ],
+            mock: {
+                header: 'Book an appointment',
+                chooseSlot: 'Pick an available time',
+                slots: ['09:00', '09:30', '10:15'],
+                confirm: 'Confirm appointment',
+                confirmed: 'Request sent',
+            },
         },
         requirements: {
             eyebrow: 'System requirements',

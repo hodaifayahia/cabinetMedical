@@ -96,6 +96,10 @@ test('the offline retry button remains clickable during automatic backoff', asyn
     const script = offlinePage.match(/<script>([\s\S]*?)<\/script>/)?.[1];
     expect(script).toBeDefined();
 
+    // The Rust shell injects this before the page runs; the hosted origin is a
+    // build input, so the page carries no literal of its own to fall back on.
+    vi.stubGlobal('__DRCLICK_CLOUD_SERVER_URL', 'https://cloud.example.test/');
+
     Function(script!)();
     await flushPromises();
     await flushPromises();

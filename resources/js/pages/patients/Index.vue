@@ -48,8 +48,6 @@ const genderLabels: Record<string, string> = {
     femme: 'Femme',
     male: 'Homme',
     homme: 'Homme',
-    other: 'Autre',
-    autre: 'Autre',
 };
 
 const formatGender = (value: string | null): string =>

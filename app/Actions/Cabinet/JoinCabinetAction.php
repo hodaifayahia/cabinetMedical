@@ -6,35 +6,49 @@ use App\Models\AuditLog;
 use App\Models\Cabinet;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Registers a prospective staff member against an existing active cabinet,
- * identified by its owner's e-mail address. The new member is created in the
+ * Registers a prospective staff member against an existing cabinet, identified
+ * by its owner's e-mail address. The new member is created in the
  * pending-approval state (no role, approved_at null) and reserves a seat.
+ *
+ * A cabinet that is still awaiting its activation licence accepts members too.
+ * Its owner registers, waits for the licence, and needs the reception desk on a
+ * second machine ready by the time the cabinet goes live; EnsureCabinetIsActive
+ * still holds every member out of the application until then, so joining early
+ * grants no access. Only a suspended cabinet refuses new members outright.
  *
  * Shared by the web JoinCabinetController and the Sanctum API so the seat-limit
  * and eligibility rules never diverge.
  */
 class JoinCabinetAction
 {
+    /** @var list<string> */
+    private const JOINABLE_STATUSES = ['active', 'pending'];
+
+    private const NO_CABINET_MESSAGE = "Aucun cabinet n'a été trouvé pour cette adresse e-mail.";
+
     /**
      * @param  array{name: string, email: string, password: string, owner_email: string}  $data
      */
     public function execute(array $data): User
     {
+        $ownerEmail = Str::lower(trim($data['owner_email']));
+
         $cabinetId = Cabinet::query()
-            ->whereHas('owner', fn ($query) => $query->where('email', $data['owner_email']))
-            ->where('status', 'active')
+            ->whereHas('owner', fn ($query) => $query->whereRaw('LOWER(email) = ?', [$ownerEmail]))
+            ->whereIn('status', self::JOINABLE_STATUSES)
             ->value('id');
 
         if ($cabinetId === null) {
             throw ValidationException::withMessages([
-                'owner_email' => "Aucun cabinet actif n'a été trouvé pour cette adresse e-mail.",
+                'owner_email' => self::NO_CABINET_MESSAGE,
             ]);
         }
 
-        return DB::transaction(function () use ($data, $cabinetId): User {
+        return DB::transaction(function () use ($data, $cabinetId, $ownerEmail): User {
             $cabinet = Cabinet::query()
                 ->whereKey($cabinetId)
                 ->lockForUpdate()
@@ -42,11 +56,11 @@ class JoinCabinetAction
 
             if (
                 $cabinet === null
-                || ! $cabinet->isActive()
-                || ! $cabinet->owner()->where('email', $data['owner_email'])->exists()
+                || ! in_array($cabinet->status->value, self::JOINABLE_STATUSES, true)
+                || ! $cabinet->owner()->whereRaw('LOWER(email) = ?', [$ownerEmail])->exists()
             ) {
                 throw ValidationException::withMessages([
-                    'owner_email' => "Aucun cabinet actif n'a été trouvé pour cette adresse e-mail.",
+                    'owner_email' => self::NO_CABINET_MESSAGE,
                 ]);
             }
 

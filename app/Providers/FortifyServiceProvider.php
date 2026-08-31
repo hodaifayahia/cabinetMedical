@@ -46,12 +46,12 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureViews();
         $this->configureRateLimiting();
 
-        // Fortify owns the registration routes; attach a throttle to the store
-        // endpoint once every route has been registered.
-        $this->booted(function (): void {
-            $route = app('router')->getRoutes()->getByName('register.store');
-            $route?->middleware('throttle:registration');
-        });
+        // Registration lives on Fortify's own routes, which Laravel loads from
+        // a deferred booted callback of its own. Nothing this provider can
+        // schedule is guaranteed to run after that, so the throttle and the
+        // Cabinet Hub guard are applied by middleware in the web group
+        // (ThrottleCabinetRegistration, DenyCabinetRegistrationOnHub) instead
+        // of by mutating the routes here.
     }
 
     /**

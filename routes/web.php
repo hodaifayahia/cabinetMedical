@@ -36,10 +36,13 @@ use App\Http\Controllers\Payments\PaymentController;
 use App\Http\Controllers\PublicUploadController;
 use App\Http\Controllers\Staff\PendingMemberController;
 use App\Http\Controllers\Staff\StaffIndexController;
+use App\Http\Controllers\Sync\MobileSyncController;
 use App\Http\Middleware\EnsureGoogleOAuthLoopback;
 use App\Http\Middleware\SecurePublicUploadHeaders;
 use App\Models\LandingSection;
+use App\Models\LandingSetting;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -75,12 +78,21 @@ Route::get('/', static fn () => Inertia::render('Welcome', [
         ])
         ->values()
         ->all(),
+    'landingSettings' => LandingSetting::query()
+        ->get(['key', 'locale', 'value'])
+        ->map(static fn (LandingSetting $setting): array => [
+            'key' => $setting->key,
+            'locale' => $setting->locale,
+            'value' => $setting->value,
+        ])
+        ->values()
+        ->all(),
 ]))->name('home');
 
 // Compatibility aliases for links retained by older desktop builds.
-Route::get('home', fn (): \Illuminate\Http\RedirectResponse => to_route('home'))
+Route::get('home', fn (): RedirectResponse => to_route('home'))
     ->name('legacy.home');
-Route::get('password/confirm', fn (): \Illuminate\Http\RedirectResponse => redirect('/user/confirm-password'))
+Route::get('password/confirm', fn (): RedirectResponse => redirect('/user/confirm-password'))
     ->middleware('auth')
     ->name('legacy.password.confirm');
 
@@ -121,7 +133,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('cabinet/pending', [CabinetStatusController::class, 'pending'])
         ->name('cabinet.pending');
     // Allow installers and email links to open the activation URL directly.
-    Route::get('cabinet/license/redeem', fn (): \Illuminate\Http\RedirectResponse => to_route('cabinet.pending'))
+    Route::get('cabinet/license/redeem', fn (): RedirectResponse => to_route('cabinet.pending'))
         ->name('cabinet.license.redeem.form');
     Route::get('cabinet/awaiting-approval', [CabinetStatusController::class, 'awaitingApproval'])
         ->name('cabinet.awaiting-approval');
@@ -179,6 +191,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('appointments.check-in');
         Route::patch('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])
             ->name('appointments.cancel');
+        // Two-way exchange with the online service the mobile app uses. Distinct
+        // from the mobile-sync routes below, which only republish a local
+        // snapshot onto this cabinet's outgoing stream.
+        Route::post('appointments/sync-with-mobile', MobileSyncController::class)
+            ->name('appointments.sync-with-mobile');
         Route::post('appointments/mobile-sync', [AppointmentController::class, 'syncMobileDay'])
             ->name('appointments.mobile-sync-day');
         Route::post('appointments/{appointment}/mobile-sync', [AppointmentController::class, 'syncMobile'])

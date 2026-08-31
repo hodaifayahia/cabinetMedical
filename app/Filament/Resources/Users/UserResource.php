@@ -2,7 +2,8 @@
 
 namespace App\Filament\Resources\Users;
 
-use App\Enums\PermissionName;
+use App\Filament\Resources\Users\Pages\CreateUser;
+use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Pages\ViewUser;
 use App\Filament\Resources\Users\Schemas\UserForm;
@@ -14,14 +15,20 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
+/**
+ * Accounts that can sign in to this back office. Cabinet staff are tenant
+ * identities living in each cabinet's own local database and are managed
+ * from the cabinet's seat-aware staff flow, never from here.
+ */
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
     protected static string|UnitEnum|null $navigationGroup = 'Administration';
 
@@ -31,12 +38,12 @@ class UserResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'utilisateur';
+        return 'compte plateforme';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'utilisateurs';
+        return 'comptes plateforme';
     }
 
     public static function getNavigationLabel(): string
@@ -46,27 +53,56 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        return (bool) auth()->user()?->can(PermissionName::STAFF_MANAGE->value);
+        return auth()->user()?->is_platform_admin === true;
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'gray';
     }
 
     /**
-     * The platform panel is deliberately read-only for tenant identities.
-     * Cabinet staff must be provisioned through the seat-aware staff flow,
-     * while platform accounts are created by the guarded console command.
+     * Only platform accounts. A cabinet's users are stored in that cabinet's
+     * local installation, so listing them here was showing rows this panel
+     * can neither reach nor administer.
+     *
+     * @return Builder<User>
      */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->where('is_platform_admin', true);
+    }
+
     public static function canCreate(): bool
     {
-        return false;
+        return auth()->user()?->is_platform_admin === true;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return false;
+        return auth()->user()?->is_platform_admin === true;
     }
 
+    /**
+     * Two ways to lock everyone out are blocked here: deleting your own
+     * account mid-session, and deleting the last account that can sign in.
+     */
     public static function canDelete(Model $record): bool
     {
-        return false;
+        if (auth()->user()?->is_platform_admin !== true) {
+            return false;
+        }
+
+        if ($record->getKey() === auth()->id()) {
+            return false;
+        }
+
+        return static::getEloquentQuery()->count() > 1;
     }
 
     public static function canDeleteAny(): bool
@@ -100,7 +136,9 @@ class UserResource extends Resource
     {
         return [
             'index' => ListUsers::route('/'),
+            'create' => CreateUser::route('/create'),
             'view' => ViewUser::route('/{record}'),
+            'edit' => EditUser::route('/{record}/edit'),
         ];
     }
 }

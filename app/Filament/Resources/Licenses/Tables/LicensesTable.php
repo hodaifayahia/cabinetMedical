@@ -43,19 +43,20 @@ class LicensesTable
                 TextColumn::make('edition')
                     ->label('Édition')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->placeholder('Non précisée')
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
                         'complimentary' => 'Gratuite',
                         'standard' => 'Standard',
                         'professional' => 'Professionnelle',
                         'enterprise' => 'Entreprise',
-                        default => $state,
+                        default => (string) $state,
                     })
-                    ->color(fn (string $state): string => $state === 'complimentary' ? 'info' : 'gray'),
+                    ->color(fn (?string $state): string => $state === 'complimentary' ? 'info' : 'gray'),
                 TextColumn::make('status')
                     ->label('Statut')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => self::STATUS_LABELS[$state] ?? $state)
-                    ->color(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn (?string $state): string => self::STATUS_LABELS[$state] ?? (string) $state)
+                    ->color(fn (?string $state): string => match ($state) {
                         'active' => 'success',
                         'not_activated' => 'gray',
                         'suspended', 'device_limit_reached' => 'warning',
@@ -86,7 +87,7 @@ class LicensesTable
             ->defaultSort('created_at', 'desc')
             ->emptyStateIcon(Heroicon::OutlinedKey)
             ->emptyStateHeading('Aucune licence locale')
-            ->emptyStateDescription('Cette liste affiche uniquement les licences locales signées. Les codes client générés par e-mail n’ajoutent pas de ligne ici.')
+            ->emptyStateDescription('Cette liste affiche les licences locales signées. Les codes d’activation envoyés aux cabinets sont suivis dans « Clés d’activation ».')
             ->filters([
                 SelectFilter::make('status')
                     ->label('Statut')

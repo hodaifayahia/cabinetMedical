@@ -4,17 +4,23 @@ namespace App\Filament\Resources\Cabinets\Tables;
 
 use App\Enums\CabinetStatus;
 use App\Enums\LicensePlan;
+use App\Filament\Resources\ActivationKeys\ActivationKeyResource;
 use App\Models\Cabinet;
+use App\Models\LicenseType;
 use App\Services\CabinetFulfillmentService;
+use App\Support\ClipboardJs;
 use App\Support\Wilayas;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class CabinetsTable
 {
@@ -124,8 +130,6 @@ class CabinetsTable
                         ->action(function (Cabinet $record, array $data): void {
                             $plan = LicensePlan::from($data['plan']);
                             $issued = app(CabinetFulfillmentService::class)->issueLicenseCode($record, $plan);
-                            $javascriptCode = json_encode($issued->code, JSON_THROW_ON_ERROR);
-
                             Notification::make()
                                 ->title('Code de licence généré')
                                 ->body("Copiez et remettez ce code au propriétaire : **{$issued->code}**. Il lui a également été envoyé par e-mail.")
@@ -133,7 +137,11 @@ class CabinetsTable
                                     Action::make('copyLicenseCode')
                                         ->label('Copier le code')
                                         ->button()
-                                        ->alpineClickHandler("navigator.clipboard.writeText({$javascriptCode})"),
+                                        ->alpineClickHandler(ClipboardJs::copy($issued->code)),
+                                    Action::make('viewActivationKeys')
+                                        ->label('Voir dans les clés')
+                                        ->link()
+                                        ->url(ActivationKeyResource::getUrl('index')),
                                 ])
                                 ->success()
                                 ->persistent()
@@ -165,6 +173,67 @@ class CabinetsTable
                             Notification::make()
                                 ->title('Cabinet réactivé')
                                 ->success()
+                                ->send();
+                        }),
+                ]),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('issueLicenseCodes')
+                        ->label('Générer les codes d’activation')
+                        ->icon(Heroicon::OutlinedKey)
+                        ->color('primary')
+                        ->modalHeading('Générer un code pour chaque cabinet sélectionné')
+                        ->modalDescription('Un code est créé et envoyé par cabinet éligible. Les cabinets déjà licenciés ou suspendus sont ignorés sans interrompre le lot.')
+                        ->modalSubmitActionLabel('Générer les codes')
+                        ->deselectRecordsAfterCompletion()
+                        ->schema([
+                            Select::make('license_type_id')
+                                ->label('Type de licence')
+                                ->options(fn (): array => LicenseType::query()
+                                    ->where('is_active', true)
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id')
+                                    ->all())
+                                ->searchable()
+                                ->required()
+                                ->native(false),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $type = LicenseType::query()
+                                ->where('is_active', true)
+                                ->findOrFail((int) $data['license_type_id']);
+
+                            $result = app(CabinetFulfillmentService::class)
+                                ->issueLicenseCodes($records->load('owner'), $type);
+
+                            if ($result->issuedCount() === 0) {
+                                Notification::make()
+                                    ->title('Aucun code généré')
+                                    ->body('Aucun cabinet sélectionné ne pouvait recevoir un code.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $body = $result->issuedCount().' code(s) généré(s) et envoyé(s) par e-mail.';
+
+                            if ($result->skippedCount() > 0) {
+                                $body .= ' Ignorés : '.implode(', ', $result->skippedCabinetNames()).'.';
+                            }
+
+                            Notification::make()
+                                ->title('Codes d’activation générés')
+                                ->body($body)
+                                ->actions([
+                                    Action::make('viewActivationKeys')
+                                        ->label('Ouvrir les clés d’activation')
+                                        ->button()
+                                        ->url(ActivationKeyResource::getUrl('index')),
+                                ])
+                                ->success()
+                                ->persistent()
                                 ->send();
                         }),
                 ]),

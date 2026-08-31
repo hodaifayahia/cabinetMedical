@@ -48,6 +48,13 @@ class AppointmentSyncEvent extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /**
+     * The change arrived from another installation and must never be sent back
+     * to it. Still visible on the outgoing cursor stream, so other clients of
+     * this cabinet — notably the mobile app — observe it normally.
+     */
+    public const STATUS_IMPORTED = 'imported';
+
     protected function casts(): array
     {
         return [

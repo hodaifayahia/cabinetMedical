@@ -9,5 +9,9 @@ use Filament\Resources\Pages\EditRecord;
 class EditLicenseType extends EditRecord
 {
     protected static string $resource = LicenseTypeResource::class;
-    protected function getHeaderActions(): array { return [DeleteAction::make()]; }
+
+    protected function getHeaderActions(): array
+    {
+        return [DeleteAction::make()];
+    }
 }

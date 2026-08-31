@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\CabinetStatus;
 use App\Enums\LicensePlan;
+use App\Licensing\CabinetEntitlement;
 use App\Mail\CabinetActivatedMail;
 use App\Mail\CabinetLicenseCodeIssuedMail;
 use App\Mail\CabinetLicenseUpdatedMail;
@@ -13,7 +14,9 @@ use App\Models\HostedLicenseGrant;
 use App\Models\License;
 use App\Models\LicenseType;
 use App\Models\User;
+use App\Support\BulkIssuedLicenseCodes;
 use App\Support\IssuedHostedLicenseCode;
+use App\Support\SkippedLicenseCode;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -125,6 +128,10 @@ class CabinetFulfillmentService
                     : ($plan === LicensePlan::TRIAL ? LicensePlan::TRIAL_DAYS : null),
                 'type_name' => $plan instanceof LicenseType ? $plan->name : $plan->label(),
                 'code_hash' => $this->hashLicenseCode($normalizedCode),
+                // Kept so a platform admin can read a handed-out code back.
+                // Encrypted at rest by the model cast; the digest above stays
+                // the only value any redemption is matched against.
+                'code_encrypted' => $plainCode,
                 'code_suffix' => Str::substr($normalizedCode, -4),
             ]);
 
@@ -142,6 +149,92 @@ class CabinetFulfillmentService
         $this->notifyOwnerOfLicenseCode($lockedCabinet, $issued);
 
         return $issued;
+    }
+
+    /**
+     * Issue one code per cabinet in a single administrative pass. A cabinet
+     * that cannot legally receive a code (already licensed, suspended) is
+     * reported rather than aborting the batch, so one bad row never costs
+     * the operator the whole selection.
+     *
+     * @param  iterable<Cabinet>  $cabinets
+     */
+    public function issueLicenseCodes(iterable $cabinets, LicensePlan|LicenseType $plan): BulkIssuedLicenseCodes
+    {
+        $issued = [];
+        $skipped = [];
+
+        foreach ($cabinets as $cabinet) {
+            try {
+                $issued[] = $this->issueLicenseCode($cabinet, $plan);
+            } catch (LogicException $exception) {
+                $skipped[] = new SkippedLicenseCode($cabinet, $exception->getMessage());
+            }
+        }
+
+        return new BulkIssuedLicenseCodes($issued, $skipped);
+    }
+
+    /**
+     * Withdraw an outstanding code. Redeemed grants are historical records
+     * and are never mutated; revoking one twice is a no-op.
+     */
+    public function revokeLicenseCode(HostedLicenseGrant $grant): HostedLicenseGrant
+    {
+        $actor = auth()->user();
+
+        if (! $actor instanceof User || ! $actor->is_platform_admin) {
+            throw new AuthorizationException('Only a platform administrator may revoke a licence code.');
+        }
+
+        return DB::transaction(function () use ($grant, $actor): HostedLicenseGrant {
+            $locked = HostedLicenseGrant::withoutCabinetScope()
+                ->lockForUpdate()
+                ->findOrFail($grant->getKey());
+
+            if (! $locked->isOutstanding()) {
+                return $locked;
+            }
+
+            $locked->forceFill([
+                'revoked_at' => now(),
+                'revoked_by_user_id' => $actor->getKey(),
+            ])->save();
+
+            AuditLog::record('cabinet.license_code_revoked', $locked, [
+                'grant_id' => $locked->getKey(),
+                'cabinet_id' => $locked->cabinet_id,
+                'grant_suffix' => $locked->code_suffix,
+            ], $actor->getKey());
+
+            return $locked;
+        });
+    }
+
+    /**
+     * Re-send an outstanding code to the cabinet owner. Callers hold the
+     * plaintext (read back from the encrypted column) because the service
+     * never stores it in a form the mailer could reach on its own.
+     */
+    public function resendLicenseCode(HostedLicenseGrant $grant, string $plainCode): void
+    {
+        $actor = auth()->user();
+
+        if (! $actor instanceof User || ! $actor->is_platform_admin) {
+            throw new AuthorizationException('Only a platform administrator may resend a licence code.');
+        }
+
+        if (! $grant->isOutstanding()) {
+            throw new LogicException('A redeemed or revoked code cannot be resent.');
+        }
+
+        $cabinet = $grant->cabinet;
+
+        if ($cabinet === null) {
+            return;
+        }
+
+        $this->notifyOwnerOfLicenseCode($cabinet, new IssuedHostedLicenseCode($grant, $plainCode));
     }
 
     /**
@@ -411,6 +504,108 @@ class CabinetFulfillmentService
      * desktop client which verifies a signed certificate.
      */
     /** @param array<string, mixed> $responseContext */
+    /**
+     * Activate a cabinet from a signed, cabinet-bound entitlement with no
+     * network access whatsoever.
+     *
+     * The hosted redemption path matches a one-time code against a
+     * HostedLicenseGrant row that only the control plane can create, so it
+     * cannot work on a Cabinet Hub that has never been online. ADR-002
+     * invariant 8 allows the Hub to be given a signed entitlement instead and
+     * to trust it offline; everything needed to check it — the RSA public key
+     * — already ships with the application.
+     */
+    public function activateFromOfflineEntitlement(
+        CabinetEntitlement $entitlement,
+        ?string $hubId = null,
+        ?CarbonImmutable $now = null,
+    ): Cabinet {
+        $now ??= CarbonImmutable::now();
+
+        if ($entitlement->hasExpired($now)) {
+            throw new LogicException('Cette clé d’activation est expirée.');
+        }
+
+        if (! $entitlement->boundToHub($hubId)) {
+            throw new LogicException('Cette clé d’activation a été émise pour un autre Hub.');
+        }
+
+        return DB::transaction(function () use ($entitlement, $now): Cabinet {
+            $owner = User::query()
+                ->whereRaw('LOWER(email) = ?', [$entitlement->ownerEmail])
+                ->first();
+
+            if (! $owner instanceof User || $owner->cabinet_id === null) {
+                throw new LogicException('Aucun cabinet ne correspond à cette clé d’activation.');
+            }
+
+            $cabinet = Cabinet::query()
+                ->lockForUpdate()
+                ->find($owner->cabinet_id);
+
+            if (! $cabinet instanceof Cabinet || $cabinet->owner_user_id !== $owner->getKey()) {
+                throw new LogicException('Aucun cabinet ne correspond à cette clé d’activation.');
+            }
+
+            // One entitlement activates once. Re-applying the same file must
+            // not silently extend a licence or mint a second one.
+            $alreadyApplied = License::query()
+                ->where('customer_id', (string) $cabinet->getKey())
+                ->get()
+                ->contains(fn (License $license): bool => ($license->last_server_response['entitlement_id'] ?? null) === $entitlement->entitlementId);
+
+            if ($alreadyApplied) {
+                throw new LogicException('Cette clé d’activation a déjà été utilisée.');
+            }
+
+            $plan = $this->planForEntitlement($entitlement);
+
+            $license = License::query()->create([
+                'license_id' => 'CAB-'.$cabinet->getKey().'-'.Str::upper(Str::random(10)),
+                'product' => (string) config('medismart.licensing.product', config('app.name', 'ClickDZ')),
+                'edition' => 'hub',
+                'plan' => $plan,
+                'license_type_id' => $this->typeForPlan($plan)?->getKey(),
+                'customer_id' => (string) $cabinet->getKey(),
+                'status' => 'active',
+                'issued_at' => $entitlement->issuedAt,
+                'expires_at' => $entitlement->expiresAt,
+                'offline_grace_until' => null,
+                'last_verified_at' => $now,
+                'last_server_response' => array_merge([
+                    'source' => 'offline_cabinet_entitlement',
+                    'cabinet_id' => $cabinet->getKey(),
+                ], $entitlement->auditContext()),
+            ]);
+
+            $cabinet->forceFill([
+                'status' => CabinetStatus::ACTIVE,
+                'activated_at' => $cabinet->activated_at ?? $now,
+                'license_id' => $license->getKey(),
+            ])->save();
+
+            AuditLog::record('cabinet.activated_offline', $cabinet, array_merge([
+                'license_id' => $license->license_id,
+            ], $entitlement->auditContext()), $owner->getKey());
+
+            return $cabinet->refresh();
+        });
+    }
+
+    /**
+     * Map an entitlement plan slug onto the two hosted plans. An unknown slug
+     * is refused rather than defaulted, so a mis-issued entitlement cannot
+     * quietly become a lifetime licence.
+     */
+    private function planForEntitlement(CabinetEntitlement $entitlement): LicensePlan
+    {
+        return match ($entitlement->plan) {
+            'trial', 'trial-7-days' => LicensePlan::TRIAL,
+            'lifetime' => LicensePlan::LIFETIME,
+            default => throw new LogicException('Le type de licence de cette clé est inconnu.'),
+        };
+    }
+
     private function issueLicense(
         Cabinet $cabinet,
         LicensePlan|LicenseType $plan,

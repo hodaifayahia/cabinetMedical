@@ -38,7 +38,7 @@ final class LocalLicenseResourceTest extends TestCase
             ->assertSee('Créer une licence locale')
             ->assertSee('Générer un code client')
             ->assertSee('Aucune licence locale')
-            ->assertSee('Cette liste affiche uniquement les licences locales signées.');
+            ->assertSee('Clés d’activation');
 
         Livewire::actingAs($platformAdmin)
             ->test(ListLicenses::class)

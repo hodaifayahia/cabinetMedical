@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $duration_days
  * @property string|null $type_name
  * @property string $code_hash
+ * @property string|null $code_encrypted
  * @property string $code_suffix
  * @property CarbonImmutable|null $redeemed_at
  * @property CarbonImmutable|null $revoked_at
@@ -38,11 +39,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'duration_days',
     'type_name',
     'code_hash',
+    'code_encrypted',
     'code_suffix',
     'redeemed_at',
     'revoked_at',
 ])]
-#[Hidden(['code_hash'])]
+#[Hidden(['code_hash', 'code_encrypted'])]
 class HostedLicenseGrant extends Model
 {
     use BelongsToCabinet, HasUuids;
@@ -51,6 +53,7 @@ class HostedLicenseGrant extends Model
     {
         return [
             'plan' => LicensePlan::class,
+            'code_encrypted' => 'encrypted',
             'duration_days' => 'integer',
             'redeemed_at' => 'immutable_datetime',
             'revoked_at' => 'immutable_datetime',
@@ -66,6 +69,44 @@ class HostedLicenseGrant extends Model
     public function isOutstanding(): bool
     {
         return $this->redeemed_at === null && $this->revoked_at === null;
+    }
+
+    public function status(): string
+    {
+        if ($this->revoked_at !== null) {
+            return 'revoked';
+        }
+
+        return $this->redeemed_at !== null ? 'redeemed' : 'outstanding';
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->status()) {
+            'revoked' => 'Révoquée',
+            'redeemed' => 'Utilisée',
+            default => 'En attente',
+        };
+    }
+
+    /**
+     * The masked form is safe to render in a list; the plaintext is only
+     * released through an explicit, audited reveal by a platform admin.
+     */
+    public function maskedCode(): string
+    {
+        return 'DRDZ-…-'.$this->code_suffix;
+    }
+
+    /**
+     * Grants issued before recoverable storage existed keep only their
+     * digest, so their plaintext is genuinely unavailable.
+     */
+    public function plainCode(): ?string
+    {
+        $code = $this->code_encrypted;
+
+        return is_string($code) && $code !== '' ? $code : null;
     }
 
     /** @return BelongsTo<LicenseType, $this> */

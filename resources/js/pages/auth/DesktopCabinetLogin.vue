@@ -208,8 +208,11 @@ defineOptions({
         class="mt-7 grid gap-2 border-t border-slate-200 pt-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
     >
         <p>
-            Votre responsable ne vous a pas encore créé de compte ? Demandez-lui
-            de créer vos identifiants depuis la gestion du personnel.
+            Votre responsable ne vous a pas encore créé de compte ?
+            <TextLink href="/join" class="font-bold text-brand">
+                Demandez votre accès à ce cabinet
+            </TextLink>
+            : le propriétaire l’approuvera depuis la gestion du personnel.
         </p>
         <p>
             Vous êtes le propriétaire ?

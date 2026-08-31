@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Controllers\HealthController;
+use App\Http\Middleware\DenyCabinetRegistrationOnHub;
+use App\Http\Middleware\EnforceHubCabinetBinding;
 use App\Http\Middleware\EnforceRemoteUploadBoundary;
 use App\Http\Middleware\EnforceSessionLock;
 use App\Http\Middleware\EnsureApiCabinetIsActive;
 use App\Http\Middleware\EnsureCabinetIsActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\MarkJsonOnlyEndpointsAsXhr;
 use App\Http\Middleware\SecureResponseHeaders;
+use App\Http\Middleware\ThrottleCabinetRegistration;
 use App\Support\PostLoginDestination;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,7 +24,33 @@ use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
-return Application::configure(basePath: dirname(__DIR__))
+/**
+ * Let the desktop launcher redirect Laravel's generated caches off the
+ * installation directory.
+ *
+ * `Application::normalizeCachePath()` treats an `APP_*_CACHE` value as absolute
+ * only when it starts with `/` or `\`. A Windows path such as
+ * `C:\Users\...\AppData\...\cache\services.php` matches neither, so Laravel
+ * appends it to the base path and tries to write inside `Program Files`, which
+ * is read-only. The application then cannot register its service providers and
+ * every request fails with `Class "view" does not exist`.
+ *
+ * Registering the drive-letter prefixes is a no-op everywhere else: no path on
+ * Linux or macOS begins with `C:`.
+ */
+$registerWindowsCachePrefixes = static function (Application $app): Application {
+    if (DIRECTORY_SEPARATOR !== '\\') {
+        return $app;
+    }
+
+    foreach (range('A', 'Z') as $driveLetter) {
+        $app->addAbsoluteCachePathPrefix($driveLetter.':');
+    }
+
+    return $app;
+};
+
+return $registerWindowsCachePrefixes(Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -58,8 +88,24 @@ return Application::configure(basePath: dirname(__DIR__))
             'cabinet.active.api' => EnsureApiCabinetIsActive::class,
         ]);
 
+        $middleware->api(prepend: [
+            EnforceHubCabinetBinding::class,
+        ]);
+
         $middleware->web(append: [
+            // Runs inside StartSession, so it can mark a JSON-only fetch as XHR
+            // before storeCurrentUrl() decides whether to record it as the
+            // session's previous URL. See the middleware for why that matters.
+            MarkJsonOnlyEndpointsAsXhr::class,
             HandleAppearance::class,
+            // The Hub boundary runs before the per-cabinet gates: on a Hub,
+            // belonging to another cabinet is not a licence question, it is
+            // the wrong machine.
+            EnforceHubCabinetBinding::class,
+            // Both self-scope to Fortify's registration routes, which cannot
+            // be decorated reliably at boot time.
+            ThrottleCabinetRegistration::class,
+            DenyCabinetRegistrationOnHub::class,
             EnforceSessionLock::class,
             EnsureCabinetIsActive::class,
             HandleInertiaRequests::class,
@@ -84,4 +130,4 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
-    })->create();
+    })->create());

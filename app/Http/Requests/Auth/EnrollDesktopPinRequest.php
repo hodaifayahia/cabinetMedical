@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
-use App\Services\Auth\DesktopPinService;
 use App\Models\User;
+use App\Services\Auth\DesktopPinService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class EnrollDesktopPinRequest extends FormRequest

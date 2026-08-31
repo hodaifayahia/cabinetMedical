@@ -44,9 +44,13 @@ test('the offline shell offers cloud, cabinet hub, retry, and an explicit local 
 });
 
 test('server selection is verified and persisted by narrow native commands', () => {
-    expect(offlinePage).toContain(
-        'https://seagreen-turkey-468004.hostingersite.com/',
-    );
+    // The hosted origin is a build input (DRCLICK_CLOUD_SERVER_URL), injected
+    // by the Rust shell. Pinning the literal here would re-couple the page to
+    // one deployment, so assert the wiring instead of the value.
+    expect(offlinePage).toContain('window.__DRCLICK_CLOUD_SERVER_URL');
+    expect(offlinePage).not.toContain('hostingersite.com');
+    expect(rustShell).toContain('__DRCLICK_CLOUD_SERVER_URL');
+    expect(rustShell).toContain('option_env!("DRCLICK_CLOUD_SERVER_URL")');
     expect(offlinePage).toContain("invoke('probe_server_connection'");
     expect(offlinePage).toContain("invoke('configure_server_connection'");
     expect(rustShell).toContain('mod connection;');
@@ -62,16 +66,27 @@ test('server selection is verified and persisted by narrow native commands', () 
 test('connection setup is local-only and LAN HTTP remains forbidden', () => {
     expect(localCapability.local).toBe(true);
     expect(localCapability).not.toHaveProperty('remote');
+    // The connection page also owns local-mode selection now. The security
+    // claim is unchanged: these commands stay on the local-only capability and
+    // never reach the remote one (asserted next).
     expect(localCapability.permissions).toEqual([
         'allow-probe-server-connection',
         'allow-configure-server-connection',
+        'allow-configure-local-mode',
+        'allow-runtime-mode-status',
     ]);
+    expect(remoteCapability.permissions).not.toContain(
+        'allow-configure-local-mode',
+    );
     expect(remoteCapability.permissions).not.toContain(
         'allow-configure-server-connection',
     );
-    expect(rustConnection).toContain(
-        'HTTP est limité à localhost:8000 pour le test local',
-    );
+    // Stricter than before: HTTP is no longer tolerated even for a local
+    // test, so the rule is now simply "HTTPS or nothing". The LAN-HTTP
+    // prohibition this test exists for is therefore still enforced, and the
+    // Rust unit tests pin each rejected scheme.
+    expect(rustConnection).toContain('Le serveur doit utiliser HTTPS.');
     expect(rustConnection).toContain('http://192.168.1.20:8000/');
+    expect(rustConnection).toContain('http://localhost:8000/');
     expect(rustConnection).not.toContain('runtime-core');
 });

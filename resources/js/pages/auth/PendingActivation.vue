@@ -52,6 +52,8 @@ const props = defineProps<{
 
 const page = usePage();
 const licenseCode = ref('');
+const manualLicenseCode = ref('');
+const showManualEntry = ref(false);
 const csrfToken = ref('');
 const licenseError = computed(
     () =>
@@ -294,6 +296,55 @@ defineOptions({
                 </p>
             </div>
         </div>
+        <button
+            type="button"
+            class="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 text-sm font-semibold text-foreground transition hover:border-brand hover:bg-brand-soft hover:text-brand focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:outline-none"
+            data-test="toggle-manual-activation"
+            @click="showManualEntry = !showManualEntry"
+        >
+            <KeyRound class="size-4" aria-hidden="true" />
+            {{ showManualEntry ? 'Annuler la saisie' : 'Activer avec un code' }}
+        </button>
+
+        <form
+            v-if="showManualEntry"
+            action="/cabinet/license/redeem"
+            method="post"
+            class="mt-4"
+            data-test="manual-license-redemption"
+        >
+            <input type="hidden" name="_token" :value="csrfToken" />
+            <label
+                for="manual_license_code"
+                class="block text-sm font-semibold text-foreground"
+            >
+                Code d'activation
+            </label>
+            <div class="mt-2 flex flex-col gap-3 sm:flex-row">
+                <input
+                    id="manual_license_code"
+                    v-model="manualLicenseCode"
+                    name="license_code"
+                    type="text"
+                    autocomplete="one-time-code"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    maxlength="80"
+                    class="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 font-mono text-sm uppercase outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                    :aria-invalid="Boolean(licenseError)"
+                />
+                <button
+                    type="submit"
+                    class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white disabled:opacity-60"
+                    :disabled="!manualLicenseCode.trim() || !csrfToken"
+                    data-test="submit-manual-license-code"
+                >
+                    <RefreshCw class="size-4" aria-hidden="true" />
+                    Activer
+                </button>
+            </div>
+            <InputError class="mt-2" :message="licenseError" />
+        </form>
     </section>
 
     <dl

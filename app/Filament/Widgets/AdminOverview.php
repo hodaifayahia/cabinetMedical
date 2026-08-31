@@ -4,10 +4,12 @@ namespace App\Filament\Widgets;
 
 use App\Enums\CabinetStatus;
 use App\Enums\LicensePlan;
+use App\Filament\Resources\ActivationKeys\ActivationKeyResource;
 use App\Filament\Resources\Cabinets\CabinetResource;
 use App\Filament\Resources\DesktopDownloadLeads\DesktopDownloadLeadResource;
 use App\Models\Cabinet;
 use App\Models\DesktopDownloadLead;
+use App\Models\HostedLicenseGrant;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -77,6 +79,7 @@ class AdminOverview extends StatsOverviewWidget
                 ->whereNotNull('expires_at')
                 ->where('expires_at', '<=', now()))
             ->count();
+        $outstandingKeys = HostedLicenseGrant::withoutCabinetScope()->outstanding()->count();
         $desktopLeads = DesktopDownloadLead::query()->count();
         $desktopLeadsThisWeek = DesktopDownloadLead::query()
             ->where('created_at', '>=', now()->startOfWeek())
@@ -84,6 +87,7 @@ class AdminOverview extends StatsOverviewWidget
 
         $cabinetsUrl = CabinetResource::getUrl('index');
         $desktopLeadsUrl = DesktopDownloadLeadResource::getUrl('index');
+        $activationKeysUrl = ActivationKeyResource::getUrl('index');
 
         return [
             Stat::make('En attente', (string) $pending)
@@ -116,6 +120,11 @@ class AdminOverview extends StatsOverviewWidget
                 ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color($expired > 0 ? 'danger' : 'gray')
                 ->url($cabinetsUrl),
+            Stat::make('Clés non utilisées', (string) $outstandingKeys)
+                ->description('Codes envoyés, pas encore saisis')
+                ->descriptionIcon(Heroicon::OutlinedTicket)
+                ->color($outstandingKeys > 0 ? 'warning' : 'gray')
+                ->url($activationKeysUrl),
             Stat::make('Demandes desktop', (string) $desktopLeads)
                 ->description("{$desktopLeadsThisWeek} cette semaine")
                 ->descriptionIcon(Heroicon::OutlinedArrowDownTray)

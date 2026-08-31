@@ -18,7 +18,7 @@ class CabinetResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Plateforme';
+    protected static string|UnitEnum|null $navigationGroup = 'Clients';
 
     protected static ?int $navigationSort = 1;
 

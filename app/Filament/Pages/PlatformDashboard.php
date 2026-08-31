@@ -2,8 +2,11 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\ActivationKeys\ActivationKeyResource;
 use App\Filament\Resources\Cabinets\CabinetResource;
 use App\Filament\Widgets\AdminOverview;
+use App\Filament\Widgets\CabinetGrowth;
+use App\Filament\Widgets\LicenceExpiryRadar;
 use App\Filament\Widgets\PendingCabinets;
 use Filament\Actions\Action;
 use Filament\Pages\Dashboard;
@@ -20,7 +23,7 @@ class PlatformDashboard extends Dashboard
 
     public function getSubheading(): ?string
     {
-        return 'Activez les nouveaux cabinets et suivez leur état commercial depuis un espace unique.';
+        return 'Activez les nouveaux cabinets, suivez les clés d’activation en circulation et anticipez les renouvellements.';
     }
 
     public function getColumns(): int|array
@@ -28,11 +31,17 @@ class PlatformDashboard extends Dashboard
         return 1;
     }
 
+    /**
+     * Ordered as the day is worked: the numbers, then the trend, then the
+     * two lists that carry an action.
+     */
     public function getWidgets(): array
     {
         return [
             AdminOverview::class,
+            CabinetGrowth::class,
             PendingCabinets::class,
+            LicenceExpiryRadar::class,
         ];
     }
 
@@ -43,6 +52,11 @@ class PlatformDashboard extends Dashboard
                 ->label('Gérer les cabinets')
                 ->icon(Heroicon::OutlinedBuildingOffice2)
                 ->url(CabinetResource::getUrl('index')),
+            Action::make('activationKeys')
+                ->label('Clés d’activation')
+                ->icon(Heroicon::OutlinedTicket)
+                ->color('gray')
+                ->url(ActivationKeyResource::getUrl('index')),
         ];
     }
 }

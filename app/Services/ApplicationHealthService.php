@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Hub\HubMode;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ final class ApplicationHealthService
         private readonly RemoteUploadBoundary $remoteUploadBoundary,
         private readonly LanUploadBoundary $lanUploadBoundary,
         private readonly Migrator $migrator,
+        private readonly HubMode $hub,
     ) {}
 
     /**
@@ -39,6 +41,7 @@ final class ApplicationHealthService
 
         return [
             'status' => $healthy ? 'healthy' : 'degraded',
+            'hub' => $this->hub->advertisement(),
             'application' => [
                 'name' => (string) config('app.name'),
                 'version' => (string) config('medismart.version', 'unknown'),

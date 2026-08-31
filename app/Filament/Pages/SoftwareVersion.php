@@ -17,7 +17,7 @@ class SoftwareVersion extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUpTray;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Licences & ventes';
+    protected static string|UnitEnum|null $navigationGroup = 'Licences & activations';
 
     protected static ?int $navigationSort = 40;
 

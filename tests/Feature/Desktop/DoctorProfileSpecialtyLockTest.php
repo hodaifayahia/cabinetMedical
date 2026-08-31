@@ -61,18 +61,35 @@ class DoctorProfileSpecialtyLockTest extends TestCase
             'specialty' => 'General Medicine',
             'specialty_code' => 'general_medicine',
         ]);
-        $nonAdministrator = User::factory()->create();
-        $nonAdministrator->assignRole(RoleName::DOCTOR->value);
 
-        try {
-            $profile->correctLockedSpecialty('Pediatrics', 'pediatrics', $nonAdministrator);
+        // The correction path authorises against the administrator (doctor)
+        // role. An assistant, and a user carrying no role at all, are both
+        // genuinely outside that boundary and must be refused.
+        $assistant = User::factory()->create();
+        $assistant->assignRole(RoleName::ASSISTANT->value);
 
-            $this->fail('A non-administrator corrected a locked specialty.');
-        } catch (AuthorizationException) {
-            // Only the explicit administrator path may make this correction.
+        $nonAdministrators = [
+            'an assistant' => $assistant,
+            'a user without any role' => User::factory()->create(),
+        ];
+
+        foreach ($nonAdministrators as $description => $nonAdministrator) {
+            try {
+                $profile->correctLockedSpecialty('Pediatrics', 'pediatrics', $nonAdministrator);
+
+                $this->fail("A non-administrator ({$description}) corrected a locked specialty.");
+            } catch (AuthorizationException) {
+                // Only the explicit administrator path may make this correction.
+            }
+
+            $this->assertSame('General Medicine', $profile->refresh()->specialty);
+            $this->assertSame('general_medicine', $profile->specialty_code);
         }
 
-        $this->assertSame('General Medicine', $profile->refresh()->specialty);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'doctor.specialty_corrected',
+            'subject_id' => (string) $profile->getKey(),
+        ]);
 
         $administrator = User::factory()->create();
         $administrator->assignRole(RoleName::ADMINISTRATOR->value);

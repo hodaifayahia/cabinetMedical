@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Enums\CabinetStatus;
+use App\Enums\LicensePlan;
 use App\Support\Wilayas;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -115,6 +117,28 @@ class Cabinet extends Model
     public function settings(): HasOne
     {
         return $this->hasOne(CabinetSetting::class);
+    }
+
+    /**
+     * Cabinets a platform admin may currently hand an activation code to:
+     * a pending one that owns no entitlement yet, or an active trial that
+     * can still be renewed or upgraded in place.
+     *
+     * @param  Builder<Cabinet>  $query
+     */
+    public function scopeAwaitingActivationCode(Builder $query): void
+    {
+        $query->where(function (Builder $eligible): void {
+            $eligible
+                ->where(fn (Builder $pending): Builder => $pending
+                    ->where('status', CabinetStatus::PENDING->value)
+                    ->whereNull('license_id'))
+                ->orWhere(fn (Builder $renewable): Builder => $renewable
+                    ->where('status', CabinetStatus::ACTIVE->value)
+                    ->whereHas('license', fn (Builder $license): Builder => $license
+                        ->where('plan', LicensePlan::TRIAL->value)
+                        ->where('status', '!=', 'revoked')));
+        });
     }
 
     public function isActive(): bool

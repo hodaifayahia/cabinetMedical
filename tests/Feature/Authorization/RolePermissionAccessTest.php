@@ -3,6 +3,7 @@
 namespace Tests\Feature\Authorization;
 
 use App\Enums\CabinetStatus;
+use App\Enums\PermissionName;
 use App\Enums\RoleName;
 use App\Models\AuditLog;
 use App\Models\Cabinet;
@@ -201,25 +202,36 @@ class RolePermissionAccessTest extends TestCase
         );
     }
 
-    public function test_an_administrator_cannot_modify_or_delete_a_super_administrator(): void
+    public function test_a_staff_manager_without_the_super_administrator_role_cannot_modify_or_delete_a_super_administrator(): void
     {
-        $administrator = $this->cabinetUser();
-        $administrator->assignRole(RoleName::ADMINISTRATOR->value);
+        // UserPolicy::update()/delete() protect a super administrator account
+        // from every staff manager who is not a super administrator himself.
+        // The former "Administrator" tier no longer exists as a distinct role,
+        // so the boundary is now exercised with an assistant who was granted
+        // staff.manage directly: he clears the route middleware and the
+        // staff.manage capability check, and is refused solely because the
+        // target holds the protected super administrator role.
+        $staffManager = $this->cabinetUser();
+        $staffManager->assignRole(RoleName::ASSISTANT->value);
+        $staffManager->givePermissionTo(PermissionName::STAFF_MANAGE->value);
         $superAdministrator = $this->cabinetUser();
         $superAdministrator->assignRole(RoleName::SUPER_ADMINISTRATOR->value);
 
-        $this->actingAs($administrator)
+        $this->assertFalse($staffManager->hasRole(RoleName::SUPER_ADMINISTRATOR->value));
+        $this->assertTrue($staffManager->can(PermissionName::STAFF_MANAGE->value));
+
+        $this->actingAs($staffManager)
             ->put(route('app.staff.update', $superAdministrator), [
                 'name' => $superAdministrator->name,
                 'email' => $superAdministrator->email,
                 'password' => '',
                 'password_confirmation' => '',
-                'role' => RoleName::ADMINISTRATOR->value,
+                'role' => RoleName::ASSISTANT->value,
                 'assigned_to_cabinet' => true,
             ])
             ->assertForbidden();
 
-        $this->actingAs($administrator)
+        $this->actingAs($staffManager)
             ->delete(route('app.staff.destroy', $superAdministrator))
             ->assertForbidden();
 
@@ -239,7 +251,9 @@ class RolePermissionAccessTest extends TestCase
                 'email' => $superAdministrator->email,
                 'password' => '',
                 'password_confirmation' => '',
-                'role' => RoleName::ADMINISTRATOR->value,
+                // In the two-role model the only real demotion of a super
+                // administrator (Doctor) is a move to Assistant.
+                'role' => RoleName::ASSISTANT->value,
                 'assigned_to_cabinet' => true,
             ])
             ->assertSessionHasErrors('role');

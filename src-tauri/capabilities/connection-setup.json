@@ -1,11 +1,13 @@
 {
     "$schema": "../gen/schemas/desktop-schema.json",
     "identifier": "connection-setup",
-    "description": "Only the bundled Drclick connection page may verify and save a Cloud or Cabinet Hub endpoint.",
+    "description": "Only the bundled Drclick connection page may choose where this installation's data lives: keep it on this PC, or attach to a Cabinet Hub or Cloud endpoint.",
     "local": true,
     "windows": ["main"],
     "permissions": [
         "allow-probe-server-connection",
-        "allow-configure-server-connection"
+        "allow-configure-server-connection",
+        "allow-configure-local-mode",
+        "allow-runtime-mode-status"
     ]
 }

@@ -239,13 +239,18 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
+        // Strength is enforced locally only. `uncompromised()` is deliberately
+        // absent: it calls api.pwnedpasswords.com on every registration and
+        // password change with a 30 second timeout, so a cabinet with no
+        // Internet access — or a host whose max_execution_time is shorter than
+        // that timeout — would abort mid-transaction and roll the new cabinet
+        // and its owner back, leaving the owner unable to sign in afterwards.
         Password::defaults(fn (): ?Password => app()->isProduction()
             ? Password::min(12)
                 ->mixedCase()
                 ->letters()
                 ->numbers()
                 ->symbols()
-                ->uncompromised()
             : null,
         );
     }

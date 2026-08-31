@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ConfigurationSeeder::class);
         $this->call(ExamSeeder::class);
         $this->call(LicenseTypeSeeder::class);
+        $this->call(PlatformAdminSeeder::class);
 
         // Materialize the single cabinet settings row from configuration defaults.
         CabinetSetting::current();

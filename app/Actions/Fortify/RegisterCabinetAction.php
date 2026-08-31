@@ -17,6 +17,10 @@ use App\Support\MedicalSpecialtyCatalog;
 use App\Support\Wilayas;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Contracts\Role as RoleContract;
+use Spatie\Permission\PermissionRegistrar;
+use Throwable;
 
 /**
  * Provisions a brand-new cabinet in the pending state together with its owner
@@ -49,6 +53,41 @@ class RegisterCabinetAction
             'phone.regex' => 'Saisissez un numéro de téléphone valide.',
         ])->validate();
 
+        return $this->provision($data);
+    }
+
+    /**
+     * Create the cabinet and everything that hangs off it, or report clearly
+     * that nothing was created.
+     *
+     * The whole provisioning runs in one transaction, so a failure part-way
+     * through removes the cabinet and its owner again. Letting that surface as
+     * a generic server error told the owner nothing, and the next screen they
+     * reached was a sign-in form that rejected the account they believed they
+     * had just created. A registration that did not happen now says so.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function provision(array $data): User
+    {
+        try {
+            return $this->provisionWithinTransaction($data);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'cabinet_name' => 'La création du cabinet a échoué et rien n’a été enregistré. Aucun compte n’existe pour le moment : réessayez, puis contactez le support Drclick si le problème persiste.',
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function provisionWithinTransaction(array $data): User
+    {
         return DB::transaction(function () use ($data): User {
             $specialty = trim((string) $data['specialization']);
             $phone = trim((string) $data['phone']);
@@ -70,7 +109,7 @@ class RegisterCabinetAction
                 'email_verified_at' => now(),
                 'approved_at' => now(),
             ])->save();
-            $user->assignRole(RoleName::ADMINISTRATOR->value);
+            $user->assignRole($this->administratorRole());
 
             $cabinet->forceFill(['owner_user_id' => $user->getKey()])->save();
 
@@ -98,6 +137,27 @@ class RegisterCabinetAction
 
             return $user;
         });
+    }
+
+    /**
+     * Resolve the cabinet-owner role, creating it when a deployment has not
+     * been seeded yet.
+     *
+     * Assigning the role by name goes through Spatie's cached lookup and
+     * raises RoleDoesNotExist when the roles table is empty or the permission
+     * cache is stale. That exception used to escape the surrounding
+     * transaction and roll the entire registration back, so the owner was told
+     * their cabinet had been created and then rejected at sign-in because no
+     * account existed.
+     */
+    private function administratorRole(): RoleContract
+    {
+        $roleClass = app(PermissionRegistrar::class)->getRoleClass();
+
+        return $roleClass::findOrCreate(
+            RoleName::ADMINISTRATOR->value,
+            config('auth.defaults.guard', 'web'),
+        );
     }
 
     private function provisionDoctorProfile(

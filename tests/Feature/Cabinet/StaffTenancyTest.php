@@ -220,18 +220,45 @@ class StaffTenancyTest extends TestCase
         $cabinetA = $this->createCabinet('Cabinet A');
         $cabinetB = $this->createCabinet('Cabinet B');
         $superAdministrator = $this->createUser($cabinetA, RoleName::SUPER_ADMINISTRATOR);
-        $this->createUser($cabinetB, RoleName::SUPER_ADMINISTRATOR);
+        $otherCabinetSuperAdministrator = $this->createUser($cabinetB, RoleName::SUPER_ADMINISTRATOR);
 
+        // The payload must name a role that is genuinely below super
+        // administrator, otherwise no demotion happens and the guard is never
+        // reached. Cabinet B's super administrator must not be counted as a
+        // second super administrator for cabinet A.
         $this->actingAs($superAdministrator)
             ->put(
                 route('app.staff.update', $superAdministrator),
                 $this->updatePayload($superAdministrator, [
-                    'role' => RoleName::ADMINISTRATOR->value,
+                    'role' => RoleName::ASSISTANT->value,
                 ]),
             )
             ->assertSessionHasErrors('role');
 
         $this->assertTrue(
+            $superAdministrator->refresh()->hasRole(RoleName::SUPER_ADMINISTRATOR->value),
+        );
+        $this->assertTrue(
+            $otherCabinetSuperAdministrator->refresh()->hasRole(RoleName::SUPER_ADMINISTRATOR->value),
+        );
+
+        // Once cabinet A itself holds a second super administrator the same
+        // demotion succeeds, proving the guard counts per cabinet instead of
+        // blocking every demotion outright.
+        $this->createUser($cabinetA, RoleName::SUPER_ADMINISTRATOR, [
+            'email' => 'second-super-a@example.test',
+        ]);
+
+        $this->actingAs($superAdministrator)
+            ->put(
+                route('app.staff.update', $superAdministrator),
+                $this->updatePayload($superAdministrator, [
+                    'role' => RoleName::ASSISTANT->value,
+                ]),
+            )
+            ->assertSessionHasNoErrors();
+
+        $this->assertFalse(
             $superAdministrator->refresh()->hasRole(RoleName::SUPER_ADMINISTRATOR->value),
         );
     }

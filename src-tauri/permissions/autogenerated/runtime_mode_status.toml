@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-runtime-mode-status"
+description = "Enables the runtime_mode_status command without any pre-configured scope."
+commands.allow = ["runtime_mode_status"]
+
+[[permission]]
+identifier = "deny-runtime-mode-status"
+description = "Denies the runtime_mode_status command without any pre-configured scope."
+commands.deny = ["runtime_mode_status"]

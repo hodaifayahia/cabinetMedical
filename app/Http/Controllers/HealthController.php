@@ -24,6 +24,10 @@ final class HealthController extends Controller
         if (! $mayViewDetails) {
             $status = [
                 'status' => $status['status'],
+                // The Hub identity stays in the public payload: a desktop has
+                // to confirm which cabinet's Hub it reached before it can
+                // authenticate, so it cannot present a details key first.
+                'hub' => $status['hub'],
                 'application' => [
                     'name' => $status['application']['name'],
                     'version' => $status['application']['version'],

@@ -351,6 +351,12 @@
           "markdownDescription": "Enables the check_for_signed_update command without any pre-configured scope."
         },
         {
+          "description": "Enables the configure_local_mode command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-configure-local-mode",
+          "markdownDescription": "Enables the configure_local_mode command without any pre-configured scope."
+        },
+        {
           "description": "Enables the configure_server_connection command without any pre-configured scope.",
           "type": "string",
           "const": "allow-configure-server-connection",
@@ -369,6 +375,12 @@
           "markdownDescription": "Enables the probe_server_connection command without any pre-configured scope."
         },
         {
+          "description": "Enables the runtime_mode_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-runtime-mode-status",
+          "markdownDescription": "Enables the runtime_mode_status command without any pre-configured scope."
+        },
+        {
           "description": "Enables the signed_updater_status command without any pre-configured scope.",
           "type": "string",
           "const": "allow-signed-updater-status",
@@ -379,6 +391,12 @@
           "type": "string",
           "const": "deny-check-for-signed-update",
           "markdownDescription": "Denies the check_for_signed_update command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the configure_local_mode command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-configure-local-mode",
+          "markdownDescription": "Denies the configure_local_mode command without any pre-configured scope."
         },
         {
           "description": "Denies the configure_server_connection command without any pre-configured scope.",
@@ -397,6 +415,12 @@
           "type": "string",
           "const": "deny-probe-server-connection",
           "markdownDescription": "Denies the probe_server_connection command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the runtime_mode_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-runtime-mode-status",
+          "markdownDescription": "Denies the runtime_mode_status command without any pre-configured scope."
         },
         {
           "description": "Denies the signed_updater_status command without any pre-configured scope.",

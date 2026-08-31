@@ -288,27 +288,6 @@
                 font-weight: 650;
             }
 
-            details {
-                border-top: 1px solid var(--border);
-                padding-top: 15px;
-                color: var(--muted);
-                font-size: 13px;
-            }
-
-            summary {
-                cursor: pointer;
-                font-weight: 700;
-            }
-
-            .technical-content {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
-                align-items: center;
-                justify-content: space-between;
-                padding-top: 12px;
-            }
-
             @media (max-width: 700px) {
                 body {
                     align-items: flex-start;
@@ -436,23 +415,6 @@
                     id="connection-error"
                     role="alert"
                 ></p>
-
-                <details>
-                    <summary>Test local pour le technicien</summary>
-                    <div class="technical-content">
-                        <span
-                            >Utilise uniquement le serveur de développement de
-                            ce PC sur localhost:8000.</span
-                        >
-                        <button
-                            class="button button-secondary"
-                            id="local-btn"
-                            type="button"
-                        >
-                            Ouvrir le test local
-                        </button>
-                    </div>
-                </details>
             </section>
         </main>
 
@@ -460,12 +422,13 @@
             (function () {
                 'use strict';
 
-                const cloudServerUrl =
-                    window.__DRCLICK_CLOUD_SERVER_URL ||
-                    'https://seagreen-turkey-468004.hostingersite.com/';
+                // Injected by the Rust shell from CLOUD_SERVER_URL, which the
+                // build resolves from DRCLICK_CLOUD_SERVER_URL. Deliberately
+                // no literal fallback: a build aimed at another control plane
+                // would otherwise silently offer the wrong host here.
+                const cloudServerUrl = window.__DRCLICK_CLOUD_SERVER_URL || '';
                 const currentServerUrl =
                     window.__DRCLICK_SERVER_URL || cloudServerUrl;
-                const localServerUrl = 'http://localhost:8000/';
                 const INITIAL_DELAY_MS = 2_000;
                 const MAX_DELAY_MS = 30_000;
 
@@ -474,7 +437,6 @@
                 const retryBtn = document.getElementById('retry-btn');
                 const cloudBtn = document.getElementById('cloud-btn');
                 const hubBtn = document.getElementById('hub-btn');
-                const localBtn = document.getElementById('local-btn');
                 const hubForm = document.getElementById('hub-form');
                 const hubUrl = document.getElementById('hub-url');
                 const connectionError =
@@ -542,7 +504,6 @@
                     retryBtn.disabled = value;
                     cloudBtn.disabled = value;
                     hubBtn.disabled = value;
-                    localBtn.disabled = value;
                 }
 
                 function scheduleRetry() {
@@ -575,32 +536,6 @@
                     return nativeRequest || fallbackProbe(url);
                 }
 
-                function sameOrigin(left, right) {
-                    try {
-                        return new URL(left).origin === new URL(right).origin;
-                    } catch (_error) {
-                        return false;
-                    }
-                }
-
-                async function openLocalDrclickWhenAvailable() {
-                    if (sameOrigin(currentServerUrl, localServerUrl)) {
-                        return false;
-                    }
-
-                    const request = invoke('configure_server_connection', {
-                        url: localServerUrl,
-                    });
-                    if (!request) {
-                        return false;
-                    }
-
-                    const result = await request;
-                    window.location.replace(authenticationEntryUrl(result.url));
-
-                    return true;
-                }
-
                 async function attemptCurrent() {
                     if (busy) {
                         return;
@@ -612,14 +547,6 @@
                             authenticationEntryUrl(result.url || currentServerUrl),
                         );
                     } catch (error) {
-                        try {
-                            if (await openLocalDrclickWhenAvailable()) {
-                                return;
-                            }
-                        } catch (_localError) {
-                            // Keep the original server error. The setup screen
-                            // still lets the user retry or choose another Hub.
-                        }
                         showSetup(readableError(error));
                         scheduleRetry();
                     }
@@ -652,7 +579,17 @@
                     attemptCurrent();
                 });
 
+                if (!cloudServerUrl) {
+                    // No hosted origin was compiled in, so there is nothing to
+                    // offer. Hiding the button beats a click that cannot work.
+                    cloudBtn.hidden = true;
+                }
+
                 cloudBtn.addEventListener('click', function () {
+                    if (!cloudServerUrl) {
+                        return;
+                    }
+
                     configureAndOpen(cloudServerUrl);
                 });
 
@@ -661,11 +598,13 @@
                     configureAndOpen(hubUrl.value);
                 });
 
-                localBtn.addEventListener('click', function () {
-                    configureAndOpen(localServerUrl);
-                });
-
-                attemptCurrent();
+                // A local-mode start failure is terminal for this session:
+                // show why rather than probing an origin that does not exist.
+                if (window.__DRCLICK_LOCAL_ERROR) {
+                    showSetup(window.__DRCLICK_LOCAL_ERROR);
+                } else {
+                    attemptCurrent();
+                }
             })();
         </script>
     </body>

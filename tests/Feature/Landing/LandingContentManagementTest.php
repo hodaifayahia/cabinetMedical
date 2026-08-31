@@ -2,19 +2,11 @@
 
 namespace Tests\Feature\Landing;
 
-use App\Filament\Resources\Acts\ActResource;
-use App\Filament\Resources\AuditLogs\AuditLogResource;
-use App\Filament\Resources\BilanTypes\BilanTypeResource;
-use App\Filament\Resources\ConsultationFees\ConsultationFeeResource;
-use App\Filament\Resources\Exams\ExamResource;
 use App\Filament\Resources\LandingSections\LandingSectionResource;
-use App\Filament\Resources\Medications\MedicationResource;
-use App\Filament\Resources\Patients\PatientResource;
-use App\Filament\Resources\PaymentMethods\PaymentMethodResource;
-use App\Filament\Resources\Practitioners\PractitionerResource;
 use App\Filament\Resources\Roles\RoleResource;
 use App\Models\LandingSection;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -52,42 +44,58 @@ class LandingContentManagementTest extends TestCase
             );
     }
 
-    public function test_platform_admin_can_access_landing_content_and_removed_resources_stay_out_of_navigation(): void
+    public function test_platform_admin_can_access_landing_content(): void
     {
         $platformAdmin = User::factory()->create(['is_platform_admin' => true]);
 
         $this->actingAs($platformAdmin);
 
         $this->assertTrue(LandingSectionResource::canAccess());
-        $this->assertFalse(PatientResource::shouldRegisterNavigation());
-        $this->assertFalse(AuditLogResource::shouldRegisterNavigation());
         $this->assertFalse(RoleResource::shouldRegisterNavigation());
-        $this->assertFalse(MedicationResource::shouldRegisterNavigation());
-        $this->assertFalse(MedicationResource::canAccess());
-        $this->assertFalse(ActResource::shouldRegisterNavigation());
-        $this->assertFalse(ActResource::canAccess());
-        $this->assertFalse(ExamResource::shouldRegisterNavigation());
-        $this->assertFalse(ExamResource::canAccess());
-        $this->assertFalse(BilanTypeResource::shouldRegisterNavigation());
-        $this->assertFalse(BilanTypeResource::canAccess());
-        $this->assertFalse(ConsultationFeeResource::shouldRegisterNavigation());
-        $this->assertFalse(ConsultationFeeResource::canAccess());
-        $this->assertFalse(PaymentMethodResource::shouldRegisterNavigation());
-        $this->assertFalse(PaymentMethodResource::canAccess());
-        $this->assertFalse(PractitionerResource::shouldRegisterNavigation());
-        $this->assertFalse(PractitionerResource::canAccess());
+    }
+
+    /**
+     * Cabinet-local referentials and per-cabinet dossiers were removed from
+     * the platform console: their data lives in each cabinet's own
+     * installation, so this panel could never load it.
+     */
+    public function test_cabinet_local_resources_are_no_longer_routable(): void
+    {
+        $platformAdmin = User::factory()->create(['is_platform_admin' => true]);
+
+        $this->actingAs($platformAdmin);
 
         foreach ([
-            MedicationResource::class,
-            ActResource::class,
-            ExamResource::class,
-            BilanTypeResource::class,
-            ConsultationFeeResource::class,
-            PaymentMethodResource::class,
-            PractitionerResource::class,
-        ] as $resource) {
-            $this->get($resource::getUrl('index'))
-                ->assertForbidden();
+            '/admin/patients',
+            '/admin/acts',
+            '/admin/medications',
+            '/admin/exams',
+            '/admin/bilan-types',
+            '/admin/consultation-fees',
+            '/admin/payment-methods',
+            '/admin/practitioners',
+            '/admin/devices',
+            '/admin/license-activations',
+            '/admin/audit-logs',
+            '/admin/application-events',
+        ] as $url) {
+            $this->get($url)->assertNotFound();
+        }
+    }
+
+    public function test_removed_resource_classes_are_not_registered_with_the_panel(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Filament::bootCurrentPanel();
+
+        $resources = Filament::getPanel('admin')->getResources();
+
+        foreach ($resources as $resource) {
+            $this->assertStringNotContainsString('Filament\\Resources\\Patients', $resource);
+            $this->assertStringNotContainsString('Filament\\Resources\\Devices', $resource);
+            $this->assertStringNotContainsString('Filament\\Resources\\AuditLogs', $resource);
+            $this->assertStringNotContainsString('Filament\\Resources\\ApplicationEvents', $resource);
+            $this->assertStringNotContainsString('Filament\\Resources\\LicenseActivations', $resource);
         }
     }
 }

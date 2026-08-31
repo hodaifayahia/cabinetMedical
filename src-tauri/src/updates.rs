@@ -81,6 +81,12 @@ impl SignedUpdaterState {
     }
 }
 
+/// True when this build carries signed-updater credentials. The supervised
+/// Laravel child is told so it can present update state consistently.
+pub fn is_configured() -> bool {
+    compiled_release_configuration().is_some()
+}
+
 pub fn configured_plugin<R: Runtime>(
 ) -> Option<tauri::plugin::TauriPlugin<R, tauri_plugin_updater::Config>> {
     compiled_release_configuration().map(|configuration| {

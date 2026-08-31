@@ -109,7 +109,12 @@ describe('Drclick authentication and onboarding contract', () => {
         expect(source).toContain('action="/desktop/cabinet-login"');
         expect(source).toContain('name="remember"');
         expect(source).toContain('value="1"');
-        expect(source).not.toContain('href="/join"');
+
+        // The page may point a not-yet-provisioned staff member at /join, but
+        // only to request access to THIS cabinet. It must never offer to
+        // register a new cabinet from a desktop that already has one.
+        expect(source).toContain('accès à ce cabinet');
+        expect(source).not.toContain('href="/register"');
     });
 
     it('shows first-run choices once and sends remembered desktop profiles to login', () => {

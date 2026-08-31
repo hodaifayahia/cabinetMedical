@@ -23,9 +23,9 @@ class LicenseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedKey;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Licences & ventes';
+    protected static string|UnitEnum|null $navigationGroup = 'Licences & activations';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 20;
 
     protected static ?string $recordTitleAttribute = 'license_id';
 
@@ -51,10 +51,9 @@ class LicenseResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) License::query()
-            ->where('edition', '!=', 'hosted')
-            ->where('status', 'active')
-            ->count();
+        $active = static::getEloquentQuery()->where('status', 'active')->count();
+
+        return $active > 0 ? (string) $active : null;
     }
 
     /**
@@ -65,8 +64,14 @@ class LicenseResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
+        // `edition != 'hosted'` is NULL, and therefore false, for a row whose
+        // edition was never set. Such a licence would silently vanish from
+        // the only list that is supposed to show it.
         return parent::getEloquentQuery()
-            ->where('edition', '!=', 'hosted');
+            ->where(function (Builder $query): void {
+                $query->whereNull('edition')
+                    ->orWhere('edition', '!=', 'hosted');
+            });
     }
 
     public static function form(Schema $schema): Schema

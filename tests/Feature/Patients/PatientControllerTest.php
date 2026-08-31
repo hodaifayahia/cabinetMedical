@@ -2,12 +2,16 @@
 
 namespace Tests\Feature\Patients;
 
+use App\Enums\PermissionName;
 use App\Enums\RoleName;
 use App\Models\Patient;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class PatientControllerTest extends TestCase
@@ -25,6 +29,38 @@ class PatientControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole($role->value);
+
+        return $user;
+    }
+
+    /**
+     * Build a staff user that is identical to a seeded Assistant except that the
+     * single permission under test has been taken away.
+     *
+     * Spatie can only strip *direct* permissions from a user, so the user is given a
+     * copy of the seeded Assistant role minus one permission. Keeping every other
+     * Assistant permission is the whole point: it proves the route is gated by this
+     * exact permission, and not by "is an assistant" nor by some neighbouring
+     * permission that happens to travel with it.
+     */
+    private function userMissingPermission(PermissionName $permission): User
+    {
+        $assistantPermissions = Role::findByName(RoleName::ASSISTANT->value, 'web')
+            ->permissions
+            ->reject(fn (Permission $granted): bool => $granted->name === $permission->value)
+            ->all();
+
+        $role = Role::findOrCreate('Assistant without '.$permission->value, 'web');
+        $role->syncPermissions($assistantPermissions);
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // Guard the fixture itself: the assertions below are only meaningful while
+        // this user genuinely lacks the permission under test.
+        $this->assertFalse($user->fresh()->can($permission->value));
 
         return $user;
     }
@@ -47,7 +83,7 @@ class PatientControllerTest extends TestCase
 
     public function test_index_is_forbidden_without_view_permission(): void
     {
-        $user = $this->userWithRole(RoleName::STOCK_MANAGER);
+        $user = $this->userMissingPermission(PermissionName::PATIENTS_VIEW);
 
         $this->actingAs($user)
             ->get(route('app.patients.index'))
@@ -83,8 +119,6 @@ class PatientControllerTest extends TestCase
                 ->where('genders', [
                     ['value' => 'male', 'label' => 'Homme'],
                     ['value' => 'female', 'label' => 'Femme'],
-                    ['value' => 'other', 'label' => 'Autre'],
-                    ['value' => 'undisclosed', 'label' => 'Non renseigné'],
                 ])
                 ->has('bloodGroups'),
             );
@@ -124,7 +158,7 @@ class PatientControllerTest extends TestCase
 
     public function test_store_is_forbidden_without_create_permission(): void
     {
-        $user = $this->userWithRole(RoleName::DOCTOR);
+        $user = $this->userMissingPermission(PermissionName::PATIENTS_CREATE);
 
         $this->actingAs($user)
             ->post(route('app.patients.store'), [
@@ -168,7 +202,7 @@ class PatientControllerTest extends TestCase
 
     public function test_update_is_forbidden_without_update_permission(): void
     {
-        $user = $this->userWithRole(RoleName::CASHIER);
+        $user = $this->userMissingPermission(PermissionName::PATIENTS_UPDATE);
         $patient = Patient::factory()->create(['city' => 'Algiers']);
 
         $this->actingAs($user)

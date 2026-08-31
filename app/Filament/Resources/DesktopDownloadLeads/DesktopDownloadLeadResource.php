@@ -18,7 +18,7 @@ class DesktopDownloadLeadResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowDownTray;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Plateforme';
+    protected static string|UnitEnum|null $navigationGroup = 'Clients';
 
     protected static ?int $navigationSort = 2;
 

@@ -117,7 +117,7 @@ class HealthEndpointTest extends TestCase
             ->assertJsonPath('database.pending_migrations', 1)
             ->assertJsonPath(
                 'database.latest_available_migration',
-                '2026_08_09_140000_create_landing_sections_table',
+                $this->latestAvailableMigration(),
             );
     }
 
@@ -188,5 +188,18 @@ class HealthEndpointTest extends TestCase
             'HTTP_ACCEPT' => 'application/json',
             ...$extra,
         ]);
+    }
+
+    /**
+     * Resolved the way the health service resolves it, so adding a migration
+     * to the repository never turns this contract test red on its own.
+     */
+    private function latestAvailableMigration(): string
+    {
+        $available = array_keys(
+            app('migrator')->getMigrationFiles([database_path('migrations')]),
+        );
+
+        return (string) end($available);
     }
 }

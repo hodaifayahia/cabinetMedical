@@ -10,10 +10,15 @@ enum RoleName: string
     // Compatibility aliases. They are not additional roles and are absent
     // from cases() and values().
     public const SUPER_ADMINISTRATOR = self::DOCTOR;
+
     public const ADMINISTRATOR = self::DOCTOR;
+
     public const RECEPTIONIST = self::ASSISTANT;
+
     public const CASHIER = self::ASSISTANT;
+
     public const STOCK_MANAGER = self::ASSISTANT;
+
     public const PHARMACIST = self::ASSISTANT;
 
     public function label(): string
