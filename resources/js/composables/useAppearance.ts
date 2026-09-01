@@ -10,8 +10,25 @@ export type UseAppearanceReturn = {
     updateAppearance: (value: Appearance) => void;
 };
 
+// The public landing page is drawn for light mode only. It leans on the semantic
+// colour tokens but carries no `dark:` variants, so letting `.dark` through there
+// repaints the palette underneath a design that was never checked against it.
+const isLandingPage = (): boolean => {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
+    return window.location.pathname === '/';
+};
+
 export function updateTheme(value: Appearance): void {
     if (typeof window === 'undefined') {
+        return;
+    }
+
+    if (isLandingPage()) {
+        document.documentElement.classList.remove('dark');
+
         return;
     }
 
@@ -69,6 +86,12 @@ const handleSystemThemeChange = () => {
 
     updateTheme(currentAppearance || 'system');
 };
+
+// Inertia visits swap the page without a reload, so the landing page's light-only
+// rule has to be re-evaluated whenever the path changes.
+export function reapplyTheme(): void {
+    updateTheme(getStoredAppearance() || 'system');
+}
 
 export function initializeTheme(): void {
     if (typeof window === 'undefined') {
