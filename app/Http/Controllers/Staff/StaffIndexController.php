@@ -137,7 +137,13 @@ class StaffIndexController extends Controller
             'message' => 'Utilisateur ajouté.',
         ]);
 
-        return back();
+        // Not back(): it resolves through the Referer header, which the app
+        // suppresses with `referrer: no-referrer`, and then through the
+        // session's previous URL — which StartSession only records for
+        // non-AJAX GETs. Every Inertia visit is AJAX, so that value is still
+        // the last full page load, and the owner was thrown back to /login
+        // with the new user created but never shown.
+        return to_route('app.staff.index');
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -205,7 +211,7 @@ class StaffIndexController extends Controller
             'message' => 'Utilisateur mis à jour.',
         ]);
 
-        return back();
+        return to_route('app.staff.index');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
@@ -238,7 +244,7 @@ class StaffIndexController extends Controller
             'message' => 'Utilisateur supprimé.',
         ]);
 
-        return back();
+        return to_route('app.staff.index');
     }
 
     /**
