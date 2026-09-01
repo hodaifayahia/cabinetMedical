@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 /**
  * Self-contained trilingual copy for the public landing page.
@@ -598,13 +598,52 @@ export function useLandingLocale() {
 
     const copy = computed<LandingCopy>(() => translations[locale.value]);
 
+    // `dir` and `lang` sit on <html>, which outlives this page. Inertia swaps
+    // the component without reloading the document, so the Arabic landing page
+    // used to leave `dir="rtl"` behind and every screen visited afterwards —
+    // the whole authenticated app, and the desktop shell with it — kept
+    // rendering right-to-left. Whatever the server sent is captured on mount
+    // and put back on the way out.
+    let documentDefaults: { lang: string; dir: string | null } | null = null;
+
+    function captureDocumentAttributes(): void {
+        if (typeof document === 'undefined' || documentDefaults !== null) {
+            return;
+        }
+
+        documentDefaults = {
+            lang: document.documentElement.getAttribute('lang') ?? 'fr',
+            dir: document.documentElement.getAttribute('dir'),
+        };
+    }
+
     function applyDocumentAttributes(): void {
         if (typeof document === 'undefined') {
             return;
         }
 
+        captureDocumentAttributes();
+
         document.documentElement.setAttribute('lang', locale.value);
         document.documentElement.setAttribute('dir', dir.value);
+    }
+
+    function restoreDocumentAttributes(): void {
+        if (typeof document === 'undefined' || documentDefaults === null) {
+            return;
+        }
+
+        document.documentElement.setAttribute('lang', documentDefaults.lang);
+
+        // The server renders no `dir` at all, so removing it is what restores
+        // the default direction — writing 'ltr' would not be the same thing.
+        if (documentDefaults.dir === null) {
+            document.documentElement.removeAttribute('dir');
+        } else {
+            document.documentElement.setAttribute('dir', documentDefaults.dir);
+        }
+
+        documentDefaults = null;
     }
 
     function setLocale(next: LandingLocale): void {
@@ -634,6 +673,8 @@ export function useLandingLocale() {
 
         applyDocumentAttributes();
     });
+
+    onUnmounted(restoreDocumentAttributes);
 
     return { locale, dir, copy, setLocale };
 }
