@@ -1,5 +1,5 @@
-import { createInertiaApp, router } from '@inertiajs/vue3';
-import { initializeTheme, reapplyTheme } from '@/composables/useAppearance';
+import { createInertiaApp } from '@inertiajs/vue3';
+import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import LockLayout from '@/layouts/LockLayout.vue';
@@ -40,13 +40,8 @@ createInertiaApp({
     },
 });
 
-// This will set light / dark mode on page load...
+// The app is light-only; this just clears any stale `dark` class...
 initializeTheme();
-
-// Client-side visits never reload, so re-apply it whenever the page changes...
-router.on('navigate', () => {
-    reapplyTheme();
-});
 
 // This will listen for flash toast data from the server...
 initializeFlashToast();

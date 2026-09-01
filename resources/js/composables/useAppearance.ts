@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { Appearance, ResolvedAppearance } from '@/types';
 
 export type { Appearance, ResolvedAppearance };
@@ -10,41 +10,17 @@ export type UseAppearanceReturn = {
     updateAppearance: (value: Appearance) => void;
 };
 
-// The public landing page is drawn for light mode only. It leans on the semantic
-// colour tokens but carries no `dark:` variants, so letting `.dark` through there
-// repaints the palette underneath a design that was never checked against it.
-const isLandingPage = (): boolean => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-
-    return window.location.pathname === '/';
-};
-
-export function updateTheme(value: Appearance): void {
+// The product ships light-only. Large parts of it — the public landing page, and
+// much of what the desktop shell renders — carry no `dark:` variants, so
+// following the operating system theme repainted them against a design that was
+// never drawn for it. The rule lives here, in the one place that owns the class,
+// so no caller and no OS preference can put dark back.
+export function updateTheme(_value: Appearance): void {
     if (typeof window === 'undefined') {
         return;
     }
 
-    if (isLandingPage()) {
-        document.documentElement.classList.remove('dark');
-
-        return;
-    }
-
-    if (value === 'system') {
-        const mediaQueryList = window.matchMedia(
-            '(prefers-color-scheme: dark)',
-        );
-        const systemTheme = mediaQueryList.matches ? 'dark' : 'light';
-
-        document.documentElement.classList.toggle(
-            'dark',
-            systemTheme === 'dark',
-        );
-    } else {
-        document.documentElement.classList.toggle('dark', value === 'dark');
-    }
+    document.documentElement.classList.remove('dark');
 }
 
 const setCookie = (name: string, value: string, days = 365) => {
@@ -57,79 +33,22 @@ const setCookie = (name: string, value: string, days = 365) => {
     document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
-const mediaQuery = () => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)');
-};
-
-const getStoredAppearance = () => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    return localStorage.getItem('appearance') as Appearance | null;
-};
-
-const prefersDark = (): boolean => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-};
-
-const handleSystemThemeChange = () => {
-    const currentAppearance = getStoredAppearance();
-
-    updateTheme(currentAppearance || 'system');
-};
-
-// Inertia visits swap the page without a reload, so the landing page's light-only
-// rule has to be re-evaluated whenever the path changes.
-export function reapplyTheme(): void {
-    updateTheme(getStoredAppearance() || 'system');
-}
-
 export function initializeTheme(): void {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    // Initialize theme from saved preference or default to system...
-    const savedAppearance = getStoredAppearance();
-    updateTheme(savedAppearance || 'system');
-
-    // Set up system theme change listener...
-    mediaQuery()?.addEventListener('change', handleSystemThemeChange);
+    // No system-preference listener: the theme is fixed, so there is nothing to
+    // react to. This only clears a `dark` class left over from an older build.
+    updateTheme('light');
 }
 
-const appearance = ref<Appearance>('system');
+const appearance = ref<Appearance>('light');
 
 export function useAppearance(): UseAppearanceReturn {
-    onMounted(() => {
-        const savedAppearance = localStorage.getItem(
-            'appearance',
-        ) as Appearance | null;
+    // Always light, so callers that branch on the theme — the 2FA QR modal reads
+    // this to pick its foreground — render against the palette actually on screen.
+    const resolvedAppearance = computed<ResolvedAppearance>(() => 'light');
 
-        if (savedAppearance) {
-            appearance.value = savedAppearance;
-        }
-    });
-
-    const resolvedAppearance = computed<ResolvedAppearance>(() => {
-        if (appearance.value === 'system') {
-            return prefersDark() ? 'dark' : 'light';
-        }
-
-        return appearance.value;
-    });
-
+    // The chosen value is still persisted so an existing preference survives, but
+    // it no longer selects a theme while the app is light-only.
     function updateAppearance(value: Appearance) {
-        appearance.value = value;
-
         // Store in localStorage for client-side persistence...
         localStorage.setItem('appearance', value);
 

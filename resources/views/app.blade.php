@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-{{-- The public landing page carries no dark-mode styling, so it always renders light. --}}
-@php($isLandingPage = ($page['component'] ?? null) === 'Welcome')
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ! $isLandingPage && ($appearance ?? 'system') == 'dark'])>
+{{-- Light-only product: the `dark` class is never emitted, so the first paint
+     already matches the theme the client keeps. --}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,31 +18,10 @@
             })();
         </script>
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
-        @unless($isLandingPage)
-            <script nonce="{{ Vite::cspNonce() }}">
-                (function() {
-                    const appearance = {{ Illuminate\Support\Js::from($appearance ?? 'system') }};
-
-                    if (appearance === 'system') {
-                        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                        if (prefersDark) {
-                            document.documentElement.classList.add('dark');
-                        }
-                    }
-                })();
-            </script>
-        @endunless
-
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style nonce="{{ Vite::cspNonce() }}">
             html {
                 background-color: oklch(1 0 0);
-            }
-
-            html.dark {
-                background-color: oklch(0.145 0 0);
             }
         </style>
 
