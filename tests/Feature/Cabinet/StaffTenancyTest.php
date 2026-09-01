@@ -291,6 +291,41 @@ class StaffTenancyTest extends TestCase
         $this->assertNull($staffB->fresh());
     }
 
+    /**
+     * Staff writes must land back on the staff screen by name, never via back().
+     *
+     * back() reads the Referer header, which the app suppresses with
+     * `referrer: no-referrer`, then the session's previous URL — which
+     * StartSession records only for non-AJAX GETs. Every Inertia visit is AJAX,
+     * so that value stays at the last full page load. The owner was sent to
+     * /login with the user created but never shown, which read as "nothing
+     * happened". Asserting the redirect *target* is what catches a relapse;
+     * a bare assertRedirect() passes either way.
+     */
+    public function test_staff_writes_redirect_to_the_staff_screen_not_a_stale_url(): void
+    {
+        $this->activateSignedLicenseFeatures(['multi_user' => true]);
+        $cabinet = $this->createCabinet('Cabinet A');
+        $administrator = $this->createUser($cabinet, RoleName::ADMINISTRATOR);
+
+        // The stale value a real Inertia session carries at submit time.
+        $this->withSession(['_previous' => ['url' => url('/login')]]);
+
+        $this->actingAs($administrator)
+            ->post(route('app.staff.store'), $this->createPayload())
+            ->assertRedirect(route('app.staff.index'));
+
+        $staff = User::query()->where('email', 'new-staff@example.test')->firstOrFail();
+
+        $this->actingAs($administrator)
+            ->put(route('app.staff.update', $staff), $this->updatePayload($staff))
+            ->assertRedirect(route('app.staff.index'));
+
+        $this->actingAs($administrator)
+            ->delete(route('app.staff.destroy', $staff))
+            ->assertRedirect(route('app.staff.index'));
+    }
+
     private function createCabinet(string $name): Cabinet
     {
         $cabinet = Cabinet::query()->create([

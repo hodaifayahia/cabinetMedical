@@ -546,6 +546,10 @@ const removeUser = (member: StaffMember) => {
                             class="size-5 accent-brand"
                         />
                     </label>
+                    <!-- Server-side this field is `required|accepted`. Without
+                         somewhere to render its error, clearing the box made
+                         the dialog reject the submission in silence. -->
+                    <InputError :message="form.errors.assigned_to_cabinet" />
                     <div class="grid gap-2">
                         <Label for="staff-password">
                             Mot de passe
