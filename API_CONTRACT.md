@@ -1,6 +1,6 @@
 # Drclick Mobile API — Contract (Phase 1)
 
-Audience: the React Native (patient + staff mobile) developer. This document is
+Audience: the React Native (patient + staff + platform-admin) mobile developer. This document is
 the contract for every endpoint the mobile app uses. All examples below are
 **real responses captured from the running backend** (test run of 2026-09-01,
 app timezone `Africa/Algiers`, i.e. `+01:00`) — only tokens, UUIDs and ids are
@@ -50,7 +50,9 @@ Notes:
 | `patient` | Spatie role `Patient`, `cabinet_id = null`, zero staff permissions | Own profile, own family members, appointments **they booked** (self or family), own prescriptions, own notifications, public discovery. Nothing cabinet-scoped. |
 | `doctor` | role `Doctor` + member of one cabinet | Own cabinet only: staff-mobile endpoints + legacy staff endpoints. |
 | `reception` | role `Assistant` + member of one cabinet | Own cabinet only (one cabinet = one doctor by design). Permission-gated writes may 403. |
-| `admin` | `is_platform_admin = true` | Platform back office (web). **No mobile endpoints in Phase 1** — staff-mobile endpoints reject admins with `cabinet_membership_required`. |
+| `admin` (superadmin) | `is_platform_admin = true`, `cabinet_id = null` | The whole platform back office (§8.7): every clinic on the platform, cross-tenant. **Not** a clinic account — staff-mobile endpoints still reject an admin token with `cabinet_membership_required` and the patient endpoints with `patient_role_required`. |
+
+> **Superadmins are provisioned only by the console command `php artisan platform:provision-superadmin`.** They can never be created, promoted or listed through the API: `is_platform_admin` (like `role`, `roles`, `cabinet_id` and `approved_at`) is a **prohibited** request field everywhere, registration mints patients only, and no response ever serialises the flag.
 
 Hard boundaries (enforced server-side, verified by tests):
 
@@ -60,6 +62,9 @@ Hard boundaries (enforced server-side, verified by tests):
   `/family-members*`) → `403 {reason: "patient_role_required"}`.
 - A **platform-admin or cabinet-less token** on `/mobile/*` staff endpoints →
   `403 {reason: "cabinet_membership_required"}`.
+- A **non-superadmin token** (patient, doctor **or** reception) on any
+  `/admin/*` endpoint → `403 {reason: "platform_admin_required"}` — never a
+  404 that hides whether the clinic exists, never a partial 200.
 - Staff of cabinet A can never see or act on cabinet B data (404 on lookups).
 - A patient can never see another patient's bookings (404), family members, or
   respond to link requests not addressed to them (403).
@@ -145,7 +150,8 @@ Transitions available to the mobile app:
 | `mobile-login` | `POST /auth/login` | 10/min per identifier+IP |
 | `mobile-public` | all public reference/discovery/availability GETs | 60/min per IP |
 | `login` | `POST /auth/token` (legacy) | 5/min per email+IP |
-| (none) | authenticated endpoints | no throttle middleware in Phase 1 |
+| `mobile-admin` | every `/admin/*` endpoint (§8.7) | 60/min per admin account + IP |
+| (none) | all other authenticated endpoints | no throttle middleware in Phase 1 |
 
 ## 6. Error envelope
 
@@ -153,10 +159,10 @@ Transitions available to the mobile app:
 |---|---|---|
 | 401 | `{"message": "Unauthenticated."}` | Missing/invalid/expired token |
 | 403 (domain) | `{"message": <fr>, "reason": <code>}` | Ownership/role refusals (`family_member_not_usable`, `not_owner`, `patient_role_required`) |
-| 403 (gate) | `{"message": <fr>, "reason": <code>, "status": <state>}` | Cabinet gate & role gate refusals: `patient_token_forbidden` (status `forbidden`), `cabinet_membership_required` (status `forbidden`), and cabinet eligibility codes `cabinet_pending`/`cabinet_suspended`/`license_expired`/`license_inactive`/`awaiting_approval` (status `pending`/`suspended`/`expired`/`inactive`/`awaiting_approval`). Same shape on a denied staff login. |
+| 403 (gate) | `{"message": <fr>, "reason": <code>, "status": <state>}` | Cabinet gate & role gate refusals: `patient_token_forbidden` (status `forbidden`), `cabinet_membership_required` (status `forbidden`), `platform_admin_required` (status `forbidden`, every `/admin/*` route), and cabinet eligibility codes `cabinet_pending`/`cabinet_suspended`/`license_expired`/`license_inactive`/`awaiting_approval` (status `pending`/`suspended`/`expired`/`inactive`/`awaiting_approval`). Same shape on a denied staff login. |
 | 403 (policy) | `{"message": "This action is unauthorized."}` | Spatie/policy denial without a domain code (e.g. assistant lacking a permission) |
 | 404 | `{"message": <text>}` | Not found / not listed / other tenant. Domain 404s carry French messages (`"Cabinet introuvable."`, `"Médecin introuvable."`); model-binding 404s carry Laravel's default text. Treat every 404 as "does not exist for this account". |
-| 409 | `{"message": <fr>, "reason": <code>}` | `slot_unavailable`, `already_linked`, `link_not_pending`, `idempotency_key_reused`; `sync_version_conflict` additionally carries `public_id` and `current_version` |
+| 409 | `{"message": <fr>, "reason": <code>}` | `slot_unavailable`, `already_linked`, `link_not_pending`, `idempotency_key_reused`; admin lifecycle/seat codes `already_active`, `already_suspended`, `cabinet_not_active`, `seat_limit_reached` (§8.7); `sync_version_conflict` additionally carries `public_id` and `current_version` |
 | 422 (validation) | `{"message": <first error>, "errors": {field: [messages]}}` | Laravel validation (field messages in French) |
 | 422 (domain) | `{"message": <fr>, "reason": <code>}` | `cancel_cutoff_passed`, `member_has_appointments` |
 | 429 | `{"message": "Too Many Attempts."}` | Rate limit hit |
@@ -166,7 +172,8 @@ Full `reason` code list: `patient_token_forbidden`, `patient_role_required`,
 `cabinet_pending`, `cabinet_suspended`, `license_expired`, `license_inactive`,
 `awaiting_approval`, `slot_unavailable`, `already_linked`, `link_not_pending`,
 `sync_version_conflict`, `idempotency_key_reused`, `cancel_cutoff_passed`,
-`member_has_appointments`.
+`member_has_appointments`, `platform_admin_required`, `already_active`,
+`already_suspended`, `cabinet_not_active`, `seat_limit_reached`.
 
 Examples (captured):
 
@@ -239,11 +246,21 @@ Examples (captured):
 | 44 | `GET /schedule` (legacy) | token + staff |
 | 45 | `GET /patients` (legacy) | token + staff |
 | 46 | `GET /patients/{id}` (legacy) | token + staff |
+| 47 | `GET /admin/overview` | token + superadmin |
+| 48 | `GET /admin/cabinets` | token + superadmin |
+| 49 | `POST /admin/cabinets` | token + superadmin |
+| 50 | `GET /admin/cabinets/{cabinet}` | token + superadmin |
+| 51 | `POST /admin/cabinets/{cabinet}/activate` | token + superadmin |
+| 52 | `POST /admin/cabinets/{cabinet}/suspend` | token + superadmin |
+| 53 | `POST /admin/cabinets/{cabinet}/staff` | token + superadmin |
+| 54 | `PATCH /admin/cabinets/{cabinet}/listing` | token + superadmin |
 
 "token + staff" = `auth:sanctum` + active-cabinet gate (`patient_token_forbidden`
 for patients; eligibility codes for blocked cabinets). The `/mobile/*` group
 additionally rejects platform admins and cabinet-less accounts
-(`cabinet_membership_required`).
+(`cabinet_membership_required`). "token + superadmin" = `auth:sanctum` +
+`is_platform_admin = true` + the `mobile-admin` throttle; every other role
+gets `403 platform_admin_required` (§8.7).
 
 **Deliberately not documented here** (they exist under `/api/v1` but are not
 mobile-app surface): `POST /cabinets/register` and `POST /cabinets/join`
@@ -1473,6 +1490,437 @@ Cabinet dossier search/read. Query for the list: `q` (matches name/phone/…,
 ≤ 120 chars), `per_page` (1..100, default 15). Standard envelope of the
 `PatientResource` shape shown in §8.5 (`POST /mobile/patients`); the show
 endpoint wraps a single one in `{"data": {…}}` and 404s outside the cabinet.
+
+---
+
+### 8.7 Admin (platform superadmin)
+
+The platform back office. Group middleware: `auth:sanctum` + `mobile.admin` +
+`throttle:mobile-admin` (60/min keyed on the admin account + IP). The token is
+the ordinary mobile token — abilities `["mobile"]` — that `POST /auth/login`
+returns for an account whose login response carried `role: "admin"`. There is
+no separate admin login.
+
+> **Superadmins are provisioned only by the console command
+> `php artisan platform:provision-superadmin`.** No endpoint in this section —
+> or anywhere else in the API — can create one, promote an existing account, or
+> even read the `is_platform_admin` flag back. An admin has `cabinet_id = null`
+> and therefore still gets `cabinet_membership_required` on `/mobile/*` and
+> `patient_role_required` on `/my/*`.
+
+Everything here is deliberately **cross-tenant**: the counters and the clinic
+list span the whole platform, and `{cabinet}` is any clinic id (a plain
+integer — the routes are constrained to digits). An id that does not exist →
+`404 {"message": "Cabinet introuvable."}`.
+
+#### Shared refusals
+
+Any non-superadmin token — patient, doctor **or** reception — on **any** route
+in this section gets the same 403. Never a 404 that hides whether the clinic
+exists, never a partial 200:
+
+```json
+{
+  "message": "Cet espace est réservé aux administrateurs de la plateforme.",
+  "reason": "platform_admin_required",
+  "status": "forbidden"
+}
+```
+
+No token, or an expired one → `401 {"message": "Unauthenticated."}`.
+
+**Prohibited fields — every admin request.** `is_platform_admin`, `role`,
+`roles`, `cabinet_id` and `approved_at` may never appear in an admin request
+body **or query string**, not even as `false` or `[]`. Sending one fails the
+whole request with 422 and nothing at all is created:
+
+```json
+{
+  "message": "Ce champ ne peut pas être fourni : il est déterminé par la plateforme.",
+  "errors": {
+    "is_platform_admin": ["Ce champ ne peut pas être fourni : il est déterminé par la plateforme."]
+  }
+}
+```
+
+Ordinary validation failures use the same 422 envelope with the offending field
+name. Conflicts use `409 {"message": <fr>, "reason": <code>}` with one of
+`already_active`, `already_suspended`, `cabinet_not_active`,
+`seat_limit_reached`.
+
+#### Temporary passwords — read before building the creation screens
+
+`POST /admin/cabinets` and `POST /admin/cabinets/{cabinet}/staff` both take an
+**optional** `password`:
+
+| `password` in the request | `temporary_password` in the 201 |
+|---|---|
+| omitted | a **20-character** generated password (letters + digits + symbols) |
+| supplied (min 12 chars) | `null` — the admin already knows it, so it is never echoed back |
+
+`temporary_password` is a sibling of `data`, not a field inside it. It is
+returned **exactly once**, at creation: no read endpoint ever returns it, no
+later response repeats it, and it is never written to the logs (the audit entry
+records only `credential_source: "generated"|"supplied"` — a metadata key
+containing "password" would be redacted wholesale by `AuditLog`). Show it once in a dismissible
+card, tell the admin to hand it over and have the account holder change it at
+first login, and never persist it on the device.
+
+#### GET /admin/overview
+
+No parameters. Platform-wide dashboard counters.
+
+```json
+{
+  "data": {
+    "cabinets": { "total": 1, "active": 1, "pending": 0, "suspended": 0 },
+    "doctors": 1,
+    "staff": 1,
+    "patients": 0,
+    "appointments": { "today": 0, "upcoming": 0 },
+    "listed_clinics": 1,
+    "recent_cabinets": [
+      {
+        "id": 1,
+        "name": "عيادة النور",
+        "status": "active",
+        "status_label": "Actif",
+        "specialization": "Cardiologie",
+        "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+        "is_listed": true,
+        "owner_name": "Dr Yacine Haddad",
+        "created_at": "2026-09-01T22:12:43+01:00",
+        "activated_at": "2026-09-01T22:12:43+01:00"
+      }
+    ]
+  }
+}
+```
+
+Semantics:
+
+- `cabinets.total` is every clinic whatever its status; the three other keys
+  are the `pending` / `active` / `suspended` buckets.
+- `doctors` = accounts holding the `Doctor` role **and** belonging to a
+  cabinet; `staff` = accounts holding the `Assistant` role **and** belonging to
+  a cabinet. Platform admins and mobile patients (`cabinet_id = null`) are in
+  neither figure.
+- `patients` = patient dossiers across every clinic.
+- `appointments.today` / `.upcoming` count non-`cancelled` appointments dated
+  today / strictly after today, platform-wide.
+- `listed_clinics` = clinics whose public profile has `is_listed = true` (what
+  the public `GET /doctors` directory can show).
+- `recent_cabinets` = the **5 newest** clinics (id desc), each one exactly the
+  row shape returned by `GET /admin/cabinets`.
+
+#### GET /admin/cabinets
+
+Every clinic on the platform, newest first (id desc), standard pagination
+envelope (§3).
+
+Query params (all optional): `status` (`pending` | `active` | `suspended`),
+`wilaya_code` (1..58), `q` (≤ 120 chars — matches the clinic name, the owner's
+name or the owner's e-mail), `per_page` (1..50, default **15**), `page`.
+Filters are preserved in `links`.
+
+`GET /admin/cabinets?status=active&wilaya_code=16` →
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "عيادة النور",
+      "status": "active",
+      "status_label": "Actif",
+      "specialization": "Cardiologie",
+      "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+      "is_listed": true,
+      "owner_name": "Dr Yacine Haddad",
+      "created_at": "2026-09-01T22:12:43+01:00",
+      "activated_at": "2026-09-01T22:12:43+01:00"
+    }
+  ],
+  "links": {
+    "first": "https://<host>/api/v1/admin/cabinets?status=active&wilaya_code=16&page=1",
+    "last": "https://<host>/api/v1/admin/cabinets?status=active&wilaya_code=16&page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      { "url": null, "label": "« Précédent", "page": null, "active": false },
+      { "url": "https://<host>/api/v1/admin/cabinets?status=active&wilaya_code=16&page=1", "label": "1", "page": 1, "active": true },
+      { "url": null, "label": "Suivant »", "page": null, "active": false }
+    ],
+    "path": "https://<host>/api/v1/admin/cabinets",
+    "per_page": 15,
+    "to": 1,
+    "total": 1
+  }
+}
+```
+
+`status` is one of exactly `pending` / `active` / `suspended`; `status_label`
+is its French label (`En attente` / `Actif` / `Suspendu`) — display the label,
+branch on the value. `wilaya`, `owner_name` and `activated_at` are each
+independently `null` (a clinic with no wilaya recorded, an owner account since
+deleted, a clinic never activated).
+
+#### POST /admin/cabinets — create a clinic **and** its doctor owner
+
+The headline operation: one call materialises the clinic, the owner account and
+everything a doctor needs to start working. Request:
+
+```json
+{
+  "cabinet_name": "عيادة النور",
+  "specialization": "Cardiologie",
+  "wilaya_code": 16,
+  "doctor_name": "Dr Yacine Haddad",
+  "email": "y.haddad@clinic.dz",
+  "phone": "0550112233",
+  "activate": true,
+  "is_listed": true
+}
+```
+
+| Field | Rule |
+|---|---|
+| `cabinet_name` | required, string, 2..255 |
+| `specialization` | required, string, 2..150 — send the **French** catalogue label from `GET /specialties` (`label_fr`, e.g. `"Cardiologie"`); the server normalises it through the specialty catalogue and derives the `code` |
+| `wilaya_code` | required, integer, 1..58, must exist in the wilaya table |
+| `doctor_name` | required, string, 2..255 |
+| `email` | required, valid e-mail, ≤ 190, **unique** across all accounts |
+| `phone` | required, Algerian mobile: `/^0[567][0-9]{8}$/` (message: *Saisissez un numéro de téléphone algérien valide (0X XX XX XX XX).*) |
+| `password` | **nullable**, string, 12..255, and it must clear the platform password policy (`Password::default()` — in production 12+ chars with mixed case, letters, digits and symbols, exactly as web self-registration) — omit it and the server generates one (see above) |
+| `activate` | optional boolean, default `false` |
+| `is_listed` | optional boolean, default `false` |
+
+Response **201** — the full clinic detail resource plus the one-shot
+`temporary_password` beside it (here the admin omitted `password`):
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "عيادة النور",
+    "status": "active",
+    "status_label": "Actif",
+    "specialization": "Cardiologie",
+    "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+    "created_at": "2026-09-01T22:12:43+01:00",
+    "activated_at": "2026-09-01T22:12:43+01:00",
+    "is_listed": true,
+    "owner": {
+      "id": 2,
+      "name": "Dr Yacine Haddad",
+      "email": "y.haddad@clinic.dz",
+      "phone": "0550112233"
+    },
+    "doctor": {
+      "id": 1,
+      "name": "Dr Yacine Haddad",
+      "specialty": { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" }
+    },
+    "counts": { "staff": 1, "patients": 0, "appointments": 0 },
+    "license": { "plan": "lifetime", "plan_label": "À vie", "status": "active", "expires_at": null }
+  },
+  "temporary_password": ":|9{L?4RVY$2EJvJ>.b-"
+}
+```
+
+What the call actually creates (one transaction, the **same** code path as web
+self-registration, so an admin-created clinic is indistinguishable from a
+self-registered one):
+
+1. the `Cabinet` in the **pending** state,
+2. the owner `User` — `Doctor` role, `approved_at` and `email_verified_at` set,
+3. the `DoctorProfile` (specialty code + the phone above) and the per-cabinet
+   settings row,
+4. a default **Mon–Fri 09:00–17:00** weekly schedule,
+5. `activate: true` → a **lifetime** licence is minted and the clinic comes
+   back `active` (`license.status: "active"`, `expires_at: null`),
+6. `is_listed: true` → the public profile row is created with `is_listed`, so
+   the clinic becomes visible in the public `GET /doctors` directory (which
+   also requires the clinic to be active),
+7. an audit entry `admin.cabinet_provisioned` naming the acting admin.
+
+> **A pending owner cannot sign in.** Leave `activate` at `false` and the new
+> doctor's `POST /auth/login` is refused with
+> `403 {reason: "cabinet_pending", status: "pending"}` (§6). Send
+> `activate: true` whenever the doctor is meant to work immediately.
+
+Errors: duplicate `email`, malformed `phone`, unknown `wilaya_code`, a
+`password` under 12 chars or below the platform policy → 422 with the field in
+`errors`; any prohibited field → 422 and **nothing** is created. A prohibited
+field is refused on **presence**, not on value: `is_platform_admin: null`,
+`role: ""` and `roles: []` are rejected exactly like `is_platform_admin: true`.
+
+#### GET /admin/cabinets/{cabinet}
+
+Full detail of one clinic — exactly the `data` object of the previous endpoint,
+with **no** `temporary_password` key at all (it exists only in a creation
+response):
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "عيادة النور",
+    "status": "active",
+    "status_label": "Actif",
+    "specialization": "Cardiologie",
+    "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+    "created_at": "2026-09-01T22:12:43+01:00",
+    "activated_at": "2026-09-01T22:12:43+01:00",
+    "is_listed": true,
+    "owner": {
+      "id": 2,
+      "name": "Dr Yacine Haddad",
+      "email": "y.haddad@clinic.dz",
+      "phone": "0550112233"
+    },
+    "doctor": {
+      "id": 1,
+      "name": "Dr Yacine Haddad",
+      "specialty": { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" }
+    },
+    "counts": { "staff": 1, "patients": 0, "appointments": 0 },
+    "license": { "plan": "lifetime", "plan_label": "À vie", "status": "active", "expires_at": null }
+  }
+}
+```
+
+- `wilaya`, `owner`, `doctor`, `doctor.specialty` and `license` are each
+  independently nullable — render every one defensively.
+- `license` is `null` for a clinic that was never activated; otherwise `status`
+  is the *effective* status (`active` / `expired` / `suspended` / `revoked` /
+  `inactive`, computed against the clock) and `plan` is `lifetime` or `trial`
+  with `plan_label` its French label (`À vie` / `Essai de 7 jours`).
+  `expires_at` is `null` for a lifetime licence.
+- `counts` are live and scoped to **this** clinic only: `staff` counts every
+  account attached to it (the owner included, so a fresh clinic reads `1`),
+  `patients` its dossiers, `appointments` all of its appointments.
+- Nothing secret is ever serialised here: no password hash, no API token, no
+  licence code, no signed certificate, no PIN digest.
+
+#### POST /admin/cabinets/{cabinet}/activate
+
+No body. `pending` → `active` (first activation: mints the lifetime licence) or
+`suspended` → `active` (restore: the clinic's existing licence is put back to
+`active`/`expired`, and `activated_at` is preserved). Response **200** with the
+clinic detail resource above, `data.status: "active"`.
+
+Already active → **409**:
+
+```json
+{ "message": "Ce cabinet est déjà actif.", "reason": "already_active" }
+```
+
+Audit entry: `admin.cabinet_activated`.
+
+#### POST /admin/cabinets/{cabinet}/suspend
+
+No body. `active` → `suspended`: outstanding licence codes are revoked, the
+hosted licence goes to `suspended`, and the clinic **immediately leaves public
+discovery** — it disappears from `GET /doctors` and `GET /clinics/{id}` 404s.
+Its staff are then refused at login with
+`403 {reason: "cabinet_suspended", status: "suspended"}`. Response **200** with
+the detail resource, `data.status: "suspended"`.
+
+Conflicts (**409**):
+
+```json
+{ "message": "Ce cabinet est déjà suspendu.", "reason": "already_suspended" }
+```
+
+```json
+{
+  "message": "Seul un cabinet actif peut être suspendu : celui-ci est encore en attente d'activation.",
+  "reason": "cabinet_not_active"
+}
+```
+
+Audit entry: `admin.cabinet_suspended`.
+
+#### POST /admin/cabinets/{cabinet}/staff — add a reception account
+
+Creates an **Assistant** (mobile role `reception`) inside that clinic, already
+approved. The role is not a parameter — this endpoint can only ever mint a
+receptionist, which is why `role` and `roles` sit in the prohibited list.
+
+```json
+{
+  "name": "Nadia Cherif",
+  "email": "n.cherif@clinic.dz",
+  "phone": "0551234567"
+}
+```
+
+| Field | Rule |
+|---|---|
+| `name` | required, string, 2..120 |
+| `email` | required, valid e-mail, ≤ 190, **unique** across all accounts |
+| `phone` | optional, nullable, Algerian mobile `/^0[567][0-9]{8}$/`, **unique** across all accounts (mobile patients register with this column, so a receptionist who already has a patient account gets a 422 on `phone`) |
+| `password` | **nullable**, string, 12..255, and it must clear the platform password policy (`Password::default()`) — omit it and the server generates one |
+
+Response **201**:
+
+```json
+{
+  "data": {
+    "id": 3,
+    "name": "Nadia Cherif",
+    "email": "n.cherif@clinic.dz",
+    "phone": "0551234567",
+    "role": "reception",
+    "cabinet_id": 1,
+    "approved": true,
+    "created_at": "2026-09-01T22:12:44+01:00"
+  },
+  "temporary_password": "8f]Nq2}Uv#7LbA*3Rz1@"
+}
+```
+
+The account can sign in through `POST /auth/login` straight away (returning
+`role: "reception"`) **provided the clinic is active** — a pending or suspended
+clinic refuses its staff at login exactly as it does its owner.
+
+Seats are capped at **3 accounts per clinic** (owner included) and allocated
+under a row lock, so two admins adding a receptionist at the same instant can
+never overshoot. A full clinic → **409**:
+
+```json
+{
+  "message": "Ce cabinet a atteint sa limite de 3 utilisateurs.",
+  "reason": "seat_limit_reached"
+}
+```
+
+Audit entry: `admin.staff_provisioned`.
+
+#### PATCH /admin/cabinets/{cabinet}/listing
+
+Show or hide the clinic in the public mobile directory. `is_listed` is the only
+writable field here — the clinic's own staff still own the rest of their public
+profile through `PUT /mobile/clinic-profile`, and both screens write the same
+row.
+
+```json
+{ "is_listed": false }
+```
+
+`is_listed` is **required** and boolean. Response **200** with the clinic
+detail resource, `data.is_listed` reflecting the new value. Unlisting removes
+the clinic from `GET /doctors` at once; the clinic keeps working normally, only
+discovery changes. Listing a clinic that has no public profile row yet creates
+one.
+
+Audit entry: `admin.cabinet_listing_updated`.
 
 ---
 

@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetController;
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetLifecycleController;
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetListingController;
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetStaffController;
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminOverviewController;
 use App\Http\Controllers\Api\V1\Mobile\AuthController;
 use App\Http\Controllers\Api\V1\Mobile\AvailabilityController;
 use App\Http\Controllers\Api\V1\Mobile\ClinicProfileController;
@@ -100,3 +105,31 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->middleware('permission:configuration.branding.manage');
     });
 });
+
+// --- Platform back office (superadmin) ------------------------------------
+// A platform admin has cabinet_id = null, so cabinet.active.api would let them
+// through with no tenant and mobile.staff.cabinet would reject them outright:
+// neither gate fits, and the group carries its own. Superadmins exist only
+// because `platform:provision-superadmin` created one — no route below can
+// mint another.
+Route::middleware(['auth:sanctum', 'mobile.admin', 'throttle:mobile-admin'])
+    ->prefix('admin')
+    ->group(function (): void {
+        Route::get('overview', AdminOverviewController::class);
+
+        Route::get('cabinets', [AdminCabinetController::class, 'index']);
+        Route::post('cabinets', [AdminCabinetController::class, 'store']);
+        Route::get('cabinets/{cabinet}', [AdminCabinetController::class, 'show'])
+            ->whereNumber('cabinet');
+
+        Route::post('cabinets/{cabinet}/activate', [AdminCabinetLifecycleController::class, 'activate'])
+            ->whereNumber('cabinet');
+        Route::post('cabinets/{cabinet}/suspend', [AdminCabinetLifecycleController::class, 'suspend'])
+            ->whereNumber('cabinet');
+
+        Route::post('cabinets/{cabinet}/staff', [AdminCabinetStaffController::class, 'store'])
+            ->whereNumber('cabinet');
+
+        Route::patch('cabinets/{cabinet}/listing', [AdminCabinetListingController::class, 'update'])
+            ->whereNumber('cabinet');
+    });
