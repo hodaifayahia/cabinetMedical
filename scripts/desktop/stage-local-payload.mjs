@@ -102,9 +102,11 @@ function parseArguments(argv) {
             parsed[name] = true;
         } else if (values.has(name)) {
             index += 1;
+
             if (index >= argv.length) {
                 fail(`--${name} requires a value`);
             }
+
             parsed[name] = argv[index];
         } else {
             fail(`unknown option: --${name}`);
@@ -136,6 +138,7 @@ function copyTree(source, destination, relativeBase) {
     if (stats.isDirectory()) {
         fs.mkdirSync(destination, { recursive: true });
         let count = 0;
+
         for (const entry of fs.readdirSync(source)) {
             count += copyTree(
                 path.join(source, entry),
@@ -191,6 +194,7 @@ function stagePhpRuntime(parsed) {
         }
 
         const actual = sha256(parsed['php-zip']);
+
         if (actual !== parsed['php-sha256'].toLowerCase()) {
             fail(
                 `PHP archive checksum mismatch\n  expected ${parsed['php-sha256']}\n  actual   ${actual}`,
@@ -211,9 +215,11 @@ function stagePhpRuntime(parsed) {
     }
 
     const interpreter = path.join(source, 'php.exe');
+
     if (!fs.existsSync(interpreter)) {
         fail(`no php.exe in ${source}`);
     }
+
     if (!fs.existsSync(path.join(source, 'ext'))) {
         fail(`no ext/ directory in ${source}`);
     }
@@ -254,11 +260,14 @@ function stageApplication(parsed) {
     fs.mkdirSync(destination, { recursive: true });
 
     let files = 0;
+
     for (const relative of APPLICATION_PATHS) {
         const source = path.join(repositoryRoot, relative);
+
         if (!fs.existsSync(source)) {
             fail(`expected ${relative} in the checkout`);
         }
+
         files += copyTree(
             source,
             path.join(destination, relative),
@@ -434,6 +443,7 @@ function main() {
     }
 
     const staged = path.join(resourcesRoot, 'laravel', 'artisan');
+
     if (fs.existsSync(staged) && !parsed.force) {
         fail('a payload is already staged; pass --force to replace it');
     }

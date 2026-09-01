@@ -21,8 +21,8 @@ import {
     readDesktopPinEnrollment,
     saveDesktopPinEnrollment,
 } from '@/lib/desktopPin';
-import { logout } from '@/routes';
 import type { DesktopPinEnrollment } from '@/lib/desktopPin';
+import { logout } from '@/routes';
 
 const desktopRuntime = ref(false);
 const page = usePage();

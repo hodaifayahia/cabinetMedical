@@ -79,6 +79,10 @@ export default defineConfigWithVueTs(
             'public',
             'storage',
             'src-tauri/target',
+            // Staged desktop payload: a generated copy of the Laravel tree,
+            // vendor JS included. Linting it reports ~185k problems that no
+            // one can act on, and it is gitignored.
+            'src-tauri/resources/laravel',
             'bootstrap/ssr',
             'tailwind.config.js',
             'vite.config.ts',

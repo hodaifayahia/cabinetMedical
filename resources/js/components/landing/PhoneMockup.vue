@@ -57,7 +57,10 @@ const copy = computed(() => translations[props.locale].mobileApp.mock);
                         <span class="font-mono tabular-nums" dir="ltr">
                             {{ slot }}
                         </span>
-                        <Check v-if="index === 1" class="size-3.5 text-primary" />
+                        <Check
+                            v-if="index === 1"
+                            class="size-3.5 text-primary"
+                        />
                     </div>
                 </div>
 

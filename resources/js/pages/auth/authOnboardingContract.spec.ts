@@ -147,7 +147,9 @@ describe('Drclick authentication and onboarding contract', () => {
         expect(source).toContain('name="license_code"');
         expect(source).toContain('autocomplete="one-time-code"');
         expect(source).toContain('data-test="redeem-license-code"');
-        expect(source).toContain('data-test="hosted-license-redemption-unavailable"');
+        expect(source).toContain(
+            'data-test="hosted-license-redemption-unavailable"',
+        );
         expect(source).toContain('Aucun code actif disponible');
         expect(source).toContain('action="/cabinet/sign-out"');
         expect(source).toContain('data-test="activation-sign-in-return"');

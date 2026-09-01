@@ -5,6 +5,7 @@ namespace Tests\Feature\Landing;
 use App\Filament\Resources\LandingSettings\LandingSettingResource;
 use App\Models\LandingSetting;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -55,7 +56,7 @@ class LandingSettingsManagementTest extends TestCase
         ]);
 
         // …but not twice for the same locale.
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         LandingSetting::query()->create([
             'key' => 'contact_hours',

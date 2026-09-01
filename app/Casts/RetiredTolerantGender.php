@@ -3,6 +3,7 @@
 namespace App\Casts;
 
 use App\Enums\Gender;
+use App\Services\Sync\PatientResolver;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -22,7 +23,7 @@ use InvalidArgumentException;
  * value can enter the column.
  *
  * This mirrors the defensive read already used for incoming sync payloads in
- * {@see \App\Services\Sync\PatientResolver}.
+ * {@see PatientResolver}.
  *
  * @implements CastsAttributes<Gender|null, Gender|string|null>
  */

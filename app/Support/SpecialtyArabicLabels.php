@@ -2,10 +2,20 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Str;
+
 /**
  * Arabic display labels for the medical specialty catalogue, keyed by the same
  * slugs as MedicalSpecialtyCatalog. Consumers fall back to the French label
  * when a slug is missing here.
+ *
+ * DoctorProfile stores specialty_code by slugging the raw specialty string
+ * rather than resolving it through the catalogue, so a clinic that typed a
+ * French name ends up with a French-derived code ("pediatrie") that is not a
+ * catalogue key ("pediatrics"). canonicalCode() folds those variants back onto
+ * the canonical slug so the Arabic-first mobile client does not silently fall
+ * back to French, and so the same specialty is not listed twice under two
+ * codes.
  */
 final class SpecialtyArabicLabels
 {
@@ -35,6 +45,64 @@ final class SpecialtyArabicLabels
     ];
 
     /**
+     * Accent-folded slugs of the catalogue's French labels, mapped onto the
+     * canonical code. Keys are lowercase ASCII slugs so "Pédiatrie",
+     * "pediatrie" and "PEDIATRIE" all resolve alike.
+     *
+     * @var array<string, string>
+     */
+    private const FRENCH_SLUG_ALIASES = [
+        'medecine_generale' => 'general_medicine',
+        'medecine_familiale' => 'family_medicine',
+        'medecine_interne' => 'internal_medicine',
+        'medecine_du_travail' => 'occupational_medicine',
+        'anesthesie_reanimation' => 'anesthesiology',
+        'cardiologie' => 'cardiology',
+        'chirurgie_generale' => 'general_surgery',
+        'dermatologie' => 'dermatology',
+        'endocrinologie_et_diabetologie' => 'endocrinology',
+        'endocrinologie' => 'endocrinology',
+        'gastro_enterologie' => 'gastroenterology',
+        'gynecologie_obstetrique' => 'obstetrics_gynecology',
+        'gynecologie' => 'obstetrics_gynecology',
+        'nephrologie' => 'nephrology',
+        'neurologie' => 'neurology',
+        'ophtalmologie' => 'ophthalmology',
+        'orl' => 'otorhinolaryngology',
+        'pediatrie' => 'pediatrics',
+        'pneumologie' => 'pulmonology',
+        'psychiatrie' => 'psychiatry',
+        'radiologie' => 'radiology',
+        'rhumatologie' => 'rheumatology',
+        'urologie' => 'urology',
+    ];
+
+    /**
+     * Resolve a stored specialty code onto the catalogue's canonical slug.
+     * Unknown codes are returned unchanged so callers keep their own value.
+     */
+    public static function canonicalCode(?string $code): ?string
+    {
+        if ($code === null) {
+            return null;
+        }
+
+        $trimmed = trim($code);
+
+        if ($trimmed === '' || isset(self::LABELS[$trimmed])) {
+            return $trimmed === '' ? $code : $trimmed;
+        }
+
+        $slug = Str::of($trimmed)->ascii()->lower()->slug('_')->toString();
+
+        if (isset(self::LABELS[$slug])) {
+            return $slug;
+        }
+
+        return self::FRENCH_SLUG_ALIASES[$slug] ?? $trimmed;
+    }
+
+    /**
      * The full Arabic label map keyed by specialty slug.
      *
      * @return array<string, string>
@@ -54,6 +122,6 @@ final class SpecialtyArabicLabels
             return null;
         }
 
-        return self::LABELS[$code] ?? null;
+        return self::LABELS[self::canonicalCode($code) ?? $code] ?? null;
     }
 }

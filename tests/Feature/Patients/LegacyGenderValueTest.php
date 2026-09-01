@@ -7,6 +7,7 @@ use App\Models\Cabinet;
 use App\Models\Patient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -40,7 +41,7 @@ class LegacyGenderValueTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('retiredGenderValues')]
+    #[DataProvider('retiredGenderValues')]
     public function test_a_retired_gender_value_does_not_crash_hydration(string $stored): void
     {
         $patient = Patient::factory()->create();
@@ -49,7 +50,7 @@ class LegacyGenderValueTest extends TestCase
 
         $fresh = Patient::query()->findOrFail($patient->getKey());
 
-        $this->assertNull($fresh->gender, "a retired value must read as null, not throw");
+        $this->assertNull($fresh->gender, 'a retired value must read as null, not throw');
 
         // The row itself must be left alone: this is a display concern.
         $this->assertSame(

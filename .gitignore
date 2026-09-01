@@ -41,3 +41,4 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+database/mobile-demo.sqlite

@@ -93,6 +93,11 @@ class ClinicDetailResource extends JsonResource
         $byCode = [];
 
         foreach ($candidates as [$label, $code]) {
+            // Dedupe on the canonical slug: a clinic whose doctor stored a
+            // French-derived code and whose cabinet stored the catalogue label
+            // is one specialty, not two.
+            $code = SpecialtyArabicLabels::canonicalCode($code) ?? $code;
+
             if (isset($byCode[$code])) {
                 continue;
             }

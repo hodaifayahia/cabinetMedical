@@ -701,7 +701,7 @@ onUnmounted(() => {
                             v-for="(step, index) in copy.how.steps"
                             :key="step.title"
                             v-reveal
-                            class="border-s-2 border-primary/20 ps-5 md:border-t-2 md:border-s-0 md:ps-0 md:pt-6"
+                            class="border-s-2 border-primary/20 ps-5 md:border-s-0 md:border-t-2 md:ps-0 md:pt-6"
                             :class="{
                                 'md:mt-10': index === 1,
                                 'md:mt-20': index === 2,
@@ -877,7 +877,10 @@ onUnmounted(() => {
                             </ul>
                         </div>
 
-                        <div v-reveal class="mx-auto lg:mx-0 lg:justify-self-center">
+                        <div
+                            v-reveal
+                            class="mx-auto lg:mx-0 lg:justify-self-center"
+                        >
                             <div class="lp-float">
                                 <PhoneMockup :locale="locale" />
                             </div>
@@ -1217,9 +1220,7 @@ onUnmounted(() => {
                                 <span dir="ltr">{{ contactPhone }}</span>
                             </li>
                             <li class="flex items-center gap-3">
-                                <Mail
-                                    class="size-4 shrink-0 text-brand-mint"
-                                />
+                                <Mail class="size-4 shrink-0 text-brand-mint" />
                                 <span dir="ltr">{{ contactEmail }}</span>
                             </li>
                             <li class="flex items-start gap-3">
