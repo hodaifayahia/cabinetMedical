@@ -60,6 +60,20 @@ trait MobileTestHelpers
     }
 
     /**
+     * A platform superadmin: is_platform_admin, no cabinet, no tenant role.
+     * Mirrors what `platform:provision-superadmin` writes, which is the only
+     * supported way to create one outside the tests.
+     */
+    protected function makePlatformAdmin(): User
+    {
+        return User::factory()->create([
+            'cabinet_id' => null,
+            'is_platform_admin' => true,
+            'approved_at' => now(),
+        ]);
+    }
+
+    /**
      * A registered mobile patient: Patient role, no cabinet, unique Algerian
      * phone, and a demographic profile row.
      */

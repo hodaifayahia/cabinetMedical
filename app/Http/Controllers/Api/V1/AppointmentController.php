@@ -37,7 +37,12 @@ class AppointmentController extends Controller
         ]);
 
         $appointments = Appointment::query()
-            ->with('patient')
+            // `AppointmentResource` reads booking provenance for every row.
+            // Eager-loaded so a page of mobile-booked appointments costs a
+            // fixed number of queries instead of three lazy loads each — up
+            // to 300 extra on the hosted install, where most appointments
+            // arrive from the phone.
+            ->with(['patient', 'bookedBy.patientProfile', 'familyMember'])
             ->when(isset($validated['from']), fn (Builder $q) => $q->whereDate('appointment_date', '>=', CarbonImmutable::parse($validated['from'])->toDateString()))
             ->when(isset($validated['to']), fn (Builder $q) => $q->whereDate('appointment_date', '<=', CarbonImmutable::parse($validated['to'])->toDateString()))
             ->when(isset($validated['patient_id']), fn (Builder $q) => $q->where('patient_id', $validated['patient_id']))

@@ -26,7 +26,16 @@ use Illuminate\Support\Facades\DB;
  */
 final class AppointmentImporter
 {
-    /** Fields compared verbatim when detecting a same-version divergence. */
+    /**
+     * Fields compared verbatim when detecting a same-version divergence.
+     *
+     * `booking` is deliberately absent, here and in
+     * {@see self::CLINICAL_INSTANT_FIELDS}. Provenance is not clinical, and a
+     * publisher that predates it omits the key entirely: including it would
+     * make an old-format and a new-format payload for the same appointment
+     * hash differently and register as a spurious `version_conflict`, blocking
+     * the import of a change that never happened.
+     */
     private const CLINICAL_FIELDS = [
         'appointment_date',
         'status',
@@ -102,7 +111,14 @@ final class AppointmentImporter
                 }
 
                 // Already applied, or this installation holds a newer version
-                // that the push phase will carry upward.
+                // that the push phase will carry upward. Clinical state is
+                // left alone, but provenance the local row simply does not
+                // have yet is worth taking: without this, an appointment that
+                // both installations happen to reconcile to the same version
+                // stays blank on the doctor's desktop forever, because a past
+                // appointment is never edited again.
+                $this->backfillProvenance($local, $payload);
+
                 return ImportResult::skipped('not_newer');
             }
 
@@ -306,6 +322,14 @@ final class AppointmentImporter
      * payload, so a malformed event cannot move an appointment between tenants
      * or onto another patient's file.
      *
+     * `booked_by_user_id` and `family_member_id` are absent on purpose and stay
+     * null on every imported row: they are the *publisher's* auto-increment
+     * keys, exactly like `patient_id`, and this installation has no matching
+     * `users` row and no `family_members` content at all. Writing them would
+     * violate the foreign keys or, worse, silently attribute the booking to an
+     * unrelated local person. The portable `booking` block is stored verbatim
+     * in `booking_context` instead.
+     *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
@@ -313,7 +337,7 @@ final class AppointmentImporter
     {
         $startsAt = $this->instant($payload['starts_at'] ?? null);
 
-        return [
+        $attributes = [
             // Kept consistent with the localised start, so day filtering agrees
             // with the time shown on the appointment.
             'appointment_date' => $startsAt?->toDateString()
@@ -331,6 +355,62 @@ final class AppointmentImporter
             'completed_at' => $this->instant($payload['completed_at'] ?? null),
             'cancelled_at' => $this->instant($payload['cancelled_at'] ?? null),
         ];
+
+        // Only a payload that actually carries the key is saying anything
+        // about provenance. A publisher that predates this format, or one
+        // rolled back to it, omits `booking` entirely — and so does a current
+        // publisher whose appointment has none. Treating that silence as "no
+        // provenance" would let any later edit from such a publisher — a
+        // reschedule, a status change — wipe a correct block this
+        // installation already holds, which on an imported row (both booking
+        // foreign keys null) destroys it for good and then propagates the
+        // erasure back on the next push.
+        if (array_key_exists('booking', $payload)) {
+            $attributes['booking_context'] = $this->bookingContext($payload);
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Store provenance for a local row that has none, touching nothing else.
+     *
+     * Used on the `not_newer` path, where the clinical state is deliberately
+     * left as it is. Provenance is not clinical and cannot conflict: the two
+     * installations either agree about how the appointment was booked or one
+     * of them simply does not know yet.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function backfillProvenance(Appointment $appointment, array $payload): void
+    {
+        if ($appointment->booking_context !== null) {
+            return;
+        }
+
+        $context = $this->bookingContext($payload);
+
+        if ($context === null) {
+            return;
+        }
+
+        // Quietly, like every other import write: publishing here would queue
+        // the change for push straight back at the installation it came from.
+        $appointment->forceFill(['booking_context' => $context])->saveQuietly();
+    }
+
+    /**
+     * The portable booking provenance, or null when the publisher sent none.
+     *
+     * An older publisher omits the key entirely; a malformed one is discarded
+     * rather than stored, because reception reads this as fact.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>|null
+     */
+    private function bookingContext(array $payload): ?array
+    {
+        return $this->events->normalisedBookingProvenance($payload['booking'] ?? null);
     }
 
     /**
