@@ -7,6 +7,7 @@ use App\Models\Cabinet;
 use App\Models\Consultation;
 use App\Models\Document;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\Prescription;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -172,6 +173,65 @@ class ConsultationHistoryControllerTest extends TestCase
                 ->where('prescriptions.0.document_id', $ordonnance->id)
                 ->has('prescriptions.0.download_url')
                 ->has('documents', 2),
+            );
+    }
+
+    public function test_history_reports_what_the_patient_paid_and_still_owes(): void
+    {
+        $doctor = $this->doctor();
+        $patient = Patient::factory()->create();
+
+        // Settled in full through the payment ledger.
+        $settled = Consultation::query()->create([
+            'patient_id' => $patient->id,
+            'consulted_at' => CarbonImmutable::parse('2026-01-10 09:00:00'),
+            'status' => 'completed',
+            'payment_amount_minor' => 200000,
+            'payment_method' => 'Espèces',
+            'is_paid' => true,
+            'created_by' => $doctor->id,
+        ]);
+        Payment::query()->create([
+            'consultation_id' => $settled->id,
+            'patient_id' => $patient->id,
+            'amount_minor' => 200000,
+            'method' => 'Espèces',
+            'received_at' => CarbonImmutable::parse('2026-01-10 09:30:00'),
+        ]);
+
+        // 1 500 collected against a 4 000 price: still 2 500 outstanding.
+        $partial = Consultation::query()->create([
+            'patient_id' => $patient->id,
+            'consulted_at' => CarbonImmutable::parse('2026-03-15 14:00:00'),
+            'status' => 'completed',
+            'payment_amount_minor' => 400000,
+            'is_paid' => false,
+            'created_by' => $doctor->id,
+        ]);
+        Payment::query()->create([
+            'consultation_id' => $partial->id,
+            'patient_id' => $patient->id,
+            'amount_minor' => 150000,
+            'received_at' => CarbonImmutable::parse('2026-03-15 14:30:00'),
+        ]);
+
+        $this->actingAs($doctor)
+            ->get(route('app.consultations.history', $patient))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('summary.count', 2)
+                ->where('summary.billed', 6000)
+                ->where('summary.paid', 3500)
+                ->where('summary.outstanding', 2500)
+                // Newest first: the partially paid visit leads.
+                ->where('consultations.0.id', $partial->id)
+                ->where('consultations.0.payment_status', 'partial')
+                ->where('consultations.0.payment_paid', 1500)
+                ->where('consultations.0.payment_outstanding', 2500)
+                ->where('consultations.1.payment_status', 'paid')
+                ->where('consultations.1.payment_paid', 2000)
+                ->where('consultations.1.payment_outstanding', 0)
+                ->where('consultations.1.payment_method', 'Espèces'),
             );
     }
 

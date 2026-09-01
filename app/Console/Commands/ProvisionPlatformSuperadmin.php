@@ -104,7 +104,8 @@ final class ProvisionPlatformSuperadmin extends Command
 
     private function requiredValue(string $option, string $question): string
     {
-        $value = trim((string) $this->option($option));
+        $raw = $this->option($option);
+        $value = trim(is_scalar($raw) ? (string) $raw : '');
 
         if ($value !== '' || ! $this->input->isInteractive()) {
             return $value;

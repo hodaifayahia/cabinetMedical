@@ -102,13 +102,27 @@ LAN alone with an operator-confirmed fingerprint.
 
 ## Required ordering
 
-1. LAN PKI: certificate issuance for `hub-cabinet-<n>.<domain>`, trust
-   distribution to desktops, and a renewal command with an expiry alarm.
-2. Offline break-glass: an operator-confirmed re-pair that works on the LAN with
-   no control plane, so a restored Hub can be adopted by both desktops.
-3. Hub identity keypair generated at provisioning and held in protected storage.
-4. Only then: the signed descriptor, the pinned identity, and the authority
-   epoch — with the `TlsInfo`-absent branch specified and tested.
+1. **LAN PKI** — outstanding. Certificate issuance for
+   `hub-cabinet-<n>.<domain>`, trust distribution into the Windows Trusted Root
+   store of every desktop, and a renewal command with an expiry alarm.
+2. **Offline break-glass — done.** The authority record and `hub:adopt` landed
+   with this ADR. Authority lives in the database, so it travels with a restored
+   backup; a replacement Hub sees that the cabinet still belongs to the machine
+   it is replacing and refuses to serve until an operator adopts it, which
+   raises the epoch and fences the old box. It needs no control plane, so it
+   works in a cabinet that has never been online. The epoch is advertised on
+   `/health` ready for a desktop to pin as a monotone floor.
+3. **Hub identity keypair** — outstanding. Generated at provisioning and held in
+   protected storage, so a Hub can prove live possession rather than merely
+   presenting something the cloud once signed.
+4. **Then** the signed descriptor and the pinned identity — with the
+   `TlsInfo`-absent branch specified and tested.
+
+Step 2 was taken first, deliberately: it is the only one of the four that makes
+the system safer on its own. A cabinet today is protected from a restored clone
+silently becoming a second write authority, which was possible before and is a
+worse failure than the LAN impersonation stage 3 addresses, because it corrupts
+records rather than exposing them.
 
 ## Consequences
 

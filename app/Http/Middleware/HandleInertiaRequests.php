@@ -8,9 +8,9 @@ use App\Models\User;
 use App\Services\Auth\DesktopPinService;
 use App\Services\Authorization\CabinetRolePermissionAuthorizer;
 use App\Services\DesktopDownloadService;
+use App\Services\DocumentBrandingService;
 use App\Services\SessionLockService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -66,9 +66,8 @@ class HandleInertiaRequests extends Middleware
                 'address' => $cabinet?->address,
                 'city' => $cabinet?->city,
                 'logo_path' => $cabinet?->logo_path,
-                'logo_url' => $cabinet?->logo_path
-                    ? Storage::disk('public')->url($cabinet->logo_path)
-                    : null,
+                'logo_url' => app(DocumentBrandingService::class)
+                    ->storedLogoUrl($cabinet?->logo_path),
                 'timezone' => $cabinet?->timezone ?? (string) config('app.timezone', 'UTC'),
                 'currency' => [
                     'code' => $cabinet?->currency_code ?? (string) config('clinic.currency.code', 'DZD'),

@@ -26,7 +26,7 @@ class PlatformAdminSeeder extends Seeder
             return;
         }
 
-        $password = (string) env('PLATFORM_ADMIN_PASSWORD', '');
+        $password = (string) config('medismart.development.platform_admin_password', '');
 
         $user = User::query()->whereRaw('LOWER(email) = ?', [self::EMAIL])->first();
 

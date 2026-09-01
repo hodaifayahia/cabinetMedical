@@ -27,7 +27,9 @@ use Illuminate\Support\Carbon;
 ])]
 final class DesktopDownloadLead extends Model
 {
-    use HasFactory, HasUuids;
+    // No HasFactory: there is no DesktopDownloadLeadFactory and nothing calls
+    // ::factory(), so the trait only left an unparameterised generic behind.
+    use HasUuids;
 
     protected function casts(): array
     {

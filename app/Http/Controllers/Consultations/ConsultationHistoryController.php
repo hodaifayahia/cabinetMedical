@@ -8,6 +8,7 @@ use App\Models\Consultation;
 use App\Models\Document;
 use App\Models\Patient;
 use App\Models\Prescription;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
@@ -33,6 +34,9 @@ class ConsultationHistoryController extends Controller
 
         $consultations = Consultation::query()
             ->with('createdBy:id,name')
+            // Feeds collectedMinor()/outstandingMinor() from one query instead
+            // of a payments round trip per row.
+            ->withSum('payments', 'amount_minor')
             ->where('patient_id', $patient->getKey())
             ->orderByDesc('consulted_at')
             ->get();
@@ -44,6 +48,7 @@ class ConsultationHistoryController extends Controller
                 'full_name' => $patient->full_name,
             ],
             'currency' => $currency,
+            'summary' => $this->summary($consultations),
             'consultations' => $consultations
                 ->map(fn (Consultation $consultation): array => $this->timelineRow($consultation))
                 ->values()
@@ -165,8 +170,40 @@ class ConsultationHistoryController extends Controller
             'provider_name' => $consultation->createdBy?->name,
             'motif' => $consultation->motif,
             'diagnostic' => $consultation->diagnostic,
+            // Billed vs actually collected: `payment_amount` is the price, and
+            // `payment_paid` the sum of the ledger entries behind it.
             'payment_amount' => $amount,
+            'payment_paid' => $consultation->collectedMinor() / 100,
+            'payment_outstanding' => $consultation->outstandingMinor() / 100,
+            'payment_status' => $consultation->paymentStatus(),
+            'payment_method' => $consultation->payment_method,
             'is_paid' => $consultation->is_paid,
+        ];
+    }
+
+    /**
+     * What the patient has been billed, has actually paid and still owes over
+     * the whole timeline — the same billed/collected/outstanding definitions
+     * the payments screen uses, so the two never disagree.
+     *
+     * @param  EloquentCollection<int, Consultation>  $consultations
+     * @return array<string, mixed>
+     */
+    private function summary(EloquentCollection $consultations): array
+    {
+        return [
+            'count' => $consultations->count(),
+            'billed' => $consultations->sum(
+                fn (Consultation $consultation): int => (int) ($consultation->payment_amount_minor ?? 0),
+            ) / 100,
+            'paid' => $consultations->sum(
+                fn (Consultation $consultation): int => $consultation->collectedMinor(),
+            ) / 100,
+            'outstanding' => $consultations->sum(
+                fn (Consultation $consultation): int => $consultation->outstandingMinor(),
+            ) / 100,
+            // The collection is already ordered newest first.
+            'last_visit' => $consultations->first()?->consulted_at?->toIso8601String(),
         ];
     }
 

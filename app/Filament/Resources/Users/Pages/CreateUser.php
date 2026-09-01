@@ -44,8 +44,11 @@ class CreateUser extends CreateRecord
 
     protected function afterCreate(): void
     {
-        AuditLog::record('platform.account_created', $this->getRecord(), [
-            'email' => $this->getRecord()->email,
+        /** @var User $user */
+        $user = $this->getRecord();
+
+        AuditLog::record('platform.account_created', $user, [
+            'email' => $user->email,
         ]);
     }
 

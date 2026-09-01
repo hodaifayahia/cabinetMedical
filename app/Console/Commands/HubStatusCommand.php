@@ -36,6 +36,11 @@ class HubStatusCommand extends Command
             ['TLS SPKI SHA-256', $hub->tlsSpkiSha256() ?? '(not set)'],
         ]);
 
+        $authority = $hub->authority();
+        $this->line('Authority: '.($authority === null
+            ? '<comment>not adopted</comment>'
+            : '<info>'.$authority->hub_id.'</info> at epoch '.$authority->authority_epoch));
+
         $reason = $hub->misconfigurationReason();
 
         if ($reason !== null) {
@@ -75,6 +80,8 @@ class HubStatusCommand extends Command
             HubMode::MISCONFIGURED_REASON_NO_ID => 'Set HUB_ID in .env to this Hub\'s stable identifier, then run php artisan config:clear.',
             HubMode::MISCONFIGURED_REASON_NO_CABINET => 'Set HUB_CABINET_ID in .env to the id of the cabinet this Hub serves, then run php artisan config:clear.',
             HubMode::MISCONFIGURED_REASON_CABINET_UNKNOWN => 'HUB_CABINET_ID names a cabinet that does not exist in this database. Restore the correct database or correct the binding; do not point it at a different cabinet.',
+            HubMode::MISCONFIGURED_REASON_NOT_ADOPTED => 'No Hub has been adopted as the write authority for this cabinet yet. Run php artisan hub:adopt --confirm.',
+            HubMode::MISCONFIGURED_REASON_DISPLACED => 'The authority for this cabinet belongs to another Hub. If that Hub is permanently out of service, take over with php artisan hub:adopt --confirm. If it is still running, STOP: two machines would be writing to two databases for one cabinet.',
             default => 'Review the hub configuration in config/hub.php.',
         };
     }

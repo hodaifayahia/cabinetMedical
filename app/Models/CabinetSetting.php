@@ -54,7 +54,7 @@ class CabinetSetting extends Model
      */
     public static function current(?Cabinet $cabinet = null): self
     {
-        $cabinet ??= static::resolveCabinet();
+        $cabinet ??= self::resolveCabinet();
 
         if ($cabinet instanceof Cabinet) {
             return static::query()->firstOrCreate(

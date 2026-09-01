@@ -75,7 +75,10 @@ class UserResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('is_platform_admin', true);
+        /** @var Builder<User> $query */
+        $query = parent::getEloquentQuery()->where('is_platform_admin', true);
+
+        return $query;
     }
 
     public static function canCreate(): bool

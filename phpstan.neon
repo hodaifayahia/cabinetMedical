@@ -11,3 +11,45 @@ parameters:
         - routes/
 
     level: 7
+
+    # A PHPDoc is documentation, not a guarantee, and several of the ones we
+    # depend on are wrong in exactly the direction that matters. The clearest
+    # case is Illuminate\Database\Seeder::$command: its @var says Command, but
+    # the property is untyped and therefore null until setCommand() runs, which
+    # is why Laravel's own Seeder guards every use of it with isset(). Trusting
+    # the PHPDoc, PHPStan reports our `$this->command?->warn()` as an
+    # unnecessary nullsafe call; obeying it would turn a safe call into a fatal
+    # one whenever a seeder is invoked outside the console.
+    #
+    # Turning this off keeps every check that is grounded in real types and
+    # drops only the ones whose certainty comes from an annotation.
+    treatPhpDocTypesAsCertain: false
+
+    ignoreErrors:
+        # Eloquent's BelongsTo generics cannot express a nullable relation, so
+        # Larastan reports every `$model->cabinet?->x` as an unnecessary
+        # nullsafe. The relation really is nullable: `cabinet_id` is created
+        # `->nullable()` with `nullOnDelete()` (add_cabinet_columns_to_users_table,
+        # add_cabinet_id_to_tenant_tables), platform admins have no cabinet by
+        # design, and deleting a cabinet nulls the column on every row pointing
+        # at it. Obeying this message would turn correct defensive reads into
+        # fatals on exactly those rows.
+        -
+            identifier: nullsafe.neverNull
+            message: '#Using nullsafe (property access|method call).*#'
+            paths:
+                - app/Http/Middleware/HandleInertiaRequests.php
+                - app/Http/Controllers/Cabinet/CabinetStatusController.php
+                - app/Filament/Resources/ActivationKeys/Tables/ActivationKeysTable.php
+                - app/Models/HostedLicenseGrant.php
+                - app/Models/License.php
+
+        # Attribute's TGet template is invariant, so a nullable getter with no
+        # setter (Attribute<string|null, never>) is reported as not matching
+        # itself. The declared type is correct and there is no annotation that
+        # satisfies the check; PHPStan's own hint points at the invariance.
+        -
+            identifier: return.type
+            message: '#should return Illuminate\\Database\\Eloquent\\Casts\\Attribute<string\|null, never> but returns Illuminate\\Database\\Eloquent\\Casts\\Attribute<string\|null, never>\.#'
+            paths:
+                - app/Models/Cabinet.php

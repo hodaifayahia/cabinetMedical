@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\PermissionName;
 use App\Enums\RoleName;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Contracts\Permission as PermissionContract;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -26,7 +27,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         Role::findOrCreate(RoleName::ASSISTANT->value, 'web')
             ->syncPermissions(array_map(
-                static fn (string $permission): Permission => $permissions[$permission],
+                // findOrCreate() returns the contract, not the concrete model.
+                static fn (string $permission): PermissionContract => $permissions[$permission],
                 $this->assistantPermissions(),
             ));
 

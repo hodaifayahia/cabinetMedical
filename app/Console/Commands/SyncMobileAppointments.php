@@ -97,10 +97,10 @@ class SyncMobileAppointments extends Command
             return [(int) $requested];
         }
 
-        return Cabinet::query()
+        return array_values(Cabinet::query()
             ->orderBy('id')
             ->pluck('id')
             ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
+            ->all());
     }
 }

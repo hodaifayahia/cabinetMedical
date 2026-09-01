@@ -2,8 +2,10 @@
 import { Head, Link } from '@inertiajs/vue3';
 import {
     ArrowLeft,
+    Banknote,
     CalendarDays,
     ChevronRight,
+    CircleAlert,
     Clock,
     Search,
     Stethoscope,
@@ -31,7 +33,19 @@ type HistoryConsultation = {
     motif: string | null;
     diagnostic: string | null;
     payment_amount: number | null;
+    payment_paid: number;
+    payment_outstanding: number;
+    payment_status: string;
+    payment_method: string | null;
     is_paid: boolean;
+};
+
+type HistorySummary = {
+    count: number;
+    billed: number;
+    paid: number;
+    outstanding: number;
+    last_visit: string | null;
 };
 
 const props = defineProps<{
@@ -41,6 +55,7 @@ const props = defineProps<{
         full_name: string | null;
     };
     currency: string;
+    summary: HistorySummary;
     consultations: HistoryConsultation[];
 }>();
 
@@ -63,6 +78,24 @@ const statusStyles: Record<string, string> = {
 const statusLabel = (status: string | null): string =>
     status ? (statusLabels[status] ?? status.replace(/_/g, ' ')) : '—';
 
+// Mirrors Consultation::paymentStatus(): a visit is `partial` once some money
+// has been collected against it but the price is not covered yet.
+const paymentStatusLabels: Record<string, string> = {
+    paid: 'Payé',
+    partial: 'Partiellement payé',
+    unpaid: 'Impayé',
+};
+
+const paymentStatusStyles: Record<string, string> = {
+    paid: 'text-emerald-600 dark:text-emerald-400',
+    partial: 'text-amber-600 dark:text-amber-400',
+    unpaid: 'text-rose-600 dark:text-rose-400',
+};
+
+const paymentStatusLabel = (consultation: HistoryConsultation): string =>
+    paymentStatusLabels[consultation.payment_status] ??
+    (consultation.is_paid ? 'Payé' : 'Impayé');
+
 const normalized = (value: string | null | undefined): string =>
     (value ?? '').trim().toLocaleLowerCase();
 
@@ -78,7 +111,9 @@ const filtered = computed(() => {
             consultation.motif,
             consultation.diagnostic,
             consultation.provider_name,
+            consultation.payment_method,
             statusLabel(consultation.status),
+            paymentStatusLabel(consultation),
         ]
             .map(normalized)
             .join(' ')
@@ -128,6 +163,20 @@ const formatAmount = (amount: number | null): string =>
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
           })} ${props.currency}`;
+
+const lastVisitLabel = computed<string>(() => {
+    if (!props.summary.last_visit) {
+        return 'Aucune visite enregistrée';
+    }
+
+    return `Dernière visite le ${new Date(
+        props.summary.last_visit,
+    ).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    })}`;
+});
 </script>
 
 <template>
@@ -167,7 +216,63 @@ const formatAmount = (amount: number | null): string =>
                             <Stethoscope class="size-4" />
                         </div>
                         <p class="mt-2 text-2xl font-semibold">
-                            {{ consultations.length }}
+                            {{ summary.count }}
+                        </p>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            {{ lastVisitLabel }}
+                        </p>
+                    </div>
+
+                    <div
+                        class="rounded-xl border border-sidebar-border/70 bg-muted/20 p-4 dark:border-sidebar-border"
+                    >
+                        <div
+                            class="flex items-center justify-between text-muted-foreground"
+                        >
+                            <span
+                                class="text-xs font-medium tracking-wide uppercase"
+                                >Total payé</span
+                            >
+                            <Banknote class="size-4" />
+                        </div>
+                        <p
+                            class="mt-2 text-2xl font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
+                        >
+                            {{ formatAmount(summary.paid) }}
+                        </p>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            sur {{ formatAmount(summary.billed) }} facturés
+                        </p>
+                    </div>
+
+                    <div
+                        class="rounded-xl border border-sidebar-border/70 bg-muted/20 p-4 dark:border-sidebar-border"
+                    >
+                        <div
+                            class="flex items-center justify-between text-muted-foreground"
+                        >
+                            <span
+                                class="text-xs font-medium tracking-wide uppercase"
+                                >Reste à payer</span
+                            >
+                            <CircleAlert class="size-4" />
+                        </div>
+                        <p
+                            class="mt-2 text-2xl font-semibold tabular-nums"
+                            :class="
+                                summary.outstanding > 0
+                                    ? 'text-amber-600 dark:text-amber-400'
+                                    : 'text-foreground'
+                            "
+                        >
+                            {{ formatAmount(summary.outstanding) }}
+                        </p>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            {{
+                                summary.outstanding > 0
+                                    ? 'Impayés cumulés sur ce dossier'
+                                    : 'Dossier soldé'
+                            }}
                         </p>
                     </div>
                 </div>
@@ -254,9 +359,9 @@ const formatAmount = (amount: number | null): string =>
                                         <span
                                             class="inline-flex items-center gap-1 text-xs"
                                             :class="
-                                                consultation.is_paid
-                                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                                    : 'text-amber-600 dark:text-amber-400'
+                                                paymentStatusStyles[
+                                                    consultation.payment_status
+                                                ] ?? 'text-muted-foreground'
                                             "
                                         >
                                             <Wallet class="size-3" />
@@ -273,11 +378,37 @@ const formatAmount = (amount: number | null): string =>
                                             >
                                                 ·
                                                 {{
-                                                    consultation.is_paid
-                                                        ? 'Payé'
-                                                        : 'Impayé'
+                                                    paymentStatusLabel(
+                                                        consultation,
+                                                    )
                                                 }}
                                             </span>
+                                        </span>
+                                        <span
+                                            v-if="
+                                                consultation.payment_status ===
+                                                'partial'
+                                            "
+                                            class="text-xs text-muted-foreground"
+                                        >
+                                            {{
+                                                formatAmount(
+                                                    consultation.payment_paid,
+                                                )
+                                            }}
+                                            reçus ·
+                                            {{
+                                                formatAmount(
+                                                    consultation.payment_outstanding,
+                                                )
+                                            }}
+                                            restants
+                                        </span>
+                                        <span
+                                            v-if="consultation.payment_method"
+                                            class="text-xs text-muted-foreground"
+                                        >
+                                            {{ consultation.payment_method }}
                                         </span>
                                     </div>
                                     <p

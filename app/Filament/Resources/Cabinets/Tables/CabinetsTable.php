@@ -204,8 +204,11 @@ class CabinetsTable
                                 ->where('is_active', true)
                                 ->findOrFail((int) $data['license_type_id']);
 
+                            /** @var Collection<int, Cabinet> $selected */
+                            $selected = $records->load('owner');
+
                             $result = app(CabinetFulfillmentService::class)
-                                ->issueLicenseCodes($records->load('owner'), $type);
+                                ->issueLicenseCodes($selected, $type);
 
                             if ($result->issuedCount() === 0) {
                                 Notification::make()

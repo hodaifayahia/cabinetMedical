@@ -172,15 +172,27 @@ fn require_staged_file(path: &Path, description: &str) {
     }
 }
 
+/// Read a release credential, distinguishing "absent" from "present but empty".
+///
+/// The two cases need different fixes and the old message conflated them. The
+/// empty case matters most for `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: minisign
+/// happily generates a passwordless key and Tauri will sign with one, so an
+/// operator holding a valid key can otherwise be told their credential is
+/// "required" while looking straight at it.
 fn required_release_environment(name: &str) -> String {
-    env::var(name)
-        .ok()
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| {
-            panic!(
-                "desktop release builds require {name}; signed updater credentials must be supplied by the protected release environment"
-            )
-        })
+    match env::var(name) {
+        Ok(value) if !value.trim().is_empty() => value,
+        Ok(_) => panic!(
+            "{name} is set but empty. Drclick requires a password-protected \
+             updater signing key: generate one with `tauri signer generate` and \
+             supply the password here. See docs/DESKTOP-RELEASE.md."
+        ),
+        Err(_) => panic!(
+            "desktop release builds require {name}; signed updater credentials \
+             must be supplied by the protected release environment. See \
+             docs/DESKTOP-RELEASE.md."
+        ),
+    }
 }
 
 fn validate_updater_public_key(value: &str) {

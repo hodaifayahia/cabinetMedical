@@ -32,8 +32,11 @@ class CabinetController extends Controller
      */
     public function join(JoinCabinetRequest $request, JoinCabinetAction $action): JsonResponse
     {
+        /** @var array{name: string, email: string, password: string, owner_email: string} $data */
+        $data = $request->validated();
+
         /** @var User $member */
-        $member = $action->execute($request->validated());
+        $member = $action->execute($data);
 
         return response()->json([
             'message' => 'Votre demande a été envoyée. Vous pourrez vous connecter une fois approuvé par le propriétaire du cabinet.',

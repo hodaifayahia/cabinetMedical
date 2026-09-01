@@ -30,6 +30,8 @@ use App\Http\Controllers\Consultations\ConsultationHistoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DesktopDownloadController;
 use App\Http\Controllers\DesktopDownloadLeadController;
+use App\Http\Controllers\DesktopUpdateArtifactController;
+use App\Http\Controllers\DesktopUpdateManifestController;
 use App\Http\Controllers\Encounters\EncounterController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Payments\PaymentController;
@@ -104,6 +106,21 @@ Route::post('desktop/download', [DesktopDownloadLeadController::class, 'store'])
 Route::get('desktop/download/file/{lead}', DesktopDownloadController::class)
     ->middleware(['signed', 'throttle:desktop-download-files'])
     ->name('desktop.download.file');
+
+// The two endpoints an installed shell talks to. Both are public on purpose:
+// the updater runs with no user session and sends no cookies, so there is
+// nothing to authenticate. Integrity comes from the detached signature the
+// shell verifies, not from these routes being private.
+//
+// The trailing slash matters. It is the exact path baked into shipped builds
+// as MEDISMART_UPDATER_ENDPOINT, and an already installed copy cannot be told
+// to look somewhere else.
+Route::get('desktop-updates/', DesktopUpdateManifestController::class)
+    ->middleware('throttle:desktop-updates')
+    ->name('desktop.updates.manifest');
+Route::get('desktop-updates/artifact/{release}', DesktopUpdateArtifactController::class)
+    ->middleware('throttle:desktop-download-files')
+    ->name('desktop.updates.artifact');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('desktop/cabinet-login', [DesktopCabinetLoginController::class, 'create'])

@@ -87,9 +87,12 @@ class ActivationKeyResource extends Resource
     /** @return Builder<HostedLicenseGrant> */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        /** @var Builder<HostedLicenseGrant> $query */
+        $query = parent::getEloquentQuery()
             ->withoutGlobalScope('cabinet')
             ->with(['cabinet.owner', 'licenseType', 'issuer', 'redeemer']);
+
+        return $query;
     }
 
     public static function table(Table $table): Table

@@ -3,6 +3,7 @@
 namespace App\Services\Hub;
 
 use App\Models\Cabinet;
+use App\Models\HubAuthority;
 use App\Models\User;
 
 /**
@@ -21,6 +22,12 @@ final class HubMode
     public const MISCONFIGURED_REASON_NO_CABINET = 'hub_cabinet_missing';
 
     public const MISCONFIGURED_REASON_CABINET_UNKNOWN = 'hub_cabinet_not_in_database';
+
+    /** No operator has ever adopted this Hub as the cabinet's write authority. */
+    public const MISCONFIGURED_REASON_NOT_ADOPTED = 'hub_not_adopted';
+
+    /** The cabinet's authority belongs to a different Hub than this one. */
+    public const MISCONFIGURED_REASON_DISPLACED = 'hub_displaced_by_another';
 
     /**
      * Whether the operator has declared this machine a Hub, regardless of
@@ -131,7 +138,50 @@ final class HubMode
             return self::MISCONFIGURED_REASON_CABINET_UNKNOWN;
         }
 
+        $authority = $this->authority();
+
+        // A Hub that nobody has adopted has not been given authority over
+        // anything, whatever its configuration claims.
+        if ($authority === null) {
+            return self::MISCONFIGURED_REASON_NOT_ADOPTED;
+        }
+
+        // The decisive check. A backup restored onto replacement hardware
+        // carries this record with it, so the new box discovers that the
+        // cabinet's authority still belongs to the Hub it is replacing and
+        // refuses to serve until an operator adopts it. Without this, a
+        // restored clone would silently become a second write authority for
+        // the same cabinet - the one thing ADR-002 invariant 1 forbids.
+        if (! $authority->isHeldBy($this->hubId())) {
+            return self::MISCONFIGURED_REASON_DISPLACED;
+        }
+
         return null;
+    }
+
+    /**
+     * The authority record for the bound cabinet, or null when this Hub has
+     * never been adopted.
+     */
+    public function authority(): ?HubAuthority
+    {
+        $cabinetId = $this->boundCabinetId();
+
+        if ($cabinetId === null) {
+            return null;
+        }
+
+        return HubAuthority::query()->where('cabinet_id', $cabinetId)->first();
+    }
+
+    /**
+     * The epoch this Hub currently holds, or null when unadopted. A desktop
+     * will later pin this as a monotone floor, so it must never decrease for a
+     * Hub that legitimately holds authority.
+     */
+    public function authorityEpoch(): ?int
+    {
+        return $this->authority()?->authority_epoch;
     }
 
     /**
@@ -155,6 +205,7 @@ final class HubMode
             'cabinet_id' => $this->boundCabinetId(),
             'hostname' => $this->hostname(),
             'tls_spki_sha256' => $this->tlsSpkiSha256(),
+            'authority_epoch' => $this->authorityEpoch(),
             'ready' => $this->misconfigurationReason() === null,
             'reason' => $this->misconfigurationReason(),
         ];

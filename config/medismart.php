@@ -7,6 +7,10 @@ return [
         // Explicit local opt-in only. Production ignores this setting even if
         // a hostile environment attempts to enable it.
         'seed_demo_user' => (bool) env('MEDISMART_SEED_DEMO_USER', false),
+        // Read through config, not env(), so a config-cached install still sees
+        // it. Only consulted by PlatformAdminSeeder, which refuses to run in
+        // production at all.
+        'platform_admin_password' => (string) env('PLATFORM_ADMIN_PASSWORD', ''),
     ],
 
     'runtime' => [

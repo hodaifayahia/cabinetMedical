@@ -9,6 +9,7 @@ use App\Models\Cabinet;
 use App\Models\Patient;
 use App\Models\User;
 use App\Services\CabinetFulfillmentService;
+use App\Services\Hub\HubAdoptionService;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -138,6 +139,8 @@ class OfflineLanAcceptanceTest extends TestCase
             'hub.id' => 'hub-lan-acceptance',
             'hub.cabinet_id' => $cabinet->getKey(),
         ]);
+
+        app(HubAdoptionService::class)->adopt();
     }
 
     public function test_a_cabinet_goes_from_pending_to_working_without_ever_reaching_the_internet(): void

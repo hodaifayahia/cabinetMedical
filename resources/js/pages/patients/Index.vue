@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { Eye, Pencil, Plus, Search, Users } from '@lucide/vue';
+import { Eye, Pencil, Plus, Search, Stethoscope, Users } from '@lucide/vue';
 import { ref } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PatientForm from '@/components/patients/PatientForm.vue';
@@ -189,6 +189,20 @@ const paginationLabel = (label: string): string => {
                                             :aria-label="`Voir ${patient.full_name}`"
                                         >
                                             <Eye class="size-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        v-if="can('consultations.view')"
+                                        variant="ghost"
+                                        size="sm"
+                                        as-child
+                                    >
+                                        <Link
+                                            :href="`/app/patients/${patient.id}/consultation-history`"
+                                            :aria-label="`Historique des consultations de ${patient.full_name}`"
+                                            title="Historique des consultations"
+                                        >
+                                            <Stethoscope class="size-4" />
                                         </Link>
                                     </Button>
                                     <Button

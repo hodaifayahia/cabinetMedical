@@ -58,9 +58,52 @@ Verify it:
 php artisan hub:status
 ```
 
-A Hub that is declared but cannot name a valid cabinet **refuses every request
+A Hub that is declared but cannot name a valid cabinet, or that has not been
+adopted, or whose cabinet belongs to another Hub, **refuses every request
 except `/health`**. That is deliberate — serving the wrong cabinet's records is
 worse than serving nothing (ADR-002 invariant 7).
+
+## 2b. Adopt the Hub
+
+Configuration alone grants no authority. An operator must adopt the Hub before
+it will serve anyone:
+
+```
+php artisan hub:adopt --confirm
+```
+
+This records, in the database, that this `HUB_ID` holds clinical write
+authority for the cabinet, starting at authority epoch 1. Until it runs, the
+Hub refuses every request except `/health` and reports `hub_not_adopted`.
+
+The epoch lives in the database rather than in `.env` deliberately. A
+replacement Hub is brought up by restoring a backup, so the authority record
+travels with the data. Holding it in configuration would mean a human pasting a
+number and running `config:cache`, where a typo one way silently fences the
+clinic and a typo the other way silently un-fences a machine that should have
+stayed dead.
+
+### Replacing a failed Hub
+
+This is the recovery path, and it works on the LAN with no Internet.
+
+1. Install the replacement appliance and restore the verified backup.
+2. Give it its own `HUB_ID` — never reuse the dead machine's.
+3. Run `php artisan hub:adopt`. With no `--confirm` it only *describes* what
+   would happen, including which Hub currently holds authority.
+4. Confirm the old Hub is permanently out of service, then run
+   `php artisan hub:adopt --confirm`.
+
+The epoch rises to 2 and the old `HUB_ID` is recorded as displaced. If the old
+machine is ever plugged back in, it reads the same restored authority record,
+sees that the cabinet belongs to another Hub, and refuses to serve —
+`hub_displaced_by_another`. That is what stops a resurrected box from becoming a
+second write authority and quietly forking the records.
+
+**The warning the command prints is not boilerplate.** If you take over while
+the old Hub is still running on the same network, two machines will accept
+writes into two different databases for one cabinet, and the records will
+diverge in ways no later sync can reconcile.
 
 ## 3. Activate the cabinet offline
 

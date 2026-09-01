@@ -12,6 +12,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Restricts tenant-owned models to the authenticated user's cabinet and
  * automatically assigns that cabinet when new records are created.
  *
+ * Every model using this trait owns a `cabinet_id` column — the trait's global
+ * scope and its creating hook both depend on it — so declare it once here
+ * rather than in each model.
+ *
+ * It is nullable: the column is created that way (see
+ * add_cabinet_id_to_tenant_tables) and platform-level rows such as an AuditLog
+ * for a back-office action legitimately have no cabinet. The relation is
+ * therefore nullable too, which is why call sites read it with `?->`.
+ *
+ * @property int|null $cabinet_id
+ * @property-read Cabinet|null $cabinet
+ *
  * @mixin Model
  */
 trait BelongsToCabinet

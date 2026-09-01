@@ -59,6 +59,24 @@ final class DesktopDownloadService
 
     public function localInstallerPath(): ?string
     {
+        // A published release wins over the statically configured file, so a
+        // fresh download can never hand someone an older build than the one
+        // the updater is already offering to existing installs.
+        $current = app(DesktopReleaseService::class)->current();
+
+        if ($current !== null) {
+            $releasePath = realpath($current->installerFullPath());
+            $releaseBase = realpath(storage_path('app/private/desktop/releases'));
+
+            if ($releasePath !== false
+                && $releaseBase !== false
+                && Str::startsWith($releasePath, $releaseBase.DIRECTORY_SEPARATOR)
+                && is_file($releasePath)
+                && is_readable($releasePath)) {
+                return $releasePath;
+            }
+        }
+
         $candidate = config('medismart.desktop_download.installer_path');
 
         if (! is_string($candidate) || trim($candidate) === '') {

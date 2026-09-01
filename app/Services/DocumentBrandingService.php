@@ -137,20 +137,29 @@ final class DocumentBrandingService
         ]));
     }
 
-    private function logoUrl(?string $path): string
+    /**
+     * The uploaded clinic logo, or null when none is configured or the stored
+     * file has gone missing. Application chrome hides the logo entirely in
+     * that case; printed documents fall back to the packaged mark instead, so
+     * every surface resolves the same stored path through this one method.
+     */
+    public function storedLogoUrl(?string $path): ?string
     {
         if (! is_string($path) || trim($path) === '') {
-            return self::DEFAULT_LOGO_URL;
+            return null;
         }
 
         try {
             $disk = Storage::disk('public');
 
-            return $disk->exists($path)
-                ? $disk->url($path)
-                : self::DEFAULT_LOGO_URL;
+            return $disk->exists($path) ? $disk->url($path) : null;
         } catch (Throwable) {
-            return self::DEFAULT_LOGO_URL;
+            return null;
         }
+    }
+
+    private function logoUrl(?string $path): string
+    {
+        return $this->storedLogoUrl($path) ?? self::DEFAULT_LOGO_URL;
     }
 }

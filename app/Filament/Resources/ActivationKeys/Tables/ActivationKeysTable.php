@@ -211,6 +211,14 @@ class ActivationKeysTable
 
         return Response::streamDownload(function () use ($rows): void {
             $handle = fopen('php://output', 'wb');
+
+            if ($handle === false) {
+                // Nothing can be written, and the calls below would each raise
+                // a TypeError on false. End the download empty rather than
+                // turning a failed export into a 500.
+                return;
+            }
+
             // Excel on Windows needs the BOM to read the accented headers.
             fwrite($handle, "\xEF\xBB\xBF");
             fputcsv($handle, ['Cabinet', 'E-mail', 'Type', 'État', 'Clé', 'Émise le']);

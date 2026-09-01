@@ -188,6 +188,9 @@ class CabinetFulfillmentService
         }
 
         return DB::transaction(function () use ($grant, $actor): HostedLicenseGrant {
+            // findOrFail() is typed Model|Collection because it also accepts an
+            // array of keys; a single key always yields one model.
+            /** @var HostedLicenseGrant $locked */
             $locked = HostedLicenseGrant::withoutCabinetScope()
                 ->lockForUpdate()
                 ->findOrFail($grant->getKey());
@@ -606,6 +609,9 @@ class CabinetFulfillmentService
         };
     }
 
+    /**
+     * @param  array<string, mixed>  $responseContext
+     */
     private function issueLicense(
         Cabinet $cabinet,
         LicensePlan|LicenseType $plan,

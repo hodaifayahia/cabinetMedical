@@ -1,10 +1,15 @@
 # Desktop release-resource staging (historical)
 
-> **Superseded:** the current Tauri installer is a thin HTTPS client and does
-> not consume the PHP/SQLite resource bundle described below. This document is
-> retained for audit history only. Current shared-offline delivery is governed
-> by [`ADR-002`](architecture/ADR-002-cabinet-hub-offline-lan.md) and requires a
-> separately installed, acceptance-tested Cabinet Hub.
+> **Superseded:** this describes the retired thin-client era, when the
+> installer consumed no PHP/SQLite bundle, and the cloudflared tunnel and
+> runtime Composer that went with it. Retained for audit history only.
+>
+> The installer bundles the application again — see
+> [`ADR-004`](architecture/ADR-004-local-first-desktop-restored.md) for the
+> decision and [`DESKTOP-RELEASE.md`](DESKTOP-RELEASE.md) for the current build
+> process. Shared multi-PC operation is still governed by
+> [`ADR-002`](architecture/ADR-002-cabinet-hub-offline-lan.md) and a separately
+> installed Cabinet Hub.
 
 The Windows installer must be built only after the release-resource staging
 gate succeeds. The gate creates a complete resource tree in a sibling temporary

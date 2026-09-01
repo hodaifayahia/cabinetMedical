@@ -183,6 +183,12 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($key);
         });
 
+        // Every installed shell polls the manifest, and a clinic can run
+        // several machines behind one address, so this is per address but
+        // generous. It exists to stop a hammering loop, not to ration checks.
+        RateLimiter::for('desktop-updates', static fn (Request $request): Limit => Limit::perMinute(60)
+            ->by(hash('sha256', (string) $request->ip())));
+
         RateLimiter::for('license-activation', static function (Request $request): Limit {
             $key = hash('sha256', implode('|', [
                 (string) $request->user()?->getAuthIdentifier(),

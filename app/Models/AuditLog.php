@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 #[Fillable([
     'user_id',
     'action',

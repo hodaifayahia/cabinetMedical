@@ -204,6 +204,9 @@ final class AppointmentImporter
         return $user->cabinet_id !== null && (int) $user->cabinet_id !== $cabinetId;
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     private function applyCreation(
         int $cabinetId,
         string $publicId,
@@ -234,6 +237,9 @@ final class AppointmentImporter
         return ImportResult::created($appointment);
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     private function applyUpdate(
         Appointment $appointment,
         Patient $patient,

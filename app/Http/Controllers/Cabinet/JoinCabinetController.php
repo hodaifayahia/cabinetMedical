@@ -22,7 +22,10 @@ class JoinCabinetController extends Controller
 
     public function store(JoinCabinetRequest $request, JoinCabinetAction $action): RedirectResponse
     {
-        $action->execute($request->validated());
+        /** @var array{name: string, email: string, password: string, owner_email: string} $data */
+        $data = $request->validated();
+
+        $action->execute($data);
 
         return redirect()->route('login')->with(
             'status',

@@ -5,6 +5,7 @@ namespace Tests\Feature\Hub;
 use App\Enums\CabinetStatus;
 use App\Models\Cabinet;
 use App\Models\User;
+use App\Services\Hub\HubAdoptionService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -44,7 +45,7 @@ class CabinetHubModeTest extends TestCase
         return $cabinet->refresh();
     }
 
-    private function runAsHubFor(Cabinet $cabinet): void
+    private function runAsHubFor(Cabinet $cabinet, bool $adopt = true): void
     {
         config([
             'hub.enabled' => true,
@@ -53,6 +54,13 @@ class CabinetHubModeTest extends TestCase
             'hub.hostname' => 'hub-cabinet.drclick.local',
             'hub.tls_spki_sha256' => str_repeat('ab', 32),
         ]);
+
+        // A provisioned Hub has been adopted by an operator. Configuration
+        // alone grants no authority, so a test that models a working Hub has
+        // to model that step too.
+        if ($adopt) {
+            app(HubAdoptionService::class)->adopt();
+        }
     }
 
     public function test_a_hosted_installation_is_unchanged_and_advertises_no_hub(): void
@@ -89,7 +97,7 @@ class CabinetHubModeTest extends TestCase
 
         $this->assertSame([
             'mode', 'protocol_version', 'hub_id', 'cabinet_id',
-            'hostname', 'tls_spki_sha256', 'ready', 'reason',
+            'hostname', 'tls_spki_sha256', 'authority_epoch', 'ready', 'reason',
         ], array_keys($hub));
         $this->assertStringNotContainsString('Houdaifa', json_encode($hub));
     }
