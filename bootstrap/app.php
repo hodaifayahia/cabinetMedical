@@ -7,6 +7,8 @@ use App\Http\Middleware\EnforceRemoteUploadBoundary;
 use App\Http\Middleware\EnforceSessionLock;
 use App\Http\Middleware\EnsureApiCabinetIsActive;
 use App\Http\Middleware\EnsureCabinetIsActive;
+use App\Http\Middleware\EnsureMobilePatient;
+use App\Http\Middleware\EnsureMobileStaffCabinet;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\MarkJsonOnlyEndpointsAsXhr;
@@ -86,6 +88,8 @@ return $registerWindowsCachePrefixes(Application::configure(basePath: dirname(__
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'cabinet.active.api' => EnsureApiCabinetIsActive::class,
+            'mobile.patient' => EnsureMobilePatient::class,
+            'mobile.staff.cabinet' => EnsureMobileStaffCabinet::class,
         ]);
 
         $middleware->api(prepend: [

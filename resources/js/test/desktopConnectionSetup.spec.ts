@@ -28,18 +28,17 @@ const remoteCapability = JSON.parse(
         resolve(root, 'src-tauri/capabilities/desktop-windows.json'),
         'utf8',
     ),
-) as { permissions: string[] };
+) as { permissions: string[]; remote?: { urls?: string[] } };
 
-test('the offline shell offers cloud, cabinet hub, retry, and an explicit local technician test', () => {
+const remoteCapabilityUrls = remoteCapability.remote?.urls ?? [];
+
+test('the offline shell offers cloud, cabinet hub, and retry', () => {
     const page = new DOMParser().parseFromString(offlinePage, 'text/html');
 
     expect(page.querySelector('#cloud-btn')?.textContent).toContain('Cloud');
     expect(page.querySelector('#hub-form')).not.toBeNull();
     expect(page.querySelector('#hub-url')).not.toBeNull();
     expect(page.querySelector('#retry-btn')).not.toBeNull();
-    expect(page.querySelector('#local-btn')?.textContent).toContain(
-        'test local',
-    );
     expect(page.body.textContent).toContain('deux ou trois PC sans Internet');
 });
 
@@ -59,8 +58,42 @@ test('server selection is verified and persisted by narrow native commands', () 
     expect(rustConnection).toContain('.join("health")');
     expect(rustConnection).toContain('health.application.name != "Drclick"');
     expect(rustConnection).toContain('persist_server_url');
-    expect(offlinePage).toContain('openLocalDrclickWhenAvailable');
-    expect(offlinePage).toContain("url: localServerUrl");
+
+    // The page drives exactly two native commands. `configure_local_mode` and
+    // `runtime_mode_status` are registered in build.rs and granted by the
+    // connection-setup capability, but nothing here calls them, so local mode
+    // currently cannot be chosen from this screen. Pinned so that re-adding
+    // that affordance is a deliberate change rather than an accident.
+    expect(offlinePage).not.toContain("invoke('configure_local_mode'");
+});
+
+test('every place that names the hosted origin agrees with the compiled default', () => {
+    // The origin is a build input (DRCLICK_CLOUD_SERVER_URL), but three files
+    // still spell it out and Tauri cannot template any of them: the CSP, the
+    // local CSP/updater overlay, and the capability that decides which remote
+    // origins may invoke native commands. If they drift apart the app still
+    // compiles and then fails at runtime — a blank window, or a webview that
+    // silently cannot call Tauri. Fail the test instead.
+    const compiled = rustShell.match(
+        /DEFAULT_CLOUD_SERVER_URL: &str = "([^"]+)"/u,
+    )?.[1];
+
+    expect(compiled).toBeDefined();
+
+    const origin = new URL(compiled!).origin;
+
+    const tauriConfig = readFileSync(
+        resolve(root, 'src-tauri/tauri.conf.json'),
+        'utf8',
+    );
+    const localConfig = readFileSync(
+        resolve(root, 'src-tauri/tauri.local.conf.json'),
+        'utf8',
+    );
+
+    expect(tauriConfig).toContain(origin);
+    expect(localConfig).toContain(origin);
+    expect(JSON.stringify(remoteCapabilityUrls)).toContain(origin);
 });
 
 test('connection setup is local-only and LAN HTTP remains forbidden', () => {

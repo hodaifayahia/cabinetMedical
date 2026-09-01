@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\PermissionName;
+use App\Enums\RoleName;
 use App\Services\Authorization\CabinetRolePermissionService;
 use BackedEnum;
 use Database\Factories\UserFactory;
@@ -29,7 +30,8 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * @property int $id
  * @property string $name
- * @property string $email
+ * @property string|null $email
+ * @property string|null $phone
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $local_pin_hash
@@ -44,7 +46,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'cabinet_setting_id', 'cabinet_id', 'is_platform_admin', 'approved_at'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'cabinet_setting_id', 'cabinet_id', 'is_platform_admin', 'approved_at'])]
 #[Hidden(['password', 'local_pin_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
@@ -134,6 +136,34 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     }
 
     /**
+     * The demographic profile of a mobile patient account.
+     *
+     * @return HasOne<PatientProfile, $this>
+     */
+    public function patientProfile(): HasOne
+    {
+        return $this->hasOne(PatientProfile::class);
+    }
+
+    /**
+     * Family circle rows this patient account owns.
+     *
+     * @return HasMany<FamilyMember, $this>
+     */
+    public function familyMembers(): HasMany
+    {
+        return $this->hasMany(FamilyMember::class, 'owner_user_id');
+    }
+
+    /**
+     * @return HasMany<DevicePushToken, $this>
+     */
+    public function devicePushTokens(): HasMany
+    {
+        return $this->hasMany(DevicePushToken::class);
+    }
+
+    /**
      * The tenant cabinet this user belongs to.
      *
      * @return BelongsTo<Cabinet, $this>
@@ -185,5 +215,24 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     public function isPendingApproval(): bool
     {
         return $this->cabinet_id !== null && $this->approved_at === null;
+    }
+
+    /**
+     * The role a mobile client should act as. Precedence: platform admin,
+     * then Patient, then Doctor; every other cabinet member is reception.
+     */
+    public function mobileRole(): string
+    {
+        return match (true) {
+            $this->is_platform_admin === true => 'admin',
+            $this->hasRole(RoleName::PATIENT->value) => 'patient',
+            $this->hasRole(RoleName::DOCTOR->value) => 'doctor',
+            default => 'reception',
+        };
+    }
+
+    public function isMobilePatient(): bool
+    {
+        return $this->hasRole(RoleName::PATIENT->value);
     }
 }

@@ -31,7 +31,7 @@ class StaffIndexController extends Controller
 
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:120'],
-            'role' => ['nullable', 'string', Rule::in(RoleName::values())],
+            'role' => ['nullable', 'string', Rule::in(RoleName::staffValues())],
         ]);
         $search = trim((string) ($filters['search'] ?? ''));
         $role = trim((string) ($filters['role'] ?? ''));
@@ -246,7 +246,7 @@ class StaffIndexController extends Controller
      */
     private function assignableRoles(User $actor): array
     {
-        return array_values(collect(RoleName::values())
+        return array_values(collect(RoleName::staffValues())
             ->when(
                 ! $actor->hasRole(RoleName::SUPER_ADMINISTRATOR->value),
                 fn ($roles) => $roles->reject(

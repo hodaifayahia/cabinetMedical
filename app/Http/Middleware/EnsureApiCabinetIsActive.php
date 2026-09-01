@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\RoleName;
 use App\Models\User;
 use App\Services\Cabinet\CabinetAccessService;
 use Closure;
@@ -28,6 +29,16 @@ class EnsureApiCabinetIsActive
         $user = $request->user();
 
         if ($user instanceof User) {
+            // Patient accounts never reach cabinet-scoped endpoints: they hold
+            // no cabinet and their global scopes would be inert.
+            if ($user->hasRole(RoleName::PATIENT->value)) {
+                return response()->json([
+                    'message' => "Ce compte patient ne peut pas accéder à l'espace du cabinet.",
+                    'reason' => 'patient_token_forbidden',
+                    'status' => 'forbidden',
+                ], 403);
+            }
+
             $reason = $this->access->denialReason($user);
 
             if ($reason !== null) {

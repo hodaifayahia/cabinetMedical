@@ -51,7 +51,7 @@ online — the regression that shipped a 7 MB shell.
 
 ## What is deliberately no longer staged
 
-The local-first architecture in [ADR-003](../../docs/architecture/ADR-003-local-first-desktop-restored.md)
+The local-first architecture in [ADR-004](../../docs/architecture/ADR-004-local-first-desktop-restored.md)
 runs no tunnel, no LAN upload listener, and no Composer on the clinic's
 machine. Staging a `cloudflared.exe` or a `composer.phar` would put unused
 network and code-execution binaries next to a patient database, so the build

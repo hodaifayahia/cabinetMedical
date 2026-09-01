@@ -6,7 +6,7 @@
  * empty migrated SQLite template.
  *
  * This replaces `stage-release-resources.mjs` for the local-first architecture
- * described in ADR-003. It stages no cloudflared binary and no runtime
+ * described in ADR-004. It stages no cloudflared binary and no runtime
  * Composer, because the shell no longer runs a tunnel, a LAN listener, or
  * Composer on the clinic's machine — shipping them would put unused network
  * binaries next to a patient database.
@@ -154,7 +154,10 @@ function copyTree(source, destination, relativeBase) {
 }
 
 function sha256(file) {
-    return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+    return crypto
+        .createHash('sha256')
+        .update(fs.readFileSync(file))
+        .digest('hex');
 }
 
 function run(command, args, options = {}) {
@@ -182,7 +185,9 @@ function stagePhpRuntime(parsed) {
 
     if (parsed['php-zip']) {
         if (!parsed['php-sha256']) {
-            fail('--php-zip requires --php-sha256 so the download can be verified');
+            fail(
+                '--php-zip requires --php-sha256 so the download can be verified',
+            );
         }
 
         const actual = sha256(parsed['php-zip']);
@@ -200,7 +205,9 @@ function stagePhpRuntime(parsed) {
     }
 
     if (!source) {
-        fail('provide --php-runtime <dir> or --php-zip <file> --php-sha256 <hex>');
+        fail(
+            'provide --php-runtime <dir> or --php-zip <file> --php-sha256 <hex>',
+        );
     }
 
     const interpreter = path.join(source, 'php.exe');
@@ -233,8 +240,14 @@ function stageApplication(parsed) {
         run('npm', ['run', 'build']);
     }
 
-    if (!fs.existsSync(path.join(repositoryRoot, 'public', 'build', 'manifest.json'))) {
-        fail('public/build/manifest.json is missing; run `npm run build` first');
+    if (
+        !fs.existsSync(
+            path.join(repositoryRoot, 'public', 'build', 'manifest.json'),
+        )
+    ) {
+        fail(
+            'public/build/manifest.json is missing; run `npm run build` first',
+        );
     }
 
     removeIfPresent(destination);
@@ -246,23 +259,36 @@ function stageApplication(parsed) {
         if (!fs.existsSync(source)) {
             fail(`expected ${relative} in the checkout`);
         }
-        files += copyTree(source, path.join(destination, relative), repositoryRoot);
+        files += copyTree(
+            source,
+            path.join(destination, relative),
+            repositoryRoot,
+        );
     }
 
     // Laravel writes its caches to the launcher-provided directories via
     // APP_*_CACHE, but the directory still has to exist in the tree.
-    fs.mkdirSync(path.join(destination, 'bootstrap', 'cache'), { recursive: true });
-    fs.writeFileSync(path.join(destination, 'bootstrap', 'cache', '.gitignore'), "*\n!.gitignore\n");
+    fs.mkdirSync(path.join(destination, 'bootstrap', 'cache'), {
+        recursive: true,
+    });
+    fs.writeFileSync(
+        path.join(destination, 'bootstrap', 'cache', '.gitignore'),
+        '*\n!.gitignore\n',
+    );
 
     process.stdout.write('installing production dependencies...\n');
-    run('composer', [
-        'install',
-        '--no-dev',
-        '--optimize-autoloader',
-        '--no-interaction',
-        '--no-progress',
-        '--no-scripts',
-    ], { cwd: destination });
+    run(
+        'composer',
+        [
+            'install',
+            '--no-dev',
+            '--optimize-autoloader',
+            '--no-interaction',
+            '--no-progress',
+            '--no-scripts',
+        ],
+        { cwd: destination },
+    );
 
     return { files, destination };
 }
@@ -343,7 +369,9 @@ function temporaryStorageTree() {
  */
 function assertBootstrapCacheIsClean(applicationRoot) {
     const cache = path.join(applicationRoot, 'bootstrap', 'cache');
-    const stale = fs.readdirSync(cache).filter((entry) => entry.endsWith('.php'));
+    const stale = fs
+        .readdirSync(cache)
+        .filter((entry) => entry.endsWith('.php'));
 
     for (const entry of stale) {
         fs.rmSync(path.join(cache, entry), { force: true });
@@ -362,7 +390,13 @@ function assertBootstrapCacheIsClean(applicationRoot) {
  * installation, so this is verified rather than assumed.
  */
 function assertTemplateIsEmpty(applicationRoot, template) {
-    const clinicalTables = ['patients', 'appointments', 'consultations', 'users', 'documents'];
+    const clinicalTables = [
+        'patients',
+        'appointments',
+        'consultations',
+        'users',
+        'documents',
+    ];
 
     for (const table of clinicalTables) {
         const output = run(
@@ -377,7 +411,9 @@ function assertTemplateIsEmpty(applicationRoot, template) {
         ).trim();
 
         if (output !== 'absent' && output !== '0') {
-            fail(`the database template contains ${output} row(s) in ${table}; refusing to stage it`);
+            fail(
+                `the database template contains ${output} row(s) in ${table}; refusing to stage it`,
+            );
         }
     }
 }
@@ -388,7 +424,11 @@ function main() {
     const parsed = parseArguments(process.argv.slice(2));
 
     if (parsed.help) {
-        process.stdout.write(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('*/')[0]);
+        process.stdout.write(
+            fs
+                .readFileSync(fileURLToPath(import.meta.url), 'utf8')
+                .split('*/')[0],
+        );
 
         return;
     }
@@ -402,23 +442,29 @@ function main() {
     process.stdout.write(`staged PHP runtime (${php.files} files)\n`);
 
     const application = stageApplication(parsed);
-    process.stdout.write(`staged Laravel application (${application.files} files before vendor)\n`);
+    process.stdout.write(
+        `staged Laravel application (${application.files} files before vendor)\n`,
+    );
 
     const template = stageDatabaseTemplate(application.destination);
-    process.stdout.write(`staged database template (${fs.statSync(template).size} bytes)\n`);
+    process.stdout.write(
+        `staged database template (${fs.statSync(template).size} bytes)\n`,
+    );
 
     // Scrub the temporary storage roots the migration run created.
     for (const entry of fs.readdirSync(resourcesRoot)) {
         if (
-            entry.startsWith('.storage-')
-            || entry.startsWith('.cache-')
-            || entry === '.php-extract'
+            entry.startsWith('.storage-') ||
+            entry.startsWith('.cache-') ||
+            entry === '.php-extract'
         ) {
             removeIfPresent(path.join(resourcesRoot, entry));
         }
     }
 
-    process.stdout.write('\npayload staged. Release builds will now pass the resource gate.\n');
+    process.stdout.write(
+        '\npayload staged. Release builds will now pass the resource gate.\n',
+    );
 }
 
 main();

@@ -126,7 +126,7 @@ class PendingMemberController extends Controller
      */
     private function assignableRoles(User $actor): array
     {
-        return array_values(collect(RoleName::values())
+        return array_values(collect(RoleName::staffValues())
             ->when(
                 ! $actor->hasRole(RoleName::SUPER_ADMINISTRATOR->value),
                 fn ($roles) => $roles->reject(

@@ -30,6 +30,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 $this->assistantPermissions(),
             ));
 
+        // Mobile patient accounts hold the role for identification only —
+        // deliberately zero staff permissions.
+        Role::findOrCreate(RoleName::PATIENT->value, 'web');
+
         Role::query()->whereNotIn('name', RoleName::values())->get()->each->delete();
         $registrar->forgetCachedPermissions();
     }

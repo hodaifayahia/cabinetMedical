@@ -62,6 +62,8 @@ return [
         'default_duration' => (int) env('CLINIC_APPOINTMENT_DURATION', 30),
         'min_duration' => (int) env('CLINIC_APPOINTMENT_MIN_DURATION', 5),
         'max_duration' => (int) env('CLINIC_APPOINTMENT_MAX_DURATION', 240),
+        // How close to the start time a mobile patient may still cancel.
+        'patient_cancel_cutoff_hours' => (int) env('CLINIC_PATIENT_CANCEL_CUTOFF_HOURS', 2),
     ],
 
     /*

@@ -52,6 +52,9 @@ use Illuminate\Support\Str;
     'antecedents_other',
     'notes',
     'created_by',
+    'wilaya_code',
+    'baladiya_id',
+    'place_of_birth',
 ])]
 class Patient extends Model
 {
@@ -132,6 +135,28 @@ class Patient extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * The mobile patient account this dossier belongs to, when it was created
+     * or claimed through the mobile channel. Never mass assigned.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function accountUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'patient_user_id');
+    }
+
+    /**
+     * The family member this dossier represents, for dossiers booked on
+     * behalf of a family member. Never mass assigned.
+     *
+     * @return BelongsTo<FamilyMember, $this>
+     */
+    public function familyMember(): BelongsTo
+    {
+        return $this->belongsTo(FamilyMember::class);
     }
 
     /**

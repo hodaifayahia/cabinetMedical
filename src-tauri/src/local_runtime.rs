@@ -54,9 +54,6 @@ const LARAVEL_STORAGE_SUBDIRECTORIES: &[&str] = &[
     "logs",
 ];
 
-const LARAVEL_ROUTER_SCRIPT: &str =
-    "vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php";
-
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
@@ -518,15 +515,17 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
         )
     })?;
 
-    // The supervisor, queue worker, and scheduler all spawn php.exe and all
-    // inherit this process's environment, so PHPRC set here reaches each of
-    // them without threading a path through three separate configs.
+    // Two settings the supervisor's own configuration cannot carry are handed
+    // to the PHP children through this process's environment, which they all
+    // inherit. Both writes must happen here, before any child is spawned below:
+    // `set_var` is only sound while nothing else is reading the environment.
+    //
+    // PHPRC points PHP at the generated php.ini. Its `extension_dir` has to be
+    // absolute, so it cannot be staged beside php.exe.
     if packaged.bundled {
         let configuration_dir = write_php_configuration(&packaged, &paths.runtime)?;
         std::env::set_var("PHPRC", &configuration_dir);
     }
-
-    let router_script = write_router_script(&paths.runtime)?;
 
     // The supervisor exports APP_CONFIG_CACHE, APP_ROUTES_CACHE,
     // APP_EVENTS_CACHE, and APP_PACKAGES_CACHE, but not APP_SERVICES_CACHE.
@@ -534,10 +533,16 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
     // `bootstrap/cache/services.php` inside the packaged application, which is
     // read-only on a real installation — so it cannot register its providers
     // and every request fails with `Class "view" does not exist`.
+    //
+    // `bootstrap/app.php` additionally has to register the Windows drive-letter
+    // prefixes, or Laravel treats `C:\...` as relative and appends it to the
+    // installation directory anyway.
     std::env::set_var(
         "APP_SERVICES_CACHE",
         paths.framework_cache.join("services.php"),
     );
+
+    let router_script = write_router_script(&paths.runtime)?;
 
     let health_key = generate_runtime_secret();
     let port = allocate_loopback_port().map_err(|error| {

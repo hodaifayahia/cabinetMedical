@@ -42,14 +42,14 @@ class RolePermissionMatrixTest extends TestCase
                 ->has('permissionGroups', 12)
                 ->where('permissionGroups.0.key', 'patients')
                 ->where('permissionGroups.0.permissions.0.name', PermissionName::PATIENTS_VIEW->value)
-                ->has('roles', count(RoleName::cases()))
+                ->has('roles', count(RoleName::staffCases()))
                 ->where('roles.0.name', RoleName::SUPER_ADMINISTRATOR->value)
                 ->where('roles.0.locked', true)
                 ->where('roles.0.permission_count', count(PermissionName::cases()))
                 ->has('users', 1)
                 ->where('users.0.id', $administrator->getKey())
                 ->where('users.0.is_owner', true)
-                ->has('assignableRoles', count(RoleName::cases()) - 1),
+                ->has('assignableRoles', count(RoleName::staffCases()) - 1),
             );
     }
 
@@ -328,7 +328,7 @@ class RolePermissionMatrixTest extends TestCase
     /** @return list<array{name: string, permissions: list<string>}> */
     private function matrixPayload(): array
     {
-        return array_values(collect(RoleName::cases())
+        return array_values(collect(RoleName::staffCases())
             ->reject(static fn (RoleName $role): bool => $role === RoleName::SUPER_ADMINISTRATOR)
             ->map(static function (RoleName $role): array {
                 $storedRole = Role::findByName($role->value, 'web');

@@ -30,7 +30,7 @@ class RolePermissionController extends Controller
         /** @var Collection<string, Role> $rolesByName */
         $rolesByName = Role::query()
             ->where('guard_name', 'web')
-            ->whereIn('name', RoleName::values())
+            ->whereIn('name', RoleName::staffValues())
             ->with('permissions')
             ->get()
             ->keyBy('name');
@@ -62,7 +62,7 @@ class RolePermissionController extends Controller
                     'customized' => $set !== null,
                 ];
             },
-            RoleName::cases(),
+            RoleName::staffCases(),
         );
 
         return Inertia::render('configuration/RolesPermissions', [
@@ -121,7 +121,7 @@ class RolePermissionController extends Controller
         $editableRoleNames = array_values(array_map(
             static fn (RoleName $role): string => $role->value,
             array_filter(
-                RoleName::cases(),
+                RoleName::staffCases(),
                 static fn (RoleName $role): bool => $role !== RoleName::SUPER_ADMINISTRATOR,
             ),
         ));

@@ -20,6 +20,9 @@ use Illuminate\Support\Str;
 /**
  * @property AppointmentStatus $status
  * @property int|null $cabinet_id
+ * @property int|null $booked_by_user_id
+ * @property int|null $family_member_id
+ * @property string|null $booking_channel
  * @property string|null $public_id
  * @property int $sync_version
  * @property CarbonImmutable|null $appointment_date
@@ -190,6 +193,27 @@ class Appointment extends Model
     public function cancelledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    /**
+     * The mobile patient account that booked this appointment, when it was
+     * booked through the mobile channel.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function bookedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'booked_by_user_id');
+    }
+
+    /**
+     * The family member the appointment was booked for, when not for self.
+     *
+     * @return BelongsTo<FamilyMember, $this>
+     */
+    public function familyMember(): BelongsTo
+    {
+        return $this->belongsTo(FamilyMember::class);
     }
 
     /** @return HasMany<AppointmentSyncEvent, $this> */

@@ -1,0 +1,1462 @@
+# Drclick Mobile API — Contract (Phase 1)
+
+Audience: the React Native (patient + staff mobile) developer. This document is
+the contract for every endpoint the mobile app uses. All examples below are
+**real responses captured from the running backend** (test run of 2026-09-01,
+app timezone `Africa/Algiers`, i.e. `+01:00`) — only tokens, UUIDs and ids are
+illustrative values from that run.
+
+- **Base URL**: `https://<host>/api/v1`
+- **Format**: JSON only. Always send `Accept: application/json` and
+  `Content-Type: application/json`.
+- **Auth**: `Authorization: Bearer <token>` (Laravel Sanctum personal access
+  tokens).
+- **Language**: every human-readable `message` is in French. Machine handling
+  must rely on HTTP status + the `reason` code, never on message text.
+- **Dates**: date-times are ISO-8601 with the clinic offset
+  (`2026-09-15T09:00:00+01:00`); plain dates are `Y-m-d`; times of day are
+  `HH:MM` (24h). Send booking times as full ISO-8601 strings — a UTC offset is
+  accepted and normalised server-side to the clinic timezone.
+
+---
+
+## 1. Tokens & authentication semantics
+
+| Property | Mobile tokens (`POST /auth/register`, `POST /auth/login`) | Desktop/legacy token (`POST /auth/token`) |
+|---|---|---|
+| Lifetime | **90 days**, then the token is invalid (client must log in again) | No expiry |
+| Abilities | `["mobile"]` | default (`*`) |
+| Named after | `device_name` request field (defaults to `"mobile"`) | `device_name` (required) |
+| Revocation | `POST /auth/logout` deletes **the token used on that request** only | same |
+
+Notes:
+
+- Registration creates **patient accounts only**. Any attempt to send
+  `role`, `roles`, `role_id`, `is_platform_admin`, `cabinet_id` or
+  `approved_at` is rejected with 422 (see §8.2).
+- Staff (doctor/reception) may also log in through `POST /auth/login`; they
+  pass the same cabinet-eligibility gate as the desktop API and receive a 403
+  with a `reason` when their cabinet is pending/suspended/expired (§6).
+- There is no refresh endpoint: on 401 send the user back to login.
+- `POST /auth/logout` answers `200 {"message": "Déconnexion réussie."}` and
+  revokes the presented token.
+
+## 2. Roles
+
+`role` is returned by register/login and by `GET /my/profile`.
+
+| Mobile role | Backing implementation | What the token can reach |
+|---|---|---|
+| `patient` | Spatie role `Patient`, `cabinet_id = null`, zero staff permissions | Own profile, own family members, appointments **they booked** (self or family), own prescriptions, own notifications, public discovery. Nothing cabinet-scoped. |
+| `doctor` | role `Doctor` + member of one cabinet | Own cabinet only: staff-mobile endpoints + legacy staff endpoints. |
+| `reception` | role `Assistant` + member of one cabinet | Own cabinet only (one cabinet = one doctor by design). Permission-gated writes may 403. |
+| `admin` | `is_platform_admin = true` | Platform back office (web). **No mobile endpoints in Phase 1** — staff-mobile endpoints reject admins with `cabinet_membership_required`. |
+
+Hard boundaries (enforced server-side, verified by tests):
+
+- A **patient token** on any cabinet endpoint (`/appointments`, `/patients`,
+  `/schedule`, `/sync/*`, `/mobile/*`) → `403 {reason: "patient_token_forbidden"}`.
+- A **staff token** on any `mobile.patient` endpoint (`/my/*`,
+  `/family-members*`) → `403 {reason: "patient_role_required"}`.
+- A **platform-admin or cabinet-less token** on `/mobile/*` staff endpoints →
+  `403 {reason: "cabinet_membership_required"}`.
+- Staff of cabinet A can never see or act on cabinet B data (404 on lookups).
+- A patient can never see another patient's bookings (404), family members, or
+  respond to link requests not addressed to them (403).
+
+## 3. Pagination envelope
+
+Every list endpoint is paginated and wrapped in the standard Laravel envelope
+(`data` + `links` + `meta`). Mobile lists default to **15 per page** and cap
+`per_page` at **50** (`/mobile/appointments/today` defaults to 50;
+`/notifications` is fixed at 20; legacy staff lists accept up to 100).
+Use `?page=N&per_page=M`; extra query filters are kept in the links.
+
+```json
+{
+  "data": [ "…resource objects…" ],
+  "links": {
+    "first": "https://<host>/api/v1/doctors?wilaya_code=16&page=1",
+    "last": "https://<host>/api/v1/doctors?wilaya_code=16&page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      { "url": null, "label": "« Précédent", "page": null, "active": false },
+      { "url": "https://<host>/api/v1/doctors?wilaya_code=16&page=1", "label": "1", "page": 1, "active": true },
+      { "url": null, "label": "Suivant »", "page": null, "active": false }
+    ],
+    "path": "https://<host>/api/v1/doctors",
+    "per_page": 15,
+    "to": 1,
+    "total": 1
+  }
+}
+```
+
+Single resources are wrapped as `{"data": {…}}` — **except** the auth
+endpoints (`/auth/register`, `/auth/login`, `/auth/token`) which return a flat
+`{token, role, user}` object, and the availability endpoints which return
+their own flat shapes (§8.1).
+
+## 4. Appointment statuses
+
+`status` values (string enum):
+
+| Value | Meaning | Blocks the slot? |
+|---|---|---|
+| `scheduled` | Booked, not yet confirmed by the clinic | yes |
+| `confirmed` | Confirmed by the clinic | yes |
+| `checked_in` | Patient arrived at the desk | yes |
+| `in_progress` | Consultation running | yes |
+| `completed` | Done | no |
+| `cancelled` | Cancelled (by patient or clinic) | no |
+| `no_show` | Patient did not show up | no |
+
+> **Mobile mapping note — `scheduled` ≡ "pending"**: a freshly booked mobile
+> appointment is stored as `scheduled`. In the patient UI, display
+> `scheduled` as **"en attente de confirmation" (pending)** and `confirmed`
+> as confirmed. There is no separate `pending` value on the wire.
+
+Transitions available to the mobile app:
+
+- Patient cancel: allowed from `scheduled`/`confirmed`, **only more than the
+  cancel cutoff before start** (config `patient_cancel_cutoff_hours`,
+  default **2 h**), else `422 {reason: "cancel_cutoff_passed"}`.
+- Staff decline (→ `cancelled`): from `scheduled`/`confirmed`, reason required.
+- Staff no-show: from `scheduled`/`confirmed`/`checked_in`.
+- Staff reschedule: from `scheduled`/`confirmed`; **keeps** the current status.
+- Legacy `PATCH /appointments/{id}`: `status` accepts only
+  `confirmed` (from `scheduled`), `checked_in` (from `scheduled`/`confirmed`),
+  `cancelled` (from any non-terminal); other targets → 422.
+
+## 5. Rate limits
+
+429 responses use Laravel's default (`{"message": "Too Many Attempts."}` plus
+`Retry-After` header).
+
+| Limiter | Applies to | Limit |
+|---|---|---|
+| `mobile-register` | `POST /auth/register` | 5/hour per IP **and** 3/hour per phone number |
+| `mobile-login` | `POST /auth/login` | 10/min per identifier+IP |
+| `mobile-public` | all public reference/discovery/availability GETs | 60/min per IP |
+| `login` | `POST /auth/token` (legacy) | 5/min per email+IP |
+| (none) | authenticated endpoints | no throttle middleware in Phase 1 |
+
+## 6. Error envelope
+
+| Status | Shape | When |
+|---|---|---|
+| 401 | `{"message": "Unauthenticated."}` | Missing/invalid/expired token |
+| 403 (domain) | `{"message": <fr>, "reason": <code>}` | Ownership/role refusals (`family_member_not_usable`, `not_owner`, `patient_role_required`) |
+| 403 (gate) | `{"message": <fr>, "reason": <code>, "status": <state>}` | Cabinet gate & role gate refusals: `patient_token_forbidden` (status `forbidden`), `cabinet_membership_required` (status `forbidden`), and cabinet eligibility codes `cabinet_pending`/`cabinet_suspended`/`license_expired`/`license_inactive`/`awaiting_approval` (status `pending`/`suspended`/`expired`/`inactive`/`awaiting_approval`). Same shape on a denied staff login. |
+| 403 (policy) | `{"message": "This action is unauthorized."}` | Spatie/policy denial without a domain code (e.g. assistant lacking a permission) |
+| 404 | `{"message": <text>}` | Not found / not listed / other tenant. Domain 404s carry French messages (`"Cabinet introuvable."`, `"Médecin introuvable."`); model-binding 404s carry Laravel's default text. Treat every 404 as "does not exist for this account". |
+| 409 | `{"message": <fr>, "reason": <code>}` | `slot_unavailable`, `already_linked`, `link_not_pending`, `idempotency_key_reused`; `sync_version_conflict` additionally carries `public_id` and `current_version` |
+| 422 (validation) | `{"message": <first error>, "errors": {field: [messages]}}` | Laravel validation (field messages in French) |
+| 422 (domain) | `{"message": <fr>, "reason": <code>}` | `cancel_cutoff_passed`, `member_has_appointments` |
+| 429 | `{"message": "Too Many Attempts."}` | Rate limit hit |
+
+Full `reason` code list: `patient_token_forbidden`, `patient_role_required`,
+`cabinet_membership_required`, `family_member_not_usable`, `not_owner`,
+`cabinet_pending`, `cabinet_suspended`, `license_expired`, `license_inactive`,
+`awaiting_approval`, `slot_unavailable`, `already_linked`, `link_not_pending`,
+`sync_version_conflict`, `idempotency_key_reused`, `cancel_cutoff_passed`,
+`member_has_appointments`.
+
+Examples (captured):
+
+```json
+// 403 — patient token on GET /api/v1/appointments
+{
+  "message": "Ce compte patient ne peut pas accéder à l'espace du cabinet.",
+  "reason": "patient_token_forbidden",
+  "status": "forbidden"
+}
+```
+
+```json
+// 409 — booking an occupied slot
+{
+  "message": "Ce créneau n'est plus disponible. Veuillez en choisir un autre.",
+  "reason": "slot_unavailable"
+}
+```
+
+---
+
+## 7. Endpoint index
+
+| # | Method & path | Auth |
+|---|---|---|
+| 1 | `GET /wilayas` | none |
+| 2 | `GET /wilayas/{code}/baladiyas` | none |
+| 3 | `GET /specialties` | none |
+| 4 | `GET /doctors` | none |
+| 5 | `GET /clinics/{cabinetId}` | none |
+| 6 | `GET /doctors/{doctorId}/availability/month` | none |
+| 7 | `GET /doctors/{doctorId}/availability/day` | none |
+| 8 | `POST /auth/register` | none |
+| 9 | `POST /auth/login` | none |
+| 10 | `POST /auth/logout` | token |
+| 11 | `POST /devices` | token (any role) |
+| 12 | `DELETE /devices` | token (any role) |
+| 13 | `GET /notifications` | token (any role) |
+| 14 | `POST /notifications/read` | token (any role) |
+| 15 | `GET /my/profile` | token + patient |
+| 16 | `PATCH /my/profile` | token + patient |
+| 17 | `GET /my/appointments` | token + patient |
+| 18 | `POST /my/appointments` | token + patient |
+| 19 | `GET /my/appointments/{publicId}` | token + patient |
+| 20 | `PATCH /my/appointments/{publicId}/cancel` | token + patient |
+| 21 | `GET /my/prescriptions` | token + patient |
+| 22 | `GET /family-members` | token + patient |
+| 23 | `POST /family-members` | token + patient |
+| 24 | `POST /family-members/link` | token + patient |
+| 25 | `POST /family-members/{id}/respond` | token + patient (the **linked** account) |
+| 26 | `DELETE /family-members/{id}` | token + patient (owner) |
+| 27 | `GET /mobile/appointments/today` | token + staff (cabinet member) |
+| 28 | `PATCH /mobile/appointments/{id}/decline` | token + staff (policy `cancel`) |
+| 29 | `PATCH /mobile/appointments/{id}/reschedule` | token + staff (policy `update`) |
+| 30 | `PATCH /mobile/appointments/{id}/no-show` | token + staff (policy `update`) |
+| 31 | `POST /mobile/patients` | token + staff + permission `patients.create` |
+| 32 | `PUT /mobile/schedule` | token + staff + permission `appointments.configure` |
+| 33 | `POST /mobile/schedule/time-off` | token + staff + permission `appointments.configure` |
+| 34 | `DELETE /mobile/schedule/time-off/{id}` | token + staff + permission `appointments.configure` |
+| 35 | `GET /mobile/clinic-profile` | token + staff |
+| 36 | `PUT /mobile/clinic-profile` | token + staff + permission `configuration.branding.manage` |
+| 37 | `POST /auth/token` (legacy) | none |
+| 38 | `GET /me` (legacy) | token |
+| 39 | `GET /appointments` (legacy) | token + staff |
+| 40 | `POST /appointments` (legacy) | token + staff |
+| 41 | `GET /appointments/{id}` (legacy) | token + staff |
+| 42 | `PATCH /appointments/{id}` (legacy) | token + staff |
+| 43 | `DELETE /appointments/{id}` (legacy) | token + staff (policy `cancel`) |
+| 44 | `GET /schedule` (legacy) | token + staff |
+| 45 | `GET /patients` (legacy) | token + staff |
+| 46 | `GET /patients/{id}` (legacy) | token + staff |
+
+"token + staff" = `auth:sanctum` + active-cabinet gate (`patient_token_forbidden`
+for patients; eligibility codes for blocked cabinets). The `/mobile/*` group
+additionally rejects platform admins and cabinet-less accounts
+(`cabinet_membership_required`).
+
+**Deliberately not documented here** (they exist under `/api/v1` but are not
+mobile-app surface): `POST /cabinets/register` and `POST /cabinets/join`
+(clinic-owner and staff onboarding for the web/desktop app), and
+`GET /sync/appointments`, `POST /sync/appointments/ack`,
+`POST /sync/appointments/push` (the local-first desktop replication stream).
+The mobile client must not call any of these.
+
+---
+
+## 8. Endpoints in detail
+
+### 8.1 Public reference & discovery (no auth, throttle `mobile-public`)
+
+#### GET /wilayas
+
+Cached 24 h server-side. Ordered by code.
+
+```json
+{
+  "data": [
+    { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" }
+  ]
+}
+```
+
+#### GET /wilayas/{code}/baladiyas
+
+`{code}` is the wilaya code (integer 1..58). Ordered by `name_fr`.
+Unknown wilaya → `404 {"message": "Wilaya introuvable."}`.
+
+```json
+{
+  "data": [
+    { "id": 2, "wilaya_code": 16, "name_fr": "Bab El Oued", "name_ar": "باب الوادي" },
+    { "id": 1, "wilaya_code": 16, "name_fr": "Hydra", "name_ar": "حيدرة" }
+  ]
+}
+```
+
+#### GET /specialties
+
+The full bilingual catalogue (21 entries). Use `code` in the doctors filter.
+
+```json
+{
+  "data": [
+    { "code": "general_medicine", "label_fr": "Médecine générale", "label_ar": "الطب العام" },
+    { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" },
+    { "code": "pediatrics", "label_fr": "Pédiatrie", "label_ar": "طب الأطفال" }
+  ]
+}
+```
+
+(Also available: `family_medicine`, `internal_medicine`,
+`occupational_medicine`, `anesthesiology`, `general_surgery`, `dermatology`,
+`endocrinology`, `gastroenterology`, `obstetrics_gynecology`, `nephrology`,
+`neurology`, `ophthalmology`, `otorhinolaryngology`, `pulmonology`,
+`psychiatry`, `radiology`, `rheumatology`, `urology`.)
+
+#### GET /doctors
+
+Public directory. Only doctors that are **active**, in an **active** cabinet,
+with a **listed** public profile ever appear. Query params (all optional):
+`wilaya_code` (1..58), `baladiya_id`, `specialty` (catalogue code), `q`
+(matches doctor name or clinic name), `page`, `per_page` (1..50, default 15).
+
+`GET /doctors?wilaya_code=16` →
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Dr Karim Boudjema",
+      "specialty": {
+        "code": "cardiology",
+        "label_fr": "Cardiologie",
+        "label_ar": "أمراض القلب"
+      },
+      "clinic": {
+        "id": 1,
+        "name": "Cabinet El Amel",
+        "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+        "baladiya": { "id": 1, "name_fr": "Hydra", "name_ar": "حيدرة" },
+        "address": "12 Rue Didouche Mourad, Alger-Centre"
+      }
+    }
+  ],
+  "links": { "first": "…", "last": "…", "prev": null, "next": null },
+  "meta": { "current_page": 1, "from": 1, "last_page": 1, "links": ["…"], "path": "…/doctors", "per_page": 15, "to": 1, "total": 1 }
+}
+```
+
+(`specialty`, `wilaya`, `baladiya` and `address` can each be `null`.)
+`doctors[].id` is the **doctor id** used for availability and booking;
+`clinic.id` is the **cabinet id** used for `GET /clinics/{id}`.
+
+#### GET /clinics/{cabinetId}
+
+Detail page. `404 {"message": "Cabinet introuvable."}` unless the cabinet is
+active **and** its public profile is listed.
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Cabinet El Amel",
+    "about": "Cabinet de cardiologie au centre d'Alger. Consultations sur rendez-vous.",
+    "address": "12 Rue Didouche Mourad, Alger-Centre",
+    "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+    "baladiya": { "id": 1, "name_fr": "Hydra", "name_ar": "حيدرة" },
+    "phones": ["0550203040"],
+    "latitude": 36.7525,
+    "longitude": 3.042,
+    "photos": [],
+    "specialties": [
+      { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" }
+    ],
+    "doctor": {
+      "id": 1,
+      "name": "Dr Karim Boudjema",
+      "specialty": { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" }
+    },
+    "working_hours": [
+      { "weekday": 1, "is_closed": true, "ranges": [] },
+      {
+        "weekday": 2,
+        "is_closed": false,
+        "ranges": [
+          { "starts_at": "09:00", "ends_at": "12:00", "period": "morning", "slot_duration": 30 }
+        ]
+      },
+      { "weekday": 3, "is_closed": true, "ranges": [] },
+      { "weekday": 4, "is_closed": true, "ranges": [] },
+      { "weekday": 5, "is_closed": true, "ranges": [] },
+      { "weekday": 6, "is_closed": true, "ranges": [] },
+      { "weekday": 7, "is_closed": true, "ranges": [] }
+    ]
+  }
+}
+```
+
+`working_hours` always contains all 7 ISO weekdays (**1 = Monday … 7 =
+Sunday**). A day can hold up to 3 ranges; `period` is `morning` when the range
+starts before 12:00, else `evening`. `about`, `address`, `wilaya`, `baladiya`,
+`latitude`, `longitude` and `doctor` are nullable; `phones`/`photos` default
+to `[]`.
+
+#### GET /doctors/{doctorId}/availability/month?year=2026&month=9
+
+`year` (2000..2100) and `month` (1..12) are required. `404
+{"message": "Médecin introuvable."}` unless the doctor is visible in the
+directory (same rule as discovery).
+
+```json
+{
+  "year": 2026,
+  "month": 9,
+  "is_open_month": true,
+  "days": [
+    {
+      "date": "2026-09-01",
+      "day": 1,
+      "weekday": 2,
+      "is_open_month": true,
+      "is_working_day": true,
+      "is_day_off": false,
+      "is_past": false,
+      "available_count": 3,
+      "bookable": true
+    },
+    {
+      "date": "2026-09-02",
+      "day": 2,
+      "weekday": 3,
+      "is_open_month": true,
+      "is_working_day": false,
+      "is_day_off": false,
+      "is_past": false,
+      "available_count": 0,
+      "bookable": false
+    }
+    // … one entry per calendar day of the month, same shape …
+  ]
+}
+```
+
+When the month is not opened by the doctor, `is_open_month` is `false` and
+every day has `bookable: false`. Use `bookable` to enable calendar days.
+
+#### GET /doctors/{doctorId}/availability/day?date=2026-09-15
+
+`date` (`Y-m-d`) required. Same 404 rule as the month view.
+
+```json
+{
+  "date": "2026-09-15",
+  "reason": null,
+  "slots": [
+    {
+      "starts_at": "2026-09-15T09:00:00+01:00",
+      "ends_at": "2026-09-15T09:30:00+01:00",
+      "label": "09:00",
+      "end_label": "09:30",
+      "available": true,
+      "reason": null
+    },
+    {
+      "starts_at": "2026-09-15T09:30:00+01:00",
+      "ends_at": "2026-09-15T10:00:00+01:00",
+      "label": "09:30",
+      "end_label": "10:00",
+      "available": true,
+      "reason": null
+    }
+    // … one entry per slot of the day …
+  ]
+}
+```
+
+Top-level `reason` is `null` when slots exist, else one of `month_closed`,
+`not_working_day`, `day_off` (with `slots: []`). Per-slot `reason` is `null`
+when available, else `booked`, `time_off` or `past`. Book by POSTing the
+slot's exact `starts_at`. (Unlike the staff calendar, this payload never
+includes other patients' appointments.)
+
+### 8.2 Auth
+
+#### POST /auth/register — throttle `mobile-register`
+
+Creates a **patient** account + demographic profile and returns a signed-in
+session. `phone` must match `^0[567][0-9]{8}$` (Algerian mobile) and be
+unique; `email` is optional but unique when given.
+
+Request:
+
+```json
+{
+  "phone": "0550123456",
+  "password": "MotDePasse2026",
+  "first_name": "Amine",
+  "last_name": "Benali",
+  "gender": "male",
+  "date_of_birth": "1992-04-17",
+  "wilaya_code": 16,
+  "baladiya_id": 1,
+  "email": "amine.benali@example.dz",
+  "terms_accepted": true,
+  "device_name": "Samsung Galaxy S24"
+}
+```
+
+Field rules: `password` min 8 (no confirmation field); `gender` in
+`male|female`; `date_of_birth` after 1900-01-01 and before today;
+`wilaya_code` 1..58 required; `baladiya_id` optional but must belong to the
+given wilaya; `terms_accepted` must be true. `place_of_birth` is **not**
+accepted here (set it later via `PATCH /my/profile`). The fields `role`,
+`roles`, `role_id`, `is_platform_admin`, `cabinet_id`, `approved_at` are
+**prohibited**:
+
+```json
+// 422 when a prohibited field is present
+{
+  "message": "Le champ fonction est interdit. (and 1 more error)",
+  "errors": {
+    "role": ["Le champ fonction est interdit."],
+    "cabinet_id": ["Le champ cabinet id est interdit."]
+  }
+}
+```
+
+Response `201`:
+
+```json
+{
+  "token": "1|sqFiZ6Pprl9ZydGR2XUxsFRX8rcuHSZRYuikMVPr2625fb2c",
+  "role": "patient",
+  "user": {
+    "id": 2,
+    "phone": "0550123456",
+    "email": "amine.benali@example.dz",
+    "role": "patient",
+    "first_name": "Amine",
+    "last_name": "Benali",
+    "gender": "male",
+    "date_of_birth": "1992-04-17",
+    "place_of_birth": null,
+    "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+    "baladiya": { "id": 1, "name_fr": "Hydra", "name_ar": "حيدرة" }
+  }
+}
+```
+
+#### POST /auth/login — throttle `mobile-login`
+
+`identifier` is a phone number **or** an email (auto-detected). Works for
+patients and cabinet staff.
+
+```json
+{
+  "identifier": "0550123456",
+  "password": "MotDePasse2026",
+  "device_name": "Samsung Galaxy S24"
+}
+```
+
+Patient response `200` — same `{token, role, user}` shape as register (the
+`user` object is the profile resource above).
+
+Staff response `200` — `user` is the staff `UserResource`:
+
+```json
+{
+  "token": "3|LcwEnHN60smU7Q6Pi8kFT5bTKThZFzNc76CU87Rbc2455c27",
+  "role": "doctor",
+  "user": {
+    "id": 1,
+    "name": "Karim Boudjema",
+    "email": "k.boudjema@cabinet-elamel.dz",
+    "is_platform_admin": false,
+    "approved": true,
+    "cabinet": {
+      "id": 1,
+      "name": "Cabinet El Amel",
+      "status": "active",
+      "specialization": null,
+      "wilaya": { "code": 16, "name": "Alger" },
+      "license": null
+    },
+    "roles": ["Doctor"],
+    "permissions": ["appointments.cancel", "appointments.check-in", "appointments.configure", "…"]
+  }
+}
+```
+
+(`role` is `doctor` for the Doctor role, `reception` for the Assistant role,
+`admin` for platform admins. `is_platform_admin` may be `null` on legacy
+accounts — treat `null` as `false`. `cabinet.license` is `null` for
+self-hosted cabinets; when present:
+`{plan, plan_label, status, status_label, expires_at}`.)
+
+Failures:
+
+- Wrong identifier or password → `422` with `errors.identifier`
+  (`"Ces identifiants ne correspondent à aucun compte."`).
+- Staff whose cabinet is blocked → `403`:
+
+```json
+{
+  "message": "Votre cabinet est actuellement suspendu. Contactez le support Drclick.",
+  "reason": "cabinet_suspended",
+  "status": "suspended"
+}
+```
+
+(`reason`/`status` pairs: `cabinet_pending`/`pending`,
+`cabinet_suspended`/`suspended`, `license_expired`/`expired`,
+`license_inactive`/`inactive`, `awaiting_approval`/`awaiting_approval`.)
+
+#### POST /auth/logout — any token
+
+No body. Revokes the token used on the request.
+
+```json
+{ "message": "Déconnexion réussie." }
+```
+
+### 8.3 Devices & notifications (any authenticated role)
+
+#### POST /devices
+
+Registers a push token for the current account. Re-posting an existing token
+**claims it** for the current account (account switch on the same phone) and
+refreshes `last_seen_at`.
+
+Request: `{ "token": "ExponentPushToken[qF8rT2xL0aH3nB5cD7eF9g]", "platform": "android" }`
+(`token` ≤ 255 chars required, `platform` optional `ios|android`).
+
+Response: `201 {"message": "Appareil enregistré."}` on first registration,
+`200` with the same body afterwards.
+
+#### DELETE /devices
+
+Body: `{ "token": "ExponentPushToken[qF8rT2xL0aH3nB5cD7eF9g]" }` — deletes the
+token only if it belongs to the current account. Always
+`200 {"message": "Appareil supprimé."}`.
+
+#### GET /notifications
+
+The in-app inbox (database notifications), newest first, fixed 20 per page,
+standard pagination envelope.
+
+```json
+{
+  "data": [
+    {
+      "id": "e01d1681-7d62-4939-8505-c18c7553c07e",
+      "type": "FamilyLinkResponded",
+      "data": {
+        "family_member_id": 2,
+        "responder_name": "Yasmine Benali",
+        "relation": "wife",
+        "status": "approved"
+      },
+      "read_at": null,
+      "created_at": "2026-09-01T10:00:00+01:00"
+    },
+    {
+      "id": "7f7a5093-e021-418d-89d1-d12b542e3d5b",
+      "type": "AppointmentStatusChanged",
+      "data": {
+        "appointment_public_id": "01a05a9c-2563-7042-9e48-9a29a3796e9c",
+        "status": "cancelled",
+        "starts_at": "2026-09-15T09:00:00+01:00",
+        "doctor_name": "Dr Karim Boudjema",
+        "clinic_name": "Cabinet El Amel",
+        "changed_by_role": "doctor"
+      },
+      "read_at": null,
+      "created_at": "2026-09-01T10:00:00+01:00"
+    }
+  ],
+  "links": { "…": "…" },
+  "meta": { "per_page": 20, "total": 3, "…": "…" }
+}
+```
+
+Notification `type` values and their `data` payloads:
+
+| type | data |
+|---|---|
+| `AppointmentStatusChanged` | `{appointment_public_id, status, starts_at, doctor_name, clinic_name, changed_by_role}` — sent to the booking patient when the clinic declines/reschedules/updates, and to the cabinet owner when the patient acts. A reschedule keeps `status: "scheduled"` but carries the **new** `starts_at`. |
+| `FamilyLinkRequested` | `{family_member_id, owner_name, relation, status: "pending"}` — sent to the account someone wants to link. |
+| `FamilyLinkResponded` | `{family_member_id, responder_name, relation, status: "approved"|"declined"}` — sent to the circle owner. |
+
+#### POST /notifications/read
+
+Body: `{ "ids": ["7f7a5093-e021-418d-89d1-d12b542e3d5b"] }` (1..100 UUIDs)
+**or** `{ "all": true }`. Only the caller's unread notifications are touched.
+
+```json
+{ "message": "Notifications marquées comme lues.", "updated": 3 }
+```
+
+### 8.4 Patient endpoints (`auth:sanctum` + Patient role)
+
+Any non-patient token → `403 {"message": "Cette action est réservée aux
+comptes patients.", "reason": "patient_role_required"}`.
+
+#### GET /my/profile
+
+```json
+{
+  "data": {
+    "id": 2,
+    "phone": "0550123456",
+    "email": "amine.benali@example.dz",
+    "role": "patient",
+    "first_name": "Amine",
+    "last_name": "Benali",
+    "gender": "male",
+    "date_of_birth": "1992-04-17",
+    "place_of_birth": null,
+    "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+    "baladiya": { "id": 1, "name_fr": "Hydra", "name_ar": "حيدرة" }
+  }
+}
+```
+
+#### PATCH /my/profile
+
+Partial update; send only the changed fields. Accepted: `first_name`,
+`last_name`, `gender`, `date_of_birth`, `place_of_birth`, `wilaya_code`,
+`baladiya_id`, `email` (same rules as register; `baladiya_id` must match the
+submitted or stored wilaya). **`phone` is not updatable in Phase 1** — it is
+the account's identity anchor. Response: the updated profile, same shape as
+`GET /my/profile`.
+
+Request example: `{ "place_of_birth": "Alger" }`
+
+#### GET /my/appointments
+
+Appointments **booked by this account** (for self or family), across all
+clinics. Query: `scope=upcoming|past` (optional), `page`, `per_page` (1..50,
+default 15). `upcoming` = future & still blocking (`scheduled`, `confirmed`,
+`checked_in`, `in_progress`), ordered soonest first; `past` = everything else,
+newest first; no scope = all, newest first. Standard pagination envelope.
+
+```json
+{
+  "data": [
+    {
+      "public_id": "01a05a9c-2563-7042-9e48-9a29a3796e9c",
+      "status": "scheduled",
+      "appointment_date": "2026-09-15",
+      "starts_at": "2026-09-15T09:00:00+01:00",
+      "ends_at": "2026-09-15T09:30:00+01:00",
+      "reason": "Douleurs thoraciques à l’effort",
+      "cancellation_reason": null,
+      "booked_for": {
+        "type": "self",
+        "family_member_id": null,
+        "name": "Amine Benali"
+      },
+      "doctor": {
+        "id": 1,
+        "name": "Dr Karim Boudjema",
+        "specialty": { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" }
+      },
+      "clinic": {
+        "id": 1,
+        "name": "Cabinet El Amel",
+        "address": "12 Rue Didouche Mourad, Alger-Centre",
+        "phones": ["0550203040"]
+      },
+      "created_at": "2026-09-01T10:00:00+01:00"
+    }
+  ],
+  "links": { "…": "…" },
+  "meta": { "per_page": 15, "total": 3, "…": "…" }
+}
+```
+
+This patient-facing shape **never** contains `reception_notes`, internal ids
+or sync fields. `booked_for.type` is `"self"` or `"family"`;
+`doctor` can be `null` if the clinic later deactivates its doctor profile.
+The appointment identifier for patients is always the **`public_id`** (UUID).
+
+#### POST /my/appointments
+
+Book a slot. Request:
+
+```json
+{
+  "doctor_id": 1,
+  "starts_at": "2026-09-15T09:00:00+01:00",
+  "family_member_id": null,
+  "reason": "Douleurs thoraciques à l’effort"
+}
+```
+
+- `doctor_id`: from the directory (`doctors[].id`). Required.
+- `starts_at`: the exact `starts_at` of an available slot from the day view.
+  Required, must be in the future.
+- `family_member_id`: optional — book for a family member instead of self.
+- `reason`: optional, ≤ 500 chars.
+
+Response `201` — same object shape as the list item above (`booked_for.type`
+is `"family"` with the member id and name when booking for a member).
+The initial status is always `scheduled` (display as *pending*).
+
+Failures:
+
+- Doctor unknown / unlisted / cabinet inactive → `404
+  {"message": "Ce médecin n'est pas ouvert à la réservation en ligne."}`.
+- Slot taken / month closed / outside working hours / in time off →
+  `409 {"reason": "slot_unavailable"}` (example in §6).
+- Family member not owned by the caller, pending, or declined →
+  `403 {"message": "Ce membre de la famille ne peut pas être utilisé pour
+  cette réservation.", "reason": "family_member_not_usable"}`.
+
+Booking side effects: the clinic gets (or reuses) a patient dossier for the
+person booked, and the cabinet owner receives an `AppointmentStatusChanged`
+notification when the patient later cancels.
+
+#### GET /my/appointments/{publicId}
+
+Single appointment by `public_id`, only if this account booked it — any other
+id (including another patient's) → 404. Response: `{"data": {…}}` with the
+same shape as the list item.
+
+#### PATCH /my/appointments/{publicId}/cancel
+
+Body (optional): `{ "cancellation_reason": "Empêchement professionnel" }`
+(≤ 500 chars).
+
+Rules: the appointment must be `scheduled` or `confirmed` (else `422` with
+`errors.status` = "Ce rendez-vous ne peut plus être annulé."), and must start
+**more than `patient_cancel_cutoff_hours` (default 2 h)** from now, else:
+
+```json
+// 422
+{
+  "message": "Le délai d'annulation est dépassé. Veuillez contacter le cabinet directement.",
+  "reason": "cancel_cutoff_passed"
+}
+```
+
+Success `200` — the updated appointment:
+
+```json
+{
+  "data": {
+    "public_id": "01a05a9c-257b-718d-a036-893cebde9f09",
+    "status": "cancelled",
+    "appointment_date": "2026-09-15",
+    "starts_at": "2026-09-15T10:30:00+01:00",
+    "ends_at": "2026-09-15T11:00:00+01:00",
+    "reason": null,
+    "cancellation_reason": "Empêchement professionnel",
+    "booked_for": { "type": "self", "family_member_id": null, "name": "Amine Benali" },
+    "doctor": { "id": 1, "name": "Dr Karim Boudjema", "specialty": { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" } },
+    "clinic": { "id": 1, "name": "Cabinet El Amel", "address": "12 Rue Didouche Mourad, Alger-Centre", "phones": ["0550203040"] },
+    "created_at": "2026-09-01T10:00:00+01:00"
+  }
+}
+```
+
+#### GET /my/prescriptions
+
+Prescriptions written for this account's dossiers (self + owned family
+members), newest first. `per_page` 1..50, default 15. Standard envelope.
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "prescribed_at": "2026-09-15T10:45:00+01:00",
+      "items": [
+        {
+          "medication": "Amlodipine 5 mg",
+          "dosage": "1 comprimé par jour",
+          "duration": "30 jours",
+          "instructions": "À prendre le matin"
+        }
+      ],
+      "notes": "Contrôle de la tension dans un mois.",
+      "clinic": { "name": "Cabinet El Amel" },
+      "patient_display_name": "Amine Benali"
+    }
+  ],
+  "links": { "…": "…" },
+  "meta": { "per_page": 15, "total": 1, "…": "…" }
+}
+```
+
+`items` is a list of `{medication, dosage, duration, instructions}` objects
+(`dosage`/`duration`/`instructions` nullable). `items` may be `[]` and
+`notes`/`prescribed_at` may be `null`.
+
+#### GET /family-members
+
+The caller's family circle, newest first, standard envelope (`per_page`
+1..50, default 15).
+
+```json
+{
+  "data": [
+    {
+      "id": 2,
+      "relation": "wife",
+      "relation_label": "Épouse",
+      "status": "approved",
+      "status_label": "Approuvé",
+      "is_linked": true,
+      "first_name": "Yasmine",
+      "last_name": "Benali",
+      "gender": "female",
+      "date_of_birth": "1994-08-23",
+      "place_of_birth": "Oran",
+      "wilaya_code": 16,
+      "baladiya_id": 1,
+      "age": 32,
+      "created_at": "2026-09-01T10:00:00+01:00"
+    },
+    {
+      "id": 1,
+      "relation": "son",
+      "relation_label": "Fils",
+      "status": "active",
+      "status_label": "Actif",
+      "is_linked": false,
+      "first_name": "Rayan",
+      "last_name": "Benali",
+      "gender": "male",
+      "date_of_birth": "2015-03-12",
+      "place_of_birth": null,
+      "wilaya_code": 16,
+      "baladiya_id": 1,
+      "age": 11,
+      "created_at": "2026-09-01T10:00:00+01:00"
+    }
+  ],
+  "links": { "…": "…" },
+  "meta": { "per_page": 15, "total": 2, "…": "…" }
+}
+```
+
+Two kinds of members:
+
+- **Dependents** (`is_linked: false`): a profile without its own account
+  (child, elderly parent). Status is `active` immediately; demographics are
+  the ones stored at creation. Usable for booking right away.
+- **Linked accounts** (`is_linked: true`): another patient account, linked by
+  consent. Status flow `pending → approved | declined`. While `pending` or
+  `declined`, the demographic fields are **`null`** (the other account's
+  identity is only exposed once approved) and the member is **not usable for
+  booking**.
+
+`relation` values: `father`, `mother`, `husband`, `wife`, `son`, `daughter`,
+`other`. `status` values: `active`, `pending`, `approved`, `declined`.
+
+#### POST /family-members — create a dependent
+
+```json
+{
+  "relation": "son",
+  "first_name": "Rayan",
+  "last_name": "Benali",
+  "gender": "male",
+  "date_of_birth": "2015-03-12",
+  "place_of_birth": null,
+  "wilaya_code": 16,
+  "baladiya_id": 1
+}
+```
+
+`relation`, `first_name`, `last_name`, `gender`, `date_of_birth` required;
+the rest optional. Response `201 {"data": {…}}` (member shape above, status
+`active`).
+
+#### POST /family-members/link — request a link to another patient account
+
+```json
+{ "phone": "0661234567", "relation": "wife" }
+```
+
+The phone must belong to an existing **patient** account, not the caller's
+own. Creates a `pending` member and sends `FamilyLinkRequested` to the target
+account. Response `201` — member shape with `status: "pending"` and null
+demographics.
+
+Failures: unknown phone / not a patient account / own phone → `422` with
+`errors.phone`; pair already exists →
+`422 {"message": "Ce compte fait déjà partie de votre famille.", "reason": "already_linked"}`.
+
+#### POST /family-members/{id}/respond — answer a link request
+
+Called by the **linked (target) account**, not the requester. Body:
+`{ "action": "approve" }` or `{ "action": "decline" }`.
+
+- Caller is not the target → `403 {"reason": "not_owner"}`.
+- Request already answered → `409 {"message": "Cette demande de lien familial
+  a déjà reçu une réponse.", "reason": "link_not_pending"}`.
+
+Success `200` — the member as seen by the target, now `approved`/`declined`;
+the owner receives `FamilyLinkResponded`.
+
+#### DELETE /family-members/{id}
+
+Owner only (`403 {"reason": "not_owner"}` otherwise). A **dependent** with
+upcoming blocking appointments cannot be deleted:
+
+```json
+// 422
+{
+  "message": "Ce membre a des rendez-vous à venir. Annulez-les avant de le supprimer.",
+  "reason": "member_has_appointments"
+}
+```
+
+A **linked** member is always deletable (only severs the link). Success:
+`200 {"message": "Membre de la famille supprimé."}`.
+
+### 8.5 Staff mobile endpoints (`auth:sanctum` + active cabinet + cabinet member)
+
+Patients get `403 patient_token_forbidden`; platform admins and cabinet-less
+accounts get `403 cabinet_membership_required`. All ids here are the
+**integer appointment ids** of the caller's own cabinet — anything from
+another cabinet 404s. These endpoints reuse the **staff** appointment shape
+(which *does* include `reception_notes` and sync fields).
+
+Staff `AppointmentResource` shape (used by #27–30 and the legacy CRUD):
+
+```json
+{
+  "id": 2,
+  "public_id": "01a05a9c-2576-72b0-88ef-1a6c979d7f7f",
+  "sync_version": 2,
+  "patient_id": 2,
+  "patient": {
+    "id": 2,
+    "patient_number": "PAT-20260901-LNP0XO",
+    "first_name": "Rayan",
+    "last_name": "Benali",
+    "full_name": "Rayan Benali",
+    "date_of_birth": "2015-03-12",
+    "gender": "male",
+    "blood_group": null,
+    "phone": "0550123456",
+    "secondary_phone": null,
+    "email": null,
+    "address": null,
+    "city": null,
+    "created_at": "2026-09-01T10:00:00+01:00",
+    "updated_at": "2026-09-01T10:00:00+01:00"
+  },
+  "appointment_date": "2026-09-15",
+  "starts_at": "2026-09-15T11:00:00+01:00",
+  "ends_at": "2026-09-15T11:30:00+01:00",
+  "status": "scheduled",
+  "reason": "Fièvre depuis deux jours",
+  "prestation": null,
+  "reception_notes": null,
+  "cancellation_reason": null,
+  "can_confirm": true,
+  "can_check_in": true,
+  "can_cancel": true,
+  "confirmed_at": null,
+  "checked_in_at": null,
+  "created_at": "2026-09-01T10:00:00+01:00",
+  "updated_at": "2026-09-01T10:00:00+01:00",
+  "deleted_at": null
+}
+```
+
+(`can_confirm` = status is `scheduled`; `can_check_in` = `scheduled` or
+`confirmed`; `can_cancel` = not `completed`/`cancelled`/`no_show`. A mobile
+booking's dossier is auto-created: `patient.phone` for a dependent is the
+booking owner's phone.)
+
+#### GET /mobile/appointments/today
+
+Query: `date` (`Y-m-d`, defaults to today), `per_page` (1..50, default
+**50**). Ordered by `starts_at`, standard envelope of staff appointment
+objects.
+
+#### PATCH /mobile/appointments/{id}/decline
+
+Body: `{ "reason": "Le médecin est appelé en urgence à l’hôpital." }` —
+**required**, ≤ 255 chars; it is stored as `cancellation_reason` and relayed
+to the booking patient's inbox. Allowed from `scheduled`/`confirmed` only
+(else `422` with `errors.status`). Response `200 {"data": {…}}` — staff
+shape, `status: "cancelled"`.
+
+#### PATCH /mobile/appointments/{id}/reschedule
+
+Body: `{ "starts_at": "2026-09-15T11:00:00+01:00" }` — required, future.
+Allowed from `scheduled`/`confirmed`. The target slot must be free (the
+appointment's own block is ignored, so nudging it within its current window
+works). The status is **kept** as-is; the booking patient is notified with the
+new time. Occupied target → `409 {"reason": "slot_unavailable"}`. Response
+`200 {"data": {…}}` with the new `appointment_date`/`starts_at`/`ends_at`
+(duration recomputed from the schedule).
+
+#### PATCH /mobile/appointments/{id}/no-show
+
+No body. Allowed from `scheduled`/`confirmed`/`checked_in` (else 422).
+Response `200 {"data": {…}}` with `status: "no_show"`.
+
+#### POST /mobile/patients — walk-in registration (permission `patients.create`)
+
+The phone is the dedup key inside the cabinet: if a dossier already carries
+this number it is returned unchanged with `existing: true` (HTTP **200**),
+otherwise a new dossier is created (HTTP **201**, `existing: false`).
+
+Request:
+
+```json
+{
+  "first_name": "Mohamed",
+  "last_name": "Saidi",
+  "phone": "0770987654",
+  "gender": "male",
+  "date_of_birth": "1988-11-02",
+  "wilaya_code": 16,
+  "address": "Cité 5 Juillet, Bab Ezzouar",
+  "city": "Alger"
+}
+```
+
+(`first_name`, `last_name`, `phone` required — phone matches
+`^0[567][0-9]{8}$`; `gender`, `date_of_birth`, `wilaya_code`, `baladiya_id`,
+`address`, `city` optional.)
+
+Response `201`:
+
+```json
+{
+  "data": {
+    "id": 3,
+    "patient_number": "PAT-20260901-IFZIWP",
+    "first_name": "Mohamed",
+    "last_name": "Saidi",
+    "full_name": "Mohamed Saidi",
+    "date_of_birth": "1988-11-02",
+    "gender": "male",
+    "blood_group": null,
+    "phone": "0770987654",
+    "secondary_phone": null,
+    "email": null,
+    "address": "Cité 5 Juillet, Bab Ezzouar",
+    "city": "Alger",
+    "created_at": "2026-09-01T10:00:00+01:00",
+    "updated_at": "2026-09-01T10:00:00+01:00"
+  },
+  "existing": false
+}
+```
+
+#### PUT /mobile/schedule — replace the weekly hours (permission `appointments.configure`)
+
+Replaces the doctor's **entire** weekly schedule. Days absent from the
+payload become closed. A day holds up to **3 non-overlapping** ranges
+(morning + evening sessions).
+
+Request:
+
+```json
+{
+  "days": [
+    {
+      "day_of_week": 2,
+      "ranges": [
+        { "starts_at": "09:00", "ends_at": "12:00", "slot_duration": 30 },
+        { "starts_at": "14:00", "ends_at": "17:00", "slot_duration": 30 }
+      ]
+    },
+    {
+      "day_of_week": 4,
+      "ranges": [
+        { "starts_at": "09:00", "ends_at": "12:30", "slot_duration": 20 }
+      ]
+    }
+  ]
+}
+```
+
+Rules: `days` 1..7 entries, `day_of_week` 1..7 (ISO, Monday=1) distinct;
+`ranges` 0..3 per day (an empty array closes the day); times `HH:MM` with
+`ends_at` after `starts_at`; ranges of a day must not overlap;
+`slot_duration` optional 5..120 minutes (falls back to the doctor's
+consultation duration, then the clinic default of 30).
+
+Response `200` — the persisted week in the same `working_hours` shape as the
+clinic detail (all 7 days, `period` derived):
+
+```json
+{
+  "data": {
+    "working_hours": [
+      { "weekday": 1, "is_closed": true, "ranges": [] },
+      {
+        "weekday": 2,
+        "is_closed": false,
+        "ranges": [
+          { "starts_at": "09:00", "ends_at": "12:00", "period": "morning", "slot_duration": 30 },
+          { "starts_at": "14:00", "ends_at": "17:00", "period": "evening", "slot_duration": 30 }
+        ]
+      },
+      { "weekday": 3, "is_closed": true, "ranges": [] },
+      {
+        "weekday": 4,
+        "is_closed": false,
+        "ranges": [
+          { "starts_at": "09:00", "ends_at": "12:30", "period": "morning", "slot_duration": 20 }
+        ]
+      },
+      { "weekday": 5, "is_closed": true, "ranges": [] },
+      { "weekday": 6, "is_closed": true, "ranges": [] },
+      { "weekday": 7, "is_closed": true, "ranges": [] }
+    ]
+  }
+}
+```
+
+If the cabinet has no active doctor profile, the request fails `422` with
+`errors.doctor`.
+
+#### POST /mobile/schedule/time-off (permission `appointments.configure`)
+
+Request: `{ "starts_at": "2026-09-22", "ends_at": "2026-09-23",
+"is_all_day": true, "reason": "Congé annuel" }` — `starts_at`/`ends_at`
+required dates (`ends_at` ≥ `starts_at`); `is_all_day` defaults to `true`;
+`reason` optional ≤ 150 chars. For a partial-day closure send full date-times
+and `is_all_day: false` (end must then be strictly after start).
+
+Response `201` — note the **exclusive end boundary** stored for all-day
+closures (midnight after the last day off, exactly like the web editor):
+
+```json
+{
+  "data": {
+    "id": 1,
+    "starts_at": "2026-09-22T00:00:00+01:00",
+    "ends_at": "2026-09-24T00:00:00+01:00",
+    "is_all_day": true,
+    "reason": "Congé annuel"
+  }
+}
+```
+
+#### DELETE /mobile/schedule/time-off/{id}
+
+`200 {"message": "Absence supprimée."}` — 404 when the row belongs to another
+cabinet or another doctor.
+
+#### GET /mobile/clinic-profile · PUT /mobile/clinic-profile
+
+The cabinet's public directory listing. Reading is open to any cabinet
+member; writing needs permission `configuration.branding.manage`. A cabinet
+that has never been listed still gets a well-formed (mostly-null, `is_listed:
+false`) payload.
+
+PUT request (all fields optional/partial):
+
+```json
+{
+  "is_listed": true,
+  "about": "Cabinet de cardiologie au centre d'Alger. Consultations sur rendez-vous du samedi au jeudi.",
+  "address": "12 Rue Didouche Mourad, Alger-Centre",
+  "baladiya_id": 1,
+  "phones": ["0550203040"],
+  "latitude": 36.7525,
+  "longitude": 3.042,
+  "photos": []
+}
+```
+
+Rules: `about` ≤ 2000; `address` ≤ 255; `phones` ≤ 3 entries, each matching
+`^0[567][0-9]{8}$`; `latitude` −90..90, `longitude` −180..180; `photos` ≤ 6
+plain path/URL strings (**no file upload in Phase 1**). Flipping `is_listed`
+immediately shows/hides the clinic in public discovery.
+
+Response (`GET` and `PUT` identical shape):
+
+```json
+{
+  "data": {
+    "clinic": { "id": 1, "name": "Cabinet El Amel" },
+    "is_listed": true,
+    "about": "Cabinet de cardiologie au centre d'Alger. Consultations sur rendez-vous du samedi au jeudi.",
+    "address": "12 Rue Didouche Mourad, Alger-Centre",
+    "wilaya": { "code": 16, "name_fr": "Alger", "name_ar": "الجزائر" },
+    "baladiya": { "id": 1, "name_fr": "Hydra", "name_ar": "حيدرة" },
+    "phones": ["0550203040"],
+    "latitude": 36.7525,
+    "longitude": 3.042,
+    "photos": [],
+    "working_hours": [
+      { "weekday": 1, "is_closed": true, "ranges": [] },
+      {
+        "weekday": 2,
+        "is_closed": false,
+        "ranges": [
+          { "starts_at": "09:00", "ends_at": "12:00", "period": "morning", "slot_duration": 30 },
+          { "starts_at": "14:00", "ends_at": "17:00", "period": "evening", "slot_duration": 30 }
+        ]
+      },
+      { "weekday": 3, "is_closed": true, "ranges": [] },
+      { "weekday": 4, "is_closed": false, "ranges": [ { "starts_at": "09:00", "ends_at": "12:30", "period": "morning", "slot_duration": 20 } ] },
+      { "weekday": 5, "is_closed": true, "ranges": [] },
+      { "weekday": 6, "is_closed": true, "ranges": [] },
+      { "weekday": 7, "is_closed": true, "ranges": [] }
+    ]
+  }
+}
+```
+
+### 8.6 Pre-existing staff endpoints the mobile app also uses
+
+These predate the mobile API. They sit behind the same active-cabinet gate
+(patients always get `403 patient_token_forbidden`) but **not** behind the
+cabinet-member gate — prefer the `/mobile/*` endpoints where one exists.
+
+#### POST /auth/token — throttle `login`
+
+Email-only staff login (the desktop flow). Body:
+
+```json
+{ "email": "k.boudjema@cabinet-elamel.dz", "password": "password", "device_name": "PC de la réception" }
+```
+
+All three fields required. Wrong credentials → 422 on `email`; blocked
+cabinet → the same 403 shape as `/auth/login`. Response `200` (note: **no
+`role` field**, no expiry on this token):
+
+```json
+{
+  "token": "4|pUFBKcJuwo4HVafA86StYtM0Xt2k4lQMzwEVrGDYd85cb163",
+  "user": { "…same staff UserResource as /auth/login…" }
+}
+```
+
+The mobile app should use `POST /auth/login` instead (90-day expiry + `role`).
+
+#### GET /me
+
+The authenticated staff account: `{"data": {…}}` wrapping the same
+`UserResource` as the login payloads (id, name, email, is_platform_admin,
+approved, cabinet{…license}, roles[], permissions[]). Works for any valid
+token; for patient UIs use `GET /my/profile` instead (this one has no
+patient demographics).
+
+#### GET /appointments
+
+Cabinet appointment list. Query: `from`/`to` (dates, on `appointment_date`),
+`patient_id`, `status`, `per_page` (1..100, default 15). Ordered by
+`starts_at`; standard envelope of **staff** appointment objects (§8.5 shape).
+
+#### POST /appointments
+
+Staff booking for an existing dossier. Body:
+
+```json
+{
+  "patient_id": 3,
+  "starts_at": "2026-09-15T11:30:00+01:00",
+  "reason": "Contrôle de tension",
+  "reception_notes": "Patient déjà venu en 2025.",
+  "prestation": "Consultation cardiologie"
+}
+```
+
+(`patient_id` + `starts_at` required; optional `status` limited to
+`scheduled|confirmed`; optional idempotency via `Idempotency-Key` header or
+`client_request_id` body field, 8..200 chars — a replay returns the original
+appointment with header `Idempotency-Replayed: true`, a reuse with a
+different payload → `409 {"reason": "idempotency_key_reused"}`.) The slot
+must be free per the same availability rules, else `422` on `starts_at`.
+Response `201 {"data": {…}}` — staff shape.
+
+#### GET /appointments/{id}
+
+`{"data": {…}}` — staff shape. 404 outside the caller's cabinet.
+
+#### PATCH /appointments/{id}
+
+Partial update and/or status transition. Body fields (all optional):
+`reason`, `reception_notes`, `prestation`, `status`
+(`confirmed|checked_in|cancelled` only — see §4), `cancellation_reason`
+(required when `status=cancelled`, 3..1000 chars), `expected_version`.
+Optimistic concurrency: send `expected_version` (or an `If-Match: "N"`
+header) with the last seen `sync_version`; on mismatch:
+
+```json
+// 409
+{
+  "message": "Le rendez-vous a ete modifie sur un autre appareil. Rechargez-le avant de reessayer.",
+  "reason": "sync_version_conflict",
+  "public_id": "01a05a9c-25cc-7133-9246-ad096c6f3c3e",
+  "current_version": 2
+}
+```
+
+Response `200 {"data": {…}}` — staff shape (each write increments
+`sync_version`).
+
+#### DELETE /appointments/{id}
+
+Soft-deletes the appointment (policy `cancel`; honours
+`If-Match`/`expected_version` like PATCH).
+`200 {"message": "Rendez-vous supprimé."}`.
+
+#### GET /schedule
+
+The cabinet's raw scheduling configuration (flat object, **not** wrapped in
+`data`):
+
+```json
+{
+  "doctor": {
+    "id": 1,
+    "doctor_name": "Dr Karim Boudjema",
+    "specialty": "Cardiology",
+    "consultation_duration": 30
+  },
+  "schedules": [
+    { "id": 2, "day_of_week": 2, "starts_at": "09:00", "ends_at": "12:00", "slot_duration": 30, "is_active": true },
+    { "id": 3, "day_of_week": 2, "starts_at": "14:00", "ends_at": "17:00", "slot_duration": 30, "is_active": true },
+    { "id": 4, "day_of_week": 4, "starts_at": "09:00", "ends_at": "12:30", "slot_duration": 20, "is_active": true }
+  ],
+  "time_off": [
+    { "id": 1, "starts_at": "2026-09-22T00:00:00+01:00", "ends_at": "2026-09-24T00:00:00+01:00", "is_all_day": true, "reason": "Congé annuel" }
+  ],
+  "open_months": [
+    { "id": 1, "year": 2026, "month": 9, "is_open": true, "note": null }
+  ]
+}
+```
+
+With no active doctor profile every list is `[]` and `doctor` is `null`.
+
+#### GET /patients · GET /patients/{id}
+
+Cabinet dossier search/read. Query for the list: `q` (matches name/phone/…,
+≤ 120 chars), `per_page` (1..100, default 15). Standard envelope of the
+`PatientResource` shape shown in §8.5 (`POST /mobile/patients`); the show
+endpoint wraps a single one in `{"data": {…}}` and 404s outside the cabinet.
+
+---
+
+## 9. Caveats (Phase 1)
+
+1. **Web vs mobile schedule editor.** The existing web schedule editor stores
+   a single range per weekday; the mobile editor (`PUT /mobile/schedule`) is
+   multi-range (up to 3 per day). If staff later save a day from the **web**
+   editor, a multi-range day is collapsed back to one range. Tell staff to
+   manage multi-range days from the mobile editor once it ships, and treat
+   `working_hours` as the single source of truth after every write.
+
+2. **Commune (baladiya) dataset is best-effort.** All 58 wilayas are official
+   and complete; the commune list aims for the full official set (~1541) but
+   has not been verified against an official registry — coverage prioritises
+   the major communes of each wilaya. Do not hard-code commune ids; always
+   resolve them through `GET /wilayas/{code}/baladiyas`, and expect the
+   dataset to be corrected (rows added/renamed) in a later release.
+
+3. **No push delivery yet.** Phase 1 stores Expo device tokens
+   (`POST /devices`) and writes **database** notifications only — nothing is
+   pushed to the device. Poll `GET /notifications` (e.g. on app focus) for
+   the inbox and badge count. Expo push delivery ships in a later phase and
+   will reuse the tokens already registered, so wire up `POST /devices` /
+   `DELETE /devices` now.

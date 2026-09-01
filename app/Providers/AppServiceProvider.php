@@ -8,9 +8,11 @@ use App\Backups\LocalAutomaticBackupCreator;
 use App\Backups\MsBackupArchiveVerifier;
 use App\Licensing\HttpLicenseActivationProvider;
 use App\Licensing\LicenseActivationProvider;
+use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\DesktopDownloadLead;
 use App\Models\User;
+use App\Observers\AppointmentNotificationObserver;
 use App\Services\SessionLockService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
@@ -54,6 +56,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthAuditing();
+
+        // Mobile in-app notifications: react to appointment status changes.
+        Appointment::observe(AppointmentNotificationObserver::class);
 
         // Platform staff operate the central back office across every cabinet
         // and are granted all abilities so the existing Filament resources
@@ -116,6 +121,31 @@ class AppServiceProvider extends ServiceProvider
             ]));
 
             return Limit::perMinutes(10, 5)->by($key);
+        });
+
+        RateLimiter::for('mobile-register', static function (Request $request): array {
+            $phoneKey = hash('sha256', implode('|', [
+                (string) $request->input('phone'),
+                'mobile-register',
+            ]));
+
+            return [
+                Limit::perHour(5)->by(hash('sha256', (string) $request->ip())),
+                Limit::perHour(3)->by($phoneKey),
+            ];
+        });
+
+        RateLimiter::for('mobile-login', static function (Request $request): Limit {
+            $key = hash('sha256', implode('|', [
+                (string) $request->input('identifier'),
+                (string) $request->ip(),
+            ]));
+
+            return Limit::perMinute(10)->by($key);
+        });
+
+        RateLimiter::for('mobile-public', static function (Request $request): Limit {
+            return Limit::perMinute(60)->by(hash('sha256', (string) $request->ip()));
         });
 
         RateLimiter::for('cabinet-join', static function (Request $request): Limit {

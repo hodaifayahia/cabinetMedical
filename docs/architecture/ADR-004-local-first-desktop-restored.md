@@ -1,4 +1,4 @@
-# ADR-003: The desktop application owns the clinic's data again
+# ADR-004: The desktop application owns the clinic's data again
 
 - Status: accepted
 - Date: 2026-08-31
