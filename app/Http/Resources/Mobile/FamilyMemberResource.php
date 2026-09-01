@@ -32,8 +32,16 @@ class FamilyMemberResource extends JsonResource
         $wilayaCode = $profile->wilaya_code ?? ($this->isDependent() ? $this->wilaya_code : null);
         $baladiyaId = $profile->baladiya_id ?? ($this->isDependent() ? $this->baladiya_id : null);
 
+        $viewerId = $request->user()?->getKey();
+        $isIncoming = $viewerId !== null
+            && (int) $this->linked_user_id === (int) $viewerId
+            && (int) $this->owner_user_id !== (int) $viewerId;
+
         return [
             'id' => $this->id,
+            'direction' => $isIncoming ? 'incoming' : 'outgoing',
+            'can_respond' => $isIncoming && $this->status === FamilyMemberStatus::PENDING,
+            'requested_by' => $isIncoming ? $this->requesterName() : null,
             'relation' => $this->relation->value,
             'relation_label' => $this->relation->label(),
             'status' => $this->status->value,
@@ -49,6 +57,22 @@ class FamilyMemberResource extends JsonResource
             'age' => $dateOfBirth?->age,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * The display name of the account asking to link me. Shown only on
+     * incoming requests so the invited patient knows who is asking; it is
+     * never exposed on outgoing rows.
+     */
+    private function requesterName(): ?string
+    {
+        $profile = $this->owner?->patientProfile;
+
+        if ($profile !== null) {
+            return trim($profile->first_name.' '.$profile->last_name) ?: null;
+        }
+
+        return $this->owner?->name;
     }
 
     /**

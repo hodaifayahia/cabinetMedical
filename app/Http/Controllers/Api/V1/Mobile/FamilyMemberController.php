@@ -35,9 +35,20 @@ class FamilyMemberController extends Controller
     {
         $perPage = min(max($request->integer('per_page', 15), 1), 50);
 
+        $userId = $request->user()->getKey();
+
+        // The circle I own, plus link requests addressed to me and still
+        // awaiting my answer. Without the second branch the invited account
+        // can never discover the request it alone is allowed to respond to.
         $members = FamilyMember::query()
-            ->where('owner_user_id', $request->user()->getKey())
-            ->with('linkedUser.patientProfile')
+            ->where(function ($query) use ($userId): void {
+                $query->where('owner_user_id', $userId)
+                    ->orWhere(function ($incoming) use ($userId): void {
+                        $incoming->where('linked_user_id', $userId)
+                            ->where('status', FamilyMemberStatus::PENDING);
+                    });
+            })
+            ->with(['linkedUser.patientProfile', 'owner.patientProfile'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate($perPage)

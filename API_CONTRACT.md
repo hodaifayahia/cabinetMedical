@@ -888,14 +888,49 @@ members), newest first. `per_page` 1..50, default 15. Standard envelope.
 
 #### GET /family-members
 
-The caller's family circle, newest first, standard envelope (`per_page`
-1..50, default 15).
+The caller's family circle **plus any link request addressed to the caller and
+still pending**, newest first, standard envelope (`per_page` 1..50, default 15).
+
+Every row carries a `direction`:
+- `outgoing` — a member of my own circle (a dependent I created, or a link I
+  requested). This is the only kind I can book appointments for.
+- `incoming` — someone else asked to link MY account as their relative and is
+  waiting on my answer. `can_respond` is true and `requested_by` names the
+  asker. An incoming row is **never bookable by me** — booking still requires
+  that I own the row (`403 family_member_not_usable` otherwise). Once I approve
+  or decline, the row leaves my list and belongs to its owner's circle.
+
+Without the incoming rows the invited account could never find the request that
+only it is allowed to answer, so the consent flow would be un-completable.
 
 ```json
 {
   "data": [
     {
+      "id": 3,
+      "direction": "incoming",
+      "can_respond": true,
+      "requested_by": "Amine Benali",
+      "relation": "wife",
+      "relation_label": "Épouse",
+      "status": "pending",
+      "status_label": "En attente",
+      "is_linked": true,
+      "first_name": null,
+      "last_name": null,
+      "gender": null,
+      "date_of_birth": null,
+      "place_of_birth": null,
+      "wilaya_code": null,
+      "baladiya_id": null,
+      "age": null,
+      "created_at": "2026-09-01T11:00:00+01:00"
+    },
+    {
       "id": 2,
+      "direction": "outgoing",
+      "can_respond": false,
+      "requested_by": null,
       "relation": "wife",
       "relation_label": "Épouse",
       "status": "approved",
@@ -913,6 +948,9 @@ The caller's family circle, newest first, standard envelope (`per_page`
     },
     {
       "id": 1,
+      "direction": "outgoing",
+      "can_respond": false,
+      "requested_by": null,
       "relation": "son",
       "relation_label": "Fils",
       "status": "active",
