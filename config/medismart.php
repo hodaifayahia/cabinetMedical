@@ -68,8 +68,17 @@ return [
     ],
 
     'security' => [
-        'default_idle_lock_minutes' => (int) env('MEDISMART_IDLE_LOCK_MINUTES', 15),
-        'maximum_idle_lock_minutes' => (int) env('MEDISMART_MAXIMUM_IDLE_LOCK_MINUTES', 60),
+        // Three hours of *inactivity*, not of elapsed time: any pointer move,
+        // key press, scroll or touch restarts the countdown, so a screen the
+        // doctor is working in never locks. A consulting room is a supervised
+        // space and re-authenticating mid-consultation costs more than it
+        // protects; the lock exists for a workstation genuinely left alone.
+        //
+        // Keep session.lifetime at or above this. Laravel expires the session
+        // on its own inactivity window, so a shorter one signs the user out
+        // before the lock is ever reached and the setting looks ignored.
+        'default_idle_lock_minutes' => (int) env('MEDISMART_IDLE_LOCK_MINUTES', 180),
+        'maximum_idle_lock_minutes' => (int) env('MEDISMART_MAXIMUM_IDLE_LOCK_MINUTES', 180),
     ],
 
     'backups' => [

@@ -192,7 +192,10 @@ class SessionLockTest extends TestCase
                 $startedAt->timestamp,
             );
 
-        $this->travel(16)->minutes();
+        // Past whatever the policy currently allows. Hardcoding the minutes
+        // here made this fail the day the idle lock moved to three hours,
+        // reporting a broken lock when only the duration had changed.
+        $this->travel(app(SessionLockService::class)->idleTimeoutSeconds() + 60)->seconds();
 
         $this->get(route('dashboard'))
             ->assertRedirect(route('session-lock.show'))

@@ -32,7 +32,10 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    // Matches medismart.security.default_idle_lock_minutes. Laravel measures
+    // this as inactivity too, so anything shorter than the idle lock signs the
+    // user out before the lock can fire and makes that setting look ignored.
+    'lifetime' => (int) env('SESSION_LIFETIME', 180),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

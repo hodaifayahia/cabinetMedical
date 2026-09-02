@@ -6,6 +6,7 @@ use App\Configuration\ApplicationSettingRegistry;
 use App\Enums\RoleName;
 use App\Models\User;
 use App\Services\ApplicationSettingService;
+use App\Services\SessionLockService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -72,18 +73,48 @@ class IdleLockSettingsTest extends TestCase
         $administrator = User::factory()->create();
         $administrator->assignRole(RoleName::ADMINISTRATOR->value);
 
+        // Read the ceiling rather than restating it: the policy is a config
+        // value, and a test that hardcodes the number fails on the day it moves
+        // without anything actually being broken.
+        $maximum = (int) config('medismart.security.maximum_idle_lock_minutes');
+        $default = (int) config('medismart.security.default_idle_lock_minutes');
+
         $this->actingAs($administrator)
             ->withSession(['auth.password_confirmed_at' => time()])
             ->put(route('security.idle-lock.update'), [
-                'idle_lock_minutes' => 61,
+                'idle_lock_minutes' => $maximum + 1,
             ])
             ->assertSessionHasErrors('idle_lock_minutes');
 
         $this->assertSame(
-            15,
+            $default,
             app(ApplicationSettingService::class)->get(
                 ApplicationSettingRegistry::SECURITY_IDLE_LOCK_MINUTES,
             ),
+        );
+    }
+
+    /**
+     * A workstation left alone locks after three hours; a screen being worked
+     * in never does, because every pointer move restarts the countdown.
+     *
+     * session.lifetime has to cover it: Laravel measures its own inactivity
+     * window separately, so a shorter one would sign the doctor out before the
+     * lock ever fired and make the setting look ignored.
+     */
+    public function test_the_default_idle_lock_is_three_hours_and_the_session_outlasts_it(): void
+    {
+        $this->assertSame(180, (int) config('medismart.security.default_idle_lock_minutes'));
+
+        $this->assertGreaterThanOrEqual(
+            (int) config('medismart.security.default_idle_lock_minutes'),
+            (int) config('session.lifetime'),
+            'the session expires before the idle lock, so the lock duration is unreachable',
+        );
+
+        $this->assertSame(
+            180 * 60,
+            app(SessionLockService::class)->idleTimeoutSeconds(),
         );
     }
 }
