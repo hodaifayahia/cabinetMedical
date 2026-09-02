@@ -19,6 +19,33 @@ type Benefit = { title: string; body: string };
 type Step = { title: string; body: string };
 type Role = { title: string; body: string; points: string[] };
 
+/** One reassurance under the hero (replaces the old bare number stats). */
+type Assurance = { title: string; body: string };
+
+/**
+ * One screen of the product tour. `tab` is the short switcher label, `alt`
+ * describes the screenshot for assistive technology. `shot` keys into the
+ * screenshot files, so it is shared by every locale and never translated.
+ */
+type ShowcaseItem = {
+    shot: ShowcaseShot;
+    tab: string;
+    title: string;
+    body: string;
+    alt: string;
+};
+
+export const SHOWCASE_SHOTS = [
+    'consultation',
+    'prescription',
+    'booking',
+    'appointments',
+    'patients',
+    'dashboard',
+] as const;
+
+export type ShowcaseShot = (typeof SHOWCASE_SHOTS)[number];
+
 type LandingCopy = {
     localeLabel: string;
     localeShort: string;
@@ -26,6 +53,7 @@ type LandingCopy = {
     nav: {
         menuLabel: string;
         features: string;
+        tour: string;
         how: string;
         roles: string;
         requirements: string;
@@ -33,6 +61,8 @@ type LandingCopy = {
     };
     download: {
         cta: string;
+        /** Compact header label; the full `cta` stays on the page CTAs. */
+        ctaShort: string;
         unavailable: string;
         note: string;
     };
@@ -44,7 +74,7 @@ type LandingCopy = {
         titleRotating: string[];
         subtitle: string;
         highlights: string[];
-        stats: { value: string; label: string }[];
+        assurances: Assurance[];
     };
     photos: {
         documents: string;
@@ -55,6 +85,13 @@ type LandingCopy = {
         title: string;
         subtitle: string;
         items: Benefit[];
+    };
+    showcase: {
+        eyebrow: string;
+        title: string;
+        subtitle: string;
+        hint: string;
+        items: ShowcaseItem[];
     };
     how: {
         eyebrow: string;
@@ -108,6 +145,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         nav: {
             menuLabel: 'فتح قائمة التنقل',
             features: 'المميزات',
+            tour: 'جولة في التطبيق',
             how: 'طريقة العمل',
             roles: 'الفريق',
             requirements: 'المتطلبات',
@@ -115,6 +153,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         },
         download: {
             cta: 'تحميل النسخة لويندوز',
+            ctaShort: 'تحميل التطبيق',
             unavailable: 'التحميل غير متوفّر حاليًا',
             note: 'ملف تثبيت واحد لأجهزة ويندوز. لا حاجة لأي إعداد معقّد.',
         },
@@ -131,10 +170,19 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 'أجندة مواعيد واضحة',
                 'وصفات وشهادات في نقرة واحدة',
             ],
-            stats: [
-                { value: '3', label: 'حسابات لكل عيادة' },
-                { value: '24 سا', label: 'لتفعيل عيادتك' },
-                { value: '1', label: 'ملف تثبيت لكل شيء' },
+            assurances: [
+                {
+                    title: 'التفعيل فوري',
+                    body: 'أنشئ عيادتك وابدأ استقبال مرضاك في نفس اللحظة. لا انتظار ولا ملفات ترسلها لأحد.',
+                },
+                {
+                    title: 'تثبيت واحد وانتهى',
+                    body: 'ملف واحد لويندوز، دون خادم ولا إعدادات شبكة. يشتغل على أجهزة العيادة كما هي.',
+                },
+                {
+                    title: 'فريقك على نفس العيادة',
+                    body: 'الطبيب والسكرتارية بأدوار واضحة وبيانات مشتركة، كلٌّ يرى ما يخصّه فقط.',
+                },
             ],
         },
         photos: {
@@ -173,10 +221,61 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 },
             ],
         },
+        showcase: {
+            eyebrow: 'من داخل التطبيق',
+            title: 'شاشات حقيقية من Drclick، لا صور تسويقية',
+            subtitle:
+                'هذه لقطات مباشرة من التطبيق كما يستعمله الأطباء اليوم. اختر شاشة لتراها عن قرب.',
+            hint: 'اختر شاشة',
+            items: [
+                {
+                    shot: 'consultation',
+                    tab: 'الاستشارة',
+                    title: 'فضاء استشارة كامل في شاشة واحدة',
+                    body: 'الملف والسوابق ومنحنيات النمو والوصفات والبيولوجيا والمراسلات والوثائق والصندوق، كلّها في شريط جانبي واحد. وأمامك تنبيه الحساسية، الحالة المدنية، ثم المعاينة: السبب، الفحوصات، التشخيص والعلاج.',
+                    alt: 'شاشة فضاء الاستشارة في Drclick مع الملف الطبي وخانة المعاينة',
+                },
+                {
+                    shot: 'prescription',
+                    tab: 'الوصفة الطبية',
+                    title: 'وصفات جاهزة ونماذج مخصّصة لاختصاصك',
+                    body: 'ابحث عن الدواء فتُملأ خاناته تلقائيًا، أو انطلق من نموذج جاهز: وصفة، شهادة، عطلة مرضية، رسالة إلى زميل، تقرير تخطيط القلب أو تقرير الصدى. المتغيّرات تكتب اسم المريض وسنّه وتاريخه وحدها، والطبع بترويسة عيادتك على A4 أو A5.',
+                    alt: 'محرّر الوصفات في Drclick مع اختيار النموذج ومعاينة الوصفة بترويسة العيادة',
+                },
+                {
+                    shot: 'booking',
+                    tab: 'حجز موعد',
+                    title: 'ترى الأماكن الشاغرة قبل أن تحجز',
+                    body: 'رزنامة الشهر تعرض عدد الأماكن المتبقّية في كل يوم، مع تمييز الأيام الكاملة والعطل والأيام المغلقة. اختر المريض والخدمة ثم الوقت، والموعد يُسجَّل في ثوانٍ.',
+                    alt: 'نافذة حجز موعد في Drclick مع رزنامة الشهر والأوقات المتاحة',
+                },
+                {
+                    shot: 'appointments',
+                    tab: 'المواعيد',
+                    title: 'يوم العيادة أمامك، ومواعيد الهاتف تصل وحدها',
+                    body: 'صنّف المواعيد حسب حالتها، تابع قاعة الانتظار وتقدّم اليوم لحظة بلحظة، واستقبل الحجوزات القادمة من تطبيق المرضى مباشرة في أجندتك.',
+                    alt: 'شاشة المواعيد في Drclick مع تصنيف الحالات وقاعة الانتظار',
+                },
+                {
+                    shot: 'patients',
+                    tab: 'المرضى',
+                    title: 'كل مرضاك برقم ملف واضح',
+                    body: 'ابحث بالاسم أو رقم الملف أو الهاتف أو البريد، وافتح الملف الطبي أو الاستشارة من نفس السطر.',
+                    alt: 'قائمة المرضى في Drclick مع البحث وأرقام الملفات',
+                },
+                {
+                    shot: 'dashboard',
+                    tab: 'لوحة التحكّم',
+                    title: 'حالة عيادتك في لمحة',
+                    body: 'مداخيل الشهر، المواعيد، الاستشارات وعدد المرضى، مع منحنى المداخيل وتوزيع المواعيد حسب الحالة.',
+                    alt: 'لوحة تحكّم Drclick مع مؤشّرات العيادة والرسوم البيانية',
+                },
+            ],
+        },
         how: {
             eyebrow: 'البداية بسيطة',
             title: 'من التحميل إلى أول استشارة في ثلاث خطوات',
-            subtitle: 'لا تحتاج إلى خبرة تقنية. التثبيت مباشر والتفعيل سريع.',
+            subtitle: 'لا تحتاج إلى خبرة تقنية. التثبيت مباشر والتفعيل فوري.',
             steps: [
                 {
                     title: 'حمّل التطبيق',
@@ -184,7 +283,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 },
                 {
                     title: 'أنشئ عيادتك',
-                    body: 'أكمل معالج إنشاء العيادة داخل التطبيق. يتم التفعيل خلال 24 ساعة.',
+                    body: 'أكمل معالج إنشاء العيادة داخل التطبيق. التفعيل يتم في نفس اللحظة.',
                 },
                 {
                     title: 'ابدأ استشاراتك',
@@ -219,12 +318,14 @@ export const translations: Record<LandingLocale, LandingCopy> = {
             ],
         },
         mobileApp: {
-            badge: 'قريبًا',
-            title: 'تطبيق موبايل لمرضاك لحجز المواعيد',
-            body: 'نحضّر تطبيقًا للهواتف يتيح لمرضى عيادتك طلب مواعيدهم من هواتفهم مباشرة، مع مزامنة فورية مع أجندة Drclick في عيادتك.',
+            badge: 'متوفّر الآن',
+            title: 'تطبيق الهاتف لمرضاك، متوفّر الآن',
+            body: 'مرضاك يبحثون عن طبيبهم حسب الولاية والبلدية والاختصاص، يرون أوقاتك الشاغرة فعليًا ويحجزون من هواتفهم. الموعد يصل مباشرة إلى أجندة عيادتك، والسكرتارية تبقى صاحبة القرار الأخير.',
             points: [
-                'حجز الموعد من الهاتف في ثوانٍ',
-                'تذكيرات تقلّل مواعيد الغياب',
+                'بحث عن الطبيب حسب الولاية والبلدية والاختصاص',
+                'أوقات شاغرة حقيقية وحجز في ثوانٍ',
+                'إشعارات وتذكيرات تقلّل مواعيد الغياب',
+                'حجز لأفراد العائلة من نفس الحساب',
                 'الأجندة تبقى بيد السكرتارية',
             ],
             mock: {
@@ -264,6 +365,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         nav: {
             menuLabel: 'Ouvrir le menu de navigation',
             features: 'Fonctionnalités',
+            tour: 'L’application',
             how: 'Comment ça marche',
             roles: 'Équipe',
             requirements: 'Prérequis',
@@ -271,6 +373,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         },
         download: {
             cta: 'Télécharger pour Windows',
+            ctaShort: 'Télécharger',
             unavailable: 'Téléchargement indisponible',
             note: 'Un seul fichier d’installation Windows. Aucune configuration compliquée.',
         },
@@ -291,10 +394,19 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 'Agenda de rendez-vous clair',
                 'Ordonnances et documents en un clic',
             ],
-            stats: [
-                { value: '3', label: 'comptes par cabinet' },
-                { value: '24 h', label: 'pour activer votre cabinet' },
-                { value: '1', label: 'fichier d’installation pour tout' },
+            assurances: [
+                {
+                    title: 'Activation immédiate',
+                    body: 'Créez votre cabinet et recevez vos patients dans la foulée. Aucun délai, aucun dossier à envoyer.',
+                },
+                {
+                    title: 'Une installation, c’est tout',
+                    body: 'Un seul fichier Windows, sans serveur ni configuration réseau. Vos postes actuels suffisent.',
+                },
+                {
+                    title: 'Votre équipe, un seul cabinet',
+                    body: 'Médecin et secrétariat, des rôles clairs et des données partagées : chacun ne voit que ce qui le concerne.',
+                },
             ],
         },
         photos: {
@@ -333,11 +445,62 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 },
             ],
         },
+        showcase: {
+            eyebrow: 'Dans l’application',
+            title: 'De vrais écrans de Drclick, pas des illustrations',
+            subtitle:
+                'Ces captures viennent de l’application telle que les médecins l’utilisent aujourd’hui. Choisissez un écran pour le voir de près.',
+            hint: 'Choisissez un écran',
+            items: [
+                {
+                    shot: 'consultation',
+                    tab: 'Consultation',
+                    title: 'Tout l’espace de consultation sur un seul écran',
+                    body: 'Dossier, antécédents, courbes de croissance, ordonnances, bilans, courriers, documents et caisse dans une seule colonne. En face : l’alerte allergies, l’état civil, puis la visite médicale — motif, examens, diagnostic et traitement.',
+                    alt: 'Espace de consultation Drclick avec le dossier patient et la visite médicale',
+                },
+                {
+                    shot: 'prescription',
+                    tab: 'Ordonnance',
+                    title: 'Médicaments pré-remplis et modèles adaptés à votre spécialité',
+                    body: 'Cherchez un médicament, ses champs se remplissent seuls — ou partez d’un modèle prêt : ordonnance, certificat, arrêt de travail, lettre au confrère, rapport ECG ou échocardiographie. Les variables écrivent le nom, l’âge et la date à votre place, et l’impression sort à l’en-tête du cabinet en A4 ou A5.',
+                    alt: 'Éditeur d’ordonnance Drclick avec sélection du modèle et aperçu à l’en-tête du cabinet',
+                },
+                {
+                    shot: 'booking',
+                    tab: 'Prise de RDV',
+                    title: 'Les places libres, visibles avant de réserver',
+                    body: 'Le calendrier du mois affiche les créneaux restants jour par jour et distingue les journées complètes, les congés et les jours fermés. Patient, prestation, horaire : le rendez-vous est posé en quelques secondes.',
+                    alt: 'Fenêtre de prise de rendez-vous Drclick avec calendrier mensuel et créneaux disponibles',
+                },
+                {
+                    shot: 'appointments',
+                    tab: 'Rendez-vous',
+                    title: 'La journée du cabinet, et les RDV du mobile qui arrivent seuls',
+                    body: 'Filtrez les rendez-vous par statut, suivez la salle d’attente et l’avancement en temps réel, et recevez directement dans votre agenda les demandes venues de l’application patients.',
+                    alt: 'Écran des rendez-vous Drclick avec filtres par statut et salle d’attente',
+                },
+                {
+                    shot: 'patients',
+                    tab: 'Patients',
+                    title: 'Tous vos patients, un numéro de dossier clair',
+                    body: 'Cherchez par nom, numéro de dossier, téléphone ou e-mail, et ouvrez le dossier médical ou la consultation depuis la même ligne.',
+                    alt: 'Liste des patients Drclick avec recherche et numéros de dossier',
+                },
+                {
+                    shot: 'dashboard',
+                    tab: 'Tableau de bord',
+                    title: 'L’état du cabinet en un coup d’œil',
+                    body: 'Recettes du mois, rendez-vous, consultations et patients, avec la courbe des recettes et la répartition des rendez-vous par statut.',
+                    alt: 'Tableau de bord Drclick avec les indicateurs du cabinet et les graphiques',
+                },
+            ],
+        },
         how: {
             eyebrow: 'Le démarrage est simple',
             title: 'Du téléchargement à la première consultation en trois étapes',
             subtitle:
-                'Aucune compétence technique requise. Installation directe et activation rapide.',
+                'Aucune compétence technique requise. Installation directe et activation immédiate.',
             steps: [
                 {
                     title: 'Téléchargez l’application',
@@ -345,7 +508,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 },
                 {
                     title: 'Créez votre cabinet',
-                    body: 'Suivez l’assistant de création du cabinet dans l’application. L’activation se fait sous 24 h.',
+                    body: 'Suivez l’assistant de création du cabinet dans l’application. L’activation est immédiate.',
                 },
                 {
                     title: 'Commencez vos consultations',
@@ -380,12 +543,14 @@ export const translations: Record<LandingLocale, LandingCopy> = {
             ],
         },
         mobileApp: {
-            badge: 'Bientôt disponible',
-            title: 'Une application mobile pour vos patients',
-            body: 'Nous préparons une application mobile qui permettra à vos patients de demander leurs rendez-vous depuis leur téléphone, synchronisée avec l’agenda Drclick du cabinet.',
+            badge: 'Disponible maintenant',
+            title: 'L’application mobile de vos patients est disponible',
+            body: 'Vos patients trouvent leur médecin par wilaya, commune et spécialité, voient vos créneaux réellement libres et réservent depuis leur téléphone. La demande arrive directement dans l’agenda du cabinet, et le secrétariat garde le dernier mot.',
             points: [
-                'Prise de rendez-vous en quelques secondes',
-                'Des rappels qui réduisent les absences',
+                'Recherche par wilaya, commune et spécialité',
+                'Créneaux réellement libres, réservation en quelques secondes',
+                'Notifications et rappels qui réduisent les absences',
+                'Réservation pour les proches depuis le même compte',
                 'Le secrétariat garde la main sur l’agenda',
             ],
             mock: {
@@ -425,6 +590,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         nav: {
             menuLabel: 'Open the navigation menu',
             features: 'Features',
+            tour: 'The app',
             how: 'How it works',
             roles: 'Team',
             requirements: 'Requirements',
@@ -432,6 +598,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
         },
         download: {
             cta: 'Download for Windows',
+            ctaShort: 'Download',
             unavailable: 'Download unavailable',
             note: 'A single Windows installer. No complicated setup required.',
         },
@@ -448,10 +615,19 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 'Clear appointment agenda',
                 'Prescriptions and documents in one click',
             ],
-            stats: [
-                { value: '3', label: 'accounts per practice' },
-                { value: '24 h', label: 'to activate your practice' },
-                { value: '1', label: 'installer file for everything' },
+            assurances: [
+                {
+                    title: 'Activated instantly',
+                    body: 'Create your practice and start seeing patients the same moment. No waiting, no paperwork to send anyone.',
+                },
+                {
+                    title: 'One install, done',
+                    body: 'A single Windows file, with no server and no network setup. Your current computers are enough.',
+                },
+                {
+                    title: 'Your team, one practice',
+                    body: 'Doctor and front desk with clear roles and shared records — each sees only what concerns them.',
+                },
             ],
         },
         photos: {
@@ -490,11 +666,62 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 },
             ],
         },
+        showcase: {
+            eyebrow: 'Inside the app',
+            title: 'Real Drclick screens, not illustrations',
+            subtitle:
+                'These are captures of the app as doctors use it today. Pick a screen to see it up close.',
+            hint: 'Pick a screen',
+            items: [
+                {
+                    shot: 'consultation',
+                    tab: 'Consultation',
+                    title: 'The whole consultation workspace on one screen',
+                    body: 'Record, history, growth charts, prescriptions, lab results, letters, documents and cash desk in a single column. Facing it: the allergy alert, patient identity, then the visit itself — reason, examinations, diagnosis and treatment.',
+                    alt: 'Drclick consultation workspace showing the patient record and the medical visit panel',
+                },
+                {
+                    shot: 'prescription',
+                    tab: 'Prescription',
+                    title: 'Pre-filled medications and templates built for your specialty',
+                    body: 'Search a medication and its fields fill themselves in — or start from a ready template: prescription, certificate, sick leave, letter to a colleague, ECG or echocardiography report. Variables write the patient name, age and date for you, and printing comes out on your practice letterhead in A4 or A5.',
+                    alt: 'Drclick prescription editor with template selection and a letterhead preview',
+                },
+                {
+                    shot: 'booking',
+                    tab: 'Booking',
+                    title: 'Free slots visible before you book',
+                    body: 'The month calendar shows how many slots are left on each day and marks full days, days off and closed days. Patient, service, time — the appointment is placed in seconds.',
+                    alt: 'Drclick booking dialog with a month calendar and available time slots',
+                },
+                {
+                    shot: 'appointments',
+                    tab: 'Appointments',
+                    title: 'The clinic day, with mobile bookings arriving on their own',
+                    body: 'Filter appointments by status, follow the waiting room and the day’s progress live, and receive requests from the patient app straight into your agenda.',
+                    alt: 'Drclick appointments screen with status filters and today’s waiting room',
+                },
+                {
+                    shot: 'patients',
+                    tab: 'Patients',
+                    title: 'Every patient under a clear record number',
+                    body: 'Search by name, record number, phone or email, and open the medical record or the consultation from the same row.',
+                    alt: 'Drclick patient list with search and record numbers',
+                },
+                {
+                    shot: 'dashboard',
+                    tab: 'Dashboard',
+                    title: 'The state of your practice at a glance',
+                    body: 'Monthly revenue, appointments, consultations and patients, with the revenue curve and appointments broken down by status.',
+                    alt: 'Drclick dashboard with practice indicators and charts',
+                },
+            ],
+        },
         how: {
             eyebrow: 'Getting started is simple',
             title: 'From download to first consultation in three steps',
             subtitle:
-                'No technical skills needed. Straightforward install and fast activation.',
+                'No technical skills needed. Straightforward install and instant activation.',
             steps: [
                 {
                     title: 'Download the app',
@@ -502,7 +729,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 },
                 {
                     title: 'Create your practice',
-                    body: 'Follow the practice setup wizard inside the app. Activation is completed within 24 hours.',
+                    body: 'Follow the practice setup wizard inside the app. Activation happens on the spot.',
                 },
                 {
                     title: 'Start your consultations',
@@ -537,12 +764,14 @@ export const translations: Record<LandingLocale, LandingCopy> = {
             ],
         },
         mobileApp: {
-            badge: 'Coming soon',
-            title: 'A mobile app for your patients',
-            body: 'We are building a mobile app that lets your patients request their appointments from their phone, synced with your practice’s Drclick agenda.',
+            badge: 'Available now',
+            title: 'The mobile app for your patients is live',
+            body: 'Your patients find their doctor by wilaya, municipality and specialty, see the slots you actually have free, and book from their phone. The request lands straight in the practice agenda, and the front desk keeps the final say.',
             points: [
-                'Appointments booked from the phone in seconds',
-                'Reminders that cut no-shows',
+                'Search by wilaya, municipality and specialty',
+                'Genuinely free slots, booked in seconds',
+                'Notifications and reminders that cut no-shows',
+                'Booking for family members from one account',
                 'The front desk stays in control of the agenda',
             ],
             mock: {

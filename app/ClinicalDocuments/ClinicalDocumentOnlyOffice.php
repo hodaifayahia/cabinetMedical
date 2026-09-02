@@ -16,11 +16,19 @@ final class ClinicalDocumentOnlyOffice
 {
     private const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
 
+    public function __construct(
+        private readonly ClinicalDocumentLogoRefresher $logoRefresher,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
     public function payload(Document $document, Request $request, bool $canEdit): array
     {
+        // Opening or printing a document must show the logo configured today,
+        // not the one that happened to be set when the file was generated.
+        $document = $this->logoRefresher->refresh($document);
+
         if ($document->file_path === null) {
             return [
                 'id' => $document->getKey(),
