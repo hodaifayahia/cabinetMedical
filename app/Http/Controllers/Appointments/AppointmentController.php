@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\Appointments\AppointmentSyncService;
 use App\Services\Appointments\AvailabilityService;
 use App\Services\DocumentBrandingService;
+use App\Support\Appointments\BookingProvenance;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -591,6 +592,11 @@ class AppointmentController extends Controller
             ->with([
                 'patient:id,first_name,last_name,patient_number',
                 'latestSyncEvent',
+                // Booking provenance for the mobile-booked rows. Eager-loaded
+                // so the agenda stays at a fixed query count: the alternative
+                // is two lazy loads per appointment booked from the phone.
+                'bookedBy.patientProfile',
+                'familyMember',
             ])
             ->when($search === '', static fn (Builder $query): Builder => $query->whereDate('appointment_date', $date->toDateString()))
             ->when($search !== '', $this->patientSearchFilter($search))
@@ -642,6 +648,10 @@ class AppointmentController extends Controller
                 'can_start' => $isToday && $startableStatus,
                 'consultation_id' => $consultation?->id,
                 'consultation_status' => $consultation?->status,
+                // Null for every appointment reception booked itself. When it
+                // is set, the row says so in one muted line: the channel, who
+                // the visit is for, and the number to call back.
+                'booking' => BookingProvenance::for($appointment),
                 'mobile_sync' => [
                     'state' => match ($syncEvent?->status) {
                         AppointmentSyncEvent::STATUS_ACKNOWLEDGED => 'synced',

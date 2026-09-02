@@ -191,7 +191,10 @@ final class MobileAppointmentSynchroniser
 
         $appointments = Appointment::withoutCabinetScope()
             ->withTrashed()
-            ->with('patient')
+            // The payload's booking block resolves these; without them a
+            // batch of 100 mobile appointments would issue three lazy loads
+            // apiece, on every page of every push.
+            ->with(['patient', 'bookedBy.patientProfile', 'familyMember'])
             ->where('cabinet_id', $cabinetId)
             ->whereIn('public_id', $publicIds)
             ->get()

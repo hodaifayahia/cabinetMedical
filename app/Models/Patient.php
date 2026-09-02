@@ -21,6 +21,8 @@ use Illuminate\Support\Str;
 
 /**
  * @property string|null $public_id
+ * @property int|null $patient_user_id
+ * @property int|null $family_member_id
  * @property CarbonImmutable|null $date_of_birth
  * @property Gender|null $gender
  * @property BloodGroup|null $blood_group

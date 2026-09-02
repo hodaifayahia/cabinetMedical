@@ -282,6 +282,82 @@ const patientInitials = (name: string | null): string =>
         .map((part) => part.charAt(0).toUpperCase())
         .join('') || '?';
 
+// ----- Booking provenance -----
+// An appointment booked from the patient's phone carries who asked for it and
+// who to call back. Reception sees it as one muted line under the patient.
+const channelLabels: Record<string, string> = {
+    mobile_patient: 'Réservé via l’app mobile',
+};
+
+const relationLabels: Record<string, string> = {
+    father: 'père',
+    mother: 'mère',
+    husband: 'époux',
+    wife: 'épouse',
+    son: 'fils',
+    daughter: 'fille',
+    other: 'proche',
+};
+
+const bookingProvenanceLabel = (
+    appointment: AppointmentListItem,
+): string | null => {
+    const booking = appointment.booking;
+
+    if (booking === null) {
+        return null;
+    }
+
+    const segments: string[] = [];
+
+    if (booking.channel !== null) {
+        segments.push(
+            channelLabels[booking.channel] ??
+                `Réservé via ${booking.channel.replace(/_/g, ' ')}`,
+        );
+    }
+
+    // "Pour" only earns its place when the visit is not the account holder's
+    // own: the row already names the patient.
+    if (booking.booked_for !== null && booking.booked_for.type === 'family') {
+        const relation = booking.booked_for.relation;
+        const suffix = relation
+            ? ` (${relationLabels[relation] ?? relation})`
+            : '';
+
+        segments.push(
+            `pour ${booking.booked_for.name ?? 'un proche'}${suffix}`,
+        );
+    }
+
+    if (booking.booked_by !== null) {
+        const bookedBy = [booking.booked_by.name, booking.booked_by.phone]
+            .filter((value): value is string => value !== null)
+            .join(' ');
+
+        if (bookedBy !== '') {
+            segments.push(`par ${bookedBy}`);
+        }
+    }
+
+    return segments.length === 0 ? null : segments.join(' · ');
+};
+
+// Built once per page rather than per cell, so the template stays a lookup.
+const bookingProvenance = computed(() => {
+    const labels = new Map<number, string>();
+
+    for (const appointment of props.appointments.data) {
+        const label = bookingProvenanceLabel(appointment);
+
+        if (label !== null) {
+            labels.set(appointment.id, label);
+        }
+    }
+
+    return labels;
+});
+
 const waitingAppointments = computed(() =>
     props.appointments.data.filter(
         (appointment) =>
@@ -1070,6 +1146,15 @@ const printAppointments = () => {
                                     <span v-if="appointment.prestation">
                                         · {{ appointment.prestation }}</span
                                     >
+                                </p>
+                                <p
+                                    v-if="bookingProvenance.get(appointment.id)"
+                                    class="mt-0.5 truncate text-xs text-slate-400"
+                                    :title="
+                                        bookingProvenance.get(appointment.id)
+                                    "
+                                >
+                                    {{ bookingProvenance.get(appointment.id) }}
                                 </p>
                             </div>
 

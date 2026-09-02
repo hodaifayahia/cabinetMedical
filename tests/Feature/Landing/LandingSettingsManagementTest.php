@@ -65,6 +65,71 @@ class LandingSettingsManagementTest extends TestCase
         ]);
     }
 
+    public function test_contact_defaults_are_materialised_so_the_admin_has_fields_to_edit(): void
+    {
+        $this->assertSame(0, LandingSetting::query()->count());
+
+        LandingSetting::ensureContactDefaults();
+
+        // Phone and e-mail apply to every language; hours are per language.
+        $this->assertSame('+213 (0) 00 00 00 00', LandingSetting::query()
+            ->where('key', 'contact_phone')
+            ->where('locale', LandingSetting::ALL_LOCALES)
+            ->value('value'));
+        $this->assertSame('contact@drclick.dz', LandingSetting::query()
+            ->where('key', 'contact_email')
+            ->where('locale', LandingSetting::ALL_LOCALES)
+            ->value('value'));
+        $this->assertSame(
+            ['ar', 'en', 'fr'],
+            LandingSetting::query()
+                ->where('key', 'contact_hours')
+                ->orderBy('locale')
+                ->pluck('locale')
+                ->all(),
+        );
+    }
+
+    public function test_materialising_defaults_never_overwrites_an_admins_edits(): void
+    {
+        LandingSetting::ensureContactDefaults();
+
+        LandingSetting::query()
+            ->where('key', 'contact_phone')
+            ->where('locale', LandingSetting::ALL_LOCALES)
+            ->update(['value' => '+213 (0) 21 55 44 33']);
+
+        $before = LandingSetting::query()->count();
+
+        // Runs on every visit to the admin screen, so it has to be a no-op
+        // once the rows exist.
+        LandingSetting::ensureContactDefaults();
+
+        $this->assertSame($before, LandingSetting::query()->count());
+        $this->assertSame('+213 (0) 21 55 44 33', LandingSetting::query()
+            ->where('key', 'contact_phone')
+            ->where('locale', LandingSetting::ALL_LOCALES)
+            ->value('value'));
+    }
+
+    public function test_every_seeded_contact_key_is_editable_from_the_admin_panel(): void
+    {
+        // A default whose key is absent from the resource's options would be
+        // listed but impossible to edit.
+        foreach (LandingSetting::CONTACT_DEFAULTS as $default) {
+            $this->assertArrayHasKey(
+                $default['key'],
+                LandingSettingResource::KEY_OPTIONS,
+                "[{$default['key']}] is seeded but not editable.",
+            );
+            $this->assertArrayHasKey(
+                $default['locale'],
+                LandingSettingResource::LOCALE_OPTIONS,
+                "Locale [{$default['locale']}] is seeded but not selectable.",
+            );
+        }
+    }
+
     public function test_only_platform_admins_can_access_landing_settings(): void
     {
         $member = User::factory()->create(['is_platform_admin' => false]);

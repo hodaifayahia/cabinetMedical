@@ -2,7 +2,7 @@ use std::{
     fmt, fs,
     io::{BufRead, BufReader, Read},
     net::{Ipv4Addr, TcpListener},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -313,7 +313,10 @@ impl Supervisor {
     }
 
     fn launch_and_wait(&self, retry_count: u8) -> Result<LaunchedRuntime, RuntimeError> {
-        let port = allocate_loopback_port()?;
+        // Stable across launches *and* across restarts of the PHP child: a new
+        // port would move the origin and empty the webview's storage under a
+        // session that is still running.
+        let port = reserve_stable_loopback_port(&self.config.runtime_directory)?;
         let local_url = format!("http://127.0.0.1:{port}");
         let runtime_contract = self.observed_runtime_contract();
 
@@ -709,6 +712,54 @@ pub fn allocate_loopback_port() -> Result<u16, RuntimeError> {
         .map_err(|error| {
             RuntimeError::new("port_unavailable", format!("read loopback port: {error}"))
         })
+}
+
+/// The file, under the runtime directory, holding the port this install keeps.
+const LOOPBACK_PORT_FILE: &str = "loopback-port";
+
+/// Reserve the loopback port this installation should go on using.
+///
+/// The webview is served from `http://127.0.0.1:<port>`, and browser storage is
+/// partitioned by origin — port included. Allocating an ephemeral port on every
+/// launch therefore handed the webview a brand-new, empty `localStorage` each
+/// time: the desktop PIN enrolment was silently discarded, so the machine asked
+/// the doctor to create another PIN on every start, and the saved appearance and
+/// landing locale went with it.
+///
+/// The chosen port is remembered and re-used for as long as it still binds. If
+/// something else has taken it in the meantime a fresh one is allocated and
+/// recorded — losing stored state once is far better than refusing to start.
+///
+/// Reserving still races whoever binds next, exactly as `allocate_loopback_port`
+/// always has: the listener here only proves the port is free, and the PHP child
+/// is what finally binds it.
+pub fn reserve_stable_loopback_port(runtime_directory: &Path) -> Result<u16, RuntimeError> {
+    let record = runtime_directory.join(LOOPBACK_PORT_FILE);
+
+    if let Some(port) = read_recorded_port(&record) {
+        if TcpListener::bind((Ipv4Addr::LOCALHOST, port)).is_ok() {
+            return Ok(port);
+        }
+    }
+
+    let port = allocate_loopback_port()?;
+
+    // Best effort: an unwritable runtime directory costs the origin its
+    // stability, but must never stop the application from starting.
+    let _ = fs::write(&record, port.to_string());
+
+    Ok(port)
+}
+
+fn read_recorded_port(record: &Path) -> Option<u16> {
+    fs::read_to_string(record)
+        .ok()?
+        .trim()
+        .parse::<u16>()
+        .ok()
+        // Anything privileged was never ours to record, and 0 would reintroduce
+        // ephemeral allocation through the back door.
+        .filter(|port| *port >= 1024)
 }
 
 pub fn generate_runtime_secret() -> String {
@@ -1222,6 +1273,72 @@ mod tests {
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port)).unwrap();
 
         assert_eq!(listener.local_addr().unwrap().ip(), Ipv4Addr::LOCALHOST);
+    }
+
+    fn scratch_runtime_directory() -> PathBuf {
+        let directory =
+            std::env::temp_dir().join(format!("medismart-loopback-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&directory).unwrap();
+
+        directory
+    }
+
+    /// The webview origin carries the port, and browser storage is partitioned
+    /// by origin. A port that moves between launches empties localStorage, which
+    /// is what made the desktop demand a new PIN on every start.
+    #[test]
+    fn the_loopback_port_survives_a_relaunch() {
+        let directory = scratch_runtime_directory();
+
+        let first = reserve_stable_loopback_port(&directory).unwrap();
+        let second = reserve_stable_loopback_port(&directory).unwrap();
+
+        assert_eq!(
+            first, second,
+            "a relaunch was handed a different port, so the webview would start with empty storage"
+        );
+
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn a_recorded_port_that_something_else_holds_is_replaced() {
+        let directory = scratch_runtime_directory();
+
+        let taken = reserve_stable_loopback_port(&directory).unwrap();
+        // Hold it the way a foreign process would.
+        let _squatter = TcpListener::bind((Ipv4Addr::LOCALHOST, taken)).unwrap();
+
+        let replacement = reserve_stable_loopback_port(&directory).unwrap();
+
+        assert_ne!(
+            replacement, taken,
+            "startup would have failed rather than moving off an occupied port"
+        );
+        assert_eq!(
+            read_recorded_port(&directory.join(LOOPBACK_PORT_FILE)),
+            Some(replacement),
+            "the replacement was not recorded, so the next launch moves again"
+        );
+
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn an_unusable_record_is_ignored_rather_than_trusted() {
+        for recorded in ["", "not-a-port", "0", "80", "70000"] {
+            let directory = scratch_runtime_directory();
+            let record = directory.join(LOOPBACK_PORT_FILE);
+            fs::write(&record, recorded).unwrap();
+
+            assert_eq!(read_recorded_port(&record), None, "accepted {recorded:?}");
+
+            let port = reserve_stable_loopback_port(&directory).unwrap();
+            assert!(port >= 1024);
+            assert_eq!(read_recorded_port(&record), Some(port));
+
+            fs::remove_dir_all(&directory).ok();
+        }
     }
 
     #[test]

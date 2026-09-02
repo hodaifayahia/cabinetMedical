@@ -37,6 +37,23 @@ export type DayAppointment = {
     reason: string | null;
 };
 
+/**
+ * How an appointment came to exist, when it did not come from reception.
+ * `relation` is the raw enum value (`son`, `mother`); the page labels it.
+ */
+export type AppointmentBookingProvenance = {
+    channel: string | null;
+    booked_for: {
+        type: 'self' | 'family';
+        name: string | null;
+        relation: string | null;
+    } | null;
+    booked_by: {
+        name: string | null;
+        phone: string | null;
+    } | null;
+};
+
 export type AppointmentListItem = {
     id: number;
     public_id: string;
@@ -58,6 +75,7 @@ export type AppointmentListItem = {
     can_start: boolean;
     consultation_id: number | null;
     consultation_status: string | null;
+    booking: AppointmentBookingProvenance | null;
     mobile_sync: {
         state: 'not_published' | 'pending' | 'synced' | 'failed';
         version: number | null;

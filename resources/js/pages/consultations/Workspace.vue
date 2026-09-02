@@ -852,12 +852,15 @@ const tabClass = (activeTab: boolean): string =>
                 variant="outline"
                 size="sm"
                 as-child
-                class="mb-3 justify-start"
+                class="mb-3 w-full justify-start"
             >
-                <Link href="/app/consultations"
-                    ><ArrowLeft class="size-4" /> Retour aux consultations du
-                    jour</Link
-                >
+                <Link href="/app/consultations" class="min-w-0">
+                    <ArrowLeft class="size-4" />
+                    <!-- The button variant forces whitespace-nowrap, so the
+                         label is clipped rather than allowed to spill over the
+                         240px sidebar and onto the patient card. -->
+                    <span class="truncate">Retour aux consultations</span>
+                </Link>
             </Button>
 
             <nav

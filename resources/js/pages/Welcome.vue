@@ -10,6 +10,7 @@ import {
     Mail,
     Menu,
     Monitor,
+    MonitorDown,
     Phone,
     Stethoscope,
     UserCheck,
@@ -17,6 +18,7 @@ import {
     Users,
     Wifi,
     X,
+    Zap,
 } from '@lucide/vue';
 import { isTauri } from '@tauri-apps/api/core';
 import type { Component } from 'vue';
@@ -27,6 +29,7 @@ import DesktopOnboarding from '@/components/DesktopOnboarding.vue';
 import DownloadButton from '@/components/landing/DownloadButton.vue';
 import LanguageSwitcher from '@/components/landing/LanguageSwitcher.vue';
 import PhoneMockup from '@/components/landing/PhoneMockup.vue';
+import type { ShowcaseShot } from '@/components/landing/translations';
 import { useLandingLocale } from '@/components/landing/translations';
 import {
     hasCompletedDesktopOnboarding,
@@ -158,6 +161,55 @@ const benefitIcons: Component[] = [
 const roleIcons: Component[] = [Stethoscope, UserCog];
 const requirementIcons: Component[] = [Monitor, Wifi, Building2];
 
+// Hero reassurances, in copy order: instant activation, single install, team.
+const assuranceIcons: Component[] = [Zap, MonitorDown, Users];
+
+// Product tour. The screenshots are real captures, normalised to one frame
+// (1600×834) so switching tabs never shifts the layout. Every shot is kept
+// mounted and cross-faded, which makes switching instant after first paint.
+const SHOWCASE_DIR = '/images/landing/app';
+const activeShot = ref(0);
+
+const showcaseItems = computed(() => copy.value.showcase.items);
+const activeShowcase = computed(
+    () => showcaseItems.value[activeShot.value] ?? showcaseItems.value[0],
+);
+
+function shotSrc(shot: ShowcaseShot): string {
+    return `${SHOWCASE_DIR}/${shot}.webp`;
+}
+
+function shotSrcset(shot: ShowcaseShot): string {
+    return `${SHOWCASE_DIR}/${shot}-800.webp 800w, ${SHOWCASE_DIR}/${shot}.webp 1600w`;
+}
+
+// Roving arrow-key navigation across the tour tabs, mirrored in RTL so the
+// "next" arrow always points at the next tab on screen.
+function moveShowcaseFocus(event: KeyboardEvent, index: number): void {
+    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+
+    if (!keys.includes(event.key)) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const count = showcaseItems.value.length;
+    const forward = dir.value === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+    let next = index;
+
+    if (event.key === 'Home') {
+        next = 0;
+    } else if (event.key === 'End') {
+        next = count - 1;
+    } else {
+        next = (index + (event.key === forward ? 1 : -1) + count) % count;
+    }
+
+    activeShot.value = next;
+    document.getElementById(`showcase-tab-${next}`)?.focus();
+}
+
 // Self-hosted photography (Unsplash licence): the CSP only allows
 // same-origin images, so the files live in public/images/landing/.
 const photos = {
@@ -189,6 +241,7 @@ const rotatingWord = computed(() => {
 
 const navLinks = computed(() => [
     { href: '#solution', label: copy.value.nav.features },
+    { href: '#apercu', label: copy.value.nav.tour },
     { href: '#fonctionnement', label: copy.value.nav.how },
     { href: '#roles', label: copy.value.nav.roles },
     { href: '#telecharger', label: copy.value.nav.requirements },
@@ -352,21 +405,25 @@ onUnmounted(() => {
             <div
                 class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"
             >
-                <a href="#accueil" class="flex items-center gap-2.5">
+                <a href="#accueil" class="flex shrink-0 items-center gap-2.5">
                     <AppLogoIcon class="size-10 object-contain" />
                     <span class="flex flex-col leading-tight">
                         <span class="text-base font-bold tracking-tight"
                             >Drclick</span
                         >
+                        <!-- Dropped once the full nav appears: the six labels
+                             plus the language switcher and the download button
+                             already fill the bar, and in French the tagline
+                             pushed the whole row into a horizontal overflow. -->
                         <span
-                            class="hidden text-[11px] text-muted-foreground sm:block"
+                            class="hidden text-[11px] whitespace-nowrap text-muted-foreground sm:block xl:hidden"
                         >
                             {{ copy.tagline }}
                         </span>
                     </span>
                 </a>
 
-                <nav class="hidden items-center gap-7 lg:flex">
+                <nav class="hidden items-center gap-5 xl:flex 2xl:gap-7">
                     <a
                         v-for="link in navLinks"
                         :key="link.href"
@@ -388,14 +445,14 @@ onUnmounted(() => {
                             :available="desktopDownload?.available ?? false"
                             :url="desktopDownload?.url ?? null"
                             :reason="desktopDownload?.reason ?? null"
-                            :label="copy.download.cta"
+                            :label="copy.download.ctaShort"
                             :unavailable-label="copy.download.unavailable"
                             @click.prevent="openDownloadDialog"
                         />
                     </div>
                     <button
                         type="button"
-                        class="flex size-11 cursor-pointer items-center justify-center rounded-xl border border-border text-foreground transition hover:bg-muted lg:hidden"
+                        class="flex size-11 cursor-pointer items-center justify-center rounded-xl border border-border text-foreground transition hover:bg-muted xl:hidden"
                         :aria-label="copy.nav.menuLabel"
                         :aria-expanded="mobileNavOpen"
                         @click="mobileNavOpen = !mobileNavOpen"
@@ -409,7 +466,7 @@ onUnmounted(() => {
             <!-- Mobile nav -->
             <div
                 v-if="mobileNavOpen"
-                class="border-t border-border bg-background px-4 py-4 lg:hidden"
+                class="border-t border-border bg-background px-4 py-4 xl:hidden"
             >
                 <nav class="flex flex-col gap-1">
                     <a
@@ -531,31 +588,41 @@ onUnmounted(() => {
                         </ul>
                     </div>
 
-                    <!-- Facts strip -->
-                    <div
-                        class="mt-14 grid gap-x-8 gap-y-6 border-t border-border pt-8 sm:grid-cols-3 lg:mt-20"
+                    <!-- Reassurance strip. Hairlines come from the 1px grid
+                         gap over a border-coloured background, so the three
+                         cards read as one block on every breakpoint. -->
+                    <ul
+                        class="mt-14 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3 lg:mt-20"
                     >
-                        <div
-                            v-for="(stat, index) in copy.hero.stats"
-                            :key="stat.label"
+                        <li
+                            v-for="(assurance, index) in copy.hero.assurances"
+                            :key="assurance.title"
                             v-reveal
-                            class="flex items-baseline justify-center gap-3"
+                            class="bg-background p-6 sm:p-7"
                             :style="{
                                 '--lp-reveal-delay': `${index * 90}ms`,
                             }"
                         >
                             <span
-                                class="text-4xl font-bold tracking-tight text-primary tabular-nums sm:text-5xl"
+                                class="flex size-11 items-center justify-center rounded-xl bg-brand-soft/70 text-primary"
                             >
-                                {{ stat.value }}
+                                <component
+                                    :is="assuranceIcons[index]"
+                                    class="size-5"
+                                />
                             </span>
-                            <span
-                                class="max-w-[12rem] text-sm leading-5 text-muted-foreground"
+                            <h2
+                                class="mt-4 text-base font-semibold text-foreground"
                             >
-                                {{ stat.label }}
-                            </span>
-                        </div>
-                    </div>
+                                {{ assurance.title }}
+                            </h2>
+                            <p
+                                class="mt-1.5 text-sm leading-6 text-muted-foreground"
+                            >
+                                {{ assurance.body }}
+                            </p>
+                        </li>
+                    </ul>
                 </div>
             </section>
 
@@ -658,6 +725,128 @@ onUnmounted(() => {
                                 :height="photos.documents.height"
                                 loading="lazy"
                                 class="mt-10 aspect-[16/9] w-full rounded-xl border border-border object-cover lg:hidden"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Product tour: real screenshots, one per capability.
+                 Clipped on the x axis because the frame's tinted backdrop is
+                 inset past the container and would otherwise widen the page
+                 by a few pixels on narrow desktop viewports. -->
+            <section
+                id="apercu"
+                class="scroll-mt-20 overflow-x-clip border-b border-border"
+            >
+                <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+                    <div class="mx-auto max-w-2xl text-center">
+                        <p
+                            class="inline-flex items-center gap-3 text-xs font-semibold text-primary"
+                            :class="eyebrowTracking"
+                        >
+                            <span
+                                class="h-px w-8 shrink-0 bg-primary"
+                                aria-hidden="true"
+                            ></span>
+                            {{ copy.showcase.eyebrow }}
+                        </p>
+                        <h2
+                            class="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+                        >
+                            {{ copy.showcase.title }}
+                        </h2>
+                        <p
+                            class="mt-4 text-base leading-7 text-muted-foreground"
+                        >
+                            {{ copy.showcase.subtitle }}
+                        </p>
+                    </div>
+
+                    <!-- Screen switcher. Scrolls horizontally on narrow
+                         viewports rather than wrapping into a ragged block. -->
+                    <div
+                        class="lp-tabscroll -mx-4 mt-10 overflow-x-auto px-4 sm:mx-0 sm:px-0"
+                    >
+                        <div
+                            role="tablist"
+                            :aria-label="copy.showcase.hint"
+                            class="mx-auto flex w-max gap-1 rounded-2xl border border-border bg-card p-1.5"
+                        >
+                            <button
+                                v-for="(item, index) in copy.showcase.items"
+                                :id="`showcase-tab-${index}`"
+                                :key="item.shot"
+                                type="button"
+                                role="tab"
+                                :aria-selected="index === activeShot"
+                                aria-controls="showcase-panel"
+                                :tabindex="index === activeShot ? 0 : -1"
+                                class="cursor-pointer rounded-xl px-4 py-2 text-sm font-medium whitespace-nowrap transition"
+                                :class="
+                                    index === activeShot
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                "
+                                @click="activeShot = index"
+                                @keydown="moveShowcaseFocus($event, index)"
+                            >
+                                {{ item.tab }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mx-auto mt-10 max-w-2xl text-center">
+                        <Transition name="lp-word" mode="out-in">
+                            <div :key="activeShowcase.shot">
+                                <h3
+                                    class="text-xl font-semibold text-foreground sm:text-2xl"
+                                >
+                                    {{ activeShowcase.title }}
+                                </h3>
+                                <p
+                                    class="mt-3 text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7"
+                                >
+                                    {{ activeShowcase.body }}
+                                </p>
+                            </div>
+                        </Transition>
+                    </div>
+
+                    <!-- Every shot stays mounted and cross-fades, so the frame
+                         never collapses and switching costs no new request. -->
+                    <div v-reveal class="relative mt-10">
+                        <div
+                            class="pointer-events-none absolute -inset-x-4 -inset-y-6 -z-10 rounded-[2rem] bg-brand-soft/30 sm:-inset-x-8"
+                            aria-hidden="true"
+                        ></div>
+                        <!-- The frame is the single panel, so each image keeps
+                             its own role and alt text; a tabpanel role on the
+                             image itself would discard both. -->
+                        <div
+                            id="showcase-panel"
+                            role="tabpanel"
+                            :aria-labelledby="`showcase-tab-${activeShot}`"
+                            class="relative aspect-[800/417] w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-brand-deep/10"
+                        >
+                            <img
+                                v-for="(item, index) in copy.showcase.items"
+                                :key="item.shot"
+                                :src="shotSrc(item.shot)"
+                                :srcset="shotSrcset(item.shot)"
+                                sizes="(min-width: 1024px) 1024px, 100vw"
+                                :alt="item.alt"
+                                width="1600"
+                                height="834"
+                                loading="lazy"
+                                decoding="async"
+                                class="absolute inset-0 size-full object-cover transition-opacity duration-500"
+                                :class="
+                                    index === activeShot
+                                        ? 'opacity-100'
+                                        : 'opacity-0'
+                                "
+                                :aria-hidden="index !== activeShot"
                             />
                         </div>
                     </div>
@@ -828,7 +1017,7 @@ onUnmounted(() => {
                 </div>
             </section>
 
-            <!-- Upcoming patient mobile app -->
+            <!-- Patient mobile app (shipped) -->
             <section id="application-mobile" class="scroll-mt-20">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
                     <div
@@ -1271,6 +1460,16 @@ onUnmounted(() => {
 .lp-reveal.is-revealed {
     opacity: 1;
     transform: none;
+}
+
+/* The product-tour tab strip scrolls on narrow viewports; the scrollbar
+   itself would sit under the pills and read as a stray rule. */
+.lp-tabscroll {
+    scrollbar-width: none;
+}
+
+.lp-tabscroll::-webkit-scrollbar {
+    display: none;
 }
 
 /* Rotating hero keyword. */

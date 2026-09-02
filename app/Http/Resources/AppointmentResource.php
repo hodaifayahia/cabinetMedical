@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Support\Appointments\BookingProvenance;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,12 +18,21 @@ class AppointmentResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        /** @var Appointment $appointment */
+        $appointment = $this->resource;
+
         return [
             'id' => $this->id,
             'public_id' => $this->public_id,
             'sync_version' => (int) $this->sync_version,
             'patient_id' => $this->patient_id,
             'patient' => new PatientResource($this->whenLoaded('patient')),
+            // How the appointment came to exist: the channel, the person the
+            // visit is for, and the number reception calls back. Never the
+            // booking foreign keys — on an imported appointment they are null
+            // and the same three facts come from `booking_context` instead.
+            // `relation` is the enum value (`son`); the client labels it.
+            'booking' => BookingProvenance::for($appointment),
             'appointment_date' => $this->appointment_date?->toDateString(),
             'starts_at' => $this->starts_at?->toIso8601String(),
             'ends_at' => $this->ends_at?->toIso8601String(),

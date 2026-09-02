@@ -148,6 +148,18 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by(hash('sha256', (string) $request->ip()));
         });
 
+        // Platform back office on mobile. One superadmin drives every clinic
+        // on the platform, so the budget is keyed on the account rather than
+        // the address alone: several admins may share one office connection.
+        RateLimiter::for('mobile-admin', static function (Request $request): Limit {
+            $key = hash('sha256', implode('|', [
+                (string) $request->user()?->getAuthIdentifier(),
+                (string) $request->ip(),
+            ]));
+
+            return Limit::perMinute(60)->by($key);
+        });
+
         RateLimiter::for('cabinet-join', static function (Request $request): Limit {
             $key = hash('sha256', implode('|', [
                 (string) $request->input('email'),

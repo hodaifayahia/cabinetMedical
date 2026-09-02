@@ -44,7 +44,10 @@ class StaffAppointmentController extends Controller
         $date = $validated['date'] ?? CarbonImmutable::now()->toDateString();
 
         $appointments = Appointment::query()
-            ->with('patient')
+            // `AppointmentResource` reads booking provenance per row; without
+            // these the day's list costs three extra queries for every
+            // appointment booked from the phone.
+            ->with(['patient', 'bookedBy.patientProfile', 'familyMember'])
             ->whereDate('appointment_date', $date)
             ->orderBy('starts_at')
             ->paginate((int) ($validated['per_page'] ?? 50))

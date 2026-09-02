@@ -8,6 +8,7 @@ use App\Http\Middleware\EnforceSessionLock;
 use App\Http\Middleware\EnsureApiCabinetIsActive;
 use App\Http\Middleware\EnsureCabinetIsActive;
 use App\Http\Middleware\EnsureMobilePatient;
+use App\Http\Middleware\EnsureMobilePlatformAdmin;
 use App\Http\Middleware\EnsureMobileStaffCabinet;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -90,6 +91,7 @@ return $registerWindowsCachePrefixes(Application::configure(basePath: dirname(__
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'cabinet.active.api' => EnsureApiCabinetIsActive::class,
             'mobile.patient' => EnsureMobilePatient::class,
+            'mobile.admin' => EnsureMobilePlatformAdmin::class,
             'mobile.staff.cabinet' => EnsureMobileStaffCabinet::class,
         ]);
 

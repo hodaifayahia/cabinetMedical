@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
  * @property int|null $booked_by_user_id
  * @property int|null $family_member_id
  * @property string|null $booking_channel
+ * @property array<string, mixed>|null $booking_context
  * @property string|null $public_id
  * @property int $sync_version
  * @property CarbonImmutable|null $appointment_date
@@ -161,6 +162,10 @@ class Appointment extends Model
             'started_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
+            // Deliberately absent from #[Fillable]: like the other sync-owned
+            // columns it is written by the importer through `forceFill`, never
+            // from a client payload.
+            'booking_context' => 'array',
             'sync_version' => 'integer',
         ];
     }

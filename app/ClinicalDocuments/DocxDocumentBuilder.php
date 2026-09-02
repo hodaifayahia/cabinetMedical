@@ -26,7 +26,7 @@ final class DocxDocumentBuilder
             throw new RuntimeException('The Word document could not be created.');
         }
 
-        $logo = $this->logo($variables);
+        $logo = $this->resolveLogo($variables['cabinet.logo_path'] ?? null);
         $documentXml = $this->documentXml(
             $title,
             $this->replaceVariables($body, $variables),
@@ -179,12 +179,16 @@ final class DocxDocumentBuilder
     }
 
     /**
-     * @param  array<string, string>  $variables
+     * Resolve the logo a document should carry: the cabinet's uploaded file
+     * when it is readable, otherwise the packaged product mark. Public so the
+     * refresher re-embeds a replaced logo at exactly the same scale the
+     * original build would have produced.
+     *
      * @return array{filename: string, bytes: string, extension: string, content_type: string, width_emu: int, height_emu: int}|null
      */
-    private function logo(array $variables): ?array
+    public function resolveLogo(?string $logoPath): ?array
     {
-        $path = trim($variables['cabinet.logo_path'] ?? '');
+        $path = trim((string) $logoPath);
         $bytes = null;
 
         if ($path !== '') {
@@ -339,12 +343,7 @@ final class DocxDocumentBuilder
      */
     private function watermarkHeaderXml(array $logo): string
     {
-        $scale = min(
-            3_400_000 / max(1, $logo['width_emu']),
-            3_400_000 / max(1, $logo['height_emu']),
-        );
-        $width = max(1, (int) round($logo['width_emu'] * $scale));
-        $height = max(1, (int) round($logo['height_emu'] * $scale));
+        [$width, $height] = $this->watermarkExtent($logo);
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
@@ -363,6 +362,26 @@ final class DocxDocumentBuilder
             .'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'.$width.'" cy="'.$height.'"/></a:xfrm>'
             .'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'
             .'</a:graphicData></a:graphic></wp:anchor></w:drawing></w:r></w:p></w:hdr>';
+    }
+
+    /**
+     * The behind-text watermark is scaled to fit a 3.4M EMU square, keeping
+     * the logo's aspect ratio.
+     *
+     * @param  array{filename: string, bytes: string, extension: string, content_type: string, width_emu: int, height_emu: int}  $logo
+     * @return array{int, int}
+     */
+    public function watermarkExtent(array $logo): array
+    {
+        $scale = min(
+            3_400_000 / max(1, $logo['width_emu']),
+            3_400_000 / max(1, $logo['height_emu']),
+        );
+
+        return [
+            max(1, (int) round($logo['width_emu'] * $scale)),
+            max(1, (int) round($logo['height_emu'] * $scale)),
+        ];
     }
 
     /**
