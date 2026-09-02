@@ -32,6 +32,7 @@ class CabinetProvisioningService
 {
     public function __construct(
         private readonly MedicalSpecialtyCatalog $specialties,
+        private readonly CabinetCatalogueProvisioner $catalogue,
     ) {}
 
     /**
@@ -77,6 +78,12 @@ class CabinetProvisioningService
             ]);
 
             $this->provisionDoctorProfile($user, $cabinet, $specialty, $phone);
+
+            // The examination and medication catalogues are per-cabinet, so a
+            // new cabinet would otherwise open with an empty prescription list
+            // and nothing to order — with no way to populate either from
+            // inside the application.
+            $this->catalogue->provisionFor($cabinet);
 
             AuditLog::record(
                 'cabinet.registered',
