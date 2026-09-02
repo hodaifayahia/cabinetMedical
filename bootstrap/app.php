@@ -120,7 +120,13 @@ return $registerWindowsCachePrefixes(Application::configure(basePath: dirname(__
             EnforceSessionLock::class,
             EnsureCabinetIsActive::class,
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
+            // Disabled: this emits one `Link: rel=preload` entry per Vite chunk,
+            // which on the landing page reached ~14KB and pushed the response
+            // headers past 16KB. Hostinger's `hcdn` edge rejects that — the
+            // origin answered 200 while visitors got 307s and 504s. The HTML
+            // already carries its own modulepreload tags, so nothing is lost
+            // beyond the early hint. Re-enable only behind a header budget.
+            // AddLinkHeadersForPreloadedAssets::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
