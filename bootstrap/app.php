@@ -13,6 +13,7 @@ use App\Http\Middleware\EnsureMobileStaffCabinet;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\MarkJsonOnlyEndpointsAsXhr;
+use App\Http\Middleware\RecordInertiaPreviousUrl;
 use App\Http\Middleware\SecureResponseHeaders;
 use App\Http\Middleware\ThrottleCabinetRegistration;
 use App\Support\PostLoginDestination;
@@ -103,6 +104,10 @@ return $registerWindowsCachePrefixes(Application::configure(basePath: dirname(__
             // before storeCurrentUrl() decides whether to record it as the
             // session's previous URL. See the middleware for why that matters.
             MarkJsonOnlyEndpointsAsXhr::class,
+            // The mirror image of the above: Inertia visits are flagged XHR, so
+            // storeCurrentUrl() never records them and back() stayed pinned to
+            // the last full page load. See the middleware.
+            RecordInertiaPreviousUrl::class,
             HandleAppearance::class,
             // The Hub boundary runs before the per-cabinet gates: on a Hub,
             // belonging to another cabinet is not a licence question, it is
