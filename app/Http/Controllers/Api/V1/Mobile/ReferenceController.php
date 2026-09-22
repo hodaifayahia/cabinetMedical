@@ -18,10 +18,15 @@ class ReferenceController extends Controller
 {
     public function wilayas(): JsonResponse
     {
+        // Coverage: patients may only pick a region the platform has switched
+        // on. The cache key carries the active set's fingerprint so flipping a
+        // wilaya in the admin is reflected immediately instead of up to a day
+        // later.
         $wilayas = Cache::remember(
-            'mobile.reference.wilayas',
+            'mobile.reference.wilayas.'.$this->coverageFingerprint(),
             now()->addDay(),
             static fn (): array => Wilaya::query()
+                ->where('is_active', true)
                 ->orderBy('code')
                 ->get(['code', 'name_fr', 'name_ar'])
                 ->map(static fn (Wilaya $wilaya): array => [
@@ -35,16 +40,34 @@ class ReferenceController extends Controller
         return response()->json(['data' => $wilayas]);
     }
 
+    /**
+     * A cheap signature of the active wilaya set, so the reference cache turns
+     * over the moment coverage changes rather than on its TTL.
+     */
+    private function coverageFingerprint(): string
+    {
+        $codes = Wilaya::query()
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->pluck('code')
+            ->implode(',');
+
+        return substr(hash('sha256', $codes), 0, 16);
+    }
+
     public function baladiyas(int $wilaya): JsonResponse
     {
+        // An inactive wilaya is indistinguishable from a missing one to the
+        // public API: coverage is not something callers get to enumerate.
         abort_unless(
-            Wilaya::query()->whereKey($wilaya)->exists(),
+            Wilaya::query()->whereKey($wilaya)->where('is_active', true)->exists(),
             404,
             'Wilaya introuvable.',
         );
 
         $baladiyas = Baladiya::query()
             ->where('wilaya_code', $wilaya)
+            ->where('is_active', true)
             ->orderBy('name_fr')
             ->get(['id', 'wilaya_code', 'name_fr', 'name_ar'])
             ->map(static fn (Baladiya $baladiya): array => [

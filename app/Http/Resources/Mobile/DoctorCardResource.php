@@ -35,6 +35,7 @@ class DoctorCardResource extends JsonResource
             'clinic' => [
                 'id' => $this->clinic_id,
                 'name' => $this->clinic_name,
+                'facility_type' => $this->clinic_facility_type,
                 'wilaya' => $this->clinic_wilaya,
                 'baladiya' => $this->clinic_baladiya,
                 'address' => $this->clinic_address,

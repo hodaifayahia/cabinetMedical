@@ -4,11 +4,13 @@ namespace Tests\Support;
 
 use App\Enums\CabinetStatus;
 use App\Enums\RoleName;
+use App\Models\Baladiya;
 use App\Models\Cabinet;
 use App\Models\CabinetPublicProfile;
 use App\Models\DoctorProfile;
 use App\Models\PatientProfile;
 use App\Models\User;
+use App\Models\Wilaya;
 
 /**
  * Shared builders for the mobile API feature tests. Callers must seed
@@ -25,6 +27,19 @@ trait MobileTestHelpers
      */
     protected function makeListedClinic(): array
     {
+        // Discovery joins `wilayas` to enforce coverage, so the fixture needs
+        // the region to exist — a cabinet pointing at a wilaya row that is not
+        // there is a data-integrity problem, not a supported state.
+        $wilaya = Wilaya::query()->firstOrCreate(
+            ['code' => 16],
+            ['name_fr' => 'Alger', 'name_ar' => 'الجزائر', 'is_active' => true],
+        );
+
+        $baladiya = Baladiya::query()->firstOrCreate(
+            ['wilaya_code' => $wilaya->code, 'name_fr' => 'Alger Centre'],
+            ['name_ar' => 'الجزائر الوسطى', 'is_active' => true],
+        );
+
         $cabinet = Cabinet::query()->create([
             'name' => 'Cabinet '.fake()->unique()->lastName(),
             'status' => CabinetStatus::ACTIVE,
@@ -48,14 +63,18 @@ trait MobileTestHelpers
                 'is_active' => true,
             ]);
 
-        CabinetPublicProfile::factory()->listed()->create([
+        $publicProfile = CabinetPublicProfile::factory()->listed()->create([
             'cabinet_id' => $cabinet->getKey(),
+            'baladiya_id' => $baladiya->getKey(),
         ]);
 
         return [
             'cabinet' => $cabinet,
             'doctor' => $doctor,
             'doctorUser' => $doctorUser,
+            'wilaya' => $wilaya,
+            'baladiya' => $baladiya,
+            'publicProfile' => $publicProfile,
         ];
     }
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetLifecycleController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetListingController;
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCoverageController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetStaffController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminOverviewController;
 use App\Http\Controllers\Api\V1\Mobile\AuthController;
@@ -128,6 +129,18 @@ Route::middleware(['auth:sanctum', 'mobile.admin', 'throttle:mobile-admin'])
             ->whereNumber('cabinet');
 
         Route::post('cabinets/{cabinet}/staff', [AdminCabinetStaffController::class, 'store'])
+            ->whereNumber('cabinet');
+
+        // Coverage: which wilayas/baladiyas the patient app offers at all.
+        Route::get('coverage/wilayas', [AdminCoverageController::class, 'wilayas']);
+        Route::patch('coverage/wilayas/{wilaya}', [AdminCoverageController::class, 'updateWilaya'])
+            ->whereNumber('wilaya');
+        Route::get('coverage/wilayas/{wilaya}/baladiyas', [AdminCoverageController::class, 'baladiyas'])
+            ->whereNumber('wilaya');
+        Route::patch('coverage/baladiyas/{baladiya}', [AdminCoverageController::class, 'updateBaladiya'])
+            ->whereNumber('baladiya');
+
+        Route::patch('cabinets/{cabinet}/facility-type', [AdminCabinetListingController::class, 'updateFacilityType'])
             ->whereNumber('cabinet');
 
         Route::patch('cabinets/{cabinet}/listing', [AdminCabinetListingController::class, 'update'])

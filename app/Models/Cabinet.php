@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CabinetStatus;
+use App\Enums\FacilityType;
 use App\Enums\LicensePlan;
 use App\Support\Wilayas;
 use Carbon\CarbonImmutable;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $name
  * @property CabinetStatus $status
  * @property string|null $specialization
+ * @property FacilityType $facility_type
  * @property int|null $wilaya_code
  * @property int|null $owner_user_id
  * @property int|null $license_id
@@ -29,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'name',
     'status',
     'specialization',
+    'facility_type',
     'wilaya_code',
     'owner_user_id',
     'activated_at',
@@ -46,6 +49,7 @@ class Cabinet extends Model
     {
         return [
             'status' => CabinetStatus::class,
+            'facility_type' => FacilityType::class,
             'wilaya_code' => 'integer',
             'activated_at' => 'immutable_datetime',
         ];

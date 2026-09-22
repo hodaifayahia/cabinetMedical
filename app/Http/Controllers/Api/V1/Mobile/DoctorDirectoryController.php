@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Mobile;
 
 use App\Enums\CabinetStatus;
+use App\Enums\FacilityType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Mobile\ClinicDetailResource;
 use App\Http\Resources\Mobile\DoctorCardResource;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 
 /**
  * Public doctor discovery. Only active doctors of active cabinets with a
@@ -31,6 +33,7 @@ class DoctorDirectoryController extends Controller
             'wilaya_code' => ['sometimes', 'integer', 'between:1,58'],
             'baladiya_id' => ['sometimes', 'integer', 'min:1'],
             'specialty' => ['sometimes', 'string', 'max:100'],
+            'facility_type' => ['sometimes', 'string', Rule::enum(FacilityType::class)],
             'q' => ['sometimes', 'string', 'max:100'],
             'per_page' => ['sometimes', 'integer', 'between:1,50'],
         ]);
@@ -38,9 +41,24 @@ class DoctorDirectoryController extends Controller
         $doctors = DoctorProfile::withoutCabinetScope()
             ->join('cabinets', 'cabinets.id', '=', 'doctor_profiles.cabinet_id')
             ->join('cabinet_public_profiles', 'cabinet_public_profiles.cabinet_id', '=', 'doctor_profiles.cabinet_id')
+            ->join('wilayas', 'wilayas.code', '=', 'cabinets.wilaya_code')
             ->where('doctor_profiles.is_active', true)
             ->where('cabinets.status', CabinetStatus::ACTIVE->value)
             ->where('cabinet_public_profiles.is_listed', true)
+            // Coverage: a practice in a region the platform has not switched on
+            // is invisible, however complete its own profile is.
+            ->where('wilayas.is_active', true)
+            ->where(static fn (Builder $covered) => $covered
+                ->whereNull('cabinet_public_profiles.baladiya_id')
+                ->orWhereExists(static fn ($exists) => $exists
+                    ->selectRaw('1')
+                    ->from('baladiyas')
+                    ->whereColumn('baladiyas.id', 'cabinet_public_profiles.baladiya_id')
+                    ->where('baladiyas.is_active', true)))
+            ->when(
+                isset($validated['facility_type']),
+                static fn (Builder $query) => $query->where('cabinets.facility_type', $validated['facility_type']),
+            )
             ->when(
                 isset($validated['wilaya_code']),
                 static fn (Builder $query) => $query->where('cabinets.wilaya_code', $validated['wilaya_code']),
@@ -67,6 +85,7 @@ class DoctorDirectoryController extends Controller
                 'doctor_profiles.*',
                 'cabinets.id as clinic_id',
                 'cabinets.name as clinic_name',
+                'cabinets.facility_type as clinic_facility_type',
                 'cabinets.wilaya_code as clinic_wilaya_code',
                 'cabinet_public_profiles.address as clinic_address',
                 'cabinet_public_profiles.baladiya_id as clinic_baladiya_id',

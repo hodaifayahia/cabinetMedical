@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1\Mobile\Admin;
 
+use App\Enums\FacilityType;
 use App\Http\Requests\Api\Mobile\Admin\UpdateAdminCabinetListingRequest;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * Platform back office: show or hide a clinic in the public mobile directory.
@@ -28,5 +31,28 @@ class AdminCabinetListingController extends AdminController
         ], $request->user()?->getKey());
 
         return $this->cabinetDetail($target)->response();
+    }
+
+    /**
+     * Reclassify a cabinet as a doctor's practice, a clinic or an imaging
+     * centre. This is what the patient app's three search tabs filter on, so
+     * the change moves the cabinet between tabs immediately.
+     */
+    public function updateFacilityType(Request $request, int $cabinet): JsonResponse
+    {
+        $data = $request->validate([
+            'facility_type' => ['required', 'string', Rule::enum(FacilityType::class)],
+        ]);
+
+        $target = $this->findCabinet($cabinet);
+        $type = FacilityType::from($data['facility_type']);
+
+        $target->forceFill(['facility_type' => $type])->save();
+
+        AuditLog::record('admin.cabinet_facility_type_updated', $target, [
+            'facility_type' => $type->value,
+        ], $request->user()?->getKey());
+
+        return $this->cabinetDetail($target->refresh())->response();
     }
 }

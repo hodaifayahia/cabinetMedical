@@ -215,6 +215,14 @@ class DoctorSearchTest extends TestCase
      */
     private function makeSearchableClinic(array $cabinet = [], array $doctor = [], array $profile = []): array
     {
+        // Discovery joins `wilayas` to enforce coverage, so the region this
+        // clinic claims has to exist and be active. Tests that create it
+        // themselves keep their own row: firstOrCreate never overwrites.
+        Wilaya::query()->firstOrCreate(
+            ['code' => (int) ($cabinet['wilaya_code'] ?? 16)],
+            ['name_fr' => 'Alger', 'name_ar' => 'الجزائر', 'is_active' => true],
+        );
+
         $cabinetModel = Cabinet::query()->create(array_merge([
             'name' => 'Cabinet '.fake()->unique()->lastName(),
             'status' => CabinetStatus::ACTIVE,
