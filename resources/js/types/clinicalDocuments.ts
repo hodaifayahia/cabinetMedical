@@ -62,3 +62,14 @@ export type ExamOption = {
     name: string;
     category: 'labo' | 'cardio' | 'radio' | string;
 };
+
+/**
+ * A named exam selection the cabinet saved for reuse. `exam_ids` is already
+ * filtered server-side to exams that still exist, and its order is the order
+ * the exams print in.
+ */
+export type BilanTemplate = {
+    id: number;
+    name: string;
+    exam_ids: number[];
+};

@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type {
+    BilanTemplate,
     ClinicalDocument,
     ClinicalDocumentTemplate,
     ClinicalOnlyOfficeSettings,
@@ -195,6 +196,7 @@ const props = defineProps<{
         label: string;
         hint: string | null;
     }[];
+    bilanTemplates: BilanTemplate[];
     cabinet: DocumentBranding;
     stats: { consultations: number; appointments: number };
     canEdit: boolean;
@@ -1497,6 +1499,7 @@ const tabClass = (activeTab: boolean): string =>
                     :consultation-id="consultation.id"
                     :exams="exams"
                     :bilan-categories="bilanCategories"
+                    :bilan-templates="bilanTemplates"
                     :documents="documents"
                     :patient="patient"
                     :cabinet="cabinet"

@@ -24,6 +24,7 @@ use App\Http\Controllers\Configuration\PrepareUpdateInstallController;
 use App\Http\Controllers\Configuration\ReferentialController;
 use App\Http\Controllers\Configuration\RolePermissionController;
 use App\Http\Controllers\Configuration\UploadSessionController;
+use App\Http\Controllers\Consultations\BilanTemplateController;
 use App\Http\Controllers\Consultations\ClinicalDocumentController;
 use App\Http\Controllers\Consultations\ConsultationController;
 use App\Http\Controllers\Consultations\ConsultationHistoryController;
@@ -256,6 +257,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('permission:consultations.update')->name('consultations.word-documents.store');
         Route::post('consultations/{consultation}/word-documents/{document}/convert', [ClinicalDocumentController::class, 'convert'])
             ->middleware('permission:consultations.update')->name('consultations.word-documents.convert');
+
+        // Reusable exam selections saved from the bilan editor. They belong to
+        // the cabinet rather than to one consultation, hence no {consultation}.
+        Route::post('bilan-templates', [BilanTemplateController::class, 'store'])
+            ->middleware('permission:consultations.update')->name('bilan-templates.store');
+        Route::delete('bilan-templates/{bilanTemplate}', [BilanTemplateController::class, 'destroy'])
+            ->middleware('permission:consultations.update')->name('bilan-templates.destroy');
 
         Route::middleware('permission:appointments.configure')->group(function () {
             Route::get('appointments/configure', [ScheduleController::class, 'edit'])->name('appointments.configure');

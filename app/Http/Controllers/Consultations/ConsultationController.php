@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Act;
 use App\Models\Appointment;
 use App\Models\AuditLog;
+use App\Models\BilanTemplate;
 use App\Models\BilanType;
 use App\Models\Consultation;
 use App\Models\ConsultationFee;
@@ -211,6 +212,14 @@ class ConsultationController extends Controller
         $legacyCategoryNames = $bilanCategories
             ->filter(fn (BilanType $category): bool => filled($category->category))
             ->pluck('name', 'category');
+        // Fetched once and keyed by id: the exam picker and the saved bilan
+        // templates must agree on exactly which exams exist.
+        $activeExams = Exam::query()
+            ->where('is_active', true)
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get()
+            ->keyBy(fn (Exam $exam): int => (int) $exam->getKey());
 
         return Inertia::render('consultations/Workspace', [
             'consultation' => [
@@ -346,22 +355,32 @@ class ConsultationController extends Controller
                     'notes' => $medication->notes,
                 ])
                 ->all(),
-            'exams' => Exam::query()
-                ->where('is_active', true)
-                ->orderBy('category')
-                ->orderBy('name')
-                ->get()
+            'exams' => $activeExams
                 ->map(fn (Exam $exam): array => [
                     'id' => $exam->getKey(),
                     'name' => $exam->name,
                     'category' => $legacyCategoryNames->get($exam->category, $exam->category),
                 ])
+                ->values()
                 ->all(),
             'bilanCategories' => $bilanCategories
                 ->map(fn (BilanType $category): array => [
                     'key' => $category->name,
                     'label' => $category->name,
                     'hint' => $category->description,
+                ])
+                ->values()
+                ->all(),
+            // Exam selections the cabinet saved for reuse. Ids are filtered
+            // against the live exam list so a deleted exam simply drops out of
+            // the template instead of producing a blank line.
+            'bilanTemplates' => BilanTemplate::query()
+                ->orderBy('name')
+                ->get()
+                ->map(fn (BilanTemplate $template): array => [
+                    'id' => $template->getKey(),
+                    'name' => $template->name,
+                    'exam_ids' => $template->resolvedExamIds($activeExams),
                 ])
                 ->values()
                 ->all(),

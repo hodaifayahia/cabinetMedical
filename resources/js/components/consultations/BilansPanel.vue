@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import {
     ArrowRight,
+    BookmarkPlus,
     Check,
     FileText,
     FlaskConical,
@@ -9,10 +10,20 @@ import {
     Search,
     Trash2,
 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import BilanDocumentEditor from '@/components/consultations/BilanDocumentEditor.vue';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import type {
+    BilanTemplate,
     ClinicalDocument,
     DocumentBranding,
     ExamOption,
@@ -29,6 +40,7 @@ const props = defineProps<{
         label: string;
         hint: string | null;
     }[];
+    bilanTemplates: BilanTemplate[];
     documents: ClinicalDocument[];
     patient: {
         full_name: string;
@@ -47,6 +59,14 @@ const bilanDate = ref(new Date().toISOString().slice(0, 10));
 const showDate = ref(true);
 const titleBox = ref(true);
 const paperSize = ref<'A4' | 'A5'>('A4');
+const templateMode = ref(false);
+const templateDialogOpen = ref(false);
+const appliedTemplateId = ref<number | null>(null);
+const templateNameInput = ref<HTMLInputElement | null>(null);
+const templateForm = useForm<{ name: string; exam_ids: number[] }>({
+    name: '',
+    exam_ids: [],
+});
 
 const categoryColors = [
     'border-brand',
@@ -141,10 +161,98 @@ const newBilan = () => {
     notes.value = '';
     search.value = '';
     mainTab.value = 'bilans';
+    templateMode.value = false;
+    appliedTemplateId.value = null;
+};
+
+/**
+ * Start composing a reusable selection. The exam picker is unchanged — only
+ * what "Sauvegarder" does differs, so the practitioner builds a template the
+ * same way they build a bilan.
+ */
+const newTemplate = () => {
+    if (!props.canEdit) {
+        return;
+    }
+
+    selectedIds.value = [];
+    search.value = '';
+    mainTab.value = 'bilans';
+    appliedTemplateId.value = null;
+    templateMode.value = true;
+};
+
+/** Load a saved selection into the picker, replacing what is there. */
+const applyTemplate = (templateId: number | null) => {
+    if (!props.canEdit || templateId === null) {
+        return;
+    }
+
+    const template = props.bilanTemplates.find(
+        (item) => item.id === templateId,
+    );
+
+    if (!template) {
+        return;
+    }
+
+    selectedIds.value = template.exam_ids.filter((id) =>
+        props.exams.some((exam) => exam.id === id),
+    );
+    appliedTemplateId.value = template.id;
+    mainTab.value = 'bilans';
+};
+
+const openTemplateDialog = async () => {
+    templateForm.clearErrors();
+    templateForm.name = '';
+    templateDialogOpen.value = true;
+
+    await nextTick();
+    templateNameInput.value?.focus();
+};
+
+const submitTemplate = () => {
+    templateForm
+        .transform((data) => ({
+            ...data,
+            exam_ids: selectedExams.value.map((exam) => exam.id),
+        }))
+        .post('/app/bilan-templates', {
+            preserveScroll: true,
+            onSuccess: () => {
+                templateDialogOpen.value = false;
+                templateForm.reset();
+                templateMode.value = false;
+            },
+        });
+};
+
+const deleteTemplate = (template: BilanTemplate) => {
+    if (!props.canEdit) {
+        return;
+    }
+
+    router.delete('/app/bilan-templates/' + template.id, {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (appliedTemplateId.value === template.id) {
+                appliedTemplateId.value = null;
+            }
+        },
+    });
 };
 
 const saveBilan = () => {
     if (!props.canEdit || selectedExams.value.length === 0) {
+        return;
+    }
+
+    // The same button serves both flows: naming a template, or filing the
+    // bilan in the patient's dossier.
+    if (templateMode.value) {
+        void openTemplateDialog();
+
         return;
     }
 
@@ -213,6 +321,49 @@ const displayDate = (date: string | null): string => {
                         }}
                     </span>
                 </div>
+
+                <label
+                    v-if="bilanTemplates.length"
+                    class="mt-3 grid gap-1 text-[11px] text-muted-foreground"
+                >
+                    Modèle enregistré
+                    <select
+                        :value="appliedTemplateId ?? ''"
+                        class="h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground"
+                        :disabled="!canEdit"
+                        aria-label="Charger un modèle de bilan"
+                        @change="
+                            applyTemplate(
+                                ($event.target as HTMLSelectElement).value
+                                    ? Number(
+                                          ($event.target as HTMLSelectElement)
+                                              .value,
+                                      )
+                                    : null,
+                            )
+                        "
+                    >
+                        <option value="">Choisir un modèle…</option>
+                        <option
+                            v-for="template in bilanTemplates"
+                            :key="template.id"
+                            :value="template.id"
+                        >
+                            {{ template.name }} ({{ template.exam_ids.length }})
+                        </option>
+                    </select>
+                </label>
+
+                <p
+                    v-if="templateMode"
+                    class="mt-3 flex items-start gap-2 rounded-md border border-brand/40 bg-brand-soft/60 px-2.5 py-2 text-[11px] leading-4 text-brand dark:bg-brand-deep/25 dark:text-brand-mint"
+                >
+                    <BookmarkPlus class="mt-px size-3.5 shrink-0" />
+                    <span>
+                        Mode modèle : choisissez les examens, puis « Sauvegarder
+                        le modèle » pour le nommer.
+                    </span>
+                </p>
             </div>
 
             <div
@@ -400,6 +551,44 @@ const displayDate = (date: string | null): string => {
                     Ajoutez rapidement un groupe d’examens fréquemment
                     prescrits.
                 </p>
+
+                <div v-if="bilanTemplates.length" class="mb-4">
+                    <p
+                        class="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
+                    >
+                        Mes modèles
+                    </p>
+                    <div
+                        v-for="template in bilanTemplates"
+                        :key="template.id"
+                        class="mb-2 flex items-center gap-2 rounded-lg border border-l-4 border-brand border-sidebar-border/70 bg-background p-3 dark:border-sidebar-border"
+                    >
+                        <button
+                            type="button"
+                            class="min-w-0 flex-1 text-left"
+                            :disabled="!canEdit"
+                            @click="applyTemplate(template.id)"
+                        >
+                            <span class="block truncate text-sm font-semibold">
+                                {{ template.name }}
+                            </span>
+                            <span class="text-xs text-muted-foreground">
+                                {{ template.exam_ids.length }} examen{{
+                                    template.exam_ids.length === 1 ? '' : 's'
+                                }}
+                            </span>
+                        </button>
+                        <button
+                            v-if="canEdit"
+                            type="button"
+                            class="text-muted-foreground hover:text-destructive"
+                            :aria-label="'Supprimer le modèle ' + template.name"
+                            @click="deleteTemplate(template)"
+                        >
+                            <Trash2 class="size-3.5" />
+                        </button>
+                    </div>
+                </div>
                 <button
                     v-for="item in categories"
                     :key="item.key"
@@ -510,9 +699,81 @@ const displayDate = (date: string | null): string => {
             :title-box="titleBox"
             :show-date="showDate"
             :can-edit="canEdit"
+            :template-mode="templateMode"
             @save="saveBilan"
             @new-bilan="newBilan"
+            @new-template="newTemplate"
             @toggle-title-box="titleBox = !titleBox"
         />
+
+        <Dialog v-model:open="templateDialogOpen">
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Nommer le modèle</DialogTitle>
+                    <DialogDescription>
+                        {{ selectedExams.length }}
+                        {{
+                            selectedExams.length === 1
+                                ? 'examen sera enregistré'
+                                : 'examens seront enregistrés'
+                        }}
+                        sous ce nom, puis proposé{{
+                            selectedExams.length === 1 ? '' : 's'
+                        }}
+                        dans la liste des modèles.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form class="grid gap-2" @submit.prevent="submitTemplate">
+                    <label
+                        class="text-xs font-medium text-foreground"
+                        for="bilan-template-name"
+                    >
+                        Nom du modèle
+                    </label>
+                    <input
+                        id="bilan-template-name"
+                        ref="templateNameInput"
+                        v-model="templateForm.name"
+                        type="text"
+                        maxlength="120"
+                        required
+                        placeholder="Bilan pré-opératoire"
+                        class="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm ring-offset-background outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <p
+                        v-if="templateForm.errors.name"
+                        class="text-xs text-destructive"
+                    >
+                        {{ templateForm.errors.name }}
+                    </p>
+                    <p
+                        v-if="templateForm.errors.exam_ids"
+                        class="text-xs text-destructive"
+                    >
+                        {{ templateForm.errors.exam_ids }}
+                    </p>
+
+                    <DialogFooter class="mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="templateDialogOpen = false"
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            type="submit"
+                            :disabled="
+                                templateForm.processing ||
+                                templateForm.name.trim() === ''
+                            "
+                        >
+                            Enregistrer le modèle
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>
