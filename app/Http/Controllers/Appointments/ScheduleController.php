@@ -115,7 +115,7 @@ class ScheduleController extends Controller
                 'month' => $month->month,
                 'is_open' => $month->is_open,
                 'note' => $month->note,
-                'label' => CarbonImmutable::create($month->year, $month->month, 1)->format('F Y'),
+                'label' => ucfirst((string) CarbonImmutable::create($month->year, $month->month, 1)?->locale('fr')->translatedFormat('F Y')),
             ])
             ->all();
     }

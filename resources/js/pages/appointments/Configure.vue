@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, CalendarPlus, Trash2 } from '@lucide/vue';
+import TimeSelect24 from '@/components/appointments/TimeSelect24.vue';
 import ConfigurationTabs from '@/components/configuration/ConfigurationTabs.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -76,6 +77,51 @@ const monthOptions = Array.from({ length: 12 }, (_, index) => ({
     value: index + 1,
     label: new Date(2000, index, 1).toLocaleString('fr-FR', { month: 'long' }),
 }));
+
+const toMinutes = (time: string): number => {
+    const [hours = 0, minutes = 0] = time.split(':').map(Number);
+
+    return hours * 60 + minutes;
+};
+
+const toTime = (total: number): string =>
+    `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+
+// What patients will be offered for this day, so a wrong end time (e.g.
+// 23:30 instead of 11:30) is visible before saving.
+const slotSummary = (
+    day: ScheduleFormDay,
+): { text: string; warning: boolean } => {
+    const start = toMinutes(day.starts_at);
+    const end = toMinutes(day.ends_at);
+    const duration = Number(day.slot_duration) || props.defaultDuration;
+
+    if (end <= start) {
+        return {
+            text: 'L’heure de fin doit être après l’heure de début.',
+            warning: true,
+        };
+    }
+
+    const count = Math.floor((end - start) / duration);
+
+    if (count === 0) {
+        return {
+            text: 'Aucun créneau : la plage est plus courte qu’un créneau.',
+            warning: true,
+        };
+    }
+
+    const lastStart = toTime(start + (count - 1) * duration);
+    const text = `${count} créneau${count > 1 ? 'x' : ''} de ${duration} min · premier à ${toTime(start)}, dernier à ${lastStart}`;
+
+    return end > 20 * 60
+        ? {
+              text: `${text} — fin à ${toTime(end)} : vérifiez l’heure de fin.`,
+              warning: true,
+          }
+        : { text, warning: false };
+};
 
 const scheduleError = (index: number, field: string): string | undefined =>
     (scheduleForm.errors as Record<string, string>)[`days.${index}.${field}`];
@@ -186,10 +232,9 @@ const formatDate = (value: string): string =>
                             class="text-xs text-muted-foreground"
                             >Début</Label
                         >
-                        <Input
+                        <TimeSelect24
                             :id="`start-${day.day_of_week}`"
                             v-model="day.starts_at"
-                            type="time"
                             :disabled="!day.is_working"
                         />
                         <InputError
@@ -203,10 +248,9 @@ const formatDate = (value: string): string =>
                             class="text-xs text-muted-foreground"
                             >Fin</Label
                         >
-                        <Input
+                        <TimeSelect24
                             :id="`end-${day.day_of_week}`"
                             v-model="day.ends_at"
-                            type="time"
                             :disabled="!day.is_working"
                         />
                         <InputError
@@ -234,6 +278,18 @@ const formatDate = (value: string): string =>
                             :message="scheduleError(index, 'slot_duration')"
                         />
                     </div>
+
+                    <p
+                        v-if="day.is_working"
+                        class="text-xs sm:col-span-4"
+                        :class="
+                            slotSummary(day).warning
+                                ? 'font-medium text-amber-700 dark:text-amber-400'
+                                : 'text-muted-foreground'
+                        "
+                    >
+                        {{ slotSummary(day).text }}
+                    </p>
                 </div>
 
                 <div class="flex justify-end">
