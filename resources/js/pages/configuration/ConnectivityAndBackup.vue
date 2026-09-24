@@ -26,6 +26,7 @@ import {
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import QRCodeGenerator from 'qrcode';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import TimeSelect24 from '@/components/appointments/TimeSelect24.vue';
 import ConfigurationTabs from '@/components/configuration/ConfigurationTabs.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -2137,10 +2138,10 @@ const testDriveConnection = () => {
                     </label>
                     <div class="grid gap-2">
                         <Label for="backup-time">Heure quotidienne</Label>
-                        <Input
+                        <TimeSelect24
                             id="backup-time"
                             v-model="form.backups.schedule_time"
-                            type="time"
+                            :step="15"
                             :disabled="
                                 !permissions.manage_backups ||
                                 !capabilities.automatic_backups.available ||
