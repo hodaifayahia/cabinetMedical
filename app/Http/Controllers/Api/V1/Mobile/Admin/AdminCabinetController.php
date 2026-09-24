@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Mobile\Admin;
 
+use App\Enums\FacilityType;
 use App\Enums\LicensePlan;
 use App\Http\Requests\Api\Mobile\Admin\IndexAdminCabinetsRequest;
 use App\Http\Requests\Api\Mobile\Admin\StoreAdminCabinetRequest;
@@ -82,9 +83,13 @@ class AdminCabinetController extends AdminController
         [$password, $temporaryPassword] = $this->resolveInitialPassword($data['password'] ?? null);
 
         $shouldActivate = (bool) ($data['activate'] ?? false);
-        $shouldList = (bool) ($data['is_listed'] ?? false);
+        $shouldList = (bool) ($data['is_listed'] ?? true);
+        // Provisioning creates a doctor's practice; an admin classifies it as
+        // a clinic or an imaging centre here or later, and the patient app's
+        // search tabs follow.
+        $facilityType = FacilityType::from((string) ($data['facility_type'] ?? FacilityType::DOCTOR->value));
 
-        $cabinet = DB::transaction(function () use ($data, $password, $shouldList, $actor): Cabinet {
+        $cabinet = DB::transaction(function () use ($data, $password, $shouldList, $facilityType, $actor): Cabinet {
             $owner = $this->provisioning->provision([
                 'name' => $data['doctor_name'],
                 'email' => $data['email'],
@@ -100,8 +105,12 @@ class AdminCabinetController extends AdminController
                 ->withoutGlobalScopes()
                 ->findOrFail((int) $owner->cabinet_id);
 
-            if ($shouldList) {
-                $this->setCabinetListed($cabinet, true);
+            if ($facilityType !== FacilityType::DOCTOR) {
+                $cabinet->forceFill(['facility_type' => $facilityType])->save();
+            }
+
+            if (! $shouldList) {
+                $this->setCabinetListed($cabinet, false);
             }
 
             AuditLog::record('admin.cabinet_provisioned', $cabinet, [
@@ -110,6 +119,7 @@ class AdminCabinetController extends AdminController
                 'wilaya_code' => $cabinet->wilaya_code,
                 'specialization' => $cabinet->specialization,
                 'is_listed' => $shouldList,
+                'facility_type' => $facilityType->value,
                 // Deliberately not named "password_generated":
                 // AuditLog::redactSensitiveMetadata() matches "password"
                 // anywhere in a key, so that name would be stored as the

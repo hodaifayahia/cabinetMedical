@@ -10,6 +10,8 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CabinetLicenseUpdatedMail extends Mailable implements ShouldQueue
 {
@@ -48,5 +50,13 @@ class CabinetLicenseUpdatedMail extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        Log::warning('Cabinet licence-update e-mail could not be delivered by the queue worker.', [
+            'cabinet_id' => $this->cabinet->getKey(),
+            'error' => $exception->getMessage(),
+        ]);
     }
 }

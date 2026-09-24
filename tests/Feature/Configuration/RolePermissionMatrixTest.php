@@ -57,22 +57,24 @@ class RolePermissionMatrixTest extends TestCase
     {
         $doctor = $this->cabinetUser($this->cabinet, RoleName::DOCTOR);
 
-        // The seeder now syncs every permission onto the canonical Doctor role,
-        // so the precondition has to be built explicitly: this cabinet overrides
-        // the Doctor profile to everything except staff.manage. The doctor must
-        // still reach the matrix through the owner/doctor path in
-        // CabinetRolePermissionAuthorizer, never through staff.manage.
+        // A Doctor set left over from the earlier role model, when "Doctor" was
+        // a restricted role. The Doctor role is now the locked super
+        // administrator, so the stale set must not take anything away: here it
+        // omits staff.manage, and appointments.create in the clinics that hit
+        // this ("Nouveau rendez-vous" disappeared).
         CabinetRolePermissionSet::withoutCabinetScope()->create([
             'cabinet_id' => $this->cabinet->getKey(),
             'role_name' => RoleName::DOCTOR->value,
             'permissions' => array_values(array_diff(
                 PermissionName::values(),
-                [PermissionName::STAFF_MANAGE->value],
+                [PermissionName::STAFF_MANAGE->value, PermissionName::APPOINTMENTS_CREATE->value],
             )),
         ]);
 
-        $this->assertFalse($doctor->hasPermissionTo(PermissionName::STAFF_MANAGE->value));
-        // Not the owner either, so access can only come from the DOCTOR branch.
+        $this->assertTrue($doctor->hasPermissionTo(PermissionName::STAFF_MANAGE->value));
+        $this->assertTrue($doctor->can(PermissionName::APPOINTMENTS_CREATE->value));
+        $this->assertCount(count(PermissionName::cases()), $doctor->getAllPermissions());
+        // Not the owner either, so access comes from the Doctor role itself.
         $this->assertNotSame($doctor->getKey(), $this->cabinet->fresh()->owner_user_id);
 
         $this->actingAs($doctor)

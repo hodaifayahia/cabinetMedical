@@ -1,13 +1,38 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Clock3, Pill, Plus, Search, Trash2 } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import {
+    ArrowLeft,
+    Check,
+    Clock3,
+    Pill,
+    Plus,
+    Search,
+    Trash2,
+    TriangleAlert,
+    X,
+} from '@lucide/vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import AiActionButton from '@/components/ai/AiActionButton.vue';
+import AiDisclaimer from '@/components/ai/AiDisclaimer.vue';
+import AiNotice from '@/components/ai/AiNotice.vue';
 import PrescriptionDocumentEditor from '@/components/consultations/PrescriptionDocumentEditor.vue';
+import PrescriptionProtocols from '@/components/consultations/PrescriptionProtocols.vue';
+import type {
+    PrescriptionProtocol,
+    ProtocolItem,
+} from '@/components/consultations/PrescriptionProtocols.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import type {
+    AiFailure,
+    ConsultationDraft,
+    PrescriptionSuggestion,
+} from '@/lib/ai';
+import { consultationAiUrl, runAi } from '@/lib/ai';
+import { aiWorkspace, takeQueued } from '@/lib/aiWorkspace';
 import type {
     ClinicalDocumentTemplate,
     DocumentBranding,
@@ -41,6 +66,8 @@ const props = defineProps<{
     patient: { full_name: string };
     cabinet: DocumentBranding;
     canEdit: boolean;
+    aiDraft?: ConsultationDraft;
+    protocols?: PrescriptionProtocol[];
 }>();
 
 const emit = defineEmits<{
@@ -141,7 +168,9 @@ const form = useForm<{
     source: 'built_in';
     template_key: string | null;
     paper_size: 'A4' | 'A5';
+    allergy_override: boolean;
 }>({
+    allergy_override: false,
     prescribed_at: today,
     notes: '',
     items: [],
@@ -290,6 +319,131 @@ const openPrescription = (prescription: PrescriptionRow) => {
     mode.value = 'editor';
 };
 
+// --- Protocoles: saved ordonnance sets ---------------------------------------
+const applyProtocol = (items: ProtocolItem[], notes: string | null) => {
+    if (mode.value === 'history') {
+        startNew();
+    }
+
+    form.items = items.map((item) => ({ ...blankItem(), ...item }));
+
+    if (notes) {
+        form.notes = notes;
+    }
+
+    form.clearErrors();
+};
+
+// --- Assistant IA: a proposed ordonnance the doctor picks lines from --------
+const aiItems = ref<PrescriptionSuggestion[] | null>(null);
+const aiWarnings = ref<string[]>([]);
+const aiAdvice = ref('');
+const aiLoading = ref(false);
+const aiFailure = ref<AiFailure | null>(null);
+
+const suggestPrescription = async () => {
+    if (mode.value === 'history') {
+        startNew();
+    }
+
+    aiLoading.value = true;
+    aiFailure.value = null;
+
+    try {
+        const result = await runAi<{
+            items: PrescriptionSuggestion[];
+            warnings: string[];
+            advice: string;
+        }>(consultationAiUrl(props.consultationId, 'prescription'), {
+            draft: props.aiDraft ?? {},
+            current_items: form.items
+                .map((item) => item.medication.trim())
+                .filter(Boolean),
+        });
+        aiItems.value = result.items;
+        aiWarnings.value = result.warnings;
+        aiAdvice.value = result.advice;
+    } catch (error) {
+        aiFailure.value = error as AiFailure;
+    } finally {
+        aiLoading.value = false;
+    }
+};
+
+const isAiItemAdded = (suggestion: PrescriptionSuggestion): boolean =>
+    form.items.some(
+        (item) =>
+            item.medication.trim().toLocaleLowerCase() ===
+            suggestion.medication.trim().toLocaleLowerCase(),
+    );
+
+const addAiItem = (suggestion: PrescriptionSuggestion) => {
+    if (!props.canEdit || isAiItemAdded(suggestion)) {
+        return;
+    }
+
+    form.items.push({
+        medication: suggestion.medication,
+        dosage: suggestion.dosage,
+        duration: suggestion.duration,
+        instructions: suggestion.instructions,
+    });
+    form.clearErrors('items');
+};
+
+// --- Copilote: publish the ordonnance, pick up what the doctor accepted -----
+watch(
+    () => form.items.map((item) => item.medication.trim()).filter(Boolean),
+    (names) => {
+        aiWorkspace.ordonnanceItems = names;
+    },
+    { immediate: true },
+);
+
+const takeCopilotItems = () => {
+    const medications = takeQueued('queuedMedications');
+    const advice = takeQueued('queuedAdvice');
+
+    if (!props.canEdit || (!medications.length && !advice.length)) {
+        return;
+    }
+
+    if (mode.value === 'history') {
+        startNew();
+    }
+
+    medications.forEach((item) =>
+        addAiItem({ ...item, in_catalogue: true, reason: '' }),
+    );
+
+    if (advice.length) {
+        form.notes = [form.notes.trim(), ...advice].filter(Boolean).join('\n');
+    }
+};
+
+onMounted(takeCopilotItems);
+watch(
+    () =>
+        aiWorkspace.queuedMedications.length + aiWorkspace.queuedAdvice.length,
+    (count) => count > 0 && takeCopilotItems(),
+);
+
+const addAllAiItems = () => {
+    aiItems.value?.forEach(addAiItem);
+};
+
+const adviceAdded = computed(
+    () => aiAdvice.value !== '' && form.notes.includes(aiAdvice.value),
+);
+
+const addAiAdvice = () => {
+    if (!aiAdvice.value || adviceAdded.value) {
+        return;
+    }
+
+    form.notes = [form.notes.trim(), aiAdvice.value].filter(Boolean).join('\n');
+};
+
 const save = () => {
     if (!selectedTemplate.value) {
         form.setError('template_key', 'Choisissez un modèle.');
@@ -313,6 +467,8 @@ const save = () => {
     form.post(`/app/consultations/${props.consultationId}/prescriptions`, {
         preserveScroll: true,
         onSuccess: () => {
+            // An allergy override covers this ordonnance only.
+            form.allergy_override = false;
             mode.value = 'editor';
         },
     });
@@ -342,9 +498,28 @@ const save = () => {
                             dans l’éditeur intégré.
                         </p>
                     </div>
-                    <Button v-if="canEdit" @click="startNew"
-                        ><Plus class="size-4" />Nouvelle ordonnance</Button
+                    <div
+                        v-if="canEdit"
+                        class="flex flex-wrap items-center gap-2"
                     >
+                        <AiActionButton
+                            feature="prescription_suggestions"
+                            label="Proposer une ordonnance"
+                            size="md"
+                            :loading="aiLoading"
+                            @click="suggestPrescription"
+                        />
+                        <PrescriptionProtocols
+                            :protocols="protocols ?? []"
+                            :current-items="form.items"
+                            :current-notes="form.notes"
+                            :can-edit="canEdit"
+                            @apply="applyProtocol"
+                        />
+                        <Button @click="startNew"
+                            ><Plus class="size-4" />Nouvelle ordonnance</Button
+                        >
+                    </div>
                 </div>
                 <div v-if="prescriptions.length" class="mt-6 space-y-2">
                     <button
@@ -416,7 +591,194 @@ const save = () => {
                             Sélectionnez un médicament pour afficher ses champs,
                             puis recherchez le suivant en dessous.
                         </p>
+                        <AiActionButton
+                            v-if="canEdit"
+                            feature="prescription_suggestions"
+                            :label="
+                                aiItems
+                                    ? 'Nouvelle proposition'
+                                    : 'Proposer avec l’IA'
+                            "
+                            class="mt-3"
+                            :loading="aiLoading"
+                            @click="suggestPrescription"
+                        />
+                        <div class="mt-2">
+                            <PrescriptionProtocols
+                                :protocols="protocols ?? []"
+                                :current-items="form.items"
+                                :current-notes="form.notes"
+                                :can-edit="canEdit"
+                                @apply="applyProtocol"
+                            />
+                        </div>
                     </div>
+
+                    <AiNotice
+                        :failure="aiFailure"
+                        class="mt-4"
+                        @close="aiFailure = null"
+                    />
+
+                    <section
+                        v-if="aiItems"
+                        class="mt-4 space-y-2 rounded-xl border border-brand/25 bg-brand-soft/40 p-3 dark:border-brand-mint/25 dark:bg-brand-deep/20"
+                        data-testid="ordonnance-ai-suggestions"
+                    >
+                        <div class="flex items-center justify-between gap-2">
+                            <p
+                                class="text-xs font-semibold text-brand dark:text-brand-mint"
+                            >
+                                Proposition de l’IA
+                            </p>
+                            <div class="flex items-center gap-1">
+                                <Button
+                                    v-if="aiItems.length > 1"
+                                    size="sm"
+                                    variant="outline"
+                                    class="h-7 bg-background text-xs"
+                                    @click="addAllAiItems"
+                                >
+                                    <Plus class="size-3.5" /> Tout ajouter
+                                </Button>
+                                <Button
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    class="size-7"
+                                    aria-label="Fermer la proposition"
+                                    @click="aiItems = null"
+                                >
+                                    <X class="size-3.5" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        <ul
+                            v-if="aiWarnings.length"
+                            class="space-y-1 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100"
+                        >
+                            <li
+                                v-for="warning in aiWarnings"
+                                :key="warning"
+                                class="flex gap-1.5"
+                            >
+                                <TriangleAlert
+                                    class="mt-px size-3.5 shrink-0"
+                                />
+                                {{ warning }}
+                            </li>
+                        </ul>
+
+                        <p
+                            v-if="aiItems.length === 0"
+                            class="text-xs text-muted-foreground"
+                        >
+                            L’IA n’a pas de médicament à ajouter pour l’instant.
+                        </p>
+
+                        <div
+                            v-for="suggestion in aiItems"
+                            :key="suggestion.medication"
+                            class="flex items-start gap-2 rounded-lg bg-background p-2.5 shadow-xs"
+                        >
+                            <Pill
+                                class="mt-0.5 size-4 shrink-0 text-brand dark:text-brand-mint"
+                            />
+                            <div class="min-w-0 flex-1 text-xs">
+                                <p class="flex flex-wrap items-center gap-1.5">
+                                    <span
+                                        class="text-sm font-medium text-foreground"
+                                        >{{ suggestion.medication }}</span
+                                    >
+                                    <span
+                                        v-if="!suggestion.in_catalogue"
+                                        class="text-[10px] text-muted-foreground"
+                                        >hors catalogue</span
+                                    >
+                                </p>
+                                <p class="mt-0.5 text-muted-foreground">
+                                    {{
+                                        [
+                                            suggestion.dosage,
+                                            suggestion.duration,
+                                            suggestion.instructions,
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' · ')
+                                    }}
+                                </p>
+                                <p
+                                    v-if="suggestion.reason"
+                                    class="mt-0.5 text-muted-foreground italic"
+                                >
+                                    {{ suggestion.reason }}
+                                </p>
+                                <p
+                                    v-for="conflict in suggestion.allergy_conflicts ??
+                                    []"
+                                    :key="conflict"
+                                    class="mt-1 flex items-start gap-1 rounded-md bg-red-50 px-2 py-1 text-red-800 dark:bg-red-950/40 dark:text-red-200"
+                                >
+                                    <TriangleAlert
+                                        class="mt-px size-3.5 shrink-0"
+                                    />
+                                    Allergie : {{ conflict }}
+                                </p>
+                            </div>
+                            <Button
+                                size="sm"
+                                :variant="
+                                    isAiItemAdded(suggestion)
+                                        ? 'ghost'
+                                        : 'outline'
+                                "
+                                class="h-7 shrink-0 text-xs"
+                                :disabled="isAiItemAdded(suggestion)"
+                                @click="addAiItem(suggestion)"
+                            >
+                                <template v-if="isAiItemAdded(suggestion)"
+                                    ><Check class="size-3.5" /> Ajouté</template
+                                >
+                                <template v-else
+                                    ><Plus class="size-3.5" /> Ajouter</template
+                                >
+                            </Button>
+                        </div>
+
+                        <div
+                            v-if="aiAdvice"
+                            class="rounded-lg bg-background p-2.5 text-xs shadow-xs"
+                        >
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
+                                <p class="font-semibold text-muted-foreground">
+                                    Conseils au patient
+                                </p>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    class="h-7 text-xs"
+                                    :disabled="adviceAdded"
+                                    @click="addAiAdvice"
+                                >
+                                    <Check
+                                        v-if="adviceAdded"
+                                        class="size-3.5"
+                                    />
+                                    <Plus v-else class="size-3.5" />
+                                    {{
+                                        adviceAdded
+                                            ? 'Ajoutés'
+                                            : 'Ajouter aux notes'
+                                    }}
+                                </Button>
+                            </div>
+                            <p class="mt-1 text-foreground">{{ aiAdvice }}</p>
+                        </div>
+
+                        <AiDisclaimer />
+                    </section>
 
                     <section class="mt-4 space-y-3">
                         <div
@@ -518,6 +880,18 @@ const save = () => {
                         </div>
 
                         <InputError :message="form.errors.items" />
+                        <label
+                            v-if="form.errors.items?.startsWith('Allergie')"
+                            class="flex items-start gap-2 rounded-lg border border-rose-300 bg-rose-50 p-2 text-sm text-rose-900 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200"
+                        >
+                            <input
+                                v-model="form.allergy_override"
+                                type="checkbox"
+                                class="mt-0.5 accent-rose-600"
+                            />
+                            Prescrire malgré l’allergie (décision médicale,
+                            enregistrée dans le journal d’audit)
+                        </label>
                         <Textarea
                             v-model="form.notes"
                             rows="3"

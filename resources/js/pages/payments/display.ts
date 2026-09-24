@@ -91,3 +91,28 @@ export const createFrDzMoneyFormatter = (
     return (value: number): string =>
         [formatter.format(value), configuredCurrency].filter(Boolean).join(' ');
 };
+
+const compactFormatter = new Intl.NumberFormat('fr-DZ', {
+    maximumFractionDigits: 1,
+    notation: 'compact',
+});
+
+/** Short axis/centre label such as « 1,2 k » or « 3,4 M ». */
+export const compactAmount = (value: number): string =>
+    compactFormatter.format(value);
+
+// Colour follows the payment method itself (never its rank), so « Espèces »
+// keeps the same colour from one period to the next. Unknown methods share
+// the last slot.
+const methodSlots: Readonly<Record<string, string>> = {
+    Espèces: 'var(--viz-cat-1)',
+    Carte: 'var(--viz-cat-2)',
+    'Carte bancaire': 'var(--viz-cat-2)',
+    Chèque: 'var(--viz-cat-3)',
+    Virement: 'var(--viz-cat-4)',
+    'Virement bancaire': 'var(--viz-cat-4)',
+    Assurance: 'var(--viz-cat-5)',
+};
+
+export const methodColor = (method?: string | null): string =>
+    methodSlots[paymentMethodLabel(method)] ?? 'var(--viz-cat-6)';

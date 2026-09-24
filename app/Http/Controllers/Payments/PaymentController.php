@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Payments;
 
 use App\Actions\Payments\RecordConsultationPaymentAction;
+use App\Actions\Payments\RefundConsultationPaymentAction;
 use App\Http\Controllers\Controller;
 use App\Models\AccountingSetting;
 use App\Models\Act;
@@ -12,6 +13,7 @@ use App\Models\ConsultationFee;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\User;
+use App\Services\Billing\ReceiptNumberer;
 use App\Services\DocumentBrandingService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -81,6 +83,7 @@ class PaymentController extends Controller
                 ->values(),
             'services' => $this->services(),
             'canEdit' => $request->user()?->can('payments.create') ?? false,
+            'canRefund' => $request->user()?->can('payments.refund') ?? false,
         ]);
     }
 
@@ -181,6 +184,39 @@ class PaymentController extends Controller
         return back();
     }
 
+    public function refund(
+        Request $request,
+        Consultation $consultation,
+        RefundConsultationPaymentAction $refundPayment,
+    ): RedirectResponse {
+        $data = $request->validate([
+            'payment_id' => ['required', 'uuid'],
+            'amount' => ['required', 'numeric', 'gt:0', 'max:999999999'],
+            'reason' => ['required', 'string', 'max:2000'],
+            'reduce_charge' => ['required', 'boolean'],
+            'client_reference' => ['required', 'uuid'],
+        ]);
+
+        /** @var User $actor */
+        $actor = $request->user();
+        $result = $refundPayment->handle($consultation, $actor, [
+            'payment_public_id' => $data['payment_id'],
+            'amount_minor' => $this->toMinor($data['amount']),
+            'reason' => $data['reason'],
+            'reduce_charge' => (bool) $data['reduce_charge'],
+            'client_reference' => $data['client_reference'],
+        ]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $result['outstanding_minor'] > 0
+                ? 'Remboursement enregistré. Le montant remboursé redevient dû.'
+                : 'Remboursement enregistré.',
+        ]);
+
+        return back();
+    }
+
     public function printReport(
         Request $request,
         DocumentBrandingService $documentBranding,
@@ -213,11 +249,18 @@ class PaymentController extends Controller
     public function printReceipt(
         Consultation $consultation,
         DocumentBrandingService $documentBranding,
+        ReceiptNumberer $receipts,
     ): View {
         $consultation->load([
             'patient:id,first_name,last_name,patient_number',
             'payments.receivedBy:id,name',
         ])->loadSum('payments', 'amount_minor');
+
+        // Consultations paid before numbering existed get their number the
+        // first time their receipt is printed.
+        if ($consultation->collectedMinor() > 0) {
+            $receipts->assign($consultation);
+        }
 
         return view('payments.receipt', [
             'branding' => $documentBranding->renderingIdentity(),
@@ -310,6 +353,7 @@ class PaymentController extends Controller
 
         return [
             'id' => $consultation->getKey(),
+            'receipt_number' => $consultation->receipt_number,
             'patient_id' => $consultation->patient_id,
             'patient_number' => $patient->patient_number,
             'patient_name' => $patient->full_name,
@@ -336,6 +380,12 @@ class PaymentController extends Controller
                 'notes' => $payment->notes,
                 'received_at' => $payment->received_at?->toIso8601String(),
                 'received_by' => $payment->receivedBy?->name,
+                'is_refund' => $payment->isRefund(),
+                'refundable' => $payment->isRefund()
+                    ? 0
+                    : max(0, $payment->amount_minor + (int) $consultation->payments
+                        ->where('refund_of_payment_id', $payment->getKey())
+                        ->sum('amount_minor')) / 100,
             ])->values()->all(),
             'date' => $consultation->consulted_at?->toIso8601String(),
             'date_label' => $consultation->consulted_at?->format('d/m/Y H:i'),

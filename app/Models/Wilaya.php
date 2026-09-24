@@ -12,8 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $code
  * @property string $name_fr
  * @property string $name_ar
+ * @property bool $is_active
  */
-#[Fillable(['code', 'name_fr', 'name_ar'])]
+#[Fillable(['code', 'name_fr', 'name_ar', 'is_active'])]
 class Wilaya extends Model
 {
     /** @use HasFactory<WilayaFactory> */
@@ -24,6 +25,14 @@ class Wilaya extends Model
     public $incrementing = false;
 
     protected $keyType = 'int';
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
 
     protected static function newFactory(): WilayaFactory
     {

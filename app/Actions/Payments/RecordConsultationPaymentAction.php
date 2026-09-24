@@ -6,11 +6,16 @@ use App\Models\AuditLog;
 use App\Models\Consultation;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Billing\ReceiptNumberer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class RecordConsultationPaymentAction
 {
+    public function __construct(
+        private readonly ReceiptNumberer $receipts,
+    ) {}
+
     /**
      * @param array{
      *     charge_minor: int,
@@ -68,6 +73,11 @@ final class RecordConsultationPaymentAction
                     'received_by' => $actor->getKey(),
                     'client_reference' => $clientReference,
                 ]);
+            }
+
+            if ($payment instanceof Payment && $payment->wasRecentlyCreated) {
+                // The first money received makes the receipt official.
+                $this->receipts->assign($locked);
             }
 
             $paidMinor = $existingPaidMinor + ($payment instanceof Payment && $payment->wasRecentlyCreated

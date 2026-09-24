@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api\Mobile\Admin;
 
+use App\Enums\FacilityType;
+
 use App\Support\Wilayas;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -42,6 +44,7 @@ class StoreAdminCabinetRequest extends AdminFormRequest
             'password' => ['nullable', 'string', 'min:12', 'max:255', Password::default()],
             'activate' => ['sometimes', 'boolean'],
             'is_listed' => ['sometimes', 'boolean'],
+            'facility_type' => ['sometimes', 'string', Rule::enum(FacilityType::class)],
         ];
     }
 

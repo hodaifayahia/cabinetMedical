@@ -13,9 +13,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $name_fr
  * @property string $name_ar
  */
-#[Fillable(['wilaya_code', 'name_fr', 'name_ar'])]
+#[Fillable(['wilaya_code', 'name_fr', 'name_ar', 'is_active'])]
 class Baladiya extends Model
 {
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
+
     /** @use HasFactory<BaladiyaFactory> */
     use HasFactory;
 

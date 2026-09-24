@@ -7,6 +7,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
@@ -14,13 +15,18 @@ use Illuminate\Support\Str;
  * Corrections are recorded as a new entry/audit event; existing entries are
  * never overwritten by the payment screens.
  *
+ * Refunds are negative entries whose `refund_of_payment_id` names the
+ * instalment they reverse.
+ *
  * @property int $amount_minor
+ * @property int|null $refund_of_payment_id
  * @property CarbonImmutable|null $received_at
  */
 #[Fillable([
     'cabinet_id',
     'public_id',
     'consultation_id',
+    'refund_of_payment_id',
     'patient_id',
     'amount_minor',
     'method',
@@ -65,5 +71,22 @@ class Payment extends Model
     public function receivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
+    }
+
+    /** @return BelongsTo<self, $this> */
+    public function refundOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'refund_of_payment_id');
+    }
+
+    /** @return HasMany<self, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(self::class, 'refund_of_payment_id');
+    }
+
+    public function isRefund(): bool
+    {
+        return $this->amount_minor < 0 || $this->refund_of_payment_id !== null;
     }
 }

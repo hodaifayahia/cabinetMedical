@@ -1,11 +1,16 @@
 <?php
 
 use App\Enums\PermissionName;
+use App\Http\Controllers\Ai\ClinicalAiController;
+use App\Http\Controllers\Ai\EcgController;
 use App\Http\Controllers\Appointments\AppointmentController;
 use App\Http\Controllers\Appointments\AvailabilityController;
 use App\Http\Controllers\Appointments\OpenMonthController;
+use App\Http\Controllers\Appointments\ReminderController;
 use App\Http\Controllers\Appointments\ScheduleController;
 use App\Http\Controllers\Appointments\TimeOffController;
+use App\Http\Controllers\Appointments\WaitingRoomController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\DesktopCabinetLoginController;
 use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
 use App\Http\Controllers\Auth\DesktopPinLoginController;
@@ -24,18 +29,28 @@ use App\Http\Controllers\Configuration\PrepareUpdateInstallController;
 use App\Http\Controllers\Configuration\ReferentialController;
 use App\Http\Controllers\Configuration\RolePermissionController;
 use App\Http\Controllers\Configuration\UploadSessionController;
+use App\Http\Controllers\Consultations\BilanTemplateController;
 use App\Http\Controllers\Consultations\ClinicalDocumentController;
 use App\Http\Controllers\Consultations\ConsultationController;
 use App\Http\Controllers\Consultations\ConsultationHistoryController;
+use App\Http\Controllers\Consultations\DiagnosisCodeController;
+use App\Http\Controllers\Consultations\PrescriptionProtocolController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DesktopDownloadController;
 use App\Http\Controllers\DesktopDownloadLeadController;
 use App\Http\Controllers\DesktopUpdateArtifactController;
 use App\Http\Controllers\DesktopUpdateManifestController;
 use App\Http\Controllers\Encounters\EncounterController;
+use App\Http\Controllers\GlobalSearchController;
+use App\Http\Controllers\Patients\PatientAlertController;
 use App\Http\Controllers\Patients\PatientController;
+use App\Http\Controllers\Patients\PatientMergeController;
+use App\Http\Controllers\Patients\VaccinationController;
+use App\Http\Controllers\Payments\ExpenseController;
+use App\Http\Controllers\Payments\FinanceController;
 use App\Http\Controllers\Payments\PaymentController;
 use App\Http\Controllers\PublicUploadController;
+use App\Http\Controllers\Reports\MedicalStatisticsController;
 use App\Http\Controllers\Staff\PendingMemberController;
 use App\Http\Controllers\Staff\StaffIndexController;
 use App\Http\Controllers\Sync\MobileSyncController;
@@ -178,6 +193,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('app')->name('app.')->group(function () {
         Route::resource('patients', PatientController::class)->except(['destroy']);
+        Route::get('audit-logs', AuditLogController::class)
+            ->middleware('permission:audit-logs.view')
+            ->name('audit-logs.index');
+        Route::get('waiting-room', WaitingRoomController::class)
+            ->middleware('permission:appointments.view')
+            ->name('waiting-room');
+        Route::get('search', GlobalSearchController::class)
+            ->middleware('permission:patients.view')
+            ->name('search');
+        Route::get('reminders', [ReminderController::class, 'index'])
+            ->middleware('permission:appointments.view')
+            ->name('reminders.index');
+        Route::post('reminders/appointments/{appointment}', [ReminderController::class, 'markAppointmentReminded'])
+            ->middleware('permission:appointments.update')
+            ->name('reminders.appointments.mark');
+        Route::middleware('permission:patients.update')->group(function () {
+            Route::post('patients/{patient}/recalls', [ReminderController::class, 'storeRecall'])->name('patients.recalls.store');
+            Route::patch('recalls/{recall}', [ReminderController::class, 'updateRecall'])->name('recalls.update');
+        });
+        Route::get('patients/{patient}/vaccinations/print', [VaccinationController::class, 'print'])
+            ->middleware('permission:patients.view')
+            ->name('patients.vaccinations.print');
+        Route::middleware('permission:patients.update')->group(function () {
+            Route::post('patients/{patient}/vaccinations', [VaccinationController::class, 'store'])->name('patients.vaccinations.store');
+            Route::delete('vaccinations/{vaccination}', [VaccinationController::class, 'destroy'])->name('vaccinations.destroy');
+        });
+        Route::middleware('permission:patients.update')->group(function () {
+            Route::post('patients/{patient}/alerts', [PatientAlertController::class, 'store'])->name('patients.alerts.store');
+            Route::patch('patient-alerts/{alert}/deactivate', [PatientAlertController::class, 'deactivate'])->name('patient-alerts.deactivate');
+            Route::delete('patient-alerts/{alert}', [PatientAlertController::class, 'destroy'])->name('patient-alerts.destroy');
+        });
+        Route::get('patient-duplicates', [PatientMergeController::class, 'duplicates'])
+            ->middleware('permission:patients.delete')
+            ->name('patients.duplicates');
+        Route::middleware('permission:patients.delete')->group(function () {
+            Route::get('patients/{patient}/merge/candidates', [PatientMergeController::class, 'candidates'])->name('patients.merge.candidates');
+            Route::get('patients/{patient}/merge/{duplicate}', [PatientMergeController::class, 'preview'])->name('patients.merge.preview');
+            Route::post('patients/{patient}/merge', [PatientMergeController::class, 'store'])->name('patients.merge.store');
+        });
         Route::get('patients/{patient}/json', [PatientController::class, 'showJson'])->name('patients.json.show');
         Route::post('patients/json', [PatientController::class, 'storeJson'])->name('patients.json.store');
         Route::put('patients/{patient}/json', [PatientController::class, 'updateJson'])->name('patients.json.update');
@@ -244,6 +298,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('permission:consultations.update')->name('consultations.measurements.destroy');
         Route::post('consultations/{consultation}/prescriptions', [ConsultationController::class, 'storePrescription'])
             ->middleware('permission:prescriptions.create')->name('consultations.prescriptions.store');
+        Route::get('cim10', [DiagnosisCodeController::class, 'search'])
+            ->middleware('permission:consultations.view')
+            ->name('cim10.search');
+        Route::put('consultations/{consultation}/diagnoses', [DiagnosisCodeController::class, 'sync'])
+            ->middleware('permission:consultations.update')
+            ->name('consultations.diagnoses.sync');
+        Route::middleware('permission:prescriptions.create')->group(function () {
+            Route::post('prescription-protocols', [PrescriptionProtocolController::class, 'store'])->name('prescription-protocols.store');
+            Route::post('prescription-protocols/{protocol}/used', [PrescriptionProtocolController::class, 'used'])->name('prescription-protocols.used');
+            Route::delete('prescription-protocols/{protocol}', [PrescriptionProtocolController::class, 'destroy'])->name('prescription-protocols.destroy');
+        });
         Route::post('consultations/{consultation}/prescriptions/{prescription}/word-document', [ConsultationController::class, 'createPrescriptionDocument'])
             ->middleware('permission:prescriptions.create')->name('consultations.prescriptions.word-document');
         Route::post('consultations/{consultation}/documents', [ConsultationController::class, 'storeDocument'])
@@ -256,6 +321,71 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('permission:consultations.update')->name('consultations.word-documents.store');
         Route::post('consultations/{consultation}/word-documents/{document}/convert', [ClinicalDocumentController::class, 'convert'])
             ->middleware('permission:consultations.update')->name('consultations.word-documents.convert');
+
+        // Reusable exam selections saved from the bilan editor. They belong to
+        // the cabinet rather than to one consultation, hence no {consultation}.
+        Route::post('bilan-templates', [BilanTemplateController::class, 'store'])
+            ->middleware('permission:consultations.update')->name('bilan-templates.store');
+        Route::delete('bilan-templates/{bilanTemplate}', [BilanTemplateController::class, 'destroy'])
+            ->middleware('permission:consultations.update')->name('bilan-templates.destroy');
+
+        // Clinical AI assistant. Each POST spends the cabinet's AI credits;
+        // the GETs return stored results and the balance for free.
+        Route::prefix('ai')->name('ai.')->group(function () {
+            Route::get('status', [ClinicalAiController::class, 'status'])->name('status');
+
+            Route::middleware(['permission:consultations.view', 'throttle:30,1'])->group(function () {
+                Route::get('patients/{patient}/analysis', [ClinicalAiController::class, 'patientAnalysis'])
+                    ->name('patients.analysis.show');
+                Route::post('patients/{patient}/analysis', [ClinicalAiController::class, 'analyzePatient'])
+                    ->name('patients.analysis.store');
+                Route::get('consultations/{consultation}/document-analyses', [ClinicalAiController::class, 'documentAnalyses'])
+                    ->name('consultations.document-analyses');
+            });
+
+            Route::middleware(['permission:consultations.update', 'throttle:30,1'])->group(function () {
+                Route::post('consultations/{consultation}/consultation-text', [ClinicalAiController::class, 'consultationText'])
+                    ->name('consultations.text');
+                Route::post('consultations/{consultation}/exams', [ClinicalAiController::class, 'exams'])
+                    ->name('consultations.exams');
+                Route::post('consultations/{consultation}/documents/{document}/analysis', [ClinicalAiController::class, 'analyzeDocument'])
+                    ->name('consultations.documents.analysis');
+            });
+
+            Route::post('consultations/{consultation}/prescription', [ClinicalAiController::class, 'prescription'])
+                ->middleware(['permission:prescriptions.create', 'throttle:30,1'])
+                ->name('consultations.prescription');
+
+            // Copilot: a conversation that proposes actions the doctor applies.
+            Route::middleware('permission:consultations.update')->group(function () {
+                Route::get('consultations/{consultation}/copilot', [ClinicalAiController::class, 'copilotHistory'])
+                    ->name('consultations.copilot.show');
+                Route::post('consultations/{consultation}/copilot', [ClinicalAiController::class, 'copilot'])
+                    ->middleware('throttle:30,1')
+                    ->name('consultations.copilot.store');
+                Route::delete('consultations/{consultation}/copilot', [ClinicalAiController::class, 'copilotReset'])
+                    ->name('consultations.copilot.reset');
+
+                Route::post('ecgs/{ecg}/analysis', [EcgController::class, 'analyze'])
+                    ->middleware('throttle:20,1')
+                    ->name('ecgs.analysis');
+                Route::post('ecgs/{ecg}/chat', [EcgController::class, 'chat'])
+                    ->middleware('throttle:30,1')
+                    ->name('ecgs.chat');
+            });
+        });
+
+        // ECG tracings of the consultation's patient.
+        Route::middleware('permission:consultations.view')->group(function () {
+            Route::get('consultations/{consultation}/ecgs', [EcgController::class, 'index'])->name('ecgs.index');
+            Route::get('ecgs/{ecg}/file', [EcgController::class, 'file'])->name('ecgs.file');
+        });
+        Route::middleware('permission:consultations.update')->group(function () {
+            Route::post('consultations/{consultation}/ecgs', [EcgController::class, 'store'])->name('ecgs.store');
+            Route::put('ecgs/{ecg}/measurements', [EcgController::class, 'measurements'])->name('ecgs.measurements');
+            Route::put('ecgs/{ecg}/conclusion', [EcgController::class, 'conclude'])->name('ecgs.conclusion');
+            Route::delete('ecgs/{ecg}', [EcgController::class, 'destroy'])->name('ecgs.destroy');
+        });
 
         Route::middleware('permission:appointments.configure')->group(function () {
             Route::get('appointments/configure', [ScheduleController::class, 'edit'])->name('appointments.configure');
@@ -271,12 +401,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('permission:payments.view')->group(function () {
             Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
             Route::get('payments/print', [PaymentController::class, 'printReport'])->name('payments.print');
+            Route::get('payments/analytics', [FinanceController::class, 'analytics'])->name('payments.analytics');
+            Route::get('payments/analytics/print', [FinanceController::class, 'printAnalytics'])->name('payments.analytics.print');
+            Route::get('payments/export', [FinanceController::class, 'export'])->name('payments.export');
             Route::get('payments/{consultation}/print', [PaymentController::class, 'printReceipt'])
                 ->name('payments.receipt');
+        });
+        // Operating costs, net profit and medical statistics: doctor-level
+        // (reports) only.
+        Route::middleware('permission:reports.view')->group(function () {
+            Route::get('statistics', MedicalStatisticsController::class)->name('statistics.index');
+            Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+            Route::get('expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
+            Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+            Route::post('expenses/recurring', [ExpenseController::class, 'copyRecurring'])->name('expenses.recurring');
+            Route::patch('expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+            Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
         });
         Route::patch('payments/{consultation}', [PaymentController::class, 'update'])
             ->middleware('permission:payments.create')
             ->name('payments.update');
+        Route::post('payments/{consultation}/refunds', [PaymentController::class, 'refund'])
+            ->middleware('permission:payments.refund')
+            ->name('payments.refunds.store');
         Route::post('consultations/{consultation}/payments', [PaymentController::class, 'store'])
             ->middleware('permission:payments.create')
             ->name('consultations.payments.store');

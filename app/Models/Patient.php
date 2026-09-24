@@ -23,6 +23,8 @@ use Illuminate\Support\Str;
  * @property string|null $public_id
  * @property int|null $patient_user_id
  * @property int|null $family_member_id
+ * @property int|null $merged_into_id
+ * @property CarbonImmutable|null $merged_at
  * @property CarbonImmutable|null $date_of_birth
  * @property Gender|null $gender
  * @property BloodGroup|null $blood_group
@@ -91,6 +93,7 @@ class Patient extends Model
             // before the enum was trimmed, and a strict cast throws on them.
             'gender' => RetiredTolerantGender::class,
             'blood_group' => BloodGroup::class,
+            'merged_at' => 'datetime',
         ];
     }
 

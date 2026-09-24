@@ -33,6 +33,7 @@ class CabinetProvisioningService
     public function __construct(
         private readonly MedicalSpecialtyCatalog $specialties,
         private readonly CabinetCatalogueProvisioner $catalogue,
+        private readonly CabinetDirectoryListing $listing,
     ) {}
 
     /**
@@ -78,6 +79,11 @@ class CabinetProvisioningService
             ]);
 
             $this->provisionDoctorProfile($user, $cabinet, $specialty, $phone);
+
+            // Listed from day one: discovery only surfaces active cabinets,
+            // so the doctor reaches the patient app the moment the cabinet is
+            // activated, with no second switch for an admin to forget.
+            $this->listing->setListed($cabinet, true);
 
             // The examination and medication catalogues are per-cabinet, so a
             // new cabinet would otherwise open with an empty prescription list

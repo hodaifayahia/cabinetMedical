@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Reçu de paiement n° {{ $payment['id'] }}</title>
+    <title>Reçu de paiement n° {{ ($payment['receipt_number'] ?? null) ?: $payment['id'] }}</title>
     <style nonce="{{ Vite::cspNonce() }}">
         * { box-sizing: border-box; }
         body { margin: 0; background: #eef7f5; color: #073d42; font-family: Arial, sans-serif; }
@@ -54,7 +54,7 @@
         <x-document-branding-header :branding="$branding">
             <div>
                 <strong>REÇU DE PAIEMENT</strong>
-                <p class="muted">Reçu n° {{ $payment['id'] }}</p>
+                <p class="muted">Reçu n° {{ ($payment['receipt_number'] ?? null) ?: $payment['id'] }}</p>
             </div>
         </x-document-branding-header>
 
@@ -97,7 +97,12 @@
                         @foreach($installments as $installment)
                             <tr>
                                 <td>{{ $installment['received_at'] ? \Illuminate\Support\Carbon::parse($installment['received_at'])->format('d/m/Y H:i') : '—' }}</td>
-                                <td>{{ number_format($installment['amount'], 2) }} {{ $currency }}</td>
+                                <td>
+                                    {{ number_format($installment['amount'], 2) }} {{ $currency }}
+                                    @if($installment['is_refund'] ?? false)
+                                        <em>(remboursement{{ filled($installment['notes'] ?? null) ? ' : '.$installment['notes'] : '' }})</em>
+                                    @endif
+                                </td>
                                 <td>{{ $installment['method'] ?: '—' }}</td>
                                 <td>{{ $installment['received_by'] ?: '—' }}</td>
                             </tr>

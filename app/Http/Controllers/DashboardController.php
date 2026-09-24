@@ -13,6 +13,7 @@ use App\Models\DoctorProfile;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\Prescription;
+use App\Services\Billing\FinanceReport;
 use App\Support\MedicalSpecialtyCatalog;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -24,6 +25,7 @@ class DashboardController extends Controller
 {
     public function __construct(
         private readonly MedicalSpecialtyCatalog $specialties,
+        private readonly FinanceReport $finance,
     ) {}
 
     /**
@@ -57,6 +59,10 @@ class DashboardController extends Controller
             ->with('user:id,name')
             ->first();
         $cabinet = CabinetSetting::current();
+        // Detailed money figures (debtors by name, method split, yearly
+        // comparison) follow the payments permission, like the payments page.
+        $canViewFinance = $request->user()?->can('payments.view') ?? false;
+        $now = CarbonImmutable::now();
 
         return Inertia::render('Dashboard', [
             'currency' => AccountingSetting::current()->currency ?? 'DA',
@@ -66,6 +72,14 @@ class DashboardController extends Controller
             'appointmentsTrend' => $this->appointmentsTrend($today),
             'topPrestations' => $this->topPrestations(),
             'recentPayments' => $this->recentPayments(),
+            'canViewFinance' => $canViewFinance,
+            'finance' => $canViewFinance ? $this->finance->snapshot($now) : null,
+            'receivables' => $canViewFinance ? $this->finance->receivables($now, 5) : null,
+            'profit' => $canViewFinance && ($request->user()?->can('reports.view') ?? false)
+                ? $this->finance->profit((int) $now->year, (int) $now->month, $now)
+                : null,
+            'todayActivity' => $this->todayActivity($today),
+            'patientsTrend' => $this->patientsTrend($today),
             'profile' => [
                 'welcome_name' => $request->user()?->name,
                 'clinic_name' => $cabinet->name,
@@ -105,7 +119,31 @@ class DashboardController extends Controller
         $prestationsTotal = ConsultationFee::query()->where('is_active', true)->count()
             + Act::query()->where('is_active', true)->count();
 
+        $newPatientsThisMonth = Patient::query()
+            ->where('created_at', '>=', $today->startOfMonth())
+            ->count();
+        $newPatientsLastMonth = Patient::query()
+            ->whereBetween('created_at', [$previousMonth->startOfMonth(), $previousMonth->endOfMonth()])
+            ->count();
+
+        // Share of finished appointments over the last 90 days where the
+        // patient never came.
+        $recentOutcomes = Appointment::query()
+            ->whereBetween('appointment_date', [$today->subDays(90)->toDateString(), $today->toDateString()])
+            ->whereIn('status', [AppointmentStatus::COMPLETED->value, AppointmentStatus::NO_SHOW->value])
+            ->groupBy('status')
+            ->selectRaw('status, count(*) as aggregate')
+            ->pluck('aggregate', 'status');
+        $finished = (int) $recentOutcomes->sum();
+
         return [
+            'new_patients_this_month' => $newPatientsThisMonth,
+            'new_patients_change' => $newPatientsLastMonth > 0
+                ? round(($newPatientsThisMonth - $newPatientsLastMonth) / $newPatientsLastMonth * 100, 1)
+                : null,
+            'no_show_rate' => $finished > 0
+                ? round((int) ($recentOutcomes[AppointmentStatus::NO_SHOW->value] ?? 0) / $finished * 100, 1)
+                : null,
             'revenue_this_month' => $thisMonth / 100,
             'revenue_last_month' => $lastMonth / 100,
             'revenue_total' => $this->revenueBetween(null, null) / 100,
@@ -272,6 +310,81 @@ class DashboardController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Today's agenda at a glance: counts per stage and the next arrivals.
+     *
+     * @return array<string, mixed>
+     */
+    private function todayActivity(CarbonImmutable $today): array
+    {
+        $appointments = Appointment::query()
+            ->whereDate('appointment_date', $today->toDateString())
+            ->with('patient:id,first_name,last_name')
+            ->orderBy('starts_at')
+            ->get(['id', 'patient_id', 'starts_at', 'status', 'prestation', 'reason']);
+
+        $count = static fn (array $statuses): int => $appointments
+            ->filter(static fn (Appointment $appointment): bool => in_array($appointment->status, $statuses, true))
+            ->count();
+        $now = CarbonImmutable::now();
+
+        return [
+            'total' => $appointments->count(),
+            'waiting' => $count([AppointmentStatus::CHECKED_IN, AppointmentStatus::IN_PROGRESS]),
+            'done' => $count([AppointmentStatus::COMPLETED]),
+            'cancelled' => $count([AppointmentStatus::CANCELLED, AppointmentStatus::NO_SHOW]),
+            'consultations' => Consultation::query()
+                ->whereDate('consulted_at', $today->toDateString())
+                ->count(),
+            'upcoming' => $appointments
+                ->filter(static fn (Appointment $appointment): bool => $appointment->status->blocksScheduling()
+                    && ($appointment->starts_at === null || $appointment->starts_at->greaterThanOrEqualTo($now->subHour())))
+                ->take(5)
+                ->map(fn (Appointment $appointment): array => [
+                    'id' => (int) $appointment->getKey(),
+                    'time' => $appointment->starts_at?->format('H:i'),
+                    'patient_name' => $appointment->patient->full_name,
+                    'prestation' => $appointment->prestation ?: $appointment->reason,
+                    'status' => $appointment->status->value,
+                    'status_label' => self::STATUS_LABELS[$appointment->status->value],
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * New patient files opened per month over the trailing twelve months.
+     *
+     * @return list<array{label: string, value: int}>
+     */
+    private function patientsTrend(CarbonImmutable $today): array
+    {
+        $start = $today->startOfMonth()->subMonths(11);
+        $buckets = [];
+
+        for ($i = 0; $i < 12; $i++) {
+            $month = $start->addMonths($i);
+            $buckets[$month->format('Y-m')] = [
+                'label' => $month->translatedFormat('M'),
+                'value' => 0,
+            ];
+        }
+
+        Patient::query()
+            ->where('created_at', '>=', $start)
+            ->pluck('created_at')
+            ->each(function (mixed $createdAt) use (&$buckets): void {
+                $key = $createdAt instanceof CarbonInterface ? $createdAt->format('Y-m') : null;
+
+                if ($key !== null && isset($buckets[$key])) {
+                    $buckets[$key]['value']++;
+                }
+            });
+
+        return array_values($buckets);
     }
 
     /**

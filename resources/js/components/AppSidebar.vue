@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
+    Activity,
     Banknote,
+    BellRing,
     CalendarDays,
+    ChartColumnBig,
     LayoutGrid,
     Stethoscope,
     UserCog,
@@ -51,6 +54,11 @@ const mainNavItems = computed<NavItem[]>(() => {
             href: '/app/appointments',
             icon: CalendarDays,
         });
+        items.push({
+            title: 'Relances',
+            href: '/app/reminders',
+            icon: BellRing,
+        });
     }
 
     if (permissions.includes('consultations.view')) {
@@ -66,6 +74,19 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'Paiements',
             href: '/app/payments',
             icon: Banknote,
+        });
+        items.push({
+            title: 'Analyse financière',
+            href: '/app/payments/analytics',
+            icon: ChartColumnBig,
+        });
+    }
+
+    if (permissions.includes('reports.view')) {
+        items.push({
+            title: 'Statistiques',
+            href: '/app/statistics',
+            icon: Activity,
         });
     }
 

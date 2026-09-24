@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $payment_amount_minor
  * @property int $payment_adjustment_minor
  * @property bool $is_paid
+ * @property string|null $receipt_number
  */
 #[Fillable([
     'cabinet_id',

@@ -12,10 +12,14 @@ import {
     FileText,
     FlaskConical,
     FolderOpen,
+    HeartPulse,
     Mail,
+    Mic,
     Pill,
     Plus,
     Save,
+    Sparkles,
+    Square,
     Stethoscope,
     TriangleAlert,
     Wallet,
@@ -23,13 +27,24 @@ import {
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { Component } from 'vue';
+import AiActionButton from '@/components/ai/AiActionButton.vue';
+import AiCreditsPill from '@/components/ai/AiCreditsPill.vue';
+import AiDisclaimer from '@/components/ai/AiDisclaimer.vue';
+import AiNotice from '@/components/ai/AiNotice.vue';
+import CopilotPanel from '@/components/ai/CopilotPanel.vue';
+import EcgPanel from '@/components/ai/EcgPanel.vue';
+import PatientAiAnalysis from '@/components/ai/PatientAiAnalysis.vue';
 import BilansPanel from '@/components/consultations/BilansPanel.vue';
 import CourbesPanel from '@/components/consultations/CourbesPanel.vue';
 import CourriersPanel from '@/components/consultations/CourriersPanel.vue';
+import DiagnosisCodes from '@/components/consultations/DiagnosisCodes.vue';
 import DocumentsPanel from '@/components/consultations/DocumentsPanel.vue';
 import OrdonnancesPanel from '@/components/consultations/OrdonnancesPanel.vue';
+import type { PrescriptionProtocol } from '@/components/consultations/PrescriptionProtocols.vue';
 import RendezVousPanel from '@/components/consultations/RendezVousPanel.vue';
 import InputError from '@/components/InputError.vue';
+import PatientSafetyBanner from '@/components/patients/PatientSafetyBanner.vue';
+import type { PatientSafetySummary } from '@/components/patients/PatientSafetyBanner.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,7 +56,16 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useDictation } from '@/composables/useDictation';
 import type {
+    AiFailure,
+    ConsultationDraft,
+    ConsultationSuggestion,
+} from '@/lib/ai';
+import { consultationAiUrl, runAi } from '@/lib/ai';
+import { bindAiWorkspace } from '@/lib/aiWorkspace';
+import type {
+    BilanTemplate,
     ClinicalDocument,
     ClinicalDocumentTemplate,
     ClinicalOnlyOfficeSettings,
@@ -195,10 +219,15 @@ const props = defineProps<{
         label: string;
         hint: string | null;
     }[];
+    bilanTemplates: BilanTemplate[];
     cabinet: DocumentBranding;
     stats: { consultations: number; appointments: number };
     canEdit: boolean;
     canCollectPayment: boolean;
+    safety: PatientSafetySummary;
+    canEditSafety: boolean;
+    protocols: PrescriptionProtocol[];
+    diagnosisCodes: { code: string; label: string }[];
 }>();
 
 type SectionKey =
@@ -211,6 +240,7 @@ type SectionKey =
     | 'bilans'
     | 'courriers'
     | 'documents'
+    | 'ecg'
     | 'analytics';
 
 const sections: {
@@ -264,6 +294,12 @@ const sections: {
         icon: FileText,
     },
     {
+        key: 'ecg',
+        label: 'ECG',
+        sub: 'Lecture & mesures',
+        icon: HeartPulse,
+    },
+    {
         key: 'analytics',
         label: 'Synthèse',
         sub: 'Synthèse du dossier',
@@ -279,6 +315,7 @@ const sectionOrder: SectionKey[] = [
     'bilans',
     'courriers',
     'documents',
+    'ecg',
     'analytics',
     'caisse',
     'rendezvous',
@@ -704,6 +741,147 @@ const collectPayment = () => {
     });
 };
 
+// --- Assistant IA -----------------------------------------------------------
+// The visit as it is on screen, so the AI sees the last keystrokes even when
+// autosave has not caught up yet. Shared with the bilans/ordonnances panels.
+const aiDraft = computed<ConsultationDraft>(() => ({
+    motif: consultationForm.motif,
+    examens: consultationForm.examens,
+    diagnostic: consultationForm.diagnostic,
+    traitement: consultationForm.traitement,
+    notes: consultationForm.notes,
+    weight_kg: consultationForm.weight_kg || null,
+    height_cm: consultationForm.height_cm || null,
+    temperature_c: consultationForm.temperature_c || null,
+    blood_pressure: consultationForm.blood_pressure || null,
+}));
+
+type VisitField = 'motif' | 'examens' | 'diagnostic' | 'traitement';
+
+const visitFieldLabels: Record<VisitField, string> = {
+    motif: 'Motif de visite',
+    examens: 'Examens',
+    diagnostic: 'Diagnostic',
+    traitement: 'Traitement',
+};
+const visitSuggestion = ref<ConsultationSuggestion | null>(null);
+const visitSuggestionLoading = ref(false);
+const visitSuggestionFailure = ref<AiFailure | null>(null);
+const appliedVisitFields = ref<VisitField[]>([]);
+const visitFieldsBeforeAi = ref<Partial<Record<VisitField, string>>>({});
+
+const suggestedVisitFields = computed(() =>
+    (Object.keys(visitFieldLabels) as VisitField[]).filter(
+        (field) => (visitSuggestion.value?.fields[field] ?? '').trim() !== '',
+    ),
+);
+
+const suggestVisitText = async () => {
+    visitSuggestionLoading.value = true;
+    visitSuggestionFailure.value = null;
+
+    try {
+        visitSuggestion.value = await runAi<ConsultationSuggestion>(
+            consultationAiUrl(props.consultation.id, 'consultation-text'),
+            { draft: aiDraft.value },
+        );
+        appliedVisitFields.value = [];
+        visitFieldsBeforeAi.value = {};
+    } catch (error) {
+        visitSuggestionFailure.value = error as AiFailure;
+    } finally {
+        visitSuggestionLoading.value = false;
+    }
+};
+
+const applyVisitSuggestion = (field: VisitField) => {
+    const text = visitSuggestion.value?.fields[field]?.trim();
+
+    if (!text || !props.canEdit) {
+        return;
+    }
+
+    if (!appliedVisitFields.value.includes(field)) {
+        visitFieldsBeforeAi.value[field] = consultationForm[field];
+        appliedVisitFields.value.push(field);
+    }
+
+    consultationForm[field] = text;
+};
+
+const undoVisitSuggestion = (field: VisitField) => {
+    consultationForm[field] = visitFieldsBeforeAi.value[field] ?? '';
+    appliedVisitFields.value = appliedVisitFields.value.filter(
+        (applied) => applied !== field,
+    );
+};
+
+const applyAllVisitSuggestions = () => {
+    suggestedVisitFields.value.forEach(applyVisitSuggestion);
+};
+
+// --- Copilote & dictée -------------------------------------------------------
+bindAiWorkspace(props.consultation.id);
+
+const copilotOpen = ref(false);
+
+const applyCopilotField = (
+    field: 'motif' | 'examens' | 'diagnostic' | 'traitement' | 'notes',
+    text: string,
+    mode: 'replace' | 'append',
+) => {
+    const current = consultationForm[field].trim();
+    consultationForm[field] =
+        mode === 'append' && current ? `${current}\n${text}` : text;
+    active.value = 'dossier';
+};
+
+const appendToExamens = (text: string) => {
+    const current = consultationForm.examens.trim();
+    consultationForm.examens = current ? `${current}\n${text}` : text;
+    active.value = 'dossier';
+};
+
+const dictation = useDictation();
+const dictationOpen = ref(false);
+
+const toggleDictation = () => {
+    dictationOpen.value = true;
+
+    if (dictation.listening.value) {
+        dictation.stop();
+    } else {
+        dictation.start();
+    }
+};
+
+const structureDictation = async () => {
+    dictation.stop();
+    const transcript = dictation.transcript.value.trim();
+
+    if (!transcript) {
+        return;
+    }
+
+    visitSuggestionLoading.value = true;
+    visitSuggestionFailure.value = null;
+
+    try {
+        visitSuggestion.value = await runAi<ConsultationSuggestion>(
+            consultationAiUrl(props.consultation.id, 'consultation-text'),
+            { draft: aiDraft.value, transcript },
+        );
+        appliedVisitFields.value = [];
+        visitFieldsBeforeAi.value = {};
+        dictation.clear();
+        dictationOpen.value = false;
+    } catch (error) {
+        visitSuggestionFailure.value = error as AiFailure;
+    } finally {
+        visitSuggestionLoading.value = false;
+    }
+};
+
 const openQuickSection = (section: SectionKey) => {
     active.value = section;
     showQuickActions.value = false;
@@ -898,6 +1076,12 @@ const tabClass = (activeTab: boolean): string =>
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col gap-4">
+            <PatientSafetyBanner
+                :patient-id="patient.id"
+                :safety="safety"
+                :can-edit="canEditSafety"
+                :consultation-id="consultation.id"
+            />
             <div
                 :class="[
                     headerCardClass,
@@ -986,6 +1170,16 @@ const tabClass = (activeTab: boolean): string =>
                         class="flex flex-wrap items-center gap-2"
                     >
                         <Button
+                            size="sm"
+                            variant="outline"
+                            class="border-brand/40 text-brand hover:bg-brand-soft dark:text-brand-mint"
+                            data-testid="open-copilot"
+                            @click="copilotOpen = true"
+                        >
+                            <Sparkles class="size-4" />
+                            Copilote
+                        </Button>
+                        <Button
                             variant="outline"
                             size="sm"
                             :disabled="
@@ -1028,6 +1222,7 @@ const tabClass = (activeTab: boolean): string =>
                         />
                         {{ statusLabel(consultation.status) }}
                     </span>
+                    <AiCreditsPill />
                     <span
                         class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
                         :class="
@@ -1397,13 +1592,235 @@ const tabClass = (activeTab: boolean): string =>
 
                     <!-- Column 3 · visite médicale -->
                     <div :class="[cardClass, 'flex min-h-0 flex-col !p-0']">
-                        <h3
-                            class="flex shrink-0 items-center gap-2 border-b border-sidebar-border/70 px-4 py-3 text-sm font-semibold text-foreground dark:border-sidebar-border"
+                        <div
+                            class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 py-2.5 dark:border-sidebar-border"
                         >
-                            <Stethoscope class="size-4 text-primary" /> Visite
-                            médicale
-                        </h3>
+                            <h3
+                                class="flex items-center gap-2 text-sm font-semibold text-foreground"
+                            >
+                                <Stethoscope class="size-4 text-primary" />
+                                Visite médicale
+                            </h3>
+                            <div
+                                v-if="canEdit"
+                                class="flex items-center gap-1.5"
+                            >
+                                <button
+                                    type="button"
+                                    class="inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition disabled:opacity-50"
+                                    :class="
+                                        dictation.listening.value
+                                            ? 'border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300'
+                                            : 'border-sidebar-border/70 bg-background hover:bg-muted dark:border-sidebar-border'
+                                    "
+                                    :title="
+                                        dictation.supported
+                                            ? 'Dictez la consultation, l’IA la range dans les champs'
+                                            : 'Dictée vocale indisponible dans ce navigateur : tapez ou collez vos notes'
+                                    "
+                                    data-testid="dictation-toggle"
+                                    @click="
+                                        dictation.supported
+                                            ? toggleDictation()
+                                            : (dictationOpen = !dictationOpen)
+                                    "
+                                >
+                                    <Square
+                                        v-if="dictation.listening.value"
+                                        class="size-3 fill-current"
+                                    />
+                                    <Mic v-else class="size-3.5" />
+                                    {{
+                                        dictation.listening.value
+                                            ? 'Arrêter'
+                                            : 'Dicter'
+                                    }}
+                                </button>
+                                <AiActionButton
+                                    feature="consultation_text"
+                                    label="Assistant IA"
+                                    :loading="visitSuggestionLoading"
+                                    @click="suggestVisitText"
+                                />
+                            </div>
+                        </div>
                         <div class="min-h-0 flex-1 overflow-y-auto p-4">
+                            <div
+                                v-if="dictationOpen"
+                                class="mb-3 space-y-2 rounded-xl border border-sidebar-border/70 bg-muted/30 p-3 dark:border-sidebar-border"
+                                data-testid="dictation-panel"
+                            >
+                                <div
+                                    class="flex items-center justify-between gap-2"
+                                >
+                                    <p
+                                        class="flex items-center gap-2 text-xs font-semibold"
+                                    >
+                                        <span
+                                            v-if="dictation.listening.value"
+                                            class="size-2 animate-pulse rounded-full bg-red-500"
+                                        />
+                                        {{
+                                            dictation.listening.value
+                                                ? 'J’écoute… parlez naturellement'
+                                                : dictation.supported
+                                                  ? 'Dictée'
+                                                  : 'Vos notes en vrac'
+                                        }}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        class="text-xs text-muted-foreground hover:text-foreground"
+                                        @click="
+                                            dictation.stop();
+                                            dictationOpen = false;
+                                        "
+                                    >
+                                        Fermer
+                                    </button>
+                                </div>
+                                <Textarea
+                                    v-model="dictation.transcript.value"
+                                    rows="4"
+                                    :placeholder="
+                                        dictation.supported
+                                            ? 'La transcription s’affiche ici ; vous pouvez la corriger.'
+                                            : 'Tapez ou collez vos notes : l’IA les rangera dans motif, examen, diagnostic et traitement.'
+                                    "
+                                />
+                                <p
+                                    v-if="dictation.interim.value"
+                                    class="text-xs text-muted-foreground italic"
+                                >
+                                    {{ dictation.interim.value }}
+                                </p>
+                                <p
+                                    v-if="dictation.error.value"
+                                    class="text-xs text-destructive"
+                                >
+                                    {{ dictation.error.value }}
+                                </p>
+                                <div class="flex justify-end gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        class="h-7 text-xs"
+                                        @click="dictation.clear()"
+                                    >
+                                        Effacer
+                                    </Button>
+                                    <AiActionButton
+                                        feature="consultation_text"
+                                        label="Ranger dans la visite"
+                                        :loading="visitSuggestionLoading"
+                                        :disabled="
+                                            !dictation.transcript.value.trim()
+                                        "
+                                        @click="structureDictation"
+                                    />
+                                </div>
+                            </div>
+                            <AiNotice
+                                :failure="visitSuggestionFailure"
+                                class="mb-3"
+                                @close="visitSuggestionFailure = null"
+                            />
+                            <div
+                                v-if="visitSuggestion"
+                                class="mb-4 space-y-3 rounded-xl border border-brand/25 bg-brand-soft/40 p-3 dark:border-brand-mint/25 dark:bg-brand-deep/20"
+                                data-testid="consultation-ai-suggestion"
+                            >
+                                <div
+                                    class="flex flex-wrap items-center justify-between gap-2"
+                                >
+                                    <p
+                                        class="text-sm font-semibold text-brand dark:text-brand-mint"
+                                    >
+                                        Proposition de l’IA
+                                    </p>
+                                    <div class="flex items-center gap-1.5">
+                                        <Button
+                                            v-if="
+                                                suggestedVisitFields.length > 1
+                                            "
+                                            size="sm"
+                                            variant="outline"
+                                            class="h-7 bg-background text-xs"
+                                            @click="applyAllVisitSuggestions"
+                                        >
+                                            <Check class="size-3.5" /> Tout
+                                            appliquer
+                                        </Button>
+                                        <Button
+                                            size="icon-sm"
+                                            variant="ghost"
+                                            class="size-7"
+                                            aria-label="Fermer la proposition"
+                                            @click="visitSuggestion = null"
+                                        >
+                                            <X class="size-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                                <ul
+                                    v-if="visitSuggestion.alerts.length"
+                                    class="space-y-1 rounded-lg bg-red-50 p-2.5 text-xs text-red-800 dark:bg-red-950/30 dark:text-red-200"
+                                >
+                                    <li
+                                        v-for="alert in visitSuggestion.alerts"
+                                        :key="alert"
+                                        class="flex gap-1.5"
+                                    >
+                                        <TriangleAlert
+                                            class="mt-px size-3.5 shrink-0"
+                                        />
+                                        {{ alert }}
+                                    </li>
+                                </ul>
+                                <div
+                                    v-for="field in suggestedVisitFields"
+                                    :key="field"
+                                    class="rounded-lg bg-background p-2.5 shadow-xs"
+                                >
+                                    <div
+                                        class="flex items-center justify-between gap-2"
+                                    >
+                                        <p
+                                            class="text-xs font-semibold text-muted-foreground"
+                                        >
+                                            {{ visitFieldLabels[field] }}
+                                        </p>
+                                        <Button
+                                            v-if="
+                                                appliedVisitFields.includes(
+                                                    field,
+                                                )
+                                            "
+                                            size="sm"
+                                            variant="ghost"
+                                            class="h-7 text-xs text-muted-foreground"
+                                            @click="undoVisitSuggestion(field)"
+                                        >
+                                            Annuler
+                                        </Button>
+                                        <Button
+                                            v-else
+                                            size="sm"
+                                            variant="outline"
+                                            class="h-7 text-xs"
+                                            @click="applyVisitSuggestion(field)"
+                                        >
+                                            <Check class="size-3.5" /> Utiliser
+                                        </Button>
+                                    </div>
+                                    <p
+                                        class="mt-1 text-sm whitespace-pre-line text-foreground"
+                                    >
+                                        {{ visitSuggestion.fields[field] }}
+                                    </p>
+                                </div>
+                                <AiDisclaimer />
+                            </div>
                             <div class="grid gap-3 sm:grid-cols-2">
                                 <div class="grid gap-1.5">
                                     <Label
@@ -1436,6 +1853,11 @@ const tabClass = (activeTab: boolean): string =>
                                         rows="5"
                                         :disabled="!canEdit"
                                         placeholder="Saisir diagnostic…"
+                                    />
+                                    <DiagnosisCodes
+                                        :consultation-id="consultation.id"
+                                        :codes="diagnosisCodes"
+                                        :can-edit="canEdit"
                                     />
                                 </div>
                                 <div class="grid gap-1.5">
@@ -1490,6 +1912,8 @@ const tabClass = (activeTab: boolean): string =>
                     :patient="patient"
                     :cabinet="cabinet"
                     :can-edit="canEdit"
+                    :ai-draft="aiDraft"
+                    :protocols="protocols"
                 />
 
                 <BilansPanel
@@ -1497,10 +1921,12 @@ const tabClass = (activeTab: boolean): string =>
                     :consultation-id="consultation.id"
                     :exams="exams"
                     :bilan-categories="bilanCategories"
+                    :bilan-templates="bilanTemplates"
                     :documents="documents"
                     :patient="patient"
                     :cabinet="cabinet"
                     :can-edit="canEdit"
+                    :ai-draft="aiDraft"
                 />
 
                 <CourriersPanel
@@ -1519,6 +1945,13 @@ const tabClass = (activeTab: boolean): string =>
                     :consultation-id="consultation.id"
                     :files="uploadedFiles"
                     :can-edit="canEdit"
+                />
+
+                <EcgPanel
+                    v-else-if="active === 'ecg'"
+                    :consultation-id="consultation.id"
+                    :can-edit="canEdit"
+                    @use-in-visit="appendToExamens"
                 />
 
                 <!-- Caisse : charge + immutable installments + patient debt -->
@@ -1901,12 +2334,24 @@ const tabClass = (activeTab: boolean): string =>
                                                 )
                                             }}
                                         </td>
-                                        <td class="font-semibold tabular-nums">
+                                        <td
+                                            class="font-semibold tabular-nums"
+                                            :class="
+                                                installment.amount < 0
+                                                    ? 'text-rose-700 dark:text-rose-400'
+                                                    : ''
+                                            "
+                                        >
                                             {{
                                                 formatPaymentMoney(
                                                     installment.amount,
                                                 )
                                             }}
+                                            <span
+                                                v-if="installment.amount < 0"
+                                                class="ml-1 text-[11px] font-medium"
+                                                >remboursement</span
+                                            >
                                         </td>
                                         <td>{{ installment.method || '—' }}</td>
                                         <td>
@@ -2130,6 +2575,11 @@ const tabClass = (activeTab: boolean): string =>
                             </p>
                         </div>
                     </div>
+                    <div
+                        class="mt-5 border-t border-sidebar-border/70 pt-5 dark:border-sidebar-border"
+                    >
+                        <PatientAiAnalysis :patient-id="patient.id" />
+                    </div>
                 </section>
 
                 <section
@@ -2142,6 +2592,15 @@ const tabClass = (activeTab: boolean): string =>
                 </section>
             </div>
         </div>
+
+        <CopilotPanel
+            v-model:open="copilotOpen"
+            :consultation-id="consultation.id"
+            :draft="aiDraft"
+            :can-edit="canEdit"
+            @apply-field="applyCopilotField"
+            @open-section="(section) => (active = section)"
+        />
 
         <div class="fixed right-5 bottom-5 z-40 flex flex-col items-end gap-2">
             <div

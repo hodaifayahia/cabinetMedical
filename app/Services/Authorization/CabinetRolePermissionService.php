@@ -2,6 +2,7 @@
 
 namespace App\Services\Authorization;
 
+use App\Enums\RoleName;
 use App\Models\CabinetRolePermissionSet;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -108,6 +109,12 @@ class CabinetRolePermissionService
      */
     private function setsFor(User $user, array $roleNames): Collection
     {
+        // The super administrator role is locked in the role matrix: it always
+        // holds every permission. A set stored for it (left over from the
+        // earlier role model, when "Doctor" was a restricted role) must not
+        // take permissions away that the screen shows as granted.
+        $roleNames = array_values(array_diff($roleNames, [RoleName::SUPER_ADMINISTRATOR->value]));
+
         return CabinetRolePermissionSet::withoutCabinetScope()
             ->where('cabinet_id', $user->cabinet_id)
             ->whereIn('role_name', $roleNames)

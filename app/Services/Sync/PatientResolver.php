@@ -55,6 +55,14 @@ final class PatientResolver
                 ->first();
 
             if ($byPublicId instanceof Patient) {
+                // A duplicate the clinic merged by hand: follow it to the kept
+                // dossier rather than bringing the duplicate back.
+                $survivor = $this->mergedSurvivor($byPublicId);
+
+                if ($survivor instanceof Patient) {
+                    return $survivor;
+                }
+
                 // An incoming appointment is evidence the patient is active
                 // again, and the identity match is exact, so restoring is safe.
                 if ($byPublicId->trashed()) {
@@ -74,6 +82,34 @@ final class PatientResolver
         }
 
         return $this->create($cabinetId, $identity, $publicId);
+    }
+
+    /**
+     * The dossier a merged duplicate now lives in, following chained merges.
+     */
+    private function mergedSurvivor(Patient $patient): ?Patient
+    {
+        $current = $patient;
+
+        for ($hops = 0; $hops < 10 && $current->merged_into_id !== null; $hops++) {
+            $next = Patient::withoutCabinetScope()->withTrashed()->find($current->merged_into_id);
+
+            if (! $next instanceof Patient) {
+                break;
+            }
+
+            $current = $next;
+        }
+
+        if ($current->is($patient)) {
+            return null;
+        }
+
+        if ($current->trashed()) {
+            $current->restore();
+        }
+
+        return $current;
     }
 
     /**

@@ -22,6 +22,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import ClinicLogo from '@/components/ClinicLogo.vue';
+import GlobalSearch from '@/components/GlobalSearch.vue';
 import PageBackButton from '@/components/PageBackButton.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -454,6 +455,9 @@ onBeforeUnmount(() => {
 
             <!-- Right cluster -->
             <div class="ml-auto flex shrink-0 items-center gap-2">
+                <GlobalSearch
+                    v-if="auth.user?.permissions?.includes('patients.view')"
+                />
                 <TooltipProvider
                     v-if="chromeVisibility.installer"
                     :delay-duration="0"

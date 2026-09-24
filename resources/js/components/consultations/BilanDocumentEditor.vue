@@ -5,6 +5,7 @@ import {
     AlignLeft,
     AlignRight,
     Bold,
+    BookmarkPlus,
     FileText,
     Heading1,
     Heading2,
@@ -56,11 +57,14 @@ const props = defineProps<{
     titleBox: boolean;
     showDate: boolean;
     canEdit: boolean;
+    /** True while the selection is being composed as a reusable template. */
+    templateMode: boolean;
 }>();
 
 const emit = defineEmits<{
     save: [];
     newBilan: [];
+    newTemplate: [];
     toggleTitleBox: [];
 }>();
 
@@ -169,10 +173,19 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                         :disabled="!canEdit || items.length === 0"
                         size="sm"
                         class="h-8 px-3 text-xs"
+                        :title="
+                            templateMode
+                                ? 'Nommer et enregistrer ce modèle'
+                                : 'Enregistrer le bilan dans le dossier'
+                        "
                         @click="emit('save')"
                     >
                         <Save class="size-3.5" />
-                        Sauvegarder
+                        {{
+                            templateMode
+                                ? 'Sauvegarder le modèle'
+                                : 'Sauvegarder'
+                        }}
                     </Button>
                     <Button
                         variant="outline"
@@ -201,6 +214,22 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                     >
                         <span class="text-base leading-none">+</span>
                         Nouveau bilan
+                    </Button>
+                    <Button
+                        v-if="canEdit"
+                        variant="outline"
+                        size="sm"
+                        class="h-8 px-3 text-xs"
+                        :class="
+                            templateMode
+                                ? 'border-brand bg-brand-soft text-brand dark:bg-brand-deep/30 dark:text-brand-mint'
+                                : ''
+                        "
+                        title="Composer une sélection d'examens réutilisable"
+                        @click="emit('newTemplate')"
+                    >
+                        <BookmarkPlus class="size-3.5" />
+                        Nouveau modèle
                     </Button>
                 </div>
             </div>

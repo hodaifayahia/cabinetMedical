@@ -10,11 +10,17 @@ import {
     Trash2,
     UploadCloud,
 } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import AiActionButton from '@/components/ai/AiActionButton.vue';
+import AiDisclaimer from '@/components/ai/AiDisclaimer.vue';
+import AiNotice from '@/components/ai/AiNotice.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { AiFailure, DocumentAnalysis } from '@/lib/ai';
+import { runAi } from '@/lib/ai';
+import { getJson } from '@/lib/http';
 import type { UploadedConsultationFile } from '@/types/clinicalDocuments';
 
 type DocumentTab = 'documents' | 'previous';
@@ -150,6 +156,63 @@ const refreshPreview = () => {
     previewFailed.value = false;
     router.reload({ only: ['uploadedFiles'] });
 };
+
+// --- Assistant IA: read a lab report, scan or letter and summarise it -------
+const analyses = ref<Record<number, DocumentAnalysis>>({});
+const analyzingId = ref<number | null>(null);
+const analysisFailure = ref<AiFailure | null>(null);
+
+const canAnalyze = (file: UploadedConsultationFile): boolean =>
+    isImage(file) || isPdf(file) || ['docx', 'txt'].includes(extension(file));
+
+const selectedAnalysis = computed(() =>
+    selectedFile.value ? (analyses.value[selectedFile.value.id] ?? null) : null,
+);
+
+onMounted(async () => {
+    try {
+        const result = await getJson<{ analyses: DocumentAnalysis[] }>(
+            `/app/ai/consultations/${props.consultationId}/document-analyses`,
+        );
+        analyses.value = Object.fromEntries(
+            result.analyses
+                .filter((analysis) => analysis.document_id !== null)
+                .map((analysis) => [analysis.document_id as number, analysis]),
+        );
+    } catch {
+        // Stored analyses are a convenience; the panel works without them.
+    }
+});
+
+watch(
+    () => selectedFile.value?.id,
+    () => {
+        analysisFailure.value = null;
+    },
+);
+
+const analyzeFile = async (file: UploadedConsultationFile) => {
+    analyzingId.value = file.id;
+    analysisFailure.value = null;
+
+    try {
+        const result = await runAi<{ analysis: DocumentAnalysis }>(
+            `/app/ai/consultations/${props.consultationId}/documents/${file.id}/analysis`,
+        );
+        analyses.value = { ...analyses.value, [file.id]: result.analysis };
+    } catch (error) {
+        analysisFailure.value = error as AiFailure;
+    } finally {
+        analyzingId.value = null;
+    }
+};
+
+const findingTone = (status: string): string =>
+    status === 'anormal'
+        ? 'text-red-700 dark:text-red-300'
+        : status === 'à surveiller'
+          ? 'text-amber-700 dark:text-amber-300'
+          : 'text-emerald-700 dark:text-emerald-300';
 </script>
 
 <template>
@@ -367,6 +430,18 @@ const refreshPreview = () => {
                         v-if="selectedFile"
                         class="flex shrink-0 items-center gap-1"
                     >
+                        <AiActionButton
+                            v-if="canEdit && canAnalyze(selectedFile)"
+                            feature="document_analysis"
+                            :label="
+                                selectedAnalysis
+                                    ? 'Réanalyser'
+                                    : 'Analyser avec l’IA'
+                            "
+                            class="mr-1"
+                            :loading="analyzingId === selectedFile.id"
+                            @click="analyzeFile(selectedFile)"
+                        />
                         <a
                             :href="selectedFile.download_url"
                             target="_blank"
@@ -397,6 +472,74 @@ const refreshPreview = () => {
                             <span class="sr-only">Actualiser l'aperçu</span>
                         </button>
                     </div>
+                </div>
+                <div
+                    v-if="analysisFailure || selectedAnalysis"
+                    class="max-h-80 shrink-0 space-y-3 overflow-y-auto border-b border-sidebar-border/70 p-4 dark:border-sidebar-border"
+                    data-testid="document-ai-analysis"
+                >
+                    <AiNotice
+                        :failure="analysisFailure"
+                        @close="analysisFailure = null"
+                    />
+                    <template v-if="selectedAnalysis">
+                        <p
+                            class="text-xs font-semibold tracking-wide text-brand uppercase dark:text-brand-mint"
+                        >
+                            Analyse IA
+                            <template
+                                v-if="selectedAnalysis.content.document_type"
+                            >
+                                · {{ selectedAnalysis.content.document_type }}
+                            </template>
+                        </p>
+                        <p
+                            class="text-sm leading-relaxed whitespace-pre-line text-foreground"
+                        >
+                            {{ selectedAnalysis.content.summary }}
+                        </p>
+                        <div
+                            v-if="selectedAnalysis.content.findings.length"
+                            class="overflow-hidden rounded-lg border bg-background"
+                        >
+                            <div
+                                v-for="finding in selectedAnalysis.content
+                                    .findings"
+                                :key="finding.label + finding.value"
+                                class="flex items-baseline justify-between gap-3 border-b px-3 py-1.5 text-xs last:border-b-0"
+                            >
+                                <span class="text-muted-foreground">{{
+                                    finding.label
+                                }}</span>
+                                <span
+                                    class="text-right font-medium"
+                                    :class="findingTone(finding.status)"
+                                >
+                                    {{ finding.value }}
+                                    <template
+                                        v-if="finding.status !== 'normal'"
+                                    >
+                                        · {{ finding.status }}
+                                    </template>
+                                </span>
+                            </div>
+                        </div>
+                        <ul
+                            v-if="
+                                selectedAnalysis.content.recommendations.length
+                            "
+                            class="list-disc space-y-0.5 pl-5 text-xs text-foreground"
+                        >
+                            <li
+                                v-for="item in selectedAnalysis.content
+                                    .recommendations"
+                                :key="item"
+                            >
+                                {{ item }}
+                            </li>
+                        </ul>
+                        <AiDisclaimer />
+                    </template>
                 </div>
                 <div
                     class="flex min-h-[22rem] flex-1 items-center justify-center overflow-hidden p-3 lg:min-h-0"

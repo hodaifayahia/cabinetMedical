@@ -5,8 +5,10 @@ namespace App\Filament\Resources\Cabinets\Tables;
 use App\Enums\CabinetStatus;
 use App\Enums\LicensePlan;
 use App\Filament\Resources\ActivationKeys\ActivationKeyResource;
+use App\Models\AuditLog;
 use App\Models\Cabinet;
 use App\Models\LicenseType;
+use App\Services\Cabinet\CabinetDirectoryListing;
 use App\Services\CabinetFulfillmentService;
 use App\Support\ClipboardJs;
 use App\Support\Wilayas;
@@ -17,6 +19,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -88,6 +91,16 @@ class CabinetsTable
                     ->badge()
                     ->color(fn (Cabinet $record): string => self::pendingGrantLabel($record) === '—' ? 'gray' : 'warning')
                     ->toggleable(),
+                IconColumn::make('publicProfile.is_listed')
+                    ->label('App mobile')
+                    ->boolean()
+                    ->default(false)
+                    ->tooltip(fn (Cabinet $record): string => match (true) {
+                        ! (bool) $record->publicProfile?->is_listed => 'Masqué dans l’application patient',
+                        $record->status !== CabinetStatus::ACTIVE => 'Visible dès l’activation du cabinet',
+                        default => 'Visible dans l’application patient',
+                    }),
+                CabinetAiCredits::column(),
                 TextColumn::make('created_at')
                     ->label('Créé le')
                     ->dateTime()
@@ -98,6 +111,7 @@ class CabinetsTable
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->with('publicProfile'))
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
@@ -145,6 +159,31 @@ class CabinetsTable
                                 ])
                                 ->success()
                                 ->persistent()
+                                ->send();
+                        }),
+                    CabinetAiCredits::manageAction(),
+                    CabinetAiCredits::historyAction(),
+                    Action::make('toggleMobileListing')
+                        ->label(fn (Cabinet $record): string => $record->publicProfile?->is_listed
+                            ? 'Masquer dans l’app mobile'
+                            : 'Afficher dans l’app mobile')
+                        ->icon(fn (Cabinet $record) => $record->publicProfile?->is_listed
+                            ? Heroicon::OutlinedEyeSlash
+                            : Heroicon::OutlinedEye)
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->action(function (Cabinet $record): void {
+                            $listed = ! (bool) $record->publicProfile?->is_listed;
+
+                            app(CabinetDirectoryListing::class)->setListed($record, $listed);
+
+                            AuditLog::record('admin.cabinet_listing_updated', $record, [
+                                'is_listed' => $listed,
+                            ]);
+
+                            Notification::make()
+                                ->title($listed ? 'Cabinet visible dans l’app mobile' : 'Cabinet masqué dans l’app mobile')
+                                ->success()
                                 ->send();
                         }),
                     Action::make('suspend')

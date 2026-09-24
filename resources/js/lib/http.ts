@@ -110,3 +110,6 @@ export const postFormData = <T>(url: string, body: FormData): Promise<T> =>
 
 export const putJson = <T>(url: string, body: unknown): Promise<T> =>
     request<T>(url, 'PUT', body);
+
+export const deleteJson = <T>(url: string): Promise<T> =>
+    request<T>(url, 'DELETE');

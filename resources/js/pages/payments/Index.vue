@@ -3,17 +3,20 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import {
     Banknote,
     CircleDollarSign,
+    Download,
     FileText,
     Filter,
     Pencil,
     Printer,
     RefreshCw,
     Search,
+    Undo2,
     UserRound,
     WalletCards,
 } from '@lucide/vue';
 import { computed, reactive, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
+import PaymentsTabs from '@/components/payments/PaymentsTabs.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -43,6 +46,7 @@ import {
 
 type Payment = {
     id: number;
+    receipt_number: string | null;
     patient_id: number;
     patient_number: string | null;
     patient_name: string;
@@ -64,6 +68,8 @@ type Payment = {
         notes: string | null;
         received_at: string | null;
         received_by: string | null;
+        is_refund: boolean;
+        refundable: number;
     }[];
     date: string | null;
     date_label: string | null;
@@ -101,6 +107,7 @@ const props = defineProps<{
     methods: string[];
     services: { label: string; amount: number }[];
     canEdit: boolean;
+    canRefund: boolean;
 }>();
 
 defineOptions({
@@ -212,6 +219,57 @@ const chooseService = (value: string) => {
     }
 };
 
+const exportUrl = computed(() => {
+    const params = new URLSearchParams();
+
+    if (localFilters.from) {
+        params.set('from', localFilters.from);
+    }
+
+    if (localFilters.to) {
+        params.set('to', localFilters.to);
+    }
+
+    return '/app/payments/export?' + params.toString();
+});
+
+type Installment = Payment['installments'][number];
+
+const showRefund = ref(false);
+const refundTarget = ref<Installment | null>(null);
+const refundForm = useForm({
+    payment_id: '',
+    amount: '',
+    reason: '',
+    reduce_charge: true,
+    client_reference: newPaymentReference(),
+});
+
+const openRefund = (installment: Installment) => {
+    refundTarget.value = installment;
+    refundForm.payment_id = installment.id;
+    refundForm.amount = String(installment.refundable);
+    refundForm.reason = '';
+    refundForm.reduce_charge = true;
+    refundForm.client_reference = newPaymentReference();
+    refundForm.clearErrors();
+    showRefund.value = true;
+};
+
+const saveRefund = () => {
+    if (!selectedPayment.value) {
+        return;
+    }
+
+    refundForm.post('/app/payments/' + selectedPayment.value.id + '/refunds', {
+        preserveScroll: true,
+        onSuccess: () => {
+            showRefund.value = false;
+            showEditor.value = false;
+        },
+    });
+};
+
 const savePayment = () => {
     if (!selectedPayment.value) {
         return;
@@ -258,6 +316,12 @@ const savePayment = () => {
                         {{ formatMoney(summary.outstanding) }}
                     </span>
                 </Button>
+                <Button variant="outline" as-child>
+                    <a :href="exportUrl">
+                        <Download class="size-4" />
+                        Exporter (CSV)
+                    </a>
+                </Button>
                 <Button as-child class="bg-emerald-600 hover:bg-emerald-700">
                     <a :href="reportUrl" target="_blank" rel="noopener">
                         <Printer class="size-4" />
@@ -266,6 +330,8 @@ const savePayment = () => {
                 </Button>
             </div>
         </header>
+
+        <PaymentsTabs active="journal" />
 
         <section class="grid gap-4 md:grid-cols-3">
             <article class="med-panel p-5">
@@ -504,7 +570,10 @@ const savePayment = () => {
                                 <td
                                     class="px-4 py-3 font-mono text-muted-foreground"
                                 >
-                                    #{{ payment.id }}
+                                    {{
+                                        payment.receipt_number ??
+                                        '#' + payment.id
+                                    }}
                                 </td>
                                 <td class="px-4 py-3 text-muted-foreground">
                                     {{ payment.user_name ?? '—' }}
@@ -703,8 +772,10 @@ const savePayment = () => {
                         >Prestation et montant</DialogTitle
                     >
                     <DialogDescription class="text-brand-foreground/80">
-                        {{ selectedPayment?.patient_name }} · Paiement n°{{
-                            selectedPayment?.id
+                        {{ selectedPayment?.patient_name }} · Reçu
+                        {{
+                            selectedPayment?.receipt_number ??
+                            'n°' + selectedPayment?.id
                         }}
                     </DialogDescription>
                 </DialogHeader>
@@ -896,6 +967,7 @@ const savePayment = () => {
                 <details
                     v-if="selectedPayment?.installments.length"
                     class="rounded-xl border p-3"
+                    open
                 >
                     <summary class="cursor-pointer text-sm font-semibold">
                         {{ selectedPayment.installments.length }} versement(s)
@@ -905,18 +977,57 @@ const savePayment = () => {
                         <div
                             v-for="installment in selectedPayment.installments"
                             :key="installment.id"
-                            class="flex flex-wrap justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 text-sm"
+                            class="flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm"
+                            :class="
+                                installment.is_refund
+                                    ? 'bg-rose-500/10'
+                                    : 'bg-muted/40'
+                            "
                         >
-                            <span>{{
-                                paymentDateLabel(installment.received_at)
-                            }}</span>
-                            <strong>{{
-                                formatMoney(installment.amount)
-                            }}</strong>
+                            <span>
+                                {{ paymentDateLabel(installment.received_at) }}
+                                <span
+                                    v-if="installment.is_refund"
+                                    class="ml-1 rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700 dark:text-rose-400"
+                                >
+                                    Remboursement
+                                </span>
+                            </span>
+                            <strong
+                                :class="
+                                    installment.is_refund
+                                        ? 'text-rose-700 dark:text-rose-400'
+                                        : ''
+                                "
+                                >{{ formatMoney(installment.amount) }}</strong
+                            >
                             <span class="text-muted-foreground">
-                                {{ installment.method || '—' }} ·
+                                {{ paymentMethodLabel(installment.method) }} ·
                                 {{ installment.received_by || '—' }}
                             </span>
+                            <span
+                                v-if="
+                                    installment.is_refund && installment.notes
+                                "
+                                class="w-full text-xs text-muted-foreground"
+                            >
+                                Motif : {{ installment.notes }}
+                            </span>
+                            <Button
+                                v-if="
+                                    canRefund &&
+                                    !installment.is_refund &&
+                                    installment.refundable > 0
+                                "
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                class="h-7 text-xs"
+                                @click="openRefund(installment)"
+                            >
+                                <Undo2 class="size-3.5" />
+                                Rembourser
+                            </Button>
                         </div>
                     </div>
                 </details>
@@ -932,6 +1043,117 @@ const savePayment = () => {
                     <Button type="submit" :disabled="paymentForm.processing">
                         <Banknote class="size-4" />
                         Enregistrer le paiement
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+    <Dialog v-model:open="showRefund">
+        <DialogContent class="sm:max-w-lg">
+            <DialogHeader>
+                <DialogTitle>Rembourser un versement</DialogTitle>
+                <DialogDescription>
+                    {{ selectedPayment?.patient_name }} · versement du
+                    {{ paymentDateLabel(refundTarget?.received_at) }} ·
+                    remboursable jusqu’à
+                    {{ formatMoney(refundTarget?.refundable ?? 0) }}
+                </DialogDescription>
+            </DialogHeader>
+
+            <form class="grid gap-4" @submit.prevent="saveRefund">
+                <div class="grid gap-2">
+                    <Label for="refund-amount">Montant à rembourser</Label>
+                    <Input
+                        id="refund-amount"
+                        v-model="refundForm.amount"
+                        type="number"
+                        min="0.01"
+                        :max="refundTarget?.refundable ?? undefined"
+                        step="0.01"
+                    />
+                    <InputError :message="refundForm.errors.amount" />
+                    <InputError :message="refundForm.errors.payment_id" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label>Après le remboursement</Label>
+                    <label
+                        class="flex cursor-pointer items-start gap-3 rounded-xl border p-3"
+                        :class="
+                            refundForm.reduce_charge
+                                ? 'border-brand bg-brand-soft'
+                                : 'border-border'
+                        "
+                    >
+                        <input
+                            v-model="refundForm.reduce_charge"
+                            type="radio"
+                            :value="true"
+                            class="mt-1 accent-brand"
+                        />
+                        <span>
+                            <span class="block text-sm font-semibold">
+                                Réduire la prestation d’autant
+                            </span>
+                            <span class="text-xs text-muted-foreground">
+                                Prestation annulée ou trop-perçu : le patient ne
+                                doit rien de plus.
+                            </span>
+                        </span>
+                    </label>
+                    <label
+                        class="flex cursor-pointer items-start gap-3 rounded-xl border p-3"
+                        :class="
+                            !refundForm.reduce_charge
+                                ? 'border-brand bg-brand-soft'
+                                : 'border-border'
+                        "
+                    >
+                        <input
+                            v-model="refundForm.reduce_charge"
+                            type="radio"
+                            :value="false"
+                            class="mt-1 accent-brand"
+                        />
+                        <span>
+                            <span class="block text-sm font-semibold">
+                                Le montant redevient une dette
+                            </span>
+                            <span class="text-xs text-muted-foreground">
+                                Ex. chèque rejeté : la somme reste due par le
+                                patient.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="refund-reason">
+                        Motif <span class="text-destructive">*</span>
+                    </Label>
+                    <Textarea
+                        id="refund-reason"
+                        v-model="refundForm.reason"
+                        placeholder="Prestation annulée, erreur de saisie, chèque rejeté…"
+                    />
+                    <InputError :message="refundForm.errors.reason" />
+                </div>
+
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="showRefund = false"
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        type="submit"
+                        variant="destructive"
+                        :disabled="refundForm.processing"
+                    >
+                        <Undo2 class="size-4" />
+                        Confirmer le remboursement
                     </Button>
                 </DialogFooter>
             </form>
