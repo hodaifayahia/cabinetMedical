@@ -28,6 +28,7 @@ createInertiaApp({
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('uploads/'):
+            case name === 'waiting-room/Display':
                 return null;
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];

@@ -4,10 +4,12 @@ import {
     ArrowDown,
     ArrowUp,
     ArrowUpDown,
+    BellRing,
     CalendarDays,
     CheckCircle2,
     Clock,
     Eye,
+    MonitorPlay,
     Play,
     Search,
     Stethoscope,
@@ -200,10 +202,27 @@ const isCompleted = (appointment: TodayAppointment): boolean =>
                         :description="`Rendez-vous du ${formatDate(date)}`"
                     />
                     <div
-                        class="flex items-center gap-2 text-sm text-muted-foreground"
+                        class="flex items-center gap-3 text-sm text-muted-foreground"
                     >
                         <CalendarDays class="size-4" />
                         <span>{{ formatDate(date) }}</span>
+                        <Button variant="outline" size="sm" as-child>
+                            <Link href="/app/reminders">
+                                <BellRing class="size-4" />
+                                Relances
+                            </Link>
+                        </Button>
+                        <Button variant="outline" size="sm" as-child>
+                            <a
+                                href="/app/waiting-room"
+                                target="_blank"
+                                rel="noopener"
+                                title="Ouvrir l’écran à afficher sur la TV de la salle d’attente"
+                            >
+                                <MonitorPlay class="size-4" />
+                                Écran salle d’attente
+                            </a>
+                        </Button>
                     </div>
                 </div>
 

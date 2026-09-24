@@ -10,7 +10,10 @@ import {
     Search,
     Trash2,
 } from '@lucide/vue';
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import AiActionButton from '@/components/ai/AiActionButton.vue';
+import AiDisclaimer from '@/components/ai/AiDisclaimer.vue';
+import AiNotice from '@/components/ai/AiNotice.vue';
 import BilanDocumentEditor from '@/components/consultations/BilanDocumentEditor.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +25,9 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import type { AiFailure, ConsultationDraft, ExamSuggestion } from '@/lib/ai';
+import { consultationAiUrl, runAi } from '@/lib/ai';
+import { aiWorkspace, takeQueued } from '@/lib/aiWorkspace';
 import type {
     BilanTemplate,
     ClinicalDocument,
@@ -48,6 +54,7 @@ const props = defineProps<{
     };
     cabinet: DocumentBranding;
     canEdit: boolean;
+    aiDraft?: ConsultationDraft;
 }>();
 
 const mainTab = ref<MainTab>('bilans');
@@ -279,6 +286,103 @@ const saveBilan = () => {
     );
 };
 
+// --- Assistant IA: exams suggested from the visit and the dossier ----------
+const examSuggestions = ref<ExamSuggestion[] | null>(null);
+const examSuggestionNote = ref('');
+const examSuggestionLoading = ref(false);
+const examSuggestionFailure = ref<AiFailure | null>(null);
+
+const suggestExams = async () => {
+    examSuggestionLoading.value = true;
+    examSuggestionFailure.value = null;
+
+    try {
+        const result = await runAi<{ exams: ExamSuggestion[]; note: string }>(
+            consultationAiUrl(props.consultationId, 'exams'),
+            { draft: props.aiDraft ?? {} },
+        );
+        examSuggestions.value = result.exams;
+        examSuggestionNote.value = result.note;
+    } catch (error) {
+        examSuggestionFailure.value = error as AiFailure;
+    } finally {
+        examSuggestionLoading.value = false;
+    }
+};
+
+const noteLines = computed(
+    () =>
+        new Set(
+            notes.value
+                .split('\n')
+                .map((line) => line.replace(/^-\s*/, '').trim().toLowerCase()),
+        ),
+);
+
+const isSuggestionAdded = (suggestion: ExamSuggestion): boolean =>
+    suggestion.exam_id !== null
+        ? selectedIdSet.value.has(suggestion.exam_id)
+        : noteLines.value.has(suggestion.name.toLowerCase());
+
+const addSuggestedExam = (suggestion: ExamSuggestion) => {
+    if (!props.canEdit || isSuggestionAdded(suggestion)) {
+        return;
+    }
+
+    const exam =
+        suggestion.exam_id !== null
+            ? props.exams.find((item) => item.id === suggestion.exam_id)
+            : undefined;
+
+    if (exam) {
+        addExam(exam);
+
+        return;
+    }
+
+    // Not in the cabinet catalogue: it still reaches the printed request.
+    notes.value = [notes.value.trim(), '- ' + suggestion.name]
+        .filter(Boolean)
+        .join('\n');
+};
+
+// --- Copilote: publish the bilan, pick up what the doctor accepted ----------
+watch(
+    selectedExams,
+    (exams) => {
+        aiWorkspace.bilanExams = exams.map((exam) => exam.name);
+    },
+    { immediate: true },
+);
+
+const takeCopilotExams = () => {
+    takeQueued('queuedExams').forEach((queued) =>
+        addSuggestedExam({
+            name: queued.name,
+            exam_id: queued.exam_id,
+            reason: '',
+            priority: 'recommandé',
+        }),
+    );
+};
+
+onMounted(takeCopilotExams);
+watch(
+    () => aiWorkspace.queuedExams.length,
+    (count) => count > 0 && takeCopilotExams(),
+);
+
+const addAllSuggestedExams = () => {
+    examSuggestions.value?.forEach(addSuggestedExam);
+};
+
+const priorityTone = (priority: ExamSuggestion['priority']): string =>
+    priority === 'urgent'
+        ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+        : priority === 'optionnel'
+          ? 'bg-muted text-muted-foreground'
+          : 'bg-brand-soft text-brand dark:bg-brand-deep/40 dark:text-brand-mint';
+
 const displayDate = (date: string | null): string => {
     if (!date) {
         return '—';
@@ -364,6 +468,116 @@ const displayDate = (date: string | null): string => {
                         le modèle » pour le nommer.
                     </span>
                 </p>
+
+                <div v-if="canEdit" class="mt-3">
+                    <AiActionButton
+                        feature="exam_suggestions"
+                        label="Suggérer des examens"
+                        :loading="examSuggestionLoading"
+                        @click="suggestExams"
+                    />
+                </div>
+                <AiNotice
+                    :failure="examSuggestionFailure"
+                    class="mt-3"
+                    @close="examSuggestionFailure = null"
+                />
+                <div
+                    v-if="examSuggestions"
+                    class="mt-3 max-h-80 space-y-2 overflow-y-auto rounded-xl border border-brand/25 bg-brand-soft/40 p-3 dark:border-brand-mint/25 dark:bg-brand-deep/20"
+                    data-testid="bilan-ai-suggestions"
+                >
+                    <div class="flex items-center justify-between gap-2">
+                        <p
+                            class="text-xs font-semibold text-brand dark:text-brand-mint"
+                        >
+                            {{ examSuggestions.length }} examen{{
+                                examSuggestions.length === 1 ? '' : 's'
+                            }}
+                            proposé{{ examSuggestions.length === 1 ? '' : 's' }}
+                        </p>
+                        <div class="flex items-center gap-1">
+                            <Button
+                                v-if="examSuggestions.length > 1"
+                                size="sm"
+                                variant="outline"
+                                class="h-7 bg-background text-xs"
+                                @click="addAllSuggestedExams"
+                            >
+                                <Plus class="size-3.5" /> Tout ajouter
+                            </Button>
+                            <button
+                                type="button"
+                                class="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-background/70 hover:text-foreground"
+                                @click="examSuggestions = null"
+                            >
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                    <p
+                        v-if="examSuggestions.length === 0"
+                        class="text-xs text-muted-foreground"
+                    >
+                        L’IA ne juge aucun examen complémentaire nécessaire pour
+                        l’instant.
+                    </p>
+                    <div
+                        v-for="suggestion in examSuggestions"
+                        :key="suggestion.name"
+                        class="flex items-start gap-2 rounded-lg bg-background p-2.5 shadow-xs"
+                    >
+                        <div class="min-w-0 flex-1">
+                            <p class="flex flex-wrap items-center gap-1.5">
+                                <span class="text-sm font-medium">{{
+                                    suggestion.name
+                                }}</span>
+                                <span
+                                    class="rounded-full px-1.5 py-px text-[10px] font-semibold"
+                                    :class="priorityTone(suggestion.priority)"
+                                    >{{ suggestion.priority }}</span
+                                >
+                                <span
+                                    v-if="suggestion.exam_id === null"
+                                    class="text-[10px] text-muted-foreground"
+                                    title="Absent de votre catalogue : il sera ajouté aux notes du bilan."
+                                    >hors catalogue</span
+                                >
+                            </p>
+                            <p
+                                v-if="suggestion.reason"
+                                class="mt-0.5 text-xs text-muted-foreground"
+                            >
+                                {{ suggestion.reason }}
+                            </p>
+                        </div>
+                        <Button
+                            size="sm"
+                            :variant="
+                                isSuggestionAdded(suggestion)
+                                    ? 'ghost'
+                                    : 'outline'
+                            "
+                            class="h-7 shrink-0 text-xs"
+                            :disabled="isSuggestionAdded(suggestion)"
+                            @click="addSuggestedExam(suggestion)"
+                        >
+                            <template v-if="isSuggestionAdded(suggestion)"
+                                ><Check class="size-3.5" /> Ajouté</template
+                            >
+                            <template v-else
+                                ><Plus class="size-3.5" /> Ajouter</template
+                            >
+                        </Button>
+                    </div>
+                    <p
+                        v-if="examSuggestionNote"
+                        class="text-xs text-muted-foreground"
+                    >
+                        {{ examSuggestionNote }}
+                    </p>
+                    <AiDisclaimer />
+                </div>
             </div>
 
             <div

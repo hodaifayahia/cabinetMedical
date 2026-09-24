@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Appointments\StoreOpenMonthRequest;
 use App\Models\DoctorOpenMonth;
 use App\Models\DoctorProfile;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -15,7 +16,7 @@ class OpenMonthController extends Controller
     /**
      * Open a month so it starts accepting bookings.
      */
-    public function store(StoreOpenMonthRequest $request): RedirectResponse
+    public function store(StoreOpenMonthRequest $request): RedirectResponse|JsonResponse
     {
         $doctor = DoctorProfile::current();
 
@@ -31,6 +32,11 @@ class OpenMonthController extends Controller
             ['year' => (int) $data['year'], 'month' => (int) $data['month']],
             ['is_open' => true, 'note' => $data['note'] ?? null],
         );
+
+        // From the booking dialog: open the month in place and keep booking.
+        if ($request->wantsJson()) {
+            return response()->json(['opened' => true]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Month opened for booking.')]);
 

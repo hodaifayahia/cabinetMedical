@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\RoleName;
 use App\Models\Concerns\BelongsToCabinet;
+use App\Services\Appointments\DoctorProfileProvisioner;
 use Database\Factories\DoctorProfileFactory;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -84,7 +85,19 @@ class DoctorProfile extends Model
      */
     public static function current(): ?self
     {
-        return static::query()->active()->first();
+        $profile = static::query()->active()->first();
+
+        if ($profile instanceof self) {
+            return $profile;
+        }
+
+        // A cabinet created before sign-up provisioned the doctor profile has
+        // none, and no screen can create one: give it the sign-up defaults.
+        $cabinetId = auth()->user()?->cabinet_id;
+
+        return $cabinetId === null
+            ? null
+            : app(DoctorProfileProvisioner::class)->ensureFor((int) $cabinetId);
     }
 
     /**

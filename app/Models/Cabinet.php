@@ -25,6 +25,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int|null $owner_user_id
  * @property int|null $license_id
  * @property CarbonImmutable|null $activated_at
+ * @property int $ai_credits
+ * @property bool $ai_enabled
  * @property-read string|null $wilaya_name
  */
 #[Fillable([
@@ -52,6 +54,8 @@ class Cabinet extends Model
             'facility_type' => FacilityType::class,
             'wilaya_code' => 'integer',
             'activated_at' => 'immutable_datetime',
+            'ai_credits' => 'integer',
+            'ai_enabled' => 'boolean',
         ];
     }
 

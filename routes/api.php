@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AiRelayController;
 use App\Http\Controllers\Api\V1\AppointmentController;
 use App\Http\Controllers\Api\V1\AppointmentSyncController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -51,6 +52,12 @@ Route::prefix('v1')->group(function (): void {
             Route::post('sync/appointments/push', [AppointmentSyncController::class, 'push']);
 
             Route::get('schedule', [ScheduleController::class, 'index']);
+
+            // A local desktop's AI requests: charged to the token owner's
+            // cabinet wallet, answered with the provider key held here only.
+            Route::get('ai/status', [AiRelayController::class, 'status']);
+            Route::post('ai/complete', [AiRelayController::class, 'complete'])
+                ->middleware('throttle:30,1');
 
             Route::get('patients', [PatientController::class, 'index']);
             Route::get('patients/{patient}', [PatientController::class, 'show']);

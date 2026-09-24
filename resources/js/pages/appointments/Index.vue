@@ -8,6 +8,7 @@ import {
 } from '@internationalized/date';
 import {
     Ban,
+    CalendarCheck,
     CalendarDays,
     Check,
     ChevronDown,
@@ -566,6 +567,30 @@ const loadMonth = async (year: number, month: number) => {
     selectedDate.value = null;
     dayData.value = null;
     activeSlot.value = null;
+};
+
+const openingMonth = ref(false);
+
+const currentMonthLabel = computed(() =>
+    new Intl.DateTimeFormat('fr-DZ', { month: 'long', year: 'numeric' }).format(
+        new Date(currentMonth.value.year, currentMonth.value.month - 1, 1),
+    ),
+);
+
+/** Open the displayed month to bookings without leaving the dialog. */
+const openCurrentMonth = async () => {
+    const { year, month } = currentMonth.value;
+    openingMonth.value = true;
+
+    try {
+        await postJson('/app/appointments/open-months', { year, month });
+        await loadMonth(year, month);
+        toast.success(`${currentMonthLabel.value} est ouvert aux rendez-vous.`);
+    } catch {
+        toast.error('Impossible d’ouvrir ce mois. Réessayez.');
+    } finally {
+        openingMonth.value = false;
+    }
 };
 
 const loadDay = async (date: string) => {
@@ -2163,12 +2188,48 @@ const printAppointments = () => {
                             Aucun médecin actif n’est configuré pour le cabinet.
                             Les disponibilités apparaîtront après la
                             configuration du médecin et de ses horaires.
+                            <Link
+                                v-if="permissions.configure"
+                                href="/app/appointments/configure"
+                                class="mt-1 block font-semibold underline"
+                                >Configurer le médecin et ses horaires</Link
+                            >
                         </p>
 
                         <div
                             v-else
                             class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(200px,240px)]"
                         >
+                            <div
+                                v-if="
+                                    !loadingMonth && !currentMonth.is_open_month
+                                "
+                                class="flex flex-col gap-3 rounded-lg border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between lg:col-span-2 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200"
+                            >
+                                <span>
+                                    <strong class="capitalize">{{
+                                        currentMonthLabel
+                                    }}</strong>
+                                    n’est pas encore ouvert aux rendez-vous.
+                                    <template v-if="!permissions.configure">
+                                        Demandez au médecin de l’ouvrir.
+                                    </template>
+                                </span>
+                                <Button
+                                    v-if="permissions.configure"
+                                    size="sm"
+                                    class="shrink-0"
+                                    :disabled="openingMonth"
+                                    @click="openCurrentMonth"
+                                >
+                                    <LoaderCircle
+                                        v-if="openingMonth"
+                                        class="size-4 animate-spin"
+                                    />
+                                    <CalendarCheck v-else class="size-4" />
+                                    Ouvrir ce mois
+                                </Button>
+                            </div>
                             <AvailabilityCalendar
                                 :month="currentMonth"
                                 :selected-date="selectedDate"

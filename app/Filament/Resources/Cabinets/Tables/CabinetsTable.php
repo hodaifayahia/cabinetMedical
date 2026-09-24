@@ -100,6 +100,7 @@ class CabinetsTable
                         $record->status !== CabinetStatus::ACTIVE => 'Visible dès l’activation du cabinet',
                         default => 'Visible dans l’application patient',
                     }),
+                CabinetAiCredits::column(),
                 TextColumn::make('created_at')
                     ->label('Créé le')
                     ->dateTime()
@@ -160,6 +161,8 @@ class CabinetsTable
                                 ->persistent()
                                 ->send();
                         }),
+                    CabinetAiCredits::manageAction(),
+                    CabinetAiCredits::historyAction(),
                     Action::make('toggleMobileListing')
                         ->label(fn (Cabinet $record): string => $record->publicProfile?->is_listed
                             ? 'Masquer dans l’app mobile'

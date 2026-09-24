@@ -211,6 +211,16 @@
     --chart-3: hsl(174 63% 31%);
     --chart-4: hsl(149 82% 63%);
     --chart-5: hsl(186 47% 49%);
+    /* Finance charts: current vs comparison period, and payment methods.
+       Validated for lightness, chroma and colour-blind separation. */
+    --viz-current: #00897b;
+    --viz-previous: #8a7fe0;
+    --viz-cat-1: #2a78d6;
+    --viz-cat-2: #eb6834;
+    --viz-cat-3: #1baf7a;
+    --viz-cat-4: #eda100;
+    --viz-cat-5: #e87ba4;
+    --viz-cat-6: #4a3aa7;
     --radius: 0.75rem;
     --brand: hsl(186 100% 20%);
     --brand-foreground: hsl(0 0% 100%);
@@ -255,6 +265,14 @@
     --chart-3: hsl(186 62% 51%);
     --chart-4: hsl(157 51% 69%);
     --chart-5: hsl(176 54% 58%);
+    --viz-current: #1f9e98;
+    --viz-previous: #9085e9;
+    --viz-cat-1: #3987e5;
+    --viz-cat-2: #d95926;
+    --viz-cat-3: #199e70;
+    --viz-cat-4: #c98500;
+    --viz-cat-5: #d55181;
+    --viz-cat-6: #9085e9;
     --sidebar-background: hsl(190 45% 8%);
     --sidebar-foreground: hsl(0 0% 95.9%);
     --sidebar-primary: hsl(149 82% 63%);
@@ -290,6 +308,40 @@
     select,
     textarea {
         @apply transition-colors duration-150;
+    }
+
+    /* Tailwind v4 no longer gives buttons a pointer cursor: bring it back for
+       everything clickable, and show "not allowed" on disabled controls. */
+    button:not(:disabled),
+    a[href],
+    summary,
+    select:not(:disabled),
+    label[for],
+    input[type='checkbox']:not(:disabled),
+    input[type='radio']:not(:disabled),
+    input[type='file']:not(:disabled),
+    input[type='color']:not(:disabled),
+    input[type='range']:not(:disabled),
+    ::file-selector-button,
+    [role='button']:not([aria-disabled='true']),
+    [role='tab']:not([aria-disabled='true']),
+    [role='menuitem']:not([data-disabled]),
+    [role='menuitemcheckbox']:not([data-disabled]),
+    [role='menuitemradio']:not([data-disabled]),
+    [role='option']:not([data-disabled]),
+    [role='switch']:not(:disabled),
+    [role='checkbox']:not(:disabled),
+    [role='radio']:not(:disabled),
+    [role='combobox']:not(:disabled) {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    select:disabled,
+    input:disabled,
+    textarea:disabled,
+    [aria-disabled='true'] {
+        cursor: not-allowed;
     }
 
     ::selection {

@@ -17,6 +17,7 @@ use App\Models\AuditLog;
 use App\Models\BilanTemplate;
 use App\Models\BilanType;
 use App\Models\Consultation;
+use App\Models\ConsultationDiagnosis;
 use App\Models\ConsultationFee;
 use App\Models\Document;
 use App\Models\Exam;
@@ -26,7 +27,9 @@ use App\Models\PatientMeasurement;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Prescription;
+use App\Models\PrescriptionProtocol;
 use App\Models\User;
+use App\Services\Clinical\PatientSafety;
 use App\Services\DocumentBrandingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -116,6 +119,7 @@ class ConsultationController extends Controller
         ClinicalDocumentTemplateCatalog $templateCatalog,
         ClinicalDocumentOnlyOffice $onlyOffice,
         DocumentBrandingService $documentBranding,
+        PatientSafety $safety,
     ): Response {
         $consultation->load(['patient', 'payments.receivedBy:id,name'])
             ->loadSum('payments', 'amount_minor');
@@ -402,6 +406,20 @@ class ConsultationController extends Controller
             ],
             'canEdit' => $canEdit,
             'canCollectPayment' => $request->user()?->can('payments.create') ?? false,
+            'safety' => $safety->summary($patient),
+            'diagnosisCodes' => ConsultationDiagnosis::query()
+                ->where('consultation_id', $consultation->getKey())
+                ->orderBy('id')
+                ->get(['code', 'label'])
+                ->map(static fn (ConsultationDiagnosis $diagnosis): array => ['code' => $diagnosis->code, 'label' => $diagnosis->label])
+                ->all(),
+            'protocols' => PrescriptionProtocol::query()
+                ->orderByDesc('uses')
+                ->orderBy('name')
+                ->get()
+                ->map(static fn (PrescriptionProtocol $protocol): array => $protocol->toPayload())
+                ->all(),
+            'canEditSafety' => $request->user()?->can('patients.update') ?? false,
         ]);
     }
 
@@ -604,8 +622,10 @@ class ConsultationController extends Controller
         Request $request,
         Consultation $consultation,
         ClinicalDocumentManager $documentManager,
+        PatientSafety $safety,
     ): RedirectResponse {
         $data = $request->validate([
+            'allergy_override' => ['sometimes', 'boolean'],
             'prescribed_at' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1'],
@@ -620,6 +640,29 @@ class ConsultationController extends Controller
 
         $items = array_values($data['items']);
         $prescribedAt = CarbonImmutable::parse($data['prescribed_at']);
+
+        // Allergy safety net: refuse unless the doctor explicitly confirms.
+        /** @var Patient $patient */
+        $patient = $consultation->patient()->firstOrFail();
+        $conflicts = $safety->allergyConflicts(
+            $patient,
+            array_map(static fn (array $item): string => (string) $item['medication'], $items),
+        );
+
+        if ($conflicts !== [] && ! $request->boolean('allergy_override')) {
+            throw ValidationException::withMessages([
+                'items' => 'Allergie : '.implode(' ; ', array_map(
+                    static fn (array $conflict): string => $conflict['medication'].' — patient allergique à « '.$conflict['allergy'].' » ('.$conflict['reason'].')',
+                    $conflicts,
+                )).'. Cochez « Prescrire malgré l’allergie » pour confirmer.',
+            ]);
+        }
+
+        if ($conflicts !== []) {
+            AuditLog::record('prescription.allergy_override', $consultation, [
+                'conflicts' => $conflicts,
+            ]);
+        }
 
         /** @var User $user */
         $user = $request->user();
