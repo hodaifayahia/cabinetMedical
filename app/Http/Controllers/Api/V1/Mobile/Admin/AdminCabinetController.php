@@ -83,7 +83,7 @@ class AdminCabinetController extends AdminController
         [$password, $temporaryPassword] = $this->resolveInitialPassword($data['password'] ?? null);
 
         $shouldActivate = (bool) ($data['activate'] ?? false);
-        $shouldList = (bool) ($data['is_listed'] ?? false);
+        $shouldList = (bool) ($data['is_listed'] ?? true);
         // Provisioning creates a doctor's practice; an admin classifies it as
         // a clinic or an imaging centre here or later, and the patient app's
         // search tabs follow.
@@ -109,8 +109,8 @@ class AdminCabinetController extends AdminController
                 $cabinet->forceFill(['facility_type' => $facilityType])->save();
             }
 
-            if ($shouldList) {
-                $this->setCabinetListed($cabinet, true);
+            if (! $shouldList) {
+                $this->setCabinetListed($cabinet, false);
             }
 
             AuditLog::record('admin.cabinet_provisioned', $cabinet, [

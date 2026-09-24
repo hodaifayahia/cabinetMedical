@@ -11,6 +11,7 @@ use App\Models\DoctorProfile;
 use App\Models\Patient;
 use App\Models\User;
 use App\Models\Wilaya;
+use App\Services\Cabinet\CabinetDirectoryListing;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -83,29 +84,9 @@ abstract class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Create or update the clinic's public-directory row so that mobile
-     * discovery shows or hides it. The row is written with an explicit
-     * cabinet_id: the trait's creating hook assigns nothing for an actor who
-     * belongs to no cabinet.
-     */
     protected function setCabinetListed(Cabinet $cabinet, bool $isListed): CabinetPublicProfile
     {
-        /** @var CabinetPublicProfile|null $profile */
-        $profile = CabinetPublicProfile::withoutCabinetScope()
-            ->where('cabinet_id', $cabinet->getKey())
-            ->first();
-
-        if ($profile === null) {
-            $profile = new CabinetPublicProfile(['is_listed' => $isListed]);
-            $profile->forceFill(['cabinet_id' => $cabinet->getKey()])->save();
-
-            return $profile;
-        }
-
-        $profile->forceFill(['is_listed' => $isListed])->save();
-
-        return $profile;
+        return app(CabinetDirectoryListing::class)->setListed($cabinet, $isListed);
     }
 
     /**

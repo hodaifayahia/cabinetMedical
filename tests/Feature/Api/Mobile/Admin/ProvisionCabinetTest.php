@@ -52,7 +52,7 @@ class ProvisionCabinetTest extends TestCase
             ->assertJsonPath('data.status', 'pending')
             ->assertJsonPath('data.wilaya.code', 16)
             ->assertJsonPath('data.wilaya.name_ar', 'الجزائر')
-            ->assertJsonPath('data.is_listed', false)
+            ->assertJsonPath('data.is_listed', true)
             ->assertJsonPath('data.owner.email', 'y.haddad@clinic.dz')
             ->assertJsonPath('data.owner.name', 'Dr Yacine Haddad')
             ->assertJsonPath('data.owner.phone', '0550112233')

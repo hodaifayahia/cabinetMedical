@@ -116,6 +116,14 @@ class Cabinet extends Model
     }
 
     /**
+     * @return HasOne<CabinetPublicProfile, $this>
+     */
+    public function publicProfile(): HasOne
+    {
+        return $this->hasOne(CabinetPublicProfile::class)->withoutGlobalScopes();
+    }
+
+    /**
      * @return HasOne<CabinetSetting, $this>
      */
     public function settings(): HasOne
