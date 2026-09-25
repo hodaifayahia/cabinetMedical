@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Baladiya;
 use App\Models\Wilaya;
 use App\Support\MedicalSpecialtyCatalog;
-use App\Support\SpecialtyArabicLabels;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 
@@ -81,23 +80,12 @@ class ReferenceController extends Controller
         return response()->json(['data' => $baladiyas]);
     }
 
+    /**
+     * The specialties the platform admin has switched on — the patient app's
+     * specialty filter offers these and nothing else.
+     */
     public function specialties(MedicalSpecialtyCatalog $catalog): JsonResponse
     {
-        $arabic = SpecialtyArabicLabels::map();
-
-        $specialties = collect($catalog->labels())
-            ->map(static function (string $labelFr) use ($catalog, $arabic): array {
-                $code = $catalog->codeFor($labelFr);
-
-                return [
-                    'code' => $code,
-                    'label_fr' => $labelFr,
-                    'label_ar' => $arabic[$code] ?? $labelFr,
-                ];
-            })
-            ->values()
-            ->all();
-
-        return response()->json(['data' => $specialties]);
+        return response()->json(['data' => $catalog->directory()]);
     }
 }

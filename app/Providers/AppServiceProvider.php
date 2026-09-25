@@ -14,6 +14,7 @@ use App\Models\DesktopDownloadLead;
 use App\Models\User;
 use App\Observers\AppointmentNotificationObserver;
 use App\Services\SessionLockService;
+use App\Support\MedicalSpecialtyCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -38,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(BackupArchiveVerifier::class, MsBackupArchiveVerifier::class);
         $this->app->bind(AutomaticBackupCreator::class, LocalAutomaticBackupCreator::class);
         $this->app->bind(LicenseActivationProvider::class, HttpLicenseActivationProvider::class);
+
+        // One catalogue per request: API resources resolve it once per row,
+        // and it reads the specialty table only on first use.
+        $this->app->scoped(MedicalSpecialtyCatalog::class);
 
         // Telescope is a dev-only dependency (see composer.json "dont-discover").
         // Register it manually so production never references a missing class.
