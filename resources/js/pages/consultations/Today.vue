@@ -13,9 +13,11 @@ import {
     Play,
     Search,
     Stethoscope,
+    UserCheck,
     Users,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import { toast } from 'vue-sonner';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +43,7 @@ const props = defineProps<{
     date: string;
     appointments: TodayAppointment[];
     canStart: boolean;
+    canCheckIn: boolean;
 }>();
 
 type SortKey = 'time' | 'patient' | 'reason' | 'status';
@@ -173,11 +176,30 @@ const formatDate = (value: string): string =>
         day: 'numeric',
     });
 
+// The server answers a refused action with a validation error; without this
+// the click would silently do nothing.
+const showFirstError = (errors: Record<string, string>) => {
+    const message = Object.values(errors)[0];
+
+    toast.error(message ?? 'Action impossible. Veuillez réessayer.');
+};
+
+const awaitingArrival = (appointment: TodayAppointment): boolean =>
+    appointment.status === 'scheduled' || appointment.status === 'confirmed';
+
+const checkIn = (appointmentId: number) => {
+    router.patch(
+        `/app/appointments/${appointmentId}/check-in`,
+        {},
+        { preserveScroll: true, onError: showFirstError },
+    );
+};
+
 const start = (appointmentId: number) => {
     router.post(
         `/app/consultations/${appointmentId}/start`,
         {},
-        { preserveScroll: true },
+        { preserveScroll: true, onError: showFirstError },
     );
 };
 
@@ -516,7 +538,22 @@ const isCompleted = (appointment: TodayAppointment): boolean =>
                                             </Link>
                                         </Button>
                                         <Button
-                                            v-else-if="canStart"
+                                            v-else-if="
+                                                awaitingArrival(appointment) &&
+                                                canCheckIn
+                                            "
+                                            size="sm"
+                                            variant="outline"
+                                            @click="checkIn(appointment.id)"
+                                        >
+                                            <UserCheck class="size-4" />
+                                            Patient arrivé
+                                        </Button>
+                                        <Button
+                                            v-else-if="
+                                                appointment.status ===
+                                                    'checked_in' && canStart
+                                            "
                                             size="sm"
                                             @click="start(appointment.id)"
                                         >

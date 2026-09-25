@@ -431,7 +431,14 @@ const startConsultation = (appointment: AppointmentListItem) => {
     router.post(
         `/app/consultations/${appointment.id}/start`,
         {},
-        { preserveScroll: true },
+        {
+            preserveScroll: true,
+            onError: (errors) =>
+                toast.error(
+                    Object.values(errors)[0] ??
+                        'Impossible de commencer la consultation.',
+                ),
+        },
     );
 };
 
