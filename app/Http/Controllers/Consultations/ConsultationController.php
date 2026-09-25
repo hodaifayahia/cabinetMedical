@@ -10,6 +10,7 @@ use App\ClinicalDocuments\ClinicalHtmlSanitizer;
 use App\Enums\AppointmentStatus;
 use App\Enums\BloodGroup;
 use App\Enums\Gender;
+use App\Enums\PermissionName;
 use App\Http\Controllers\Controller;
 use App\Models\Act;
 use App\Models\Appointment;
@@ -77,6 +78,7 @@ class ConsultationController extends Controller
                 'consultation_status' => $consultations->get($appointment->id)?->status,
             ])->all(),
             'canStart' => $request->user()?->can('consultations.create') ?? false,
+            'canCheckIn' => $request->user()?->can(PermissionName::APPOINTMENTS_CHECK_IN->value) ?? false,
         ]);
     }
 

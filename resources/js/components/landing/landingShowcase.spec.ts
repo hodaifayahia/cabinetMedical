@@ -3,7 +3,13 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { LANDING_LOCALES, SHOWCASE_SHOTS, translations } from './translations';
+import {
+    AI_SHOTS,
+    LANDING_LOCALES,
+    MOBILE_SCREENS,
+    SHOWCASE_SHOTS,
+    translations,
+} from './translations';
 
 const publicPath = (path: string): string =>
     resolve(process.cwd(), 'public', path);
@@ -45,6 +51,75 @@ describe('landing product tour', () => {
                 ).toBeGreaterThan(10);
                 expect(item.tab.trim()).not.toBe('');
             }
+        }
+    });
+});
+
+describe('landing clinical AI section', () => {
+    it('shows the same AI screens, in the same order, in every language', () => {
+        for (const locale of LANDING_LOCALES) {
+            const shots = translations[locale].ai.items.map(
+                (item) => item.shot,
+            );
+
+            expect(shots, `AI order for "${locale}"`).toEqual([...AI_SHOTS]);
+        }
+    });
+
+    it('has a real capture behind every AI screen, at both widths', () => {
+        for (const shot of AI_SHOTS) {
+            expect(
+                existsSync(publicPath(`images/landing/ai/${shot}.webp`)),
+                `ai/${shot}.webp is missing`,
+            ).toBe(true);
+            expect(
+                existsSync(publicPath(`images/landing/ai/${shot}-800.webp`)),
+                `ai/${shot}-800.webp is missing`,
+            ).toBe(true);
+        }
+    });
+
+    it('lists every AI action and the four safeguards in every language', () => {
+        // The icons are matched to these lists by position.
+        for (const locale of LANDING_LOCALES) {
+            const { ai, hero, nav } = translations[locale];
+
+            expect(ai.capabilities, locale).toHaveLength(8);
+            expect(ai.principles, locale).toHaveLength(4);
+            expect(ai.disclaimer.trim().length).toBeGreaterThan(20);
+            expect(hero.aiBadge.trim()).not.toBe('');
+            expect(nav.ai.trim()).not.toBe('');
+
+            for (const item of ai.items) {
+                expect(
+                    item.alt.trim().length,
+                    `alt for ${item.shot}`,
+                ).toBeGreaterThan(10);
+            }
+        }
+    });
+});
+
+describe('landing patient app screens', () => {
+    it('uses real captures of the patient app in every language', () => {
+        for (const locale of LANDING_LOCALES) {
+            const screens = translations[locale].mobileApp.screens;
+
+            expect(screens.map((item) => item.screen)).toEqual([
+                ...MOBILE_SCREENS,
+            ]);
+
+            for (const item of screens) {
+                expect(item.alt.trim().length).toBeGreaterThan(10);
+                expect(item.label.trim()).not.toBe('');
+            }
+        }
+
+        for (const screen of MOBILE_SCREENS) {
+            expect(
+                existsSync(publicPath(`images/landing/mobile/${screen}.webp`)),
+                `mobile/${screen}.webp is missing`,
+            ).toBe(true);
         }
     });
 });

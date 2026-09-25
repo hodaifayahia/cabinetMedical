@@ -899,7 +899,18 @@ const age = computed(() => {
     );
 });
 
+// Consultation statuses and genders arrive as raw enum values.
+const statusLabels: Record<string, string> = {
+    scheduled: 'Programmée',
+    in_progress: 'En cours',
+    completed: 'Terminée',
+    cancelled: 'Annulée',
+    male: 'Homme',
+    female: 'Femme',
+};
+
 const statusLabel = (status: string): string =>
+    statusLabels[status] ??
     status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
 const displayDate = (date: string | null): string => {
@@ -1104,7 +1115,7 @@ const tabClass = (activeTab: boolean): string =>
                             patient.patient_number
                         }}</span>
                         <template v-if="age !== null">
-                            · {{ age }} yrs</template
+                            · {{ age }} ans</template
                         >
                         <template v-if="patient.gender">
                             · {{ statusLabel(patient.gender) }}</template

@@ -105,20 +105,26 @@ class MobileDemoSeeder extends Seeder
         }
 
         // --- Doctor profile, hours, open months -----------------------------------
-        $doctor = DoctorProfile::withoutCabinetScope()->updateOrCreate(
-            ['user_id' => $doctorUser->getKey()],
-            [
-                'cabinet_id' => $cabinet->getKey(),
-                'specialty' => 'Pédiatrie',
-                'doctor_name' => 'Dr Karim Boudjema',
-                'clinic_name' => 'عيادة الأمل',
-                'phone' => '0550000001',
-                'city' => 'Alger',
-                'consultation_duration' => 30,
-                'consultation_fee_minor' => 200000,
-                'is_active' => true,
-            ],
-        );
+        $doctor = DoctorProfile::withoutCabinetScope()->firstOrNew(['user_id' => $doctorUser->getKey()]);
+
+        // The specialty locks once the profile exists, so it is only set on
+        // creation. The code is the catalogue key the app filters on: the
+        // model's fallback would slug the label into "pediatrie" and hide
+        // the doctor from the patient app's specialty search.
+        if (! $doctor->exists) {
+            $doctor->forceFill(['specialty' => 'Pédiatrie', 'specialty_code' => 'pediatrics']);
+        }
+
+        $doctor->fill([
+            'cabinet_id' => $cabinet->getKey(),
+            'doctor_name' => 'Dr Karim Boudjema',
+            'clinic_name' => 'عيادة الأمل',
+            'phone' => '0550000001',
+            'city' => 'Alger',
+            'consultation_duration' => 30,
+            'consultation_fee_minor' => 200000,
+            'is_active' => true,
+        ])->save();
 
         // Saturday..Thursday, morning + evening. Friday closed.
         $workdays = [

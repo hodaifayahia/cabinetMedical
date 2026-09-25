@@ -46,6 +46,7 @@ const props = defineProps<{
     items: PrescriptionItem[];
     notes: string;
     patientName: string;
+    patientAge?: number | null;
     doctorName: string | null;
     specialty: string | null;
     orderNumber: string | null;
@@ -619,7 +620,10 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                                 }}</span>
                             </p>
                             <p>
-                                Age : <span class="font-semibold">— ans</span>
+                                Age :
+                                <span class="font-semibold"
+                                    >{{ patientAge ?? '—' }} ans</span
+                                >
                             </p>
                         </div>
                     </div>
