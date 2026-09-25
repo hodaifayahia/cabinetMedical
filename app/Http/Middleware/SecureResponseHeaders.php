@@ -27,10 +27,15 @@ final class SecureResponseHeaders
         $response->headers->set('Referrer-Policy', 'no-referrer');
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
         $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
-        $response->headers->set(
-            'Permissions-Policy',
-            'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
-        );
+        // Voice dictation in the consultation needs the microphone on the
+        // app's own pages. A stricter policy a route set first (the public
+        // QR upload pages) is kept.
+        if (! $response->headers->has('Permissions-Policy')) {
+            $response->headers->set(
+                'Permissions-Policy',
+                'camera=(), microphone=(self), geolocation=(), payment=(), usb=()',
+            );
+        }
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
 
         if (

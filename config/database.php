@@ -61,6 +61,10 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // UPDATE returns rows matched, not rows changed, as on SQLite.
+                // Claims such as update(['updated_at' => now()]) === 1 otherwise
+                // read 0 when the row was already written in the same second.
+                Mysql::ATTR_FOUND_ROWS => true,
             ]) : [],
         ],
 
@@ -81,6 +85,8 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // Rows matched, not rows changed: see the mysql connection above.
+                Mysql::ATTR_FOUND_ROWS => true,
             ]) : [],
         ],
 
