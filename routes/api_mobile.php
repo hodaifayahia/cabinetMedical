@@ -3,9 +3,10 @@
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetLifecycleController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetListingController;
-use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCoverageController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetStaffController;
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCoverageController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminOverviewController;
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminSpecialtyController;
 use App\Http\Controllers\Api\V1\Mobile\AuthController;
 use App\Http\Controllers\Api\V1\Mobile\AvailabilityController;
 use App\Http\Controllers\Api\V1\Mobile\ClinicProfileController;
@@ -139,6 +140,12 @@ Route::middleware(['auth:sanctum', 'mobile.admin', 'throttle:mobile-admin'])
             ->whereNumber('wilaya');
         Route::patch('coverage/baladiyas/{baladiya}', [AdminCoverageController::class, 'updateBaladiya'])
             ->whereNumber('baladiya');
+
+        // Specialty catalogue: what the patient app's specialty filter offers.
+        Route::get('specialties', [AdminSpecialtyController::class, 'index']);
+        Route::post('specialties', [AdminSpecialtyController::class, 'store']);
+        Route::patch('specialties/{specialty}', [AdminSpecialtyController::class, 'update'])
+            ->whereNumber('specialty');
 
         Route::patch('cabinets/{cabinet}/facility-type', [AdminCabinetListingController::class, 'updateFacilityType'])
             ->whereNumber('cabinet');

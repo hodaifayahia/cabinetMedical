@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\RoleName;
 use App\Models\Concerns\BelongsToCabinet;
 use App\Services\Appointments\DoctorProfileProvisioner;
+use App\Support\MedicalSpecialtyCatalog;
 use Database\Factories\DoctorProfileFactory;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -54,9 +55,12 @@ class DoctorProfile extends Model
 
     protected static function booted(): void
     {
+        // The code comes from the specialty catalogue, so a French label
+        // ("Pédiatrie") gets the canonical code the patient filter sends
+        // ("pediatrics") rather than a slug of its own ("pediatrie").
         static::creating(function (self $profile): void {
             if (filled($profile->specialty)) {
-                $profile->specialty_code ??= str($profile->specialty)->slug('_')->toString();
+                $profile->specialty_code ??= app(MedicalSpecialtyCatalog::class)->codeFor((string) $profile->specialty);
                 $profile->specialty_locked_at ??= now();
             }
         });
@@ -69,7 +73,7 @@ class DoctorProfile extends Model
             }
 
             if (! $specialtyWasLocked && $profile->isDirty('specialty') && filled($profile->specialty)) {
-                $profile->specialty_code ??= str($profile->specialty)->slug('_')->toString();
+                $profile->specialty_code ??= app(MedicalSpecialtyCatalog::class)->codeFor((string) $profile->specialty);
                 $profile->specialty_locked_at = now();
             }
         });

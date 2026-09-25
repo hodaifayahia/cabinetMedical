@@ -103,7 +103,20 @@ final class SpecialtyArabicLabels
     }
 
     /**
-     * The full Arabic label map keyed by specialty slug.
+     * The French-derived codes that fold onto a canonical code ("pediatrie",
+     * for "pediatrics"). Doctor profiles created before the catalogue was the
+     * only source of codes still carry them.
+     *
+     * @return list<string>
+     */
+    public static function aliasesOf(string $canonical): array
+    {
+        return array_keys(self::FRENCH_SLUG_ALIASES, $canonical, true);
+    }
+
+    /**
+     * The BUILT-IN Arabic label map keyed by specialty slug. It seeded the
+     * admin-managed catalogue; read labels through labelFor().
      *
      * @return array<string, string>
      */
@@ -114,7 +127,9 @@ final class SpecialtyArabicLabels
 
     /**
      * The Arabic label for a specialty slug, or null when the slug is unknown
-     * (callers then fall back to the French label).
+     * (callers then fall back to the French label). The admin-managed
+     * catalogue wins, so corrected labels and specialties added after launch
+     * are shown in Arabic too.
      */
     public static function labelFor(?string $code): ?string
     {
@@ -122,6 +137,10 @@ final class SpecialtyArabicLabels
             return null;
         }
 
-        return self::LABELS[self::canonicalCode($code) ?? $code] ?? null;
+        $canonical = self::canonicalCode($code) ?? $code;
+
+        return app(MedicalSpecialtyCatalog::class)->arabicLabel($canonical)
+            ?? self::LABELS[$canonical]
+            ?? null;
     }
 }

@@ -13,6 +13,7 @@ use App\Models\CabinetPublicProfile;
 use App\Models\DoctorProfile;
 use App\Models\DoctorSchedule;
 use App\Models\Wilaya;
+use App\Support\MedicalSpecialtyCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -69,7 +70,12 @@ class DoctorDirectoryController extends Controller
             )
             ->when(
                 isset($validated['specialty']),
-                static fn (Builder $query) => $query->where('doctor_profiles.specialty_code', $validated['specialty']),
+                // Older profiles store a French-derived code ("pediatrie"), so
+                // match every variant of the chosen specialty.
+                static fn (Builder $query) => $query->whereIn(
+                    'doctor_profiles.specialty_code',
+                    app(MedicalSpecialtyCatalog::class)->matchingCodes($validated['specialty']),
+                ),
             )
             ->when(
                 filled($validated['q'] ?? null),
