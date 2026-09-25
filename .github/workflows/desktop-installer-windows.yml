@@ -81,7 +81,9 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           MEDISMART_UPDATER_PUBLIC_KEY: ${{ secrets.MEDISMART_UPDATER_PUBLIC_KEY }}
-          MEDISMART_UPDATER_ENDPOINT: ${{ secrets.MEDISMART_UPDATER_ENDPOINT }}
+          # Public URL, not a secret: the secret only overrides it (staging,
+          # a reseller). Without a value the build refuses to run at all.
+          MEDISMART_UPDATER_ENDPOINT: ${{ secrets.MEDISMART_UPDATER_ENDPOINT || 'https://drclickdz.com/desktop-updates/' }}
         run: |
           $ErrorActionPreference = 'Stop'
           $ephemeralKeyPath = $null
