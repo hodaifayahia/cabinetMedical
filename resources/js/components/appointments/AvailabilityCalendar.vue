@@ -15,17 +15,20 @@ const emit = defineEmits<{
     'change-month': [year: number, month: number];
 }>();
 
-const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const weekdayLabels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
-const monthLabel = computed(() =>
-    new Date(props.month.year, props.month.month - 1, 1).toLocaleString(
-        'en-US',
-        {
-            month: 'long',
-            year: 'numeric',
-        },
-    ),
-);
+const monthLabel = computed(() => {
+    const label = new Date(
+        props.month.year,
+        props.month.month - 1,
+        1,
+    ).toLocaleString('fr-FR', {
+        month: 'long',
+        year: 'numeric',
+    });
+
+    return label.charAt(0).toUpperCase() + label.slice(1);
+});
 
 const leadingBlanks = computed(() =>
     props.month.days.length > 0 ? props.month.days[0].weekday - 1 : 0,
@@ -120,7 +123,7 @@ const onDayClick = (day: MonthDay) => {
                     variant="outline"
                     size="icon"
                     :disabled="loading"
-                    aria-label="Previous month"
+                    aria-label="Mois précédent"
                     @click="goPrev"
                 >
                     <ChevronLeft class="size-4" />
@@ -129,7 +132,7 @@ const onDayClick = (day: MonthDay) => {
                     variant="outline"
                     size="icon"
                     :disabled="loading"
-                    aria-label="Next month"
+                    aria-label="Mois suivant"
                     @click="goNext"
                 >
                     <ChevronRight class="size-4" />
@@ -141,7 +144,7 @@ const onDayClick = (day: MonthDay) => {
             v-if="!month.is_open_month"
             class="mt-3 rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
         >
-            This month is not open for booking yet.
+            Ce mois n’est pas encore ouvert à la réservation.
         </p>
 
         <div
@@ -177,17 +180,18 @@ const onDayClick = (day: MonthDay) => {
                     v-if="statusOf(day) === 'free'"
                     class="mt-auto text-[11px] leading-none font-medium"
                 >
-                    {{ day.available_count }} free
+                    {{ day.available_count }}
+                    {{ day.available_count > 1 ? 'libres' : 'libre' }}
                 </span>
                 <span
                     v-else-if="statusOf(day) === 'full'"
                     class="mt-auto text-[11px] leading-none font-medium"
-                    >Full</span
+                    >Complet</span
                 >
                 <span
                     v-else-if="statusOf(day) === 'off'"
                     class="mt-auto text-[11px] leading-none font-medium"
-                    >Off</span
+                    >Congé</span
                 >
             </button>
         </div>
@@ -199,25 +203,25 @@ const onDayClick = (day: MonthDay) => {
                 <span
                     class="size-3 rounded-sm border border-emerald-300/70 bg-emerald-100 dark:bg-emerald-900/40"
                 />
-                Available
+                Disponible
             </span>
             <span class="flex items-center gap-1.5">
                 <span
                     class="size-3 rounded-sm border border-amber-300/70 bg-amber-100 dark:bg-amber-900/40"
                 />
-                Fully booked
+                Complet
             </span>
             <span class="flex items-center gap-1.5">
                 <span
                     class="size-3 rounded-sm border border-red-300/60 bg-red-100 dark:bg-red-900/40"
                 />
-                Day off
+                Congé
             </span>
             <span class="flex items-center gap-1.5">
                 <span
                     class="size-3 rounded-sm border border-sidebar-border/70 bg-muted/40"
                 />
-                Closed
+                Fermé
             </span>
         </div>
     </div>

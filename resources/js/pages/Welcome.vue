@@ -12,6 +12,7 @@ import {
     Monitor,
     MonitorDown,
     Phone,
+    Sparkles,
     Stethoscope,
     UserCheck,
     UserCog,
@@ -26,9 +27,10 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import DesktopDownloadLeadDialog from '@/components/DesktopDownloadLeadDialog.vue';
 import DesktopOnboarding from '@/components/DesktopOnboarding.vue';
+import AiShowcase from '@/components/landing/AiShowcase.vue';
 import DownloadButton from '@/components/landing/DownloadButton.vue';
 import LanguageSwitcher from '@/components/landing/LanguageSwitcher.vue';
-import PhoneMockup from '@/components/landing/PhoneMockup.vue';
+import PhoneScreens from '@/components/landing/PhoneScreens.vue';
 import type { ShowcaseShot } from '@/components/landing/translations';
 import { useLandingLocale } from '@/components/landing/translations';
 import {
@@ -241,6 +243,7 @@ const rotatingWord = computed(() => {
 
 const navLinks = computed(() => [
     { href: '#solution', label: copy.value.nav.features },
+    { href: '#ia', label: copy.value.nav.ai },
     { href: '#apercu', label: copy.value.nav.tour },
     { href: '#fonctionnement', label: copy.value.nav.how },
     { href: '#roles', label: copy.value.nav.roles },
@@ -504,6 +507,24 @@ onUnmounted(() => {
                     class="mx-auto max-w-6xl px-4 pt-16 pb-14 sm:px-6 lg:pt-24 lg:pb-16"
                 >
                     <div class="mx-auto max-w-3xl text-center">
+                        <div class="mb-7">
+                            <a
+                                href="#ia"
+                                class="group inline-flex items-center gap-2 rounded-full border border-primary/25 bg-background/80 py-1.5 ps-1.5 pe-4 text-xs font-semibold text-foreground shadow-sm transition hover:border-primary/50 hover:bg-background"
+                            >
+                                <span
+                                    class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-deep text-brand-mint"
+                                >
+                                    <Sparkles class="size-3.5" />
+                                </span>
+                                {{ copy.hero.aiBadge }}
+                                <span
+                                    class="text-primary transition group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                                    aria-hidden="true"
+                                    >→</span
+                                >
+                            </a>
+                        </div>
                         <p
                             class="inline-flex items-center gap-3 text-xs font-semibold text-primary"
                             :class="eyebrowTracking"
@@ -625,6 +646,13 @@ onUnmounted(() => {
                     </ul>
                 </div>
             </section>
+
+            <!-- Clinical AI -->
+            <AiShowcase
+                :copy="copy.ai"
+                :dir="dir"
+                :eyebrow-tracking="eyebrowTracking"
+            />
 
             <!-- Benefits ledger -->
             <section
@@ -1021,7 +1049,7 @@ onUnmounted(() => {
             <section id="application-mobile" class="scroll-mt-20">
                 <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
                     <div
-                        class="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16"
+                        class="grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12"
                     >
                         <div>
                             <span
@@ -1066,13 +1094,12 @@ onUnmounted(() => {
                             </ul>
                         </div>
 
-                        <div
-                            v-reveal
-                            class="mx-auto lg:mx-0 lg:justify-self-center"
-                        >
-                            <div class="lp-float">
-                                <PhoneMockup :locale="locale" />
-                            </div>
+                        <div v-reveal class="relative">
+                            <div
+                                class="pointer-events-none absolute inset-x-6 top-10 bottom-16 -z-10 rounded-[3rem] bg-brand-soft/40"
+                                aria-hidden="true"
+                            ></div>
+                            <PhoneScreens :screens="copy.mobileApp.screens" />
                         </div>
                     </div>
                 </div>
@@ -1495,21 +1522,6 @@ onUnmounted(() => {
     transform: translateY(-0.45em);
 }
 
-@keyframes lp-float {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-9px);
-    }
-}
-
-.lp-float {
-    animation: lp-float 8s ease-in-out infinite;
-}
-
 @keyframes lp-ping {
     0% {
         transform: scale(1);
@@ -1539,7 +1551,6 @@ onUnmounted(() => {
         transition: none;
     }
 
-    .lp-float,
     .lp-ping {
         animation: none;
     }

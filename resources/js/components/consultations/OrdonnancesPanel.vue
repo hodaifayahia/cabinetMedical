@@ -63,12 +63,28 @@ const props = defineProps<{
     modelTemplateId: string | null;
     prescriptionDate: string;
     showPrescriptionDate: boolean;
-    patient: { full_name: string };
+    patient: { full_name: string; date_of_birth?: string | null };
     cabinet: DocumentBranding;
     canEdit: boolean;
     aiDraft?: ConsultationDraft;
     protocols?: PrescriptionProtocol[];
 }>();
+
+// Same rule as the bilan and courrier headers.
+const patientAge = computed(() => {
+    if (!props.patient.date_of_birth) {
+        return null;
+    }
+
+    const birth = new Date(
+        String(props.patient.date_of_birth).slice(0, 10) + 'T00:00:00',
+    );
+    const age = Math.floor(
+        (Date.now() - birth.getTime()) / (365.25 * 24 * 3600 * 1000),
+    );
+
+    return age >= 0 ? age : null;
+});
 
 const emit = defineEmits<{
     'update:modelTemplateId': [value: string | null];
@@ -910,6 +926,7 @@ const save = () => {
                         :items="form.items"
                         :notes="form.notes"
                         :patient-name="patient.full_name"
+                        :patient-age="patientAge"
                         :doctor-name="cabinet.doctor_name"
                         :specialty="cabinet.specialty"
                         :order-number="cabinet.order_number"
