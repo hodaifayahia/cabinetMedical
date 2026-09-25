@@ -10,7 +10,7 @@
     "app": {
         "windows": [],
         "security": {
-            "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:* https://seagreen-turkey-468004.hostingersite.com https://app.drclick.dz https://*.drclick.dz; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
+            "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:* https://drclickdz.com https://app.drclick.dz https://*.drclick.dz; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
             "capabilities": [
                 "desktop-windows",
                 "connection-setup"
