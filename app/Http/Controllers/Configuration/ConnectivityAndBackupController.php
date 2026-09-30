@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Configuration;
 
+use App\Backups\AutomaticDriveUploadPolicy;
+use App\Backups\BackupSchedule;
+use App\Backups\LocalRestorePointRunner;
 use App\Configuration\ApplicationSettingRegistry as Setting;
 use App\Enums\PermissionName;
 use App\Http\Controllers\Controller;
@@ -14,6 +17,9 @@ use App\Models\UploadSession;
 use App\Models\User;
 use App\Services\ApplicationHealthService;
 use App\Services\ApplicationSettingService;
+use App\Services\Backups\DriveBackupAuthority;
+use App\Services\Backups\DriveBackupEntitlement;
+use App\Services\Backups\LocalBackupAuthority;
 use App\Services\Cabinet\CabinetEntitlementService;
 use App\Services\GoogleDriveService;
 use App\Services\InstallationMaintenanceAccessService;
@@ -21,6 +27,7 @@ use App\Services\LicenseActivationService;
 use App\Services\LicenseService;
 use App\Services\NetworkService;
 use App\Services\QrUploadService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -36,6 +43,8 @@ final class ConnectivityAndBackupController extends Controller
 
     public function __construct(
         private readonly InstallationMaintenanceAccessService $installationMaintenance,
+        private readonly DriveBackupAuthority $driveAuthority,
+        private readonly LocalBackupAuthority $localBackups,
     ) {}
 
     public function edit(
@@ -48,18 +57,23 @@ final class ConnectivityAndBackupController extends Controller
         CabinetEntitlementService $cabinetEntitlements,
         LicenseActivationService $licenseActivation,
         QrUploadService $qrUploads,
+        AutomaticDriveUploadPolicy $automaticDriveUpload,
+        DriveBackupEntitlement $driveEntitlement,
+        LocalRestorePointRunner $restorePoints,
     ): Response {
         /** @var User|null $actor */
         $actor = $request->user();
         $maintenanceAllowed = $this->installationMaintenance->allows($actor);
         $canManageConnectivity = $maintenanceAllowed
             && ($actor?->can(PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value) ?? false);
-        $canManageBackups = $maintenanceAllowed
-            && ($actor?->can(PermissionName::CONFIGURATION_BACKUPS_MANAGE->value) ?? false);
+        // The local backups of a clinic desktop are its doctor's to run.
+        $canManageBackups = $this->localBackups->mayManage($actor);
         $canManageRestore = $maintenanceAllowed
             && ($actor?->can(PermissionName::CONFIGURATION_RESTORE_MANAGE->value) ?? false);
-        $canManageDrive = $maintenanceAllowed
-            && ($actor?->can(PermissionName::CONFIGURATION_DRIVE_MANAGE->value) ?? false);
+        // A supervised desktop's own doctor manages its Drive backup even
+        // though the other installation-wide tools stay out of reach.
+        $canManageDrive = $this->driveAuthority->mayManage($actor);
+        $canControlDrive = $this->driveAuthority->mayControl($actor);
         $canManageLicense = $maintenanceAllowed
             && ($actor?->can(PermissionName::CONFIGURATION_LICENSING_MANAGE->value) ?? false);
         $canViewDiagnostics = $maintenanceAllowed
@@ -71,6 +85,13 @@ final class ConnectivityAndBackupController extends Controller
         $status = $maintenanceAllowed
             ? $health->status()
             : $this->hiddenInstallationStatus();
+        // Identical to the values above for installation maintainers; for the
+        // desktop's doctor they carry only what the backup blocks need.
+        $driveFoundationReady = ($maintenanceAllowed || $canManageDrive || $canManageBackups)
+            && $this->foundationReady();
+        $driveRuntimeStatus = ! $maintenanceAllowed && ($canManageDrive || $canManageBackups)
+            ? $health->status()
+            : $status;
         $candidates = $foundationReady ? $network->ipv4Candidates() : [];
         $selectedAdapterId = $foundationReady ? $network->selectedAdapterId() : null;
         $selectedAdapter = collect($candidates)->first(
@@ -97,14 +118,14 @@ final class ConnectivityAndBackupController extends Controller
             default => 'unknown',
         };
         $lanListenerActive = ($status['lan_listener']['status'] ?? null) === 'active';
-        $encryptedBackupsReady = $foundationReady
+        $encryptedBackupsReady = $driveFoundationReady
             && extension_loaded('sodium')
             && function_exists('sodium_crypto_secretstream_xchacha20poly1305_init_push');
-        $lastBackup = $foundationReady && Schema::hasTable('backup_records')
+        $lastBackup = $driveFoundationReady && Schema::hasTable('backup_records')
             ? BackupRecord::query()->latest('started_at')->first()
             : null;
         $backupHistory = ($canManageBackups || $canManageDrive)
-            && $foundationReady
+            && $driveFoundationReady
             && Schema::hasTable('backup_records')
             ? BackupRecord::query()
                 ->latest('started_at')
@@ -172,9 +193,11 @@ final class ConnectivityAndBackupController extends Controller
             : $this->hiddenDriveStatus();
         $driveConfigured = ($driveStatus['google_drive_configured'] ?? false) === true;
         $driveConnected = ($driveStatus['google_drive_connected'] ?? false) === true;
-        $driveLicensed = $foundationReady && $licenses->featureEnabled('google_drive_backup');
-        $queueWorkerActive = $this->queueWorkerActive($status);
+        // A clinic desktop's hosted plan covers the mandatory Drive backup.
+        $driveLicensed = $driveFoundationReady && $driveEntitlement->granted();
+        $queueWorkerActive = $this->queueWorkerActive($driveRuntimeStatus);
         $schedulerActive = $this->schedulerActive($status);
+        $driveSchedulerActive = $this->schedulerActive($driveRuntimeStatus);
         $signedUpdaterAvailable = $maintenanceAllowed
             && (bool) config('medismart.runtime.desktop_supervised', false)
             && (bool) config('medismart.updates.signed_updater_configured', false);
@@ -197,7 +220,7 @@ final class ConnectivityAndBackupController extends Controller
             : null;
 
         return Inertia::render('configuration/ConnectivityAndBackup', [
-            'settings' => $this->settingsPayload($settings, $foundationReady),
+            'settings' => $this->settingsPayload($settings, $foundationReady, $driveFoundationReady && $canManageBackups),
             'runtime' => [
                 'connectivity' => [
                     'state' => ! $foundationReady
@@ -311,18 +334,18 @@ final class ConnectivityAndBackupController extends Controller
                             : 'Aucun service relais central n’est configuré.'),
                 ),
                 'automatic_backups' => $this->capability(
-                    $foundationReady && $schedulerActive,
-                    ! $foundationReady
+                    $driveFoundationReady && $driveSchedulerActive,
+                    ! $driveFoundationReady
                         ? 'Appliquez les migrations desktop avant de planifier une sauvegarde.'
-                        : (! $schedulerActive
-                            ? 'Le scheduler desktop supervisé n’est pas actif.'
+                        : (! $driveSchedulerActive
+                            ? 'Le planificateur de l’application Windows n’est pas actif : les sauvegardes planifiées reprendront à son redémarrage.'
                             : null),
                 ),
                 'local_backups' => $this->capability(
-                    $foundationReady
-                        && ($status['database']['driver'] ?? null) === 'sqlite'
-                        && ($status['storage']['writable'] ?? false) === true,
-                    ! $foundationReady
+                    $driveFoundationReady
+                        && ($driveRuntimeStatus['database']['driver'] ?? null) === 'sqlite'
+                        && ($driveRuntimeStatus['storage']['writable'] ?? false) === true,
+                    ! $driveFoundationReady
                         ? 'Appliquez les migrations desktop avant de créer une sauvegarde.'
                         : 'La base SQLite ou le stockage privé n’est pas disponible.',
                 ),
@@ -345,7 +368,7 @@ final class ConnectivityAndBackupController extends Controller
                     ! $encryptedBackupsReady
                         ? 'Le chiffrement .msbackup requis n’est pas disponible.'
                         : (! $driveConfigured
-                            ? 'Configurez le client OAuth Google de cette installation.'
+                            ? 'Cette version de Drclick ne contient pas la configuration Google nécessaire. Contactez le support Drclick.'
                             : (! $driveLicensed
                                 ? 'La licence active n’autorise pas la sauvegarde Google Drive.'
                                 : null)),
@@ -381,16 +404,30 @@ final class ConnectivityAndBackupController extends Controller
                 'connected' => true,
             ], $canManageConnectivity || $canViewDiagnostics ? $candidates : []),
             'backup' => $driveStatus,
+            // The Drive copy is optional: the local backups below are the
+            // required ones.
+            'driveAutomation' => [
+                'enabled' => $canManageDrive && $driveFoundationReady && $automaticDriveUpload->enabled(),
+                'scheduler_active' => $canManageDrive && $driveSchedulerActive,
+            ],
+            'backupSchedule' => $this->backupSchedulePayload(
+                $settings,
+                $restorePoints,
+                $canManageBackups && $driveFoundationReady,
+            ),
             'backupHistory' => array_values($backupHistory),
             'permissions' => [
                 'manage_settings' => $canManageConnectivity,
                 'manage_backups' => $canManageBackups,
                 'manage_restore' => $canManageRestore,
                 'manage_drive' => $canManageDrive,
+                // Connect, change or disconnect the account and set the
+                // automatic-copy passphrase: the clinic's doctor only.
+                'control_drive' => $canControlDrive,
                 'manage_license' => $canManageLicense,
                 'view_diagnostics' => $canViewDiagnostics,
                 'manage_upload_sessions' => $canManageUploadSessions,
-                'sensitive_actions_confirmed' => $maintenanceAllowed
+                'sensitive_actions_confirmed' => ($maintenanceAllowed || $canManageDrive)
                     && $this->recentPasswordConfirmation($request),
             ],
             // Raw SQLite replacement remains deliberately hidden until the
@@ -431,23 +468,97 @@ final class ConnectivityAndBackupController extends Controller
     public function update(
         Request $request,
         ApplicationSettingService $settings,
-        ApplicationHealthService $health,
         NetworkService $network,
         LicenseService $licenses,
     ): RedirectResponse {
-        $this->installationMaintenance->authorize($request->user());
+        $actor = $request->user();
+        $maintenanceAllowed = $this->installationMaintenance->allows($actor);
+        $canManageConnectivity = $maintenanceAllowed
+            && ($actor?->can(PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value) ?? false);
+        $canManageBackups = $this->localBackups->mayManage($actor);
+        abort_unless(
+            $canManageConnectivity || $canManageBackups,
+            403,
+            InstallationMaintenanceAccessService::DENIAL_MESSAGE,
+        );
 
         abort_unless($this->foundationReady(), 503, 'Desktop settings migrations are not applied.');
 
-        $actor = $request->user();
-        $canManageConnectivity = $actor?->can(PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value) ?? false;
-        $canManageBackups = $actor?->can(PermissionName::CONFIGURATION_BACKUPS_MANAGE->value) ?? false;
-        abort_unless($canManageConnectivity || $canManageBackups, 403);
+        $data = $request->validate([
+            ...($canManageConnectivity ? $this->connectivityRules($request, $network) : []),
+            ...($canManageBackups ? [
+                'backups.schedule_times' => ['required', 'array', 'size:'.BackupSchedule::SLOTS],
+                'backups.schedule_times.*' => ['required', 'string', 'date_format:H:i', 'distinct'],
+                'backups.retention_daily' => ['required', 'integer', 'min:1', 'max:365'],
+                'backups.retention_weekly' => ['required', 'integer', 'min:1', 'max:104'],
+                'backups.retention_monthly' => ['required', 'integer', 'min:1', 'max:120'],
+                'backups.maximum_storage_bytes' => [
+                    'nullable',
+                    'integer',
+                    'min:104857600',
+                    'max:10995116277760',
+                ],
+            ] : []),
+        ], [
+            'backups.schedule_times.*.distinct' => 'Les trois heures de sauvegarde doivent être différentes.',
+            'backups.schedule_times.*.date_format' => 'Indiquez une heure au format 24 heures (HH:MM).',
+        ]);
 
+        $automaticUpdatesLicensed = $canManageConnectivity && $licenses->featureEnabled('automatic_updates');
+        $values = [];
+
+        if ($canManageConnectivity) {
+            $values += [
+                Setting::UPLOAD_DEFAULT_MODE => $data['uploads']['default_mode'],
+                Setting::UPLOAD_SESSION_TTL_MINUTES => $data['uploads']['session_ttl_minutes'],
+                Setting::UPLOAD_MAXIMUM_FILES => $data['uploads']['maximum_files'],
+                Setting::UPLOAD_MAXIMUM_INDIVIDUAL_BYTES => $data['uploads']['maximum_individual_bytes'],
+                Setting::UPLOAD_MAXIMUM_TOTAL_BYTES => $data['uploads']['maximum_total_bytes'],
+                Setting::CONNECTIVITY_LAN_ENABLED => $data['connectivity']['lan_enabled'],
+                Setting::CONNECTIVITY_SELECTED_ADAPTER_ID => $data['connectivity']['selected_adapter_id'],
+                Setting::CONNECTIVITY_PREFERRED_PORT => $data['connectivity']['preferred_port'],
+                Setting::CONNECTIVITY_FIREWALL_DIAGNOSTICS_ENABLED => $data['connectivity']['firewall_diagnostics_enabled'],
+                Setting::UPDATE_AUTO_CHECK => $automaticUpdatesLicensed && $data['updates']['auto_check'],
+                Setting::UPDATE_CHANNEL => $data['updates']['channel'],
+                Setting::UPDATE_CHECK_INTERVAL_HOURS => $data['updates']['check_interval_hours'],
+            ];
+        }
+
+        if ($canManageBackups) {
+            $values += [
+                Setting::BACKUP_SCHEDULE_TIMES => BackupSchedule::normalize(array_values($data['backups']['schedule_times'])),
+                Setting::BACKUP_RETENTION_DAILY => $data['backups']['retention_daily'],
+                Setting::BACKUP_RETENTION_WEEKLY => $data['backups']['retention_weekly'],
+                Setting::BACKUP_RETENTION_MONTHLY => $data['backups']['retention_monthly'],
+                Setting::BACKUP_MAXIMUM_STORAGE_BYTES => $data['backups']['maximum_storage_bytes'],
+            ];
+        }
+
+        $settings->setMany($values);
+
+        if ($canManageConnectivity) {
+            // Downloads stay coupled to an explicit, backup-authorized
+            // installation until a durable native download queue exists.
+            $settings->setInternal(Setting::UPDATE_AUTO_DOWNLOAD, false);
+        }
+        AuditLog::record('settings.connectivity_backup_updated', metadata: [
+            'keys' => array_keys($values),
+        ], userId: $request->user()?->getKey());
+        Inertia::flash('toast', [
+            'type' => 'info',
+            'message' => 'Préférences enregistrées sur le serveur Drclick.',
+        ]);
+
+        return back();
+    }
+
+    /** @return array<string, list<mixed>> */
+    private function connectivityRules(Request $request, NetworkService $network): array
+    {
         $candidateIds = array_column($network->ipv4Candidates(), 'id');
         $desktopSupervised = (bool) config('medismart.runtime.desktop_supervised', false);
-        $automaticUpdatesLicensed = $licenses->featureEnabled('automatic_updates');
-        $data = $request->validate([
+
+        return [
             'uploads.default_mode' => ['required', Rule::in(['local', 'remote', 'relay'])],
             'uploads.session_ttl_minutes' => ['required', 'integer', 'min:1', 'max:30'],
             'uploads.maximum_files' => ['required', 'integer', 'min:1', 'max:50'],
@@ -475,82 +586,22 @@ final class ConnectivityAndBackupController extends Controller
             ],
             'connectivity.preferred_port' => ['nullable', 'integer', 'min:1024', 'max:65535'],
             'connectivity.firewall_diagnostics_enabled' => ['required', 'boolean'],
-            'backups.automatic_enabled' => ['required', 'boolean'],
-            'backups.schedule_time' => ['required', 'date_format:H:i'],
-            'backups.retention_daily' => ['required', 'integer', 'min:1', 'max:365'],
-            'backups.retention_weekly' => ['required', 'integer', 'min:1', 'max:104'],
-            'backups.retention_monthly' => ['required', 'integer', 'min:1', 'max:120'],
-            'backups.maximum_storage_bytes' => [
-                'nullable',
-                'integer',
-                'min:104857600',
-                'max:10995116277760',
-            ],
             'updates.auto_check' => ['required', 'boolean'],
             'updates.channel' => ['required', Rule::in(['stable'])],
             'updates.check_interval_hours' => ['required', 'integer', 'min:1', 'max:168'],
             'updates.auto_download' => ['required', 'boolean'],
-        ]);
-
-        if ($canManageBackups
-            && $data['backups']['automatic_enabled']
-            && ! $this->schedulerActive($health->status())) {
-            return back()->withErrors([
-                'backups.automatic_enabled' => 'Le scheduler desktop supervisé doit être actif avant d’activer cette option.',
-            ]);
-        }
-
-        $values = [];
-
-        if ($canManageConnectivity) {
-            $values += [
-                Setting::UPLOAD_DEFAULT_MODE => $data['uploads']['default_mode'],
-                Setting::UPLOAD_SESSION_TTL_MINUTES => $data['uploads']['session_ttl_minutes'],
-                Setting::UPLOAD_MAXIMUM_FILES => $data['uploads']['maximum_files'],
-                Setting::UPLOAD_MAXIMUM_INDIVIDUAL_BYTES => $data['uploads']['maximum_individual_bytes'],
-                Setting::UPLOAD_MAXIMUM_TOTAL_BYTES => $data['uploads']['maximum_total_bytes'],
-                Setting::CONNECTIVITY_LAN_ENABLED => $data['connectivity']['lan_enabled'],
-                Setting::CONNECTIVITY_SELECTED_ADAPTER_ID => $data['connectivity']['selected_adapter_id'],
-                Setting::CONNECTIVITY_PREFERRED_PORT => $data['connectivity']['preferred_port'],
-                Setting::CONNECTIVITY_FIREWALL_DIAGNOSTICS_ENABLED => $data['connectivity']['firewall_diagnostics_enabled'],
-                Setting::UPDATE_AUTO_CHECK => $automaticUpdatesLicensed && $data['updates']['auto_check'],
-                Setting::UPDATE_CHANNEL => $data['updates']['channel'],
-                Setting::UPDATE_CHECK_INTERVAL_HOURS => $data['updates']['check_interval_hours'],
-            ];
-        }
-
-        if ($canManageBackups) {
-            $values += [
-                Setting::BACKUP_AUTOMATIC_ENABLED => $data['backups']['automatic_enabled'],
-                Setting::BACKUP_SCHEDULE_TIME => $data['backups']['schedule_time'],
-                Setting::BACKUP_RETENTION_DAILY => $data['backups']['retention_daily'],
-                Setting::BACKUP_RETENTION_WEEKLY => $data['backups']['retention_weekly'],
-                Setting::BACKUP_RETENTION_MONTHLY => $data['backups']['retention_monthly'],
-                Setting::BACKUP_MAXIMUM_STORAGE_BYTES => $data['backups']['maximum_storage_bytes'],
-            ];
-        }
-
-        $settings->setMany($values);
-
-        if ($canManageConnectivity) {
-            // Downloads stay coupled to an explicit, backup-authorized
-            // installation until a durable native download queue exists.
-            $settings->setInternal(Setting::UPDATE_AUTO_DOWNLOAD, false);
-        }
-        AuditLog::record('settings.connectivity_backup_updated', metadata: [
-            'keys' => array_keys($values),
-        ], userId: $request->user()?->getKey());
-        Inertia::flash('toast', [
-            'type' => 'info',
-            'message' => 'Préférences enregistrées sur le serveur Drclick.',
-        ]);
-
-        return back();
+        ];
     }
 
     public function confirmSensitiveActions(Request $request): RedirectResponse
     {
-        $this->installationMaintenance->authorize($request->user());
+        abort_unless(
+            $this->installationMaintenance->allows($request->user())
+                || $this->driveAuthority->mayManage($request->user())
+                || $this->localBackups->mayManage($request->user()),
+            403,
+            InstallationMaintenanceAccessService::DENIAL_MESSAGE,
+        );
 
         $request->session()->put(
             'url.intended',
@@ -560,8 +611,47 @@ final class ConnectivityAndBackupController extends Controller
         return to_route('password.confirm');
     }
 
+    /**
+     * The three daily times, when the next local backup is due, the newest one
+     * still present on this PC and the folder that holds them.
+     *
+     * @return array{times: list<string>, next_at: string|null, last_restore_point: array{filename: string, completed_at: string|null, size_bytes: int|null}|null, location: string|null}
+     */
+    private function backupSchedulePayload(
+        ApplicationSettingService $settings,
+        LocalRestorePointRunner $restorePoints,
+        bool $visible,
+    ): array {
+        $schedule = BackupSchedule::fromSetting(
+            $this->value($settings, Setting::BACKUP_SCHEDULE_TIMES, null, $visible),
+        );
+
+        if (! $visible) {
+            return ['times' => $schedule->times(), 'next_at' => null, 'last_restore_point' => null, 'location' => null];
+        }
+
+        try {
+            $latest = $restorePoints->latestRestorePoint();
+        } catch (Throwable) {
+            $latest = null;
+        }
+
+        $location = config('medismart.backups.managed_directory');
+
+        return [
+            'times' => $schedule->times(),
+            'next_at' => $schedule->nextSlot(CarbonImmutable::now())->toIso8601String(),
+            'last_restore_point' => $latest === null ? null : [
+                'filename' => $latest->filename,
+                'completed_at' => $latest->completed_at?->toIso8601String(),
+                'size_bytes' => $latest->size === null ? null : (int) $latest->size,
+            ],
+            'location' => is_string($location) && $location !== '' ? $location : null,
+        ];
+    }
+
     /** @return array<string, mixed> */
-    private function settingsPayload(ApplicationSettingService $settings, bool $ready): array
+    private function settingsPayload(ApplicationSettingService $settings, bool $ready, bool $backupsReady): array
     {
         return [
             'uploads' => [
@@ -578,12 +668,13 @@ final class ConnectivityAndBackupController extends Controller
                 'firewall_diagnostics_enabled' => $this->value($settings, Setting::CONNECTIVITY_FIREWALL_DIAGNOSTICS_ENABLED, true, $ready),
             ],
             'backups' => [
-                'automatic_enabled' => $this->value($settings, Setting::BACKUP_AUTOMATIC_ENABLED, false, $ready),
-                'schedule_time' => $this->value($settings, Setting::BACKUP_SCHEDULE_TIME, '02:00', $ready),
-                'retention_daily' => $this->value($settings, Setting::BACKUP_RETENTION_DAILY, 7, $ready),
-                'retention_weekly' => $this->value($settings, Setting::BACKUP_RETENTION_WEEKLY, 4, $ready),
-                'retention_monthly' => $this->value($settings, Setting::BACKUP_RETENTION_MONTHLY, 12, $ready),
-                'maximum_storage_bytes' => $this->value($settings, Setting::BACKUP_MAXIMUM_STORAGE_BYTES, null, $ready),
+                'schedule_times' => BackupSchedule::fromSetting(
+                    $this->value($settings, Setting::BACKUP_SCHEDULE_TIMES, null, $backupsReady),
+                )->times(),
+                'retention_daily' => $this->value($settings, Setting::BACKUP_RETENTION_DAILY, 7, $backupsReady),
+                'retention_weekly' => $this->value($settings, Setting::BACKUP_RETENTION_WEEKLY, 4, $backupsReady),
+                'retention_monthly' => $this->value($settings, Setting::BACKUP_RETENTION_MONTHLY, 12, $backupsReady),
+                'maximum_storage_bytes' => $this->value($settings, Setting::BACKUP_MAXIMUM_STORAGE_BYTES, null, $backupsReady),
             ],
             'updates' => [
                 'auto_check' => $this->value($settings, Setting::UPDATE_AUTO_CHECK, true, $ready),

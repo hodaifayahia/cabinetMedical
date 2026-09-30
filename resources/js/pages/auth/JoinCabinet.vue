@@ -43,8 +43,8 @@ defineOptions({
         />
         <p class="leading-6">
             Demandez au propriétaire l’adresse e-mail utilisée lors de la
-            création du cabinet. Chaque cabinet peut accueillir jusqu’à trois
-            utilisateurs.
+            création du cabinet. Le nombre d’utilisateurs dépend des sièges
+            accordés à ce cabinet.
         </p>
     </div>
 

@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Api\Mobile\Admin;
 
 use App\Enums\FacilityType;
-
 use App\Support\Wilayas;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;

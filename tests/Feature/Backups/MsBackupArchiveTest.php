@@ -15,11 +15,14 @@ use App\Services\MachineFingerprintService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Tests\Support\RequiresSqlite;
 use Tests\TestCase;
 use ZipArchive;
 
 class MsBackupArchiveTest extends TestCase
 {
+    use RequiresSqlite;
+
     /** @var list<string> */
     private static array $databaseFiles = [];
 

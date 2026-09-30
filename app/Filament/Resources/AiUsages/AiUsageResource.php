@@ -19,11 +19,11 @@ class AiUsageResource extends Resource
 {
     protected static ?string $model = AiUsage::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedListBullet;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Clients';
+    protected static string|UnitEnum|null $navigationGroup = 'Intelligence artificielle';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 2;
 
     public static function getModelLabel(): string
     {
@@ -37,7 +37,7 @@ class AiUsageResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return 'Consommation IA';
+        return 'Journal des crédits';
     }
 
     public static function canAccess(): bool

@@ -13,10 +13,13 @@ use App\Services\BackupService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Tests\Support\RequiresSqlite;
 use Tests\TestCase;
 
 class EncryptedMsBackupArchiveTest extends TestCase
 {
+    use RequiresSqlite;
+
     private const PASSPHRASE = 'correct horse battery staple 2026';
 
     /** @var list<string> */

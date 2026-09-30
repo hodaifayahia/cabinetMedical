@@ -79,8 +79,11 @@ runtime credentials, upload tokens, bearer values, sensitive query values, and
 private absolute paths are removed. These diagnostics are operational aids,
 not a medical audit record.
 
-The supervised PHP process receives `MEDISMART_DESKTOP_SUPERVISED=true` and the
-dynamic loopback origin in both `APP_URL` and `MEDISMART_LOCAL_URL`. It also receives
+The supervised PHP process receives `MEDISMART_DESKTOP_SUPERVISED=true`, the
+build's hosted origin in `MEDISMART_ONLINE_SERVICE_URL`, and the dynamic loopback
+origin in both `APP_URL` and `MEDISMART_LOCAL_URL`. The hosted origin pre-fills
+Configuration › Service en ligne and follows the same validated build setting as
+the desktop connection screen. It also receives
 `MEDISMART_QUEUE_WORKER_STATUS=active` only while the native queue worker is
 observed active and `MEDISMART_SCHEDULER_STATUS=active` only while the native
 scheduler is stable and alive. Every other phase is represented as `stopped`.

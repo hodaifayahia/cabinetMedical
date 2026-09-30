@@ -57,6 +57,11 @@ class PlatformDashboard extends Dashboard
                 ->icon(Heroicon::OutlinedTicket)
                 ->color('gray')
                 ->url(ActivationKeyResource::getUrl('index')),
+            Action::make('aiConsumption')
+                ->label('Consommation IA')
+                ->icon(Heroicon::OutlinedSparkles)
+                ->color('gray')
+                ->url(AiConsumption::getUrl()),
         ];
     }
 }

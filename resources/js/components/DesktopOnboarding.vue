@@ -5,6 +5,7 @@ import {
     Building2,
     Check,
     CircleUserRound,
+    DatabaseBackup,
     LockKeyhole,
     LogIn,
     Mail,
@@ -16,9 +17,14 @@ import {
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { login, register } from '@/routes';
 
-defineProps<{
-    canRegister: boolean;
-}>();
+withDefaults(
+    defineProps<{
+        canRegister: boolean;
+        /** Only while this PC holds no account yet (server-decided). */
+        canRestoreBackup?: boolean;
+    }>(),
+    { canRestoreBackup: false },
+);
 
 const profileDetails = [
     { label: 'Nom complet', icon: CircleUserRound },
@@ -200,15 +206,28 @@ const profileDetails = [
                         <ShieldCheck class="size-4 text-emerald-600" />
                         Connexion sécurisée · Données rattachées à votre cabinet
                     </div>
-                    <Link
-                        :href="login()"
-                        data-test="desktop-existing-account"
-                        class="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-brand focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+                    <div
+                        class="flex flex-wrap items-center justify-center gap-2"
                     >
-                        <LockKeyhole class="size-4" />
-                        J’ai déjà un compte
-                        <LogIn class="size-4" />
-                    </Link>
+                        <Link
+                            v-if="canRestoreBackup"
+                            href="/desktop/restore-backup"
+                            data-test="desktop-restore-backup"
+                            class="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-brand focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+                        >
+                            <DatabaseBackup class="size-4" />
+                            Restaurer une sauvegarde
+                        </Link>
+                        <Link
+                            :href="login()"
+                            data-test="desktop-existing-account"
+                            class="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-brand focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+                        >
+                            <LockKeyhole class="size-4" />
+                            J’ai déjà un compte
+                            <LogIn class="size-4" />
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

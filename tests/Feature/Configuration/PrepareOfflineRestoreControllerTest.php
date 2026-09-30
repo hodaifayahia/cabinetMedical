@@ -20,10 +20,13 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use RuntimeException;
+use Tests\Support\RequiresSqlite;
 use Tests\TestCase;
 
 class PrepareOfflineRestoreControllerTest extends TestCase
 {
+    use RequiresSqlite;
+
     private const PASSPHRASE = 'offline restore HTTP recovery phrase 2026';
 
     private const FAILURE_MESSAGE = 'La sauvegarde n\'a pas pu être authentifiée ou préparée.';
@@ -138,9 +141,10 @@ class PrepareOfflineRestoreControllerTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->removeNewRestoreArtifacts();
-
+        // A case skipped before setUp() recorded the existing restore entries
+        // would treat every one of them as new; only a completed setUp() may clean up.
         if (isset($this->workspace)) {
+            $this->removeNewRestoreArtifacts();
             File::deleteDirectory($this->workspace);
         }
 

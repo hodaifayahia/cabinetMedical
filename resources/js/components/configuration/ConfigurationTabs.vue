@@ -10,6 +10,7 @@ const visibleConfigurationNav = computed(() =>
     configurationNavForPermissions(
         page.props.auth.user?.permissions ?? [],
         page.props.auth.user?.can.manageRolePermissions ?? false,
+        page.props.auth.user?.can.linkOnlineService ?? false,
     ),
 );
 

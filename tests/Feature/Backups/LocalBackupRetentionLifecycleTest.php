@@ -18,11 +18,14 @@ use App\Services\BackupService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Tests\Support\RequiresSqlite;
 use Tests\TestCase;
 use ZipArchive;
 
 class LocalBackupRetentionLifecycleTest extends TestCase
 {
+    use RequiresSqlite;
+
     /** @var list<string> */
     private static array $databaseFiles = [];
 

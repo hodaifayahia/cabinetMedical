@@ -84,9 +84,18 @@ jobs:
           # Public URL, not a secret: the secret only overrides it (staging,
           # a reseller). Without a value the build refuses to run at all.
           MEDISMART_UPDATER_ENDPOINT: ${{ secrets.MEDISMART_UPDATER_ENDPOINT || 'https://drclickdz.com/desktop-updates/' }}
+          # Google OAuth "Desktop app" client for the per-cabinet Drive backup.
+          # Optional: when unset the installer still builds and the app reports
+          # Drive backup as unavailable. build.rs validates and bakes them in.
+          DRCLICK_GOOGLE_CLIENT_ID: ${{ secrets.DRCLICK_GOOGLE_CLIENT_ID }}
+          DRCLICK_GOOGLE_CLIENT_SECRET: ${{ secrets.DRCLICK_GOOGLE_CLIENT_SECRET }}
         run: |
           $ErrorActionPreference = 'Stop'
           $ephemeralKeyPath = $null
+
+          if ([string]::IsNullOrWhiteSpace($env:DRCLICK_GOOGLE_CLIENT_ID)) {
+            Write-Warning 'DRCLICK_GOOGLE_CLIENT_ID is not configured: this installer cannot back up clinics to Google Drive.'
+          }
 
           try {
             $hasCompleteSigningSecrets =

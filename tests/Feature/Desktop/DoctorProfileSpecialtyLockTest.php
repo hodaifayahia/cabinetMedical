@@ -8,9 +8,11 @@ use App\Models\DoctorProfile;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Connection;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PDOException;
 use Tests\TestCase;
 use Throwable;
 
@@ -132,14 +134,21 @@ class DoctorProfileSpecialtyLockTest extends TestCase
         $administrator = User::factory()->create();
         $administrator->assignRole(RoleName::ADMINISTRATOR->value);
 
-        DB::unprepared(<<<'SQL'
-            CREATE TRIGGER reject_specialty_correction_audit
-            BEFORE INSERT ON audit_logs
-            WHEN NEW.action = 'doctor.specialty_corrected'
-            BEGIN
-                SELECT RAISE(ABORT, 'forced audit failure');
-            END
-            SQL);
+        // Fail the correction's audit INSERT with a QueryException, as a
+        // rejecting trigger would. A trigger is not portable: MariaDB commits
+        // CREATE TRIGGER implicitly, which ends RefreshDatabase's transaction.
+        DB::connection()->beforeExecuting(function (string $query, array $bindings, Connection $connection): void {
+            if (str_starts_with(strtolower(ltrim($query)), 'insert into')
+                && str_contains($query, 'audit_logs')
+                && in_array('doctor.specialty_corrected', $bindings, true)) {
+                throw new QueryException(
+                    $connection->getName(),
+                    $query,
+                    $bindings,
+                    new PDOException('forced audit failure'),
+                );
+            }
+        });
 
         $failure = null;
 

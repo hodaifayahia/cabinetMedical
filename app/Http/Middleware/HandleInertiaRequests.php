@@ -7,9 +7,11 @@ use App\Models\CabinetSetting;
 use App\Models\User;
 use App\Services\Auth\DesktopPinService;
 use App\Services\Authorization\CabinetRolePermissionAuthorizer;
+use App\Services\Backups\BackupReminder;
 use App\Services\DesktopDownloadService;
 use App\Services\DocumentBrandingService;
 use App\Services\SessionLockService;
+use App\Services\Sync\OnlineServiceLink;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -82,6 +84,8 @@ class HandleInertiaRequests extends Middleware
                 'user' => $this->resolveAuthenticatedUser($request->user()),
             ],
             'desktopDownload' => app(DesktopDownloadService::class)->sharedProps(),
+            // Local backups are required on a supervised desktop; null elsewhere.
+            'backupReminder' => fn (): ?array => app(BackupReminder::class)->sharedProps($user instanceof User ? $user : null),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'sessionLock' => $sessionLock === null ? null : [
                 'idleTimeoutSeconds' => $sessionLock->idleTimeoutSeconds(),
@@ -102,7 +106,7 @@ class HandleInertiaRequests extends Middleware
      *     updated_at: string|null,
      *     roles: list<string>,
      *     permissions: list<string>,
-     *     can: array{accessAdminPanel: bool, enrollDesktopPin: bool, manageStaff: bool, manageRolePermissions: bool}
+     *     can: array{accessAdminPanel: bool, enrollDesktopPin: bool, manageStaff: bool, manageRolePermissions: bool, linkOnlineService: bool}
      * }|null
      */
     protected function resolveAuthenticatedUser(mixed $user): ?array
@@ -139,6 +143,9 @@ class HandleInertiaRequests extends Middleware
                 'enrollDesktopPin' => app(DesktopPinService::class)->canEnroll($user),
                 'manageStaff' => $user->can(PermissionName::STAFF_MANAGE->value),
                 'manageRolePermissions' => app(CabinetRolePermissionAuthorizer::class)->canManage($user),
+                // Only an installed desktop has a service to link to.
+                'linkOnlineService' => $user->can(PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value)
+                    && app(OnlineServiceLink::class)->isAvailable(),
             ],
         ];
     }

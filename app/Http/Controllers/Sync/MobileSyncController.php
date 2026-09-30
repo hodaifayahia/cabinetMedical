@@ -30,7 +30,7 @@ class MobileSyncController extends Controller
         if (! $settings->isConfigured()) {
             return back()->with(
                 'error',
-                "La synchronisation mobile n'est pas configurée sur ce poste.",
+                "La synchronisation mobile n'est pas configurée sur ce poste. Reliez-le au service en ligne dans Configuration › Service en ligne.",
             );
         }
 

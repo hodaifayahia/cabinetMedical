@@ -37,6 +37,32 @@ enum AiFeature: string
     }
 
     /**
+     * A chart axis label: short enough to sit beside a bar in a narrow card.
+     */
+    public function shortLabel(): string
+    {
+        return match ($this) {
+            self::CONSULTATION_TEXT => 'Consultation',
+            self::EXAM_SUGGESTIONS => 'Examens',
+            self::PRESCRIPTION_SUGGESTIONS => 'Ordonnance',
+            self::DOCUMENT_ANALYSIS => 'Document',
+            self::PATIENT_ANALYSIS => 'Analyse patient',
+            self::ECG_ANALYSIS => 'Lecture ECG',
+            self::ECG_CHAT => 'Question ECG',
+            self::COPILOT_CHAT => 'Copilote',
+        };
+    }
+
+    /**
+     * Whether the action reads an image: an ECG tracing or a photographed
+     * document. No other action may send one to the vision model.
+     */
+    public function readsImages(): bool
+    {
+        return in_array($this, [self::DOCUMENT_ANALYSIS, self::ECG_ANALYSIS, self::ECG_CHAT], true);
+    }
+
+    /**
      * The model is chosen where the key lives (here, or on the hosted relay),
      * so a desktop can never pick a model on its own.
      */

@@ -146,18 +146,19 @@ class StaffTenancyTest extends TestCase
     {
         $this->activateSignedLicenseFeatures(['multi_user' => true]);
         $cabinet = $this->createCabinet('Full Cabinet');
+        $cabinet->forceFill(['seat_limit' => 3])->save();
         $administrator = $this->createUser($cabinet, RoleName::ADMINISTRATOR);
         $this->createUser($cabinet, RoleName::RECEPTIONIST);
         $this->createUser($cabinet, RoleName::CASHIER, ['approved_at' => null]);
 
-        $this->assertSame(Cabinet::MAX_SEATS, $cabinet->seatsInUse());
+        $this->assertSame(3, $cabinet->seatsInUse());
 
         $this->actingAs($administrator)
             ->post(route('app.staff.store'), $this->createPayload())
             ->assertSessionHasErrors('email');
 
         $this->assertDatabaseMissing('users', ['email' => 'new-staff@example.test']);
-        $this->assertSame(Cabinet::MAX_SEATS, $cabinet->seatsInUse());
+        $this->assertSame(3, $cabinet->seatsInUse());
     }
 
     public function test_cabinet_administrator_cannot_update_or_delete_another_cabinets_user(): void

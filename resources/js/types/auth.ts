@@ -13,6 +13,7 @@ export type User = {
         accessAdminPanel: boolean;
         enrollDesktopPin: boolean;
         manageStaff: boolean;
+        linkOnlineService: boolean;
         [key: string]: boolean;
     };
     [key: string]: unknown;

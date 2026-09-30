@@ -1727,6 +1727,7 @@ Response **201** — the full clinic detail resource plus the one-shot
       "specialty": { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" }
     },
     "counts": { "staff": 1, "patients": 0, "appointments": 0 },
+    "seats": { "limit": 2, "used": 1, "price": null },
     "license": { "plan": "lifetime", "plan_label": "À vie", "status": "active", "expires_at": null }
   },
   "temporary_password": ":|9{L?4RVY$2EJvJ>.b-"
@@ -1790,6 +1791,7 @@ response):
       "specialty": { "code": "cardiology", "label_fr": "Cardiologie", "label_ar": "أمراض القلب" }
     },
     "counts": { "staff": 1, "patients": 0, "appointments": 0 },
+    "seats": { "limit": 2, "used": 1, "price": null },
     "license": { "plan": "lifetime", "plan_label": "À vie", "status": "active", "expires_at": null }
   }
 }
@@ -1805,6 +1807,10 @@ response):
 - `counts` are live and scoped to **this** clinic only: `staff` counts every
   account attached to it (the owner included, so a fresh clinic reads `1`),
   `patients` its dossiers, `appointments` all of its appointments.
+- `seats` is the clinic's own allowance, set per clinic in the web admin panel:
+  `limit` accounts it may hold (owner included; a new clinic gets `2`), `used`
+  the same number as `counts.staff`, and `price` the agreed price per seat in
+  dinars (`null` when none was recorded).
 - Nothing secret is ever serialised here: no password hash, no API token, no
   licence code, no signed certificate, no PIN digest.
 
@@ -1890,13 +1896,13 @@ The account can sign in through `POST /auth/login` straight away (returning
 `role: "reception"`) **provided the clinic is active** — a pending or suspended
 clinic refuses its staff at login exactly as it does its owner.
 
-Seats are capped at **3 accounts per clinic** (owner included) and allocated
-under a row lock, so two admins adding a receptionist at the same instant can
-never overshoot. A full clinic → **409**:
+Seats are capped per clinic at `seats.limit` accounts (owner included; `2` for a
+new clinic) and allocated under a row lock, so two admins adding a receptionist
+at the same instant can never overshoot. A full clinic → **409**:
 
 ```json
 {
-  "message": "Ce cabinet a atteint sa limite de 3 utilisateurs.",
+  "message": "Ce cabinet a atteint sa limite de 2 utilisateurs.",
   "reason": "seat_limit_reached"
 }
 ```

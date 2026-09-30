@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
+import BackupReminderBanner from '@/components/BackupReminderBanner.vue';
 import DesktopPinEnrollment from '@/components/DesktopPinEnrollment.vue';
 import DesktopUpdateBanner from '@/components/DesktopUpdateBanner.vue';
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
@@ -18,6 +19,7 @@ if (usePage().props.auth.user) {
 <template>
     <DesktopPinEnrollment />
     <DesktopUpdateBanner />
+    <BackupReminderBanner />
     <AppHeaderLayout :breadcrumbs="breadcrumbs">
         <slot />
     </AppHeaderLayout>

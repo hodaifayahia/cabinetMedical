@@ -23,10 +23,13 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Tests\Support\RequiresSqlite;
 use Tests\TestCase;
 
 class OfflineRestoreCoreTest extends TestCase
 {
+    use RequiresSqlite;
+
     private const PASSPHRASE = 'offline restore recovery phrase 2026';
 
     /** @var list<string> */

@@ -6,13 +6,16 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Str;
 
 /**
- * HTTP transport for appointment sync.
+ * HTTP transport for appointment sync, and for reading the seat allowance the
+ * platform grants this installation's cabinet.
  *
- * This class does nothing but talk to the remote: no local writes, no decisions
- * about conflicts. That keeps the interesting logic — matching, versioning,
- * echo suppression — in classes that can be tested without a network.
+ * This class does nothing but talk to the remote: no local writes apart from
+ * forgetting a token the remote no longer accepts, no decisions about
+ * conflicts. That keeps the interesting logic — matching, versioning, echo
+ * suppression — in classes that can be tested without a network.
  */
 final class MobileSyncClient
 {
@@ -90,6 +93,24 @@ final class MobileSyncClient
     }
 
     /**
+     * The seat allowance the platform currently grants the token owner's
+     * cabinet. Read-only: the online service stays the authority.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws SyncTransportException
+     */
+    public function seatAllowance(): array
+    {
+        $body = $this->send(
+            fn (PendingRequest $request) => $request->get('/api/v1/cabinet/seats'),
+            'seats',
+        );
+
+        return is_array($body['data'] ?? null) ? $body['data'] : [];
+    }
+
+    /**
      * @param  callable(PendingRequest): Response  $call
      * @return array<string, mixed>
      *
@@ -125,9 +146,27 @@ final class MobileSyncClient
             );
         }
 
-        if ($response->unauthorized() || $response->forbidden()) {
+        if ($response->unauthorized()) {
+            // The token was revoked (unlinked elsewhere, password changed…) and
+            // will never work again. Forgetting it lets Configuration › Service
+            // en ligne offer to link again instead of reporting a live link.
+            $this->settings->forget();
+
             throw new SyncTransportException(
-                "L'autorisation de synchronisation a expiré. Reconnectez ce poste au service en ligne.",
+                "L'autorisation de synchronisation a expiré. Reliez ce poste à nouveau dans Configuration › Service en ligne.",
+            );
+        }
+
+        if ($response->forbidden()) {
+            // The token is valid but refused: cabinet suspended, licence
+            // expired, missing permission. The service says which in French;
+            // those denial messages carry no clinical detail.
+            $message = $response->json('message');
+
+            throw new SyncTransportException(
+                is_string($message) && trim($message) !== ''
+                    ? Str::limit(trim($message), 300)
+                    : sprintf("Le service en ligne a refusé l'accès de ce poste (%s, code 403).", $operation),
             );
         }
 

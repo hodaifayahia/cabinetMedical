@@ -183,20 +183,32 @@ The relay API origin is deployment configuration. Any installation credential is
 
 Suggested registered keys are:
 
-- `backups.automatic_enabled`: default `false` as an explicit clinic opt-in and
-  accepted only while the native scheduler is observed active;
-- `backups.schedule_time`: local clinic time;
+- `backups.schedule_times`: exactly three distinct local clinic times, stored
+  sorted, default `["10:00", "14:00", "18:00"]`. Local backups on a supervised
+  desktop are mandatory: there is no on/off setting (the former
+  `backups.automatic_enabled` and single `backups.schedule_time` rows are
+  ignored). A slot missed while the PC was off is made up once at restart;
 - `backups.verify_after_create`: enforced `true` and not user-editable;
 - `backups.encryption_enabled`: enforced `true` for portable or cloud archives and not user-editable;
 - `backups.retention_daily`: default `7`;
 - `backups.retention_weekly`: default `4`;
 - `backups.retention_monthly`: default `12`;
 - `backups.maximum_storage_bytes`: nullable safety ceiling; and
-- `backups.drive_auto_upload`: reserved, non-editable, and `false` until a supervised unattended secret policy exists.
+- `backups.drive_auto_upload`: the optional encrypted Drive copy of every local
+  backup, switched on only by the clinic's doctor from the Google Drive block
+  together with its passphrase (`backups.drive_auto_upload_passphrase`, sealed
+  with this installation's key).
+
+On a supervised desktop holding a single cabinet, that cabinet's doctor
+manages the local backups (times, retention, « Sauvegarder maintenant »,
+encrypted export) even though other installation-wide tools stay reserved to
+the platform. A brand-new desktop with no account yet can start from a
+`.msbackup` (plain or encrypted, from this or another PC) through
+« Restaurer une sauvegarde » on the first-run screen (`/desktop/restore-backup`).
 
 `MEDISMART_PREPARED_RESTORE_RETENTION_HOURS` is a deployment-owned lifecycle value rather than a clinic preference. It defaults to 168 hours and may be set only from 24 through 8760 hours. It governs cleanup of old, intact `ready_for_offline_apply` staging pairs that were never applied; recovery, rollback, pending-restart, linked, malformed, mismatched, and recent artifacts are always retained.
 
-The configuration screen exposes only values that currently change behavior. Mandatory verification and portable encryption are shown as enforced security properties rather than switches. Manual Google Drive uploads are queued and encrypted; an automatic Drive switch must not be exposed until the desktop vault can provide an unattended encryption secret without placing a recovery phrase in Laravel settings.
+The configuration screen exposes only values that currently change behavior. Mandatory local backups, verification and portable encryption are shown as enforced properties rather than switches. Google Drive uploads, manual or automatic, are queued and encrypted.
 
 The launcher owns the absolute default local destination. The UI may select only an approved writable destination and must validate free space and permissions. `backup_records` stores operation history; the archive manifest and checksums determine validity.
 

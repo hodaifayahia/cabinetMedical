@@ -34,6 +34,8 @@ final class LocalBackupRetentionManager
             weekly: $this->integerSetting(Setting::BACKUP_RETENTION_WEEKLY),
             monthly: $this->integerSetting(Setting::BACKUP_RETENTION_MONTHLY),
             maximumStorageBytes: $maximumStorageBytes,
+            // All of the latest day's scheduled backups stay available.
+            recent: BackupSchedule::SLOTS,
         );
     }
 

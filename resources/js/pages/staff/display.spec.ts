@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { staffPaginationLabel, staffRoleLabel } from '@/pages/staff/display';
+import {
+    staffPaginationLabel,
+    staffRoleLabel,
+    staffSeatsRemainingLabel,
+} from '@/pages/staff/display';
 
 describe('staff display labels', () => {
     // Roles consolidated to Doctor + Assistant; the six former names are now
@@ -44,5 +48,14 @@ describe('staff display labels', () => {
             '&laquo; Précédent',
         );
         expect(staffPaginationLabel('Next &raquo;')).toBe('Suivant &raquo;');
+    });
+
+    it.each([
+        [0, 'Aucun siège disponible'],
+        [-1, 'Aucun siège disponible'],
+        [1, '1 siège disponible'],
+        [3, '3 sièges disponibles'],
+    ])('describes %i remaining seat(s)', (remaining, expected) => {
+        expect(staffSeatsRemainingLabel(remaining)).toBe(expected);
     });
 });

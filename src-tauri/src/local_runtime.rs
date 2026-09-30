@@ -54,6 +54,18 @@ const LARAVEL_STORAGE_SUBDIRECTORIES: &[&str] = &[
     "logs",
 ];
 
+/// Google OAuth "Desktop app" client for the per-cabinet Drive backup, baked
+/// in at build time (validated by `build.rs`). A build without it still runs;
+/// Drive backup is then reported as unavailable instead of offered.
+const GOOGLE_OAUTH_CLIENT_ID: Option<&str> = option_env!("DRCLICK_GOOGLE_CLIENT_ID");
+
+/// Optional: Google treats an installed application's secret as
+/// non-confidential, and the Laravel side sends it only when present.
+const GOOGLE_OAUTH_CLIENT_SECRET: Option<&str> = option_env!("DRCLICK_GOOGLE_CLIENT_SECRET");
+
+/// The only scope the application accepts (`GoogleDriveBackup::DRIVE_SCOPE`).
+const GOOGLE_DRIVE_SCOPE: &str = "https://www.googleapis.com/auth/drive.file";
+
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
@@ -222,8 +234,11 @@ extension=zip
 
 memory_limit = 512M
 max_execution_time = 120
-post_max_size = 64M
-upload_max_filesize = 32M
+; A clinic backup (.msbackup) carries every scanned document, so starting a
+; new PC from one needs room for a large upload. PHP spools uploads to disk,
+; and the server only listens on the loopback address.
+post_max_size = 8G
+upload_max_filesize = 8G
 date.timezone = UTC
 
 ; The application makes its HTTP calls through curl. Disabling the URL stream
@@ -467,6 +482,42 @@ pub(crate) fn seed_database_if_absent(
     Ok(true)
 }
 
+/// A baked build setting, or `None` when the build left it unset or blank (an
+/// unconfigured GitHub secret arrives as an empty string).
+fn baked_setting(value: Option<&'static str>) -> Option<&'static str> {
+    value.map(str::trim).filter(|value| !value.is_empty())
+}
+
+/// Hand the baked Google OAuth client to every PHP child through this
+/// process's environment, which they all inherit. Like the other `set_var`
+/// calls in [`start`], it must run before any child is spawned.
+///
+/// A build without a client ID leaves the environment untouched, so a
+/// developer's own `GOOGLE_CLIENT_ID` keeps working under `tauri dev`.
+fn export_google_drive_client() {
+    let Some(client_id) = baked_setting(GOOGLE_OAUTH_CLIENT_ID) else {
+        return;
+    };
+
+    std::env::set_var("GOOGLE_CLIENT_ID", client_id);
+    std::env::set_var("GOOGLE_DRIVE_SCOPE", GOOGLE_DRIVE_SCOPE);
+
+    match baked_setting(GOOGLE_OAUTH_CLIENT_SECRET) {
+        Some(client_secret) => std::env::set_var("GOOGLE_CLIENT_SECRET", client_secret),
+        None => std::env::remove_var("GOOGLE_CLIENT_SECRET"),
+    }
+}
+
+/// Give Laravel the hosted origin already selected for this desktop build.
+/// The same origin is used by the connection screen and the signed updater,
+/// so the online-service linking form never ships with an empty address.
+fn export_online_service_url() {
+    std::env::set_var(
+        "MEDISMART_ONLINE_SERVICE_URL",
+        crate::CLOUD_SERVER_URL.trim_end_matches('/'),
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Supervision
 // ---------------------------------------------------------------------------
@@ -541,6 +592,14 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
         "APP_SERVICES_CACHE",
         paths.framework_cache.join("services.php"),
     );
+
+    // The web server, queue worker and scheduler all need the Google client:
+    // OAuth consent, the queued Drive upload and the scheduled Drive copy.
+    export_google_drive_client();
+
+    // Pre-fill Configuration › Service en ligne with this build's hosted
+    // control-plane origin (including any deployment-specific override).
+    export_online_service_url();
 
     let router_script = write_router_script(&paths.runtime)?;
 
@@ -997,5 +1056,16 @@ mod tests {
                 "storage/{relative} must exist"
             );
         }
+    }
+
+    #[test]
+    fn a_blank_baked_google_setting_counts_as_unconfigured() {
+        assert_eq!(baked_setting(None), None);
+        assert_eq!(baked_setting(Some("")), None);
+        assert_eq!(baked_setting(Some("   ")), None);
+        assert_eq!(
+            baked_setting(Some(" 123-abc.apps.googleusercontent.com ")),
+            Some("123-abc.apps.googleusercontent.com")
+        );
     }
 }

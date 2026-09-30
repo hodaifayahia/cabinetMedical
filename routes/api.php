@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AppointmentController;
 use App\Http\Controllers\Api\V1\AppointmentSyncController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CabinetController;
+use App\Http\Controllers\Api\V1\CabinetSeatController;
 use App\Http\Controllers\Api\V1\PatientController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +53,9 @@ Route::prefix('v1')->group(function (): void {
             Route::post('sync/appointments/push', [AppointmentSyncController::class, 'push']);
 
             Route::get('schedule', [ScheduleController::class, 'index']);
+
+            // A local desktop's copy of the seats granted in the admin panel.
+            Route::get('cabinet/seats', [CabinetSeatController::class, 'show']);
 
             // A local desktop's AI requests: charged to the token owner's
             // cabinet wallet, answered with the provider key held here only.

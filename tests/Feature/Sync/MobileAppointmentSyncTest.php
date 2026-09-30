@@ -368,6 +368,41 @@ class MobileAppointmentSyncTest extends TestCase
         $this->assertFalse($report->offline);
         $this->assertStringContainsString('autorisation', $report->error);
         $this->assertNotNull(SyncState::withoutCabinetScope()->sole()->last_error);
+        // A revoked token never works again: the desktop offers to link anew
+        // instead of reporting a live link.
+        $settings = app(MobileSyncSettings::class);
+        $this->assertNull($settings->token());
+        $this->assertFalse($settings->isConfigured());
+        $this->assertSame(self::ENDPOINT, $settings->endpoint());
+    }
+
+    public function test_a_refused_token_reports_the_services_reason_and_stays_linked(): void
+    {
+        $this->forcedStatus = 403;
+
+        $report = $this->synchronise();
+
+        $this->assertTrue($report->failed());
+        $this->assertSame('refused', $report->error);
+        $this->assertSame('test-token', app(MobileSyncSettings::class)->token());
+    }
+
+    public function test_a_link_made_for_another_cabinet_does_not_sync_this_one(): void
+    {
+        [$other] = $this->activeCabinetWithOwner('other-sync@example.com');
+        app(MobileSyncSettings::class)->configure(self::ENDPOINT, 'test-token', cabinetId: (int) $other->getKey());
+
+        $report = $this->synchronise();
+
+        $this->assertTrue($report->failed());
+        $this->assertStringContainsString('autre cabinet', (string) $report->error);
+        Http::assertNothingSent();
+        $this->assertSame(0, SyncState::withoutCabinetScope()->count());
+
+        // A terminal run with no --cabinet covers the linked cabinet only.
+        $this->app['auth']->forgetGuards();
+        $this->artisan('drclick:sync-appointments')->assertSuccessful();
+        $this->assertSame([(int) $other->getKey()], SyncState::withoutCabinetScope()->pluck('cabinet_id')->map(fn ($id): int => (int) $id)->all());
     }
 
     public function test_the_stored_error_never_contains_the_token(): void

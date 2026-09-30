@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { configurationNavForPermissions } from './configurationNav';
 
-const visibleLinks = (permissions: string[], manageRolePermissions = false) =>
-    configurationNavForPermissions(permissions, manageRolePermissions)
+const visibleLinks = (
+    permissions: string[],
+    manageRolePermissions = false,
+    linkOnlineService = false,
+) =>
+    configurationNavForPermissions(
+        permissions,
+        manageRolePermissions,
+        linkOnlineService,
+    )
         .flatMap((group) => group.links)
         .map((link) => link.href);
 
@@ -45,6 +53,18 @@ describe('configurationNavForPermissions', () => {
         expect(visibleLinks([], true)).toEqual([
             '/app/configuration/roles-permissions',
         ]);
+    });
+
+    it('shows the online service link only where the server allows linking', () => {
+        expect(visibleLinks([], false, true)).toEqual([
+            '/app/configuration/online-service',
+        ]);
+        expect(
+            visibleLinks(['configuration.connectivity.manage'], false, true),
+        ).toContain('/app/configuration/online-service');
+        expect(
+            visibleLinks(['configuration.connectivity.manage']),
+        ).not.toContain('/app/configuration/online-service');
     });
 
     it('keeps appointment configuration independent from clinic settings', () => {

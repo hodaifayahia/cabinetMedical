@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Configuration;
 
+use App\Backups\AutomaticDriveUploadPolicy;
+use App\Backups\LocalRestorePointRunner;
 use App\Http\Controllers\Controller;
 use App\Jobs\UploadBackupToGoogleDrive;
 use App\Models\ApplicationEvent;
@@ -10,16 +12,19 @@ use App\Models\BackupRecord;
 use App\Models\CabinetSetting;
 use App\Models\User;
 use App\Services\ApplicationHealthService;
+use App\Services\Backups\DriveBackupAuthority;
+use App\Services\Backups\DriveBackupEntitlement;
+use App\Services\Backups\LocalBackupAuthority;
 use App\Services\BackupService;
 use App\Services\GoogleDriveService;
 use App\Services\InstallationMaintenanceAccessService;
-use App\Services\LicenseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Vite;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
@@ -27,15 +32,56 @@ class BackupController extends Controller
 {
     private const LOCAL_BACKUP_FAILED = 'The local backup could not be created. Please try again.';
 
+    private const LOCAL_BACKUP_FAILED_FR = 'La sauvegarde n’a pas pu être créée sur ce PC. Réessayez; si le problème persiste, contactez le support Drclick.';
+
     private const LOCAL_RESTORE_FAILED = 'The backup could not be restored. Please contact support before trying again.';
 
     public function __construct(
         private readonly InstallationMaintenanceAccessService $installationMaintenance,
+        private readonly DriveBackupAuthority $driveAuthority,
+        private readonly DriveBackupEntitlement $driveEntitlement,
+        private readonly LocalBackupAuthority $localBackups,
     ) {}
+
+    /**
+     * Save a verified backup on this PC now, exactly like a scheduled one
+     * (retention, then the Drive copy when the doctor turned it on).
+     */
+    public function createNow(Request $request, LocalRestorePointRunner $runner): RedirectResponse
+    {
+        $this->localBackups->authorizeManage($request->user());
+
+        // A clinic's archive can take longer than the interpreter's default
+        // request limit, and stopping half way would only waste the work.
+        @set_time_limit(0);
+
+        try {
+            $result = $runner->run(LocalRestorePointRunner::TRIGGER_MANUAL, actor: $request->user());
+        } catch (Throwable) {
+            return back()->withErrors(['backup_now' => self::LOCAL_BACKUP_FAILED_FR]);
+        }
+
+        if ($result === null) {
+            return back()->withErrors([
+                'backup_now' => 'Une sauvegarde est déjà en cours sur ce poste. Réessayez dans quelques minutes.',
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => match ($result['drive']) {
+                'queued' => 'Sauvegarde enregistrée et vérifiée sur ce PC. Sa copie chiffrée part vers Google Drive.',
+                'failed' => 'Sauvegarde enregistrée et vérifiée sur ce PC, mais sa copie Google Drive n’a pas pu être préparée.',
+                default => 'Sauvegarde enregistrée et vérifiée sur ce PC.',
+            },
+        ]);
+
+        return back();
+    }
 
     public function local(Request $request, BackupService $backup): BinaryFileResponse|RedirectResponse
     {
-        $this->installationMaintenance->authorize($request->user());
+        $this->localBackups->authorizeManage($request->user());
 
         try {
             $file = $backup->createArchive($request->user());
@@ -52,7 +98,7 @@ class BackupController extends Controller
         Request $request,
         BackupService $backup,
     ): BinaryFileResponse|RedirectResponse {
-        $this->installationMaintenance->authorize($request->user());
+        $this->localBackups->authorizeManage($request->user());
 
         $data = $request->validate([
             'passphrase' => ['required', 'string', 'min:12', 'max:1024', 'confirmed'],
@@ -78,7 +124,8 @@ class BackupController extends Controller
         Request $request,
         GoogleDriveService $drive,
     ): JsonResponse {
-        $this->installationMaintenance->authorize($request->user());
+        // Connecting (or switching) the Google account is the doctor's call.
+        $this->driveAuthority->authorizeControl($request->user());
 
         $actor = $request->user();
 
@@ -140,12 +187,19 @@ class BackupController extends Controller
         );
     }
 
-    public function disconnectDrive(Request $request, GoogleDriveService $drive): RedirectResponse
-    {
-        $this->installationMaintenance->authorize($request->user());
+    public function disconnectDrive(
+        Request $request,
+        GoogleDriveService $drive,
+        AutomaticDriveUploadPolicy $automaticUpload,
+    ): RedirectResponse {
+        // Disconnecting only ever stops uploads, so it stays open to the
+        // doctor whose cabinet holds the grant, even on a shared machine.
+        $this->driveAuthority->authorizeRevoke($request->user());
 
         $cabinet = CabinetSetting::current();
         $revocationConfirmed = $drive->disconnect($cabinet);
+        // A later reconnection, possibly to another account, must be opted in again.
+        $automaticUpload->disable();
         AuditLog::record('backup.drive_disconnected', $cabinet, [
             'provider' => 'google_drive',
             'remote_revocation_confirmed' => $revocationConfirmed,
@@ -166,12 +220,11 @@ class BackupController extends Controller
     public function testDriveConnection(
         Request $request,
         GoogleDriveService $drive,
-        LicenseService $licenses,
     ): RedirectResponse {
-        $this->installationMaintenance->authorize($request->user());
+        $this->driveAuthority->authorizeManage($request->user());
 
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
-        abort_unless($licenses->featureEnabled('google_drive_backup'), 403);
+        abort_unless($this->driveEntitlement->granted(), 403);
 
         try {
             $drive->testConnection(CabinetSetting::current());
@@ -193,12 +246,11 @@ class BackupController extends Controller
     public function driveFiles(
         Request $request,
         GoogleDriveService $drive,
-        LicenseService $licenses,
     ): JsonResponse {
-        $this->installationMaintenance->authorize($request->user());
+        $this->driveAuthority->authorizeManage($request->user());
 
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
-        abort_unless($licenses->featureEnabled('google_drive_backup'), 403);
+        abort_unless($this->driveEntitlement->granted(), 403);
 
         try {
             $backups = $drive->listBackups(CabinetSetting::current());
@@ -218,12 +270,11 @@ class BackupController extends Controller
         Request $request,
         string $fileId,
         GoogleDriveService $drive,
-        LicenseService $licenses,
     ): BinaryFileResponse|RedirectResponse {
-        $this->installationMaintenance->authorize($request->user());
+        $this->driveAuthority->authorizeManage($request->user());
 
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
-        abort_unless($licenses->featureEnabled('google_drive_backup'), 403);
+        abort_unless($this->driveEntitlement->granted(), 403);
 
         try {
             $record = $drive->downloadVerifiedArchive(
@@ -253,12 +304,11 @@ class BackupController extends Controller
         Request $request,
         string $fileId,
         GoogleDriveService $drive,
-        LicenseService $licenses,
     ): RedirectResponse {
-        $this->installationMaintenance->authorize($request->user());
+        $this->driveAuthority->authorizeManage($request->user());
 
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
-        abort_unless($licenses->featureEnabled('google_drive_backup'), 403);
+        abort_unless($this->driveEntitlement->granted(), 403);
 
         try {
             $deleted = $drive->deleteManagedBackup(CabinetSetting::current(), $fileId);
@@ -322,12 +372,11 @@ class BackupController extends Controller
         BackupService $backup,
         ApplicationHealthService $health,
         GoogleDriveService $drive,
-        LicenseService $licenses,
     ): RedirectResponse {
-        $this->installationMaintenance->authorize($request->user());
+        $this->driveAuthority->authorizeManage($request->user());
 
         abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
-        abort_unless($licenses->featureEnabled('google_drive_backup'), 403, 'The active license does not include Google Drive backups.');
+        abort_unless($this->driveEntitlement->granted(), 403, 'The active license does not include Google Drive backups.');
 
         $runtimeStatus = $health->status();
         abort_unless(
@@ -391,11 +440,99 @@ class BackupController extends Controller
         return back()->with('status', 'La sauvegarde chiffrée a été ajoutée à la file d’envoi Google Drive.');
     }
 
+    /**
+     * Opt the scheduled local backups into an encrypted copy on the connected
+     * Drive, or change the passphrase of those copies. The copy is optional
+     * and only the clinic's doctor may turn it on. Turning it off deletes the
+     * stored passphrase; the local backups carry on either way.
+     */
+    public function updateDriveAutomaticUpload(
+        Request $request,
+        GoogleDriveService $drive,
+        AutomaticDriveUploadPolicy $automaticUpload,
+    ): RedirectResponse {
+        // Turning the copy off only ever stops uploads, so it stays open to
+        // the doctor whose cabinet holds the grant, even on a shared machine.
+        if ($request->boolean('enabled')) {
+            $this->driveAuthority->authorizeControl($request->user());
+        } else {
+            $this->driveAuthority->authorizeRevoke($request->user());
+        }
+
+        $request->validate(['enabled' => ['required', 'boolean']]);
+
+        if (! $request->boolean('enabled')) {
+            $automaticUpload->disable();
+            AuditLog::record('backup.drive_automatic_disabled', CabinetSetting::current(), [
+                'provider' => 'google_drive',
+            ], $request->user()?->getKey());
+            ApplicationEvent::record('BackupDriveAutomaticUploadDisabled', context: [
+                'provider' => 'google_drive',
+            ]);
+            Inertia::flash('toast', [
+                'type' => 'info',
+                'message' => 'Envoi automatique vers Google Drive désactivé. La phrase secrète enregistrée a été supprimée de ce poste.',
+            ]);
+
+            return back();
+        }
+
+        abort_unless($drive->isConfigured(), 503, 'Google Drive is not configured on this installation.');
+        abort_unless($this->driveEntitlement->granted(), 403, 'The active license does not include Google Drive backups.');
+        abort_unless(
+            extension_loaded('sodium')
+                && function_exists('sodium_crypto_secretstream_xchacha20poly1305_init_push'),
+            503,
+            'Encrypted backups are unavailable on this installation.',
+        );
+
+        $cabinet = CabinetSetting::current();
+        abort_unless(
+            ($drive->status($cabinet)['google_drive_connected'] ?? false) === true,
+            409,
+            'Connect a Google Drive account before enabling automatic uploads.',
+        );
+
+        $data = $request->validate([
+            'passphrase' => [
+                'required',
+                'string',
+                'min:'.AutomaticDriveUploadPolicy::MINIMUM_PASSPHRASE_LENGTH,
+                'max:1024',
+                'confirmed',
+            ],
+        ]);
+
+        $passphraseChanged = $automaticUpload->enabled();
+        $automaticUpload->enable($data['passphrase']);
+        // "rotated", not "passphrase_*": audit redaction blanks any key
+        // that names a secret.
+        AuditLog::record('backup.drive_automatic_enabled', $cabinet, [
+            'provider' => 'google_drive',
+            'format' => 'msbackup',
+            'format_version' => 2,
+            'rotated' => $passphraseChanged,
+        ], $request->user()?->getKey());
+        ApplicationEvent::record('BackupDriveAutomaticUploadEnabled', context: [
+            'provider' => 'google_drive',
+            'rotated' => $passphraseChanged,
+        ]);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $passphraseChanged
+                // Nothing already on Drive is re-encrypted.
+                ? 'Nouvelle phrase secrète enregistrée pour les prochains envois automatiques vers Google Drive. Les archives déjà envoyées restent chiffrées avec l’ancienne phrase secrète : conservez aussi l’ancienne pour pouvoir les restaurer.'
+                : 'Envoi automatique vers Google Drive activé. Conservez la phrase secrète en lieu sûr : elle sera demandée pour restaurer une archive Drive.',
+        ]);
+
+        return back();
+    }
+
     public function cancelDriveUpload(
         Request $request,
         string $backupRecordId,
     ): RedirectResponse {
-        $this->installationMaintenance->authorize($request->user());
+        $this->driveAuthority->authorizeManage($request->user());
 
         $backupRecord = BackupRecord::query()->findOrFail($backupRecordId);
 

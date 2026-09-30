@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Filament\Pages\AiConsumption;
 use App\Filament\Pages\SoftwareVersion;
 use App\Filament\Resources\ActivationKeys\ActivationKeyResource;
+use App\Filament\Resources\AiUsages\AiUsageResource;
 use App\Filament\Resources\Cabinets\CabinetResource;
 use App\Filament\Resources\DesktopDownloadLeads\DesktopDownloadLeadResource;
 use App\Filament\Resources\LandingSections\LandingSectionResource;
@@ -40,6 +42,8 @@ final class PlatformNavigationSmokeTest extends TestCase
         $urls = [
             '/admin',
             CabinetResource::getUrl('index'),
+            AiConsumption::getUrl(),
+            AiUsageResource::getUrl('index'),
             DesktopDownloadLeadResource::getUrl('index'),
             ActivationKeyResource::getUrl('index'),
             LicenseResource::getUrl('index'),
@@ -64,6 +68,9 @@ final class PlatformNavigationSmokeTest extends TestCase
 
         foreach ([
             'Clients',
+            'Intelligence artificielle',
+            'Consommation IA',
+            'Journal des crédits',
             'Licences &amp; activations',
             'Clés d’activation',
             'Utilisateurs',

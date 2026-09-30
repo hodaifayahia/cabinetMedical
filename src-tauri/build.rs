@@ -38,6 +38,8 @@ fn main() {
     println!("cargo:rerun-if-env-changed=TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
 
     println!("cargo:rerun-if-env-changed=DRCLICK_CLOUD_SERVER_URL");
+    println!("cargo:rerun-if-env-changed=DRCLICK_GOOGLE_CLIENT_ID");
+    println!("cargo:rerun-if-env-changed=DRCLICK_GOOGLE_CLIENT_SECRET");
 
     println!("cargo:rerun-if-changed=resources");
 
@@ -46,6 +48,10 @@ fn main() {
     // silently points at a typo'd host is as broken as a release one, and
     // `lib.rs` trusts this gate rather than re-checking at runtime.
     configure_cloud_server_url();
+
+    // Optional on every profile: without it the build works and Google Drive
+    // backup simply stays unavailable (the application says so).
+    configure_google_drive_client();
 
     if env::var("PROFILE").as_deref() != Ok("release") {
         return;
@@ -110,6 +116,57 @@ fn configure_cloud_server_url() {
     // Re-export the parsed form so the constant always carries a trailing
     // slash; NavigationPolicy and runtime-mode resolution compare origins.
     println!("cargo:rustc-env=DRCLICK_CLOUD_SERVER_URL={}", url.as_str());
+}
+
+/// Validate the Google OAuth "Desktop app" client used by the per-cabinet Drive
+/// backup and re-export it trimmed for `local_runtime.rs`.
+///
+/// Google documents an installed application's client secret as
+/// non-confidential, so both values are baked into the binary. Unset or empty
+/// leaves Drive backup unconfigured; a malformed value fails the build rather
+/// than shipping a "Connect Google Drive" button Google would reject.
+fn configure_google_drive_client() {
+    let client_secret = optional_environment("DRCLICK_GOOGLE_CLIENT_SECRET");
+    let Some(client_id) = optional_environment("DRCLICK_GOOGLE_CLIENT_ID") else {
+        if client_secret.is_some() {
+            println!(
+                "cargo:warning=DRCLICK_GOOGLE_CLIENT_SECRET is set without \
+                 DRCLICK_GOOGLE_CLIENT_ID: Google Drive backup stays unconfigured."
+            );
+        }
+        return;
+    };
+
+    if client_id.len() > 255
+        || !client_id.ends_with(".apps.googleusercontent.com")
+        || !client_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_'))
+    {
+        panic!(
+            "DRCLICK_GOOGLE_CLIENT_ID must be a Google OAuth client ID ending in \
+             .apps.googleusercontent.com"
+        );
+    }
+
+    println!("cargo:rustc-env=DRCLICK_GOOGLE_CLIENT_ID={client_id}");
+
+    if let Some(client_secret) = client_secret {
+        if client_secret.len() > 255 || !client_secret.bytes().all(|byte| byte.is_ascii_graphic()) {
+            panic!("DRCLICK_GOOGLE_CLIENT_SECRET must be a single-line Google OAuth client secret");
+        }
+
+        println!("cargo:rustc-env=DRCLICK_GOOGLE_CLIENT_SECRET={client_secret}");
+    }
+}
+
+/// A trimmed, non-empty build variable. An unset GitHub secret arrives as an
+/// empty string, which must mean "absent" rather than "configured".
+fn optional_environment(name: &str) -> Option<String> {
+    env::var(name)
+        .ok()
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
 }
 
 /// Fail the build unless the read-only application payload has been staged.
