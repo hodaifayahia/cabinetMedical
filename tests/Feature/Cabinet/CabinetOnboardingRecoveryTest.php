@@ -6,14 +6,15 @@ use App\Enums\CabinetStatus;
 use App\Enums\RoleName;
 use App\Models\Cabinet;
 use App\Models\User;
+use Illuminate\Database\Connection;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
+use PDOException;
 use ReflectionProperty;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -139,8 +140,20 @@ class CabinetOnboardingRecoveryTest extends TestCase
         Exceptions::fake();
 
         // Break provisioning part-way through, after the cabinet and owner rows
-        // have been written but before the transaction commits.
-        Schema::drop('doctor_schedules');
+        // have been written but before the transaction commits: every statement
+        // on doctor_schedules fails as if the table were missing. Dropping the
+        // table is not portable, because MariaDB commits DDL implicitly, which
+        // ends RefreshDatabase's transaction and keeps the rows it should undo.
+        DB::connection()->beforeExecuting(function (string $query, array $bindings, Connection $connection): void {
+            if (str_contains($query, 'doctor_schedules')) {
+                throw new QueryException(
+                    $connection->getName(),
+                    $query,
+                    $bindings,
+                    new PDOException('Forced provisioning failure.'),
+                );
+            }
+        });
 
         $this->from(route('register'))
             ->post(route('register.store'), $this->registrationPayload())

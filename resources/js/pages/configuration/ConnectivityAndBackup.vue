@@ -131,6 +131,13 @@ const driveForm = useForm({
     passphrase: '',
     passphrase_confirmation: '',
 });
+const automaticDriveForm = useForm({
+    enabled: true,
+    passphrase: '',
+    passphrase_confirmation: '',
+});
+const automaticDriveDisabling = ref(false);
+const backupNowProcessing = ref(false);
 const licenseForm = useForm({ serial: '' });
 const restoreForm = useForm<{ backup: File | null }>({ backup: null });
 const offlineRestoreFileInput = ref<HTMLInputElement | null>(null);
@@ -466,6 +473,54 @@ const driveCancelError = computed(() => {
 
     return errors?.drive_cancel;
 });
+const backupNowError = computed(() => {
+    const errors = (
+        page.props as { errors?: Record<string, string | undefined> }
+    ).errors;
+
+    return errors?.backup_now;
+});
+const backupSlotLabels = ['Matin', 'Midi', 'Soir'] as const;
+const formatBackupDateTime = (value: string | null): string | null => {
+    if (!value) {
+        return null;
+    }
+
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+        ? null
+        : date.toLocaleString('fr-FR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+          });
+};
+const nextBackupLabel = computed(() =>
+    formatBackupDateTime(props.backupSchedule.next_at),
+);
+const lastRestorePointLabel = computed(() =>
+    formatBackupDateTime(
+        props.backupSchedule.last_restore_point?.completed_at ?? null,
+    ),
+);
+const copiedBackupLocation = ref(false);
+const copyBackupLocation = async () => {
+    if (!props.backupSchedule.location) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(props.backupSchedule.location);
+        copiedBackupLocation.value = true;
+        window.setTimeout(() => (copiedBackupLocation.value = false), 2000);
+    } catch {
+        copiedBackupLocation.value = false;
+    }
+};
 
 const individualLimitMiB = computed<string | number>({
     get: () => form.uploads.maximum_individual_bytes / mebibyte,
@@ -537,9 +592,24 @@ const canSaveDrive = computed(
         driveForm.passphrase === driveForm.passphrase_confirmation &&
         browserOnline.value,
 );
+// Setting or changing the passphrase of the automatic copies is the doctor's
+// call (the server enforces it too).
+const canEnableAutomaticDrive = computed(
+    () =>
+        props.permissions.control_drive &&
+        props.permissions.sensitive_actions_confirmed &&
+        props.capabilities.google_drive.available &&
+        props.backup.google_drive_connected &&
+        automaticDriveForm.passphrase.length >= 12 &&
+        automaticDriveForm.passphrase.length <= 1024 &&
+        automaticDriveForm.passphrase ===
+            automaticDriveForm.passphrase_confirmation &&
+        !automaticDriveForm.processing &&
+        !automaticDriveDisabling.value,
+);
 const canConnectDrive = computed(
     () =>
-        props.permissions.manage_drive &&
+        props.permissions.control_drive &&
         props.permissions.sensitive_actions_confirmed &&
         props.capabilities.google_drive.available &&
         props.backup.google_drive_configured &&
@@ -806,6 +876,11 @@ const refreshRuntimeState = () => {
             'pendingUploads',
             'backup',
             'backupHistory',
+            // A backup or Drive connection finished meanwhile must also
+            // clear the reminder banner without a full navigation.
+            'driveAutomation',
+            'backupSchedule',
+            'backupReminder',
         ],
         onFinish: () => {
             runtimeRefreshInFlight.value = false;
@@ -1358,6 +1433,58 @@ const saveToDrive = () => {
             driveForm.reset('passphrase', 'passphrase_confirmation'),
     });
 };
+const enableAutomaticDrive = () => {
+    if (!canEnableAutomaticDrive.value) {
+        return;
+    }
+
+    automaticDriveForm.enabled = true;
+    automaticDriveForm.put('/app/configuration/backup/drive/automatic', {
+        preserveScroll: true,
+        onFinish: () =>
+            automaticDriveForm.reset('passphrase', 'passphrase_confirmation'),
+    });
+};
+// Saves a verified archive on this PC now; the server also queues its Drive
+// copy when the doctor turned that on.
+const createBackupNow = () => {
+    if (!props.permissions.manage_backups || backupNowProcessing.value) {
+        return;
+    }
+
+    router.post(
+        '/app/configuration/backup/now',
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => (backupNowProcessing.value = true),
+            onFinish: () => (backupNowProcessing.value = false),
+        },
+    );
+};
+const disableAutomaticDrive = () => {
+    if (
+        !props.permissions.control_drive ||
+        !props.permissions.sensitive_actions_confirmed ||
+        automaticDriveForm.processing ||
+        automaticDriveDisabling.value ||
+        !window.confirm(
+            'Désactiver l’envoi automatique vers Google Drive ? La phrase secrète enregistrée sera supprimée de ce poste ; les archives déjà présentes sur Drive sont conservées.',
+        )
+    ) {
+        return;
+    }
+
+    router.put(
+        '/app/configuration/backup/drive/automatic',
+        { enabled: false },
+        {
+            preserveScroll: true,
+            onStart: () => (automaticDriveDisabling.value = true),
+            onFinish: () => (automaticDriveDisabling.value = false),
+        },
+    );
+};
 const connectDrive = async () => {
     if (!canConnectDrive.value) {
         return;
@@ -1414,7 +1541,7 @@ const connectDrive = async () => {
 };
 const disconnectDrive = () => {
     if (
-        !props.permissions.manage_drive ||
+        !props.permissions.control_drive ||
         !props.permissions.sensitive_actions_confirmed ||
         !window.confirm(
             'Déconnecter Google Drive ? Les identifiants OAuth locaux seront supprimés et les sauvegardes déjà présentes sur Drive seront conservées.',
@@ -2066,18 +2193,27 @@ const testDriveConnection = () => {
                 </label>
             </section>
 
-            <section v-if="permissions.manage_backups" class="med-panel p-6">
+            <section
+                v-if="permissions.manage_backups"
+                id="backup-schedule"
+                class="med-panel scroll-mt-24 p-6"
+            >
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h2
                             class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
                         >
                             <DatabaseBackup class="size-5 text-emerald-600" />
-                            Politique de sauvegarde
+                            Sauvegardes sur ce PC
+                            <span
+                                class="rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+                            >
+                                Obligatoire
+                            </span>
                         </h2>
                         <p class="mt-1 text-sm text-muted-foreground">
-                            Planification, vérification et rétention des
-                            archives gérées.
+                            Trois sauvegardes vérifiées par jour, enregistrées
+                            sur ce PC. Elles ne peuvent pas être désactivées.
                         </p>
                     </div>
                     <span
@@ -2086,7 +2222,7 @@ const testDriveConnection = () => {
                     >
                         {{
                             capabilities.automatic_backups.available
-                                ? 'Planificateur disponible'
+                                ? 'Planificateur actif'
                                 : 'Planificateur indisponible'
                         }}
                     </span>
@@ -2104,57 +2240,43 @@ const testDriveConnection = () => {
                 </p>
 
                 <div class="mt-6 grid gap-5 lg:grid-cols-2">
-                    <label
-                        class="flex items-start gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700"
-                        :class="
-                            permissions.manage_backups &&
-                            capabilities.automatic_backups.available
-                                ? 'cursor-pointer hover:border-emerald-300'
-                                : 'opacity-60'
-                        "
-                    >
-                        <Checkbox
-                            :model-value="form.backups.automatic_enabled"
-                            :disabled="
-                                !permissions.manage_backups ||
-                                !capabilities.automatic_backups.available
-                            "
-                            @update:model-value="
-                                (value) =>
-                                    (form.backups.automatic_enabled =
-                                        value === true)
-                            "
-                        />
-                        <span>
-                            <span class="block text-sm font-semibold">
-                                Sauvegarde automatique
-                            </span>
-                            <span
-                                class="mt-1 block text-xs text-muted-foreground"
+                    <fieldset class="grid gap-3 lg:col-span-2">
+                        <legend class="text-sm font-semibold">
+                            Heures des sauvegardes
+                        </legend>
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            <div
+                                v-for="(label, slot) in backupSlotLabels"
+                                :key="label"
+                                class="grid gap-2"
                             >
-                                Crée une archive à l’heure définie.
-                            </span>
-                        </span>
-                    </label>
-                    <div class="grid gap-2">
-                        <Label for="backup-time">Heure quotidienne</Label>
-                        <TimeSelect24
-                            id="backup-time"
-                            v-model="form.backups.schedule_time"
-                            :step="15"
-                            :disabled="
-                                !permissions.manage_backups ||
-                                !capabilities.automatic_backups.available ||
-                                !form.backups.automatic_enabled
-                            "
-                        />
+                                <Label :for="`backup-time-${slot}`">
+                                    {{ label }}
+                                </Label>
+                                <TimeSelect24
+                                    :id="`backup-time-${slot}`"
+                                    v-model="form.backups.schedule_times[slot]"
+                                    :step="15"
+                                    :disabled="!permissions.manage_backups"
+                                />
+                                <InputError
+                                    :message="
+                                        fieldError(
+                                            `backups.schedule_times.${slot}`,
+                                        )
+                                    "
+                                />
+                            </div>
+                        </div>
                         <p class="text-xs text-muted-foreground">
-                            Heure locale du cabinet.
+                            Heure locale du cabinet. Si le PC est éteint à
+                            l’heure prévue, la sauvegarde est faite dès son
+                            redémarrage.
                         </p>
                         <InputError
-                            :message="fieldError('backups.schedule_time')"
+                            :message="fieldError('backups.schedule_times')"
                         />
-                    </div>
+                    </fieldset>
                     <article
                         class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20"
                     >
@@ -3303,7 +3425,8 @@ const testDriveConnection = () => {
 
         <section
             v-if="permissions.manage_backups || permissions.manage_drive"
-            class="med-panel p-6"
+            id="backup-now"
+            class="med-panel scroll-mt-24 p-6"
         >
             <div>
                 <h2
@@ -3313,10 +3436,95 @@ const testDriveConnection = () => {
                     Sauvegarde immédiate vérifiée
                 </h2>
                 <p class="mt-1 text-sm text-muted-foreground">
-                    Créez une archive versionnée du cabinet et contrôlez son
-                    intégrité avant le téléchargement.
+                    Sauvegardez le cabinet sur ce PC à tout moment, ou exportez
+                    une archive chiffrée vers une clé USB.
                 </p>
             </div>
+
+            <article
+                v-if="permissions.manage_backups"
+                class="mt-6 flex flex-wrap items-start justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-900 dark:bg-emerald-950/20"
+            >
+                <div class="min-w-0 flex-1 basis-72 space-y-2">
+                    <h3 class="flex items-center gap-2 font-semibold">
+                        <DatabaseBackup class="size-4 text-emerald-600" />
+                        Sauvegarder maintenant sur ce PC
+                    </h3>
+                    <p class="text-sm text-muted-foreground">
+                        Crée et vérifie une sauvegarde complète, comme celles
+                        des heures prévues ({{
+                            backupSchedule.times.join(', ')
+                        }}).
+                        <template v-if="driveAutomation.enabled">
+                            Sa copie chiffrée part ensuite vers Google Drive.
+                        </template>
+                    </p>
+                    <dl class="grid gap-1 text-sm">
+                        <div class="flex flex-wrap gap-x-2">
+                            <dt class="text-muted-foreground">
+                                Dernière sauvegarde sur ce PC :
+                            </dt>
+                            <dd class="font-medium">
+                                {{ lastRestorePointLabel ?? 'aucune' }}
+                            </dd>
+                        </div>
+                        <div
+                            v-if="nextBackupLabel"
+                            class="flex flex-wrap gap-x-2"
+                        >
+                            <dt class="text-muted-foreground">
+                                Prochaine sauvegarde :
+                            </dt>
+                            <dd class="font-medium">{{ nextBackupLabel }}</dd>
+                        </div>
+                        <div
+                            v-if="backupSchedule.location"
+                            class="flex flex-wrap items-center gap-x-2"
+                        >
+                            <dt class="text-muted-foreground">Dossier :</dt>
+                            <dd
+                                class="min-w-0 font-mono text-xs break-all"
+                                :title="backupSchedule.location"
+                            >
+                                {{ backupSchedule.location }}
+                            </dd>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-300"
+                                @click="copyBackupLocation"
+                            >
+                                <Copy class="size-3" />
+                                {{ copiedBackupLocation ? 'Copié' : 'Copier' }}
+                            </button>
+                        </div>
+                    </dl>
+                    <p class="text-xs text-muted-foreground">
+                        Nouveau PC ou réinstallation : au premier lancement de
+                        Drclick, choisissez « Restaurer une sauvegarde » et
+                        sélectionnez un fichier .msbackup.
+                    </p>
+                    <InputError :message="backupNowError" />
+                </div>
+                <Button
+                    type="button"
+                    :disabled="
+                        backupNowProcessing ||
+                        !capabilities.local_backups.available
+                    "
+                    @click="createBackupNow"
+                >
+                    <LoaderCircle
+                        v-if="backupNowProcessing"
+                        class="size-4 animate-spin"
+                    />
+                    <Save v-else class="size-4" />
+                    {{
+                        backupNowProcessing
+                            ? 'Sauvegarde en cours…'
+                            : 'Sauvegarder maintenant'
+                    }}
+                </Button>
+            </article>
 
             <div class="mt-6 grid gap-4 lg:grid-cols-2">
                 <article
@@ -3494,12 +3702,18 @@ const testDriveConnection = () => {
 
                 <article
                     v-if="permissions.manage_drive"
-                    class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-900 dark:bg-emerald-950/20"
+                    id="google-drive"
+                    class="scroll-mt-24 rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-900 dark:bg-emerald-950/20"
                 >
                     <div class="flex items-center justify-between gap-3">
                         <h3 class="flex items-center gap-2 font-semibold">
                             <Cloud class="size-4 text-emerald-600" />
                             Google Drive
+                            <span
+                                class="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                            >
+                                Facultatif
+                            </span>
                         </h3>
                         <span class="text-xs font-semibold">
                             {{
@@ -3509,6 +3723,23 @@ const testDriveConnection = () => {
                             }}
                         </span>
                     </div>
+                    <p
+                        v-if="!backup.google_drive_connected"
+                        class="mt-2 text-xs text-muted-foreground"
+                    >
+                        Les sauvegardes restent toujours enregistrées sur ce PC.
+                        Connectez le Google Drive du cabinet pour en garder en
+                        plus une copie chiffrée hors du cabinet (vol, panne ou
+                        incendie du PC).
+                    </p>
+                    <p
+                        v-if="!permissions.control_drive"
+                        class="mt-2 text-xs text-muted-foreground"
+                    >
+                        Seul le médecin du cabinet peut connecter, changer ou
+                        déconnecter le compte Google Drive et définir la phrase
+                        secrète des envois automatiques.
+                    </p>
                     <p class="mt-2 text-sm text-muted-foreground">
                         {{
                             !capabilities.google_drive.available
@@ -3524,6 +3755,7 @@ const testDriveConnection = () => {
                     </p>
                     <Button
                         v-if="
+                            permissions.control_drive &&
                             capabilities.google_drive.available &&
                             backup.google_drive_configured &&
                             !backup.google_drive_connected
@@ -3559,7 +3791,10 @@ const testDriveConnection = () => {
                         {{ driveConnectError }}
                     </p>
                     <Button
-                        v-if="backup.google_drive_connected"
+                        v-if="
+                            permissions.control_drive &&
+                            backup.google_drive_connected
+                        "
                         type="button"
                         variant="outline"
                         size="sm"
@@ -3634,6 +3869,150 @@ const testDriveConnection = () => {
                             {{ formatDate(backup.verification_checked_at) }}
                         </template>
                     </p>
+                    <div
+                        v-if="backup.google_drive_connected"
+                        class="mt-4 space-y-3 rounded-lg border border-emerald-200 bg-white/70 p-4 dark:border-emerald-900 dark:bg-slate-900/40"
+                    >
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-sm font-semibold">
+                                Copie automatique vers Drive
+                            </p>
+                            <span
+                                class="rounded-full border px-2 py-0.5 text-xs font-semibold"
+                                :class="
+                                    driveAutomation.enabled
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
+                                        : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300'
+                                "
+                            >
+                                {{
+                                    driveAutomation.enabled
+                                        ? 'Activé'
+                                        : 'Désactivé'
+                                }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            {{
+                                driveAutomation.enabled
+                                    ? 'Chacune des trois sauvegardes du jour, et chaque sauvegarde faite à la main, est aussi chiffrée puis envoyée vers ce Drive. La sauvegarde sur ce PC reste valable même si l’envoi échoue.'
+                                    : 'Facultatif : activez-le pour qu’une copie chiffrée de chaque sauvegarde parte aussi vers ce Drive.'
+                            }}
+                        </p>
+                        <form
+                            v-if="permissions.control_drive"
+                            class="space-y-3"
+                            @submit.prevent="enableAutomaticDrive"
+                        >
+                            <div class="grid gap-2">
+                                <Label for="drive-automatic-passphrase">
+                                    {{
+                                        driveAutomation.enabled
+                                            ? 'Nouvelle phrase secrète des envois automatiques'
+                                            : 'Phrase secrète des envois automatiques'
+                                    }}
+                                </Label>
+                                <Input
+                                    id="drive-automatic-passphrase"
+                                    v-model="automaticDriveForm.passphrase"
+                                    type="password"
+                                    minlength="12"
+                                    maxlength="1024"
+                                    autocomplete="new-password"
+                                    :disabled="
+                                        !capabilities.google_drive.available ||
+                                        !permissions.sensitive_actions_confirmed
+                                    "
+                                    required
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label
+                                    for="drive-automatic-passphrase-confirmation"
+                                >
+                                    Confirmer la phrase secrète
+                                </Label>
+                                <Input
+                                    id="drive-automatic-passphrase-confirmation"
+                                    v-model="
+                                        automaticDriveForm.passphrase_confirmation
+                                    "
+                                    type="password"
+                                    minlength="12"
+                                    maxlength="1024"
+                                    autocomplete="new-password"
+                                    :disabled="
+                                        !capabilities.google_drive.available ||
+                                        !permissions.sensitive_actions_confirmed
+                                    "
+                                    required
+                                />
+                                <InputError
+                                    :message="
+                                        automaticDriveForm.errors.passphrase
+                                    "
+                                />
+                                <InputError
+                                    :message="
+                                        automaticDriveForm.errors
+                                            .passphrase_confirmation
+                                    "
+                                />
+                            </div>
+                            <p
+                                class="text-xs text-amber-800 dark:text-amber-300"
+                            >
+                                Cette phrase secrète est conservée chiffrée sur
+                                ce poste pour chiffrer les envois sans votre
+                                intervention ; elle n’est jamais affichée ni
+                                envoyée à Google. Notez-la ailleurs : elle sera
+                                demandée pour restaurer une archive Drive.
+                                <template v-if="driveAutomation.enabled">
+                                    Une nouvelle phrase secrète ne s’applique
+                                    qu’aux prochains envois : gardez aussi
+                                    l’ancienne, les archives déjà envoyées en
+                                    ont besoin.
+                                </template>
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    :disabled="!canEnableAutomaticDrive"
+                                >
+                                    <LoaderCircle
+                                        v-if="automaticDriveForm.processing"
+                                        class="size-4 animate-spin"
+                                    />
+                                    <ShieldCheck v-else class="size-4" />
+                                    {{
+                                        driveAutomation.enabled
+                                            ? 'Changer la phrase secrète'
+                                            : 'Activer l’envoi automatique'
+                                    }}
+                                </Button>
+                                <Button
+                                    v-if="driveAutomation.enabled"
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    :disabled="
+                                        !permissions.sensitive_actions_confirmed ||
+                                        automaticDriveDisabling ||
+                                        automaticDriveForm.processing
+                                    "
+                                    @click="disableAutomaticDrive"
+                                >
+                                    <LoaderCircle
+                                        v-if="automaticDriveDisabling"
+                                        class="size-4 animate-spin"
+                                    />
+                                    <CloudOff v-else class="size-4" />
+                                    Désactiver l’envoi automatique
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
                     <form
                         v-if="backup.google_drive_connected"
                         class="mt-4 space-y-3"

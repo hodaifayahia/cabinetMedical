@@ -63,6 +63,13 @@ class AdminCabinetResource extends JsonResource
                 'patients' => $this->counts['patients'],
                 'appointments' => $this->counts['appointments'],
             ],
+            // Every account attached to the clinic, pending ones included,
+            // occupies a seat; "staff" above is that same count.
+            'seats' => [
+                'limit' => $this->resource->seatLimit(),
+                'used' => $this->counts['staff'],
+                'price' => $this->resource->seat_price,
+            ],
             'license' => $license === null ? null : [
                 'plan' => $license->plan?->value,
                 'plan_label' => $license->typeLabel(),

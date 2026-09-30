@@ -1,6 +1,6 @@
 import type { Auth, SessionLockState } from '@/types/auth';
 import type { Cabinet } from '@/types/cabinet';
-import type { DesktopDownload } from '@/types/desktop';
+import type { BackupReminder, DesktopDownload } from '@/types/desktop';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -22,6 +22,7 @@ declare module '@inertiajs/core' {
             cabinet: Cabinet;
             auth: Auth;
             desktopDownload: DesktopDownload;
+            backupReminder?: BackupReminder | null;
             sessionLock: SessionLockState | null;
             sidebarOpen: boolean;
             [key: string]: unknown;

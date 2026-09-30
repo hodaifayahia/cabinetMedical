@@ -30,6 +30,8 @@ Retention counts select distinct UTC buckets:
 - weekly: ISO-8601 UTC week beginning Monday;
 - monthly: UTC calendar month.
 
+A `recent` count keeps the newest N logical backups whatever their day. The desktop schedule makes three backups a day, so the configured policy sets it to 3: the morning and midday archives stay until newer ones replace them, instead of losing that day's bucket to the evening copy.
+
 The keep set is the union of the enabled tiers. The newest verified logical backup is always kept, even when all tier counts are zero. Equal timestamps use the validated managed ID as a stable tie-breaker. Exact duplicate inputs collapse; ambiguous reuse of an identifier is protected.
 
 An optional maximum-storage byte limit is applied after bucket selection. Current storage is verified eligible bytes plus protected physical bytes. If the projected keep set exceeds the limit, retained files are changed to candidates from oldest to newest. The newest backup is never selected. Protected files are never selected. Therefore `maximum_storage_satisfied` can remain false when protected storage plus the newest verified backup alone exceed the limit; this is an explicit safe outcome, not permission to widen cleanup.

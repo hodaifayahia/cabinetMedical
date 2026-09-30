@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
+    Armchair,
     Building2,
     Pencil,
     Plus,
+    RefreshCw,
     Search,
     ShieldCheck,
     Trash2,
@@ -11,7 +13,8 @@ import {
     UserPlus,
     Users,
 } from '@lucide/vue';
-import { reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { toast } from 'vue-sonner';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +36,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { staffPaginationLabel, staffRoleLabel } from '@/pages/staff/display';
+import { isHttpError, postJson } from '@/lib/http';
+import {
+    staffPaginationLabel,
+    staffRoleLabel,
+    staffSeatsRemainingLabel,
+} from '@/pages/staff/display';
+import type { StaffSeats } from '@/pages/staff/display';
 import type { ConfigurationCapability } from '@/types';
 
 type StaffMember = {
@@ -67,6 +76,7 @@ const props = defineProps<{
     cabinet: { id: number; name: string };
     currentUserId: number;
     multiUserCapability: ConfigurationCapability;
+    seats: StaffSeats | null;
 }>();
 
 defineOptions({
@@ -96,6 +106,71 @@ const initials = (name: string): string =>
         .map((part) => part.charAt(0).toUpperCase())
         .join('') || '?';
 
+// Seats can change without a page visit (see checkSeatsOnline), so the page
+// keeps its own copy and takes the server's again after every reload.
+const seatState = ref<StaffSeats | null>(props.seats);
+watch(
+    () => props.seats,
+    (seats) => {
+        seatState.value = seats;
+    },
+);
+
+const seatsFull = computed(
+    () => seatState.value !== null && seatState.value.remaining <= 0,
+);
+const canAddUser = computed(
+    () => props.multiUserCapability.available && !seatsFull.value,
+);
+const checkingSeats = ref(false);
+const page = usePage();
+const canLinkOnlineService = computed(
+    () => page.props.auth.user?.can.linkOnlineService ?? false,
+);
+
+type SeatCheckResult = { changed: boolean; message: string; seats: StaffSeats };
+
+/**
+ * Ask the online service how many seats the platform grants now. The quiet
+ * run happens by itself when the page opens full and only speaks up when
+ * new seats have arrived; offline, it says nothing.
+ */
+const checkSeatsOnline = async (quiet = false) => {
+    if (checkingSeats.value) {
+        return;
+    }
+
+    checkingSeats.value = true;
+
+    try {
+        const result = await postJson<SeatCheckResult>(
+            '/app/staff/seats/refresh',
+            {},
+        );
+        seatState.value = result.seats;
+
+        if (!quiet || result.changed) {
+            toast.success(result.message);
+        }
+    } catch (error) {
+        if (!quiet) {
+            toast.error(
+                isHttpError(error)
+                    ? error.message
+                    : 'Vérification impossible. Réessayez.',
+            );
+        }
+    } finally {
+        checkingSeats.value = false;
+    }
+};
+
+onMounted(() => {
+    if (seatsFull.value && seatState.value?.canCheckOnline) {
+        void checkSeatsOnline(true);
+    }
+});
+
 const applyFilters = () => {
     router.get(
         '/app/staff',
@@ -108,7 +183,7 @@ const applyFilters = () => {
 };
 
 const openCreate = () => {
-    if (!props.multiUserCapability.available) {
+    if (!canAddUser.value) {
         return;
     }
 
@@ -177,10 +252,7 @@ const removeUser = (member: StaffMember) => {
             description="Ajoutez les utilisateurs du cabinet, attribuez leurs fonctions et contrôlez leur accès."
         >
             <template #actions>
-                <Button
-                    :disabled="!multiUserCapability.available"
-                    @click="openCreate"
-                >
+                <Button :disabled="!canAddUser" @click="openCreate">
                     <UserPlus class="size-4" />
                     Ajouter un utilisateur
                 </Button>
@@ -194,7 +266,81 @@ const removeUser = (member: StaffMember) => {
             {{ multiUserCapability.reason }}
         </div>
 
-        <section class="grid gap-4 sm:grid-cols-3">
+        <div
+            v-else-if="seatState && seatsFull"
+            class="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+            <p>
+                Tous les sièges de votre cabinet sont utilisés ({{
+                    seatState.used
+                }}
+                / {{ seatState.limit }}). Pour ajouter un utilisateur, demandez
+                des sièges supplémentaires à l’administration Drclick.
+                <template v-if="seatState.canCheckOnline">
+                    Ils s’appliquent ici dès que ce poste est connecté à
+                    Internet.
+                </template>
+                <template v-else-if="canLinkOnlineService">
+                    Pour les recevoir sur ce poste,
+                    <Link
+                        href="/app/configuration/online-service"
+                        class="font-medium underline underline-offset-4"
+                        >reliez-le au service en ligne</Link
+                    >.
+                </template>
+            </p>
+            <Button
+                v-if="seatState.canCheckOnline"
+                variant="outline"
+                size="sm"
+                class="shrink-0"
+                :disabled="checkingSeats"
+                @click="checkSeatsOnline()"
+            >
+                <RefreshCw
+                    class="size-4"
+                    :class="{ 'animate-spin': checkingSeats }"
+                />
+                Vérifier en ligne
+            </Button>
+        </div>
+
+        <section
+            class="grid gap-4"
+            :class="
+                seatState ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3'
+            "
+        >
+            <article v-if="seatState" class="med-panel p-5">
+                <div class="flex items-center gap-3">
+                    <span class="med-stat-icon">
+                        <Armchair class="size-5" />
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-2xl font-bold tabular-nums">
+                            {{ seatState.used }} / {{ seatState.limit }}
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                            Sièges utilisés ·
+                            {{ staffSeatsRemainingLabel(seatState.remaining) }}
+                        </p>
+                    </div>
+                    <Button
+                        v-if="seatState.canCheckOnline"
+                        variant="ghost"
+                        size="icon"
+                        :disabled="checkingSeats"
+                        aria-label="Vérifier mes sièges en ligne"
+                        title="Vérifier mes sièges en ligne"
+                        @click="checkSeatsOnline()"
+                    >
+                        <RefreshCw
+                            class="size-4"
+                            :class="{ 'animate-spin': checkingSeats }"
+                        />
+                    </Button>
+                </div>
+            </article>
             <article class="med-panel p-5">
                 <div class="flex items-center gap-3">
                     <span class="med-stat-icon">
@@ -447,7 +593,7 @@ const removeUser = (member: StaffMember) => {
         </section>
 
         <button
-            v-if="multiUserCapability.available"
+            v-if="canAddUser"
             type="button"
             class="fixed right-5 bottom-5 z-30 flex size-14 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-lg shadow-brand/25 transition hover:-translate-y-0.5 hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 sm:hidden"
             aria-label="Ajouter un utilisateur"

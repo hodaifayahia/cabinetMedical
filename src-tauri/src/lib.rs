@@ -56,7 +56,7 @@ use crate::updates::SignedUpdaterState;
 ///
 /// Kept as the shipped default so an unconfigured checkout still builds and
 /// points at the current control plane.
-const DEFAULT_CLOUD_SERVER_URL: &str = "https://seagreen-turkey-468004.hostingersite.com/";
+const DEFAULT_CLOUD_SERVER_URL: &str = "https://drclickdz.com/";
 
 /// Hosted Drclick control-plane origin. Only used in `Cloud` mode and as the
 /// "use the Cloud" option on the connection page.

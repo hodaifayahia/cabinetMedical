@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Backups\AutomaticBackupCreator;
 use App\Backups\BackupArchiveVerifier;
+use App\Backups\EncryptedAutomaticBackupCreator;
 use App\Backups\LocalAutomaticBackupCreator;
+use App\Backups\LocalEncryptedAutomaticBackupCreator;
 use App\Backups\MsBackupArchiveVerifier;
 use App\Licensing\HttpLicenseActivationProvider;
 use App\Licensing\LicenseActivationProvider;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(BackupArchiveVerifier::class, MsBackupArchiveVerifier::class);
         $this->app->bind(AutomaticBackupCreator::class, LocalAutomaticBackupCreator::class);
+        $this->app->bind(EncryptedAutomaticBackupCreator::class, LocalEncryptedAutomaticBackupCreator::class);
         $this->app->bind(LicenseActivationProvider::class, HttpLicenseActivationProvider::class);
 
         // One catalogue per request: API resources resolve it once per row,

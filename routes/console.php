@@ -16,6 +16,10 @@ Schedule::command('medismart:license:refresh')
     ->everySixHours()
     ->withoutOverlapping(20);
 
+Schedule::command('drclick:sync-seats')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(10);
+
 Schedule::command('medismart:backup:scheduled')
     ->everyMinute()
     ->withoutOverlapping(60);

@@ -4,7 +4,6 @@ namespace Tests\Feature\Api\Mobile\Admin;
 
 use App\Enums\RoleName;
 use App\Models\AuditLog;
-use App\Models\Cabinet;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,8 +97,10 @@ class AdminStaffTest extends TestCase
 
         Sanctum::actingAs($this->makePlatformAdmin(), ['mobile']);
 
-        // The clinic already holds its owner, so MAX_SEATS - 1 seats are free.
-        for ($seat = 1; $seat < Cabinet::MAX_SEATS; $seat++) {
+        $seatLimit = $clinic['cabinet']->fresh()->seatLimit();
+
+        // The clinic already holds its owner, so seatLimit - 1 seats are free.
+        for ($seat = 1; $seat < $seatLimit; $seat++) {
             $this->postJson('/api/v1/admin/cabinets/'.$cabinetId.'/staff', [
                 'name' => 'Réception '.$seat,
                 'email' => "reception{$seat}@clinic.dz",
@@ -115,7 +116,7 @@ class AdminStaffTest extends TestCase
 
         $this->assertDatabaseMissing('users', ['email' => 'overflow@clinic.dz']);
         $this->assertSame(
-            Cabinet::MAX_SEATS,
+            $seatLimit,
             User::query()->where('cabinet_id', $cabinetId)->count(),
         );
     }
@@ -229,6 +230,8 @@ class AdminStaffTest extends TestCase
     {
         $clinic = $this->makeListedClinic();
         $cabinetId = (int) $clinic['cabinet']->getKey();
+        // Room for both receptionists next to the owner.
+        $clinic['cabinet']->forceFill(['seat_limit' => 3])->save();
 
         Sanctum::actingAs($this->makePlatformAdmin(), ['mobile']);
 

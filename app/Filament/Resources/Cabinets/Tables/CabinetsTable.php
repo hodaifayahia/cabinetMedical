@@ -85,6 +85,7 @@ class CabinetsTable
                 TextColumn::make('license_validity')
                     ->label('Validité')
                     ->state(fn (Cabinet $record): string => self::licenseValidityLabel($record)),
+                CabinetSeats::column(),
                 TextColumn::make('pending_license_code')
                     ->label('Code à remettre')
                     ->state(fn (Cabinet $record): string => self::pendingGrantLabel($record))
@@ -111,7 +112,7 @@ class CabinetsTable
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->with('publicProfile'))
+            ->modifyQueryUsing(fn ($query) => $query->with('publicProfile')->withCount('users'))
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
@@ -140,13 +141,15 @@ class CabinetsTable
                                 ->helperText('L’essai commence lors de la saisie du code et expire exactement 7 jours plus tard.')
                                 ->required()
                                 ->native(false),
+                            ...CabinetSeats::fields(),
                         ])
                         ->action(function (Cabinet $record, array $data): void {
                             $plan = LicensePlan::from($data['plan']);
                             $issued = app(CabinetFulfillmentService::class)->issueLicenseCode($record, $plan);
+                            $seats = CabinetSeats::apply($record, $data)->seatLimit();
                             Notification::make()
                                 ->title('Code de licence généré')
-                                ->body("Copiez et remettez ce code au propriétaire : **{$issued->code}**. Il lui a également été envoyé par e-mail.")
+                                ->body("Copiez et remettez ce code au propriétaire : **{$issued->code}**. Il lui a également été envoyé par e-mail. Sièges accordés : **{$seats}**.")
                                 ->actions([
                                     Action::make('copyLicenseCode')
                                         ->label('Copier le code')
@@ -161,6 +164,7 @@ class CabinetsTable
                                 ->persistent()
                                 ->send();
                         }),
+                    CabinetSeats::manageAction(),
                     CabinetAiCredits::manageAction(),
                     CabinetAiCredits::historyAction(),
                     Action::make('toggleMobileListing')
@@ -237,6 +241,7 @@ class CabinetsTable
                                 ->searchable()
                                 ->required()
                                 ->native(false),
+                            ...CabinetSeats::fields(required: false),
                         ])
                         ->action(function (Collection $records, array $data): void {
                             $type = LicenseType::query()
@@ -248,6 +253,18 @@ class CabinetsTable
 
                             $result = app(CabinetFulfillmentService::class)
                                 ->issueLicenseCodes($selected, $type);
+
+                            // Only the cabinets that actually received a code
+                            // take the seats; a skipped one is left untouched.
+                            if (filled($data['seat_limit'] ?? null) || filled($data['seat_price'] ?? null)) {
+                                foreach ($result->issued as $issued) {
+                                    $cabinet = $selected->firstWhere('id', $issued->grant->cabinet_id);
+
+                                    if ($cabinet instanceof Cabinet) {
+                                        CabinetSeats::apply($cabinet, $data, keepBlank: true);
+                                    }
+                                }
+                            }
 
                             if ($result->issuedCount() === 0) {
                                 Notification::make()

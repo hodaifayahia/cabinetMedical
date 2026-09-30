@@ -13,9 +13,13 @@ use RuntimeException;
  */
 final class SyncTransportException extends RuntimeException
 {
+    /** The online account belongs to a cabinet this installation does not hold. */
+    public const REASON_CABINET_MISMATCH = 'cabinet_mismatch';
+
     public function __construct(
         string $message,
         public readonly bool $offline = false,
+        public readonly ?string $reason = null,
     ) {
         parent::__construct($message);
     }

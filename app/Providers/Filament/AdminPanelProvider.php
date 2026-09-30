@@ -51,12 +51,16 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make('Clients')
                     ->icon(Heroicon::OutlinedBuildingOffice2),
+                NavigationGroup::make('Intelligence artificielle')
+                    ->icon(Heroicon::OutlinedSparkles),
                 NavigationGroup::make('Licences & activations')
                     ->icon(Heroicon::OutlinedKey),
                 NavigationGroup::make('Site public')
                     ->icon(Heroicon::OutlinedGlobeAlt),
                 NavigationGroup::make('Administration')
                     ->icon(Heroicon::OutlinedCog6Tooth),
+                NavigationGroup::make('Paramètres')
+                    ->icon(Heroicon::OutlinedAdjustmentsHorizontal),
             ])
             ->unsavedChangesAlerts()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

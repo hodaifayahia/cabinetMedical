@@ -44,7 +44,7 @@ class PendingMemberController extends Controller
             'roles' => $this->assignableRoles($request->user()),
             'seats' => [
                 'used' => $cabinetId ? User::query()->where('cabinet_id', $cabinetId)->count() : 0,
-                'max' => Cabinet::MAX_SEATS,
+                'max' => $request->user()->cabinet?->seatLimit() ?? Cabinet::DEFAULT_SEATS,
             ],
         ]);
     }

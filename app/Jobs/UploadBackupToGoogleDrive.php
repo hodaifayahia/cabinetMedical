@@ -6,6 +6,7 @@ use App\Models\ApplicationEvent;
 use App\Models\AuditLog;
 use App\Models\BackupRecord;
 use App\Models\CabinetSetting;
+use App\Services\Backups\DriveBackupAuthority;
 use App\Services\Backups\DriveUploadCancelled;
 use App\Services\GoogleDriveService;
 use Illuminate\Bus\Queueable;
@@ -72,6 +73,21 @@ final class UploadBackupToGoogleDrive implements ShouldQueue
 
         if (is_string($record->remote_file_id) && $record->remote_file_id !== '') {
             $this->markCompleted($record);
+
+            return;
+        }
+
+        // A desktop archive holds the whole installation: a copy queued before
+        // another cabinet appeared on the machine must not leave it.
+        if ((bool) config('medismart.runtime.desktop_supervised', false)
+            && ! app(DriveBackupAuthority::class)->installationMayUploadTo($cabinet)) {
+            if ($this->markFailed($record, 'drive_cabinet_mismatch')) {
+                $this->recordFailure($record, 'drive_cabinet_mismatch');
+            }
+
+            $this->rejectPermanently(
+                new RuntimeException('This installation now holds another cabinet; the backup stays local.'),
+            );
 
             return;
         }

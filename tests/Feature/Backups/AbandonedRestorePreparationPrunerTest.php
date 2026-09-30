@@ -21,10 +21,13 @@ use Illuminate\Support\Str;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
+use Tests\Support\RequiresSqlite;
 use Tests\TestCase;
 
 class AbandonedRestorePreparationPrunerTest extends TestCase
 {
+    use RequiresSqlite;
+
     private const PASSPHRASE = 'abandoned restore pruning phrase 2026';
 
     /** @var list<string> */

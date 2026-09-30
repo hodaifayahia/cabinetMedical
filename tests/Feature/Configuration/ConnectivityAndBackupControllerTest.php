@@ -234,22 +234,40 @@ class ConnectivityAndBackupControllerTest extends TestCase
         }
     }
 
-    public function test_unavailable_automatic_backup_cannot_be_enabled_by_a_forged_request(): void
+    public function test_the_three_backup_times_are_validated_sorted_and_cannot_be_switched_off(): void
     {
         $administrator = User::factory()->create();
         $administrator->assignRole(RoleName::ADMINISTRATOR->value);
+        $settings = app(ApplicationSettingService::class);
+
+        foreach ([
+            [['09:00', '09:00', '17:00'], 'backups.schedule_times.1'],
+            [['09:00', '17:00'], 'backups.schedule_times'],
+            [['09:00', '25:00', '17:00'], 'backups.schedule_times.1'],
+        ] as [$times, $errorKey]) {
+            $payload = $this->validPayload();
+            $payload['backups']['schedule_times'] = $times;
+
+            $this->actingAs($administrator)
+                ->from(route('app.configuration.connectivity-backup.edit'))
+                ->put(route('app.configuration.connectivity-backup.update'), $payload)
+                ->assertSessionHasErrors($errorKey);
+        }
+
+        $this->assertSame(['10:00', '14:00', '18:00'], $settings->get(ApplicationSettingRegistry::BACKUP_SCHEDULE_TIMES));
+
         $payload = $this->validPayload();
-        $payload['backups']['automatic_enabled'] = true;
+        $payload['backups']['schedule_times'] = ['19:30', '08:15', '12:45'];
+        // The retired on/off switch is ignored: local backups are mandatory.
+        $payload['backups']['automatic_enabled'] = false;
 
         $this->actingAs($administrator)
             ->from(route('app.configuration.connectivity-backup.edit'))
             ->put(route('app.configuration.connectivity-backup.update'), $payload)
-            ->assertRedirect(route('app.configuration.connectivity-backup.edit'))
-            ->assertSessionHasErrors('backups.automatic_enabled');
+            ->assertSessionHasNoErrors();
 
-        $this->assertFalse(app(ApplicationSettingService::class)->get(
-            ApplicationSettingRegistry::BACKUP_AUTOMATIC_ENABLED,
-        ));
+        $this->assertSame(['08:15', '12:45', '19:30'], $settings->get(ApplicationSettingRegistry::BACKUP_SCHEDULE_TIMES));
+        $this->assertDatabaseMissing('application_settings', ['key' => 'backups.automatic_enabled']);
     }
 
     public function test_retired_encryption_toggle_cannot_disable_the_enforced_policy(): void
@@ -705,8 +723,7 @@ class ConnectivityAndBackupControllerTest extends TestCase
                 'firewall_diagnostics_enabled' => true,
             ],
             'backups' => [
-                'automatic_enabled' => false,
-                'schedule_time' => '02:00',
+                'schedule_times' => ['10:00', '14:00', '18:00'],
                 'retention_daily' => 7,
                 'retention_weekly' => 4,
                 'retention_monthly' => 12,

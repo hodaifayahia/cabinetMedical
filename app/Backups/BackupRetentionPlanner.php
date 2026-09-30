@@ -170,6 +170,10 @@ final class BackupRetentionPlanner
             $keepReasons[$newestId]['newest'] = true;
         }
 
+        foreach (array_slice($logicalBackups, 0, $policy->recent) as $row) {
+            $keepReasons[$row['metadata']->managedFileId]['recent'] = true;
+        }
+
         foreach ([
             'daily' => $policy->daily,
             'weekly' => $policy->weekly,
@@ -262,7 +266,7 @@ final class BackupRetentionPlanner
                 $reasons = [];
                 $buckets = [];
 
-                foreach (['newest', 'daily', 'weekly', 'monthly'] as $reason) {
+                foreach (['newest', 'recent', 'daily', 'weekly', 'monthly'] as $reason) {
                     if (isset($keepReasons[$id][$reason])) {
                         $reasons[] = $reason;
                     }

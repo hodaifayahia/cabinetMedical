@@ -47,11 +47,15 @@ final class AiCreditLedger
             throw AiException::insufficientCredits($this->balance($cabinet), $cost);
         }
 
+        $lastLineId = $cost > 0
+            ? (int) AiUsage::query()->where('cabinet_id', $cabinet->getKey())->max('id')
+            : 0;
+
         try {
             $completion = $call();
         } catch (\Throwable $exception) {
             if ($cost > 0) {
-                Cabinet::query()->whereKey($cabinet->getKey())->increment('ai_credits', $cost);
+                $this->refund($cabinet, $cost, $lastLineId);
             }
 
             throw $exception;
@@ -72,6 +76,34 @@ final class AiCreditLedger
         ]);
 
         return $completion->withBalance($balance);
+    }
+
+    /**
+     * Give a failed call's credits back, unless a platform admin cut or reset
+     * the wallet while the call was running. That figure was set against a
+     * balance that already excluded this charge, so adding the credits back
+     * would undo it: a cabinet cut off at 0 would be able to spend again. A
+     * recharge made meanwhile does not stop the refund.
+     *
+     * The cabinet row is locked as adjust() locks it, so the two cannot
+     * interleave.
+     */
+    private function refund(Cabinet $cabinet, int $cost, int $lastLineId): void
+    {
+        DB::transaction(function () use ($cabinet, $cost, $lastLineId): void {
+            Cabinet::query()->whereKey($cabinet->getKey())->lockForUpdate()->first();
+
+            $cutMeanwhile = AiUsage::query()
+                ->where('cabinet_id', $cabinet->getKey())
+                ->where('id', '>', $lastLineId)
+                ->where('status', AiUsage::STATUS_ADJUSTED)
+                ->where('credits', '<=', 0)
+                ->exists();
+
+            if (! $cutMeanwhile) {
+                Cabinet::query()->whereKey($cabinet->getKey())->increment('ai_credits', $cost);
+            }
+        });
     }
 
     /**

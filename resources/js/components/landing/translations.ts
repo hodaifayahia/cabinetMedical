@@ -207,7 +207,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
             titleLead: 'تحكّم كامل في عيادتك.',
             titleRotating: ['تطبيق واحد', 'مكان واحد', 'حياة أسهل'],
             subtitle:
-                'المرضى، المواعيد، الاستشارات والوصفات الطبية في مكان واحد. برنامج مكتبي مصمّم للطبيب والسكرتارية، مع ثلاثة حسابات لكل عيادة وبيانات محفوظة بأمان.',
+                'المرضى، المواعيد، الاستشارات والوصفات الطبية في مكان واحد. برنامج مكتبي مصمّم للطبيب والسكرتارية، مع حسابات لفريق عيادتك ومقاعد إضافية عند الطلب، وبيانات محفوظة بأمان.',
             highlights: [
                 'ملف طبي كامل لكل مريض',
                 'أجندة مواعيد واضحة',
@@ -255,7 +255,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                     body: 'كل استشارة محفوظة مع تفاصيلها، فترى مسار المريض كاملًا في أي وقت.',
                 },
                 {
-                    title: 'ثلاثة حسابات لكل عيادة',
+                    title: 'حسابات للفريق بأدوار واضحة',
                     body: 'اعمل مع فريقك بأدوار واضحة للطبيب والسكرتارية على نفس العيادة.',
                 },
                 {
@@ -544,7 +544,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                 'Une vie plus simple',
             ],
             subtitle:
-                'Patients, rendez-vous, consultations et ordonnances au même endroit. Une application bureau pensée pour le médecin et le secrétariat, avec trois comptes par cabinet et des données conservées en sécurité.',
+                'Patients, rendez-vous, consultations et ordonnances au même endroit. Une application bureau pensée pour le médecin et le secrétariat, avec des comptes pour votre équipe, des sièges supplémentaires sur demande et des données conservées en sécurité.',
             highlights: [
                 'Dossier patient complet',
                 'Agenda de rendez-vous clair',
@@ -592,7 +592,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                     body: 'Chaque consultation est enregistrée avec son détail : le parcours du patient reste visible à tout moment.',
                 },
                 {
-                    title: '3 postes par cabinet avec rôles',
+                    title: 'Des comptes pour l’équipe, avec rôles',
                     body: 'Travaillez à plusieurs avec des rôles clairs pour le médecin et le secrétariat, sur le même cabinet.',
                 },
                 {
@@ -878,7 +878,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
             titleLead: 'Run your whole practice.',
             titleRotating: ['One application', 'One place', 'An easier life'],
             subtitle:
-                'Patients, appointments, consultations and prescriptions in one place. A desktop app built for the doctor and the front desk, with three accounts per practice and data kept safely.',
+                'Patients, appointments, consultations and prescriptions in one place. A desktop app built for the doctor and the front desk, with accounts for your team, more seats on request and data kept safely.',
             highlights: [
                 'Complete patient record',
                 'Clear appointment agenda',
@@ -926,7 +926,7 @@ export const translations: Record<LandingLocale, LandingCopy> = {
                     body: 'Every consultation is saved with its detail, so the patient’s journey stays visible at any time.',
                 },
                 {
-                    title: '3 seats per practice with roles',
+                    title: 'Team accounts with roles',
                     body: 'Work as a team with clear roles for the doctor and the front desk on the same practice.',
                 },
                 {

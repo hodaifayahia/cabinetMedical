@@ -79,8 +79,8 @@ class CabinetOnboardingTest extends TestCase
     {
         [$cabinet] = $this->activeCabinetWithOwner('full-owner@example.com');
 
-        // Owner is seat #1; fill the remaining two seats.
-        User::factory()->count(2)->create([
+        // Owner is seat #1; one member takes the other default seat.
+        User::factory()->count(Cabinet::DEFAULT_SEATS - 1)->create([
             'cabinet_id' => $cabinet->getKey(),
             'approved_at' => now(),
         ]);

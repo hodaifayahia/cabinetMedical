@@ -100,6 +100,7 @@ class JoinCabinetTest extends TestCase
     public function test_seat_limit_blocks_a_fourth_member(): void
     {
         [$cabinet, $owner] = $this->activeCabinetWithOwner('owner@example.com');
+        $cabinet->forceFill(['seat_limit' => 3])->save();
 
         // Owner is seat #1; add two more approved members to fill 3 seats.
         User::factory()->count(2)->create([
@@ -107,7 +108,7 @@ class JoinCabinetTest extends TestCase
             'approved_at' => now(),
         ]);
 
-        $this->assertSame(Cabinet::MAX_SEATS, $cabinet->fresh()->seatsInUse());
+        $this->assertSame($cabinet->fresh()->seatLimit(), $cabinet->fresh()->seatsInUse());
 
         $this->post(route('cabinet.join.store'), [
             'name' => 'Fourth',
@@ -123,6 +124,7 @@ class JoinCabinetTest extends TestCase
     public function test_pending_members_count_toward_the_seat_limit(): void
     {
         [$cabinet] = $this->activeCabinetWithOwner('owner@example.com');
+        $cabinet->forceFill(['seat_limit' => 3])->save();
 
         // Owner is seat #1; pending requests reserve the other two seats.
         User::factory()->count(2)->create([
@@ -130,7 +132,7 @@ class JoinCabinetTest extends TestCase
             'approved_at' => null,
         ]);
 
-        $this->assertSame(Cabinet::MAX_SEATS, $cabinet->fresh()->seatsInUse());
+        $this->assertSame($cabinet->fresh()->seatLimit(), $cabinet->fresh()->seatsInUse());
 
         $this->post(route('cabinet.join.store'), [
             'name' => 'Fourth',

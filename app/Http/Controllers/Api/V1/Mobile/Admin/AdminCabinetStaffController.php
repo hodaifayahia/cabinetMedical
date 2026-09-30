@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  * another superadmin through HTTP — and the account is approved on creation,
  * matching what the clinic owner gets from the web staff screen. Seats are
  * allocated under a row lock on the cabinet so two admins adding a receptionist
- * at the same moment cannot together exceed Cabinet::MAX_SEATS.
+ * at the same moment cannot together exceed the cabinet's seat limit.
  */
 class AdminCabinetStaffController extends AdminController
 {
@@ -29,8 +29,9 @@ class AdminCabinetStaffController extends AdminController
         $data = $request->validated();
         $actor = $request->user();
         [$password, $temporaryPassword] = $this->resolveInitialPassword($data['password'] ?? null);
+        $seatLimit = $target->seatLimit();
 
-        $member = DB::transaction(function () use ($target, $data, $password, $actor): ?User {
+        $member = DB::transaction(function () use ($target, $data, $password, $actor, &$seatLimit): ?User {
             /** @var Cabinet $locked */
             $locked = Cabinet::query()
                 ->withoutGlobalScopes()
@@ -39,7 +40,9 @@ class AdminCabinetStaffController extends AdminController
                 ->firstOrFail();
 
             // Pending and approved members alike occupy a seat.
-            if (User::query()->where('cabinet_id', $locked->getKey())->count() >= Cabinet::MAX_SEATS) {
+            $seatLimit = $locked->seatLimit();
+
+            if (User::query()->where('cabinet_id', $locked->getKey())->count() >= $seatLimit) {
                 return null;
             }
 
@@ -73,7 +76,7 @@ class AdminCabinetStaffController extends AdminController
 
         if ($member === null) {
             return response()->json([
-                'message' => 'Ce cabinet a atteint sa limite de '.Cabinet::MAX_SEATS.' utilisateurs.',
+                'message' => 'Ce cabinet a atteint sa limite de '.$seatLimit.' utilisateurs.',
                 'reason' => 'seat_limit_reached',
             ], 409);
         }

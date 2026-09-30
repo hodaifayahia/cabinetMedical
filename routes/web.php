@@ -1,5 +1,6 @@
 <?php
 
+use App\Backups\FirstRunBackupImporter;
 use App\Enums\PermissionName;
 use App\Http\Controllers\Ai\ClinicalAiController;
 use App\Http\Controllers\Ai\EcgController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\DesktopCabinetLoginController;
 use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
 use App\Http\Controllers\Auth\DesktopPinLoginController;
+use App\Http\Controllers\Auth\DesktopRestoreBackupController;
 use App\Http\Controllers\Auth\SessionLockController;
 use App\Http\Controllers\Cabinet\CabinetStatusController;
 use App\Http\Controllers\Cabinet\JoinCabinetController;
@@ -24,6 +26,7 @@ use App\Http\Controllers\Configuration\ClinicIdentityController;
 use App\Http\Controllers\Configuration\ConnectivityAndBackupController;
 use App\Http\Controllers\Configuration\LicenseController;
 use App\Http\Controllers\Configuration\MedicationController;
+use App\Http\Controllers\Configuration\OnlineServiceController;
 use App\Http\Controllers\Configuration\PrepareOfflineRestoreController;
 use App\Http\Controllers\Configuration\PrepareUpdateInstallController;
 use App\Http\Controllers\Configuration\ReferentialController;
@@ -53,6 +56,7 @@ use App\Http\Controllers\PublicUploadController;
 use App\Http\Controllers\Reports\MedicalStatisticsController;
 use App\Http\Controllers\Staff\PendingMemberController;
 use App\Http\Controllers\Staff\StaffIndexController;
+use App\Http\Controllers\Staff\StaffSeatController;
 use App\Http\Controllers\Sync\MobileSyncController;
 use App\Http\Middleware\EnsureGoogleOAuthLoopback;
 use App\Http\Middleware\SecurePublicUploadHeaders;
@@ -65,6 +69,8 @@ use Inertia\Inertia;
 
 Route::get('/', static fn () => Inertia::render('Welcome', [
     'canRegister' => true,
+    // A desktop nobody has set up yet may start from a clinic backup.
+    'canRestoreBackup' => app(FirstRunBackupImporter::class)->available(),
     'landingSections' => LandingSection::query()
         ->published()
         ->orderBy('sort_order')
@@ -140,6 +146,13 @@ Route::get('desktop-updates/artifact/{release}', DesktopUpdateArtifactController
 Route::middleware('guest')->group(function (): void {
     Route::get('desktop/cabinet-login', [DesktopCabinetLoginController::class, 'create'])
         ->name('desktop.cabinet-login');
+    // Only while the desktop is still empty (no account, no cabinet); the
+    // controller sends everyone else to the sign-in page.
+    Route::get('desktop/restore-backup', [DesktopRestoreBackupController::class, 'create'])
+        ->name('desktop.restore-backup');
+    Route::post('desktop/restore-backup', [DesktopRestoreBackupController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('desktop.restore-backup.store');
     Route::post('desktop/cabinet-login', [DesktopCabinetLoginController::class, 'store'])
         ->middleware('throttle:desktop-cabinet-login')
         ->name('desktop.cabinet-login.store');
@@ -492,7 +505,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('permission:configuration.connectivity.manage|configuration.backups.manage')
                 ->name('connectivity-backup.update');
 
+            Route::middleware('permission:configuration.connectivity.manage')->group(function (): void {
+                Route::get('online-service', [OnlineServiceController::class, 'edit'])->name('online-service.edit');
+                Route::post('online-service', [OnlineServiceController::class, 'store'])
+                    ->middleware('throttle:6,1')
+                    ->name('online-service.store');
+                Route::delete('online-service', [OnlineServiceController::class, 'destroy'])->name('online-service.destroy');
+            });
+
             Route::middleware('permission:configuration.backups.manage')->group(function (): void {
+                // Writes a local archive only (nothing leaves the PC), so it
+                // needs no recent password confirmation.
+                Route::post('backup/now', [BackupController::class, 'createNow'])
+                    ->middleware('throttle:6,1')
+                    ->name('backup.now');
                 Route::get('backup/local', [BackupController::class, 'local'])
                     ->middleware('password.confirm')
                     ->name('backup.local');
@@ -530,6 +556,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('backup/drive', [BackupController::class, 'storeDrive'])
                     ->middleware('password.confirm')
                     ->name('backup.drive.store');
+                Route::put('backup/drive/automatic', [BackupController::class, 'updateDriveAutomaticUpload'])
+                    ->middleware('password.confirm')
+                    ->name('backup.drive.automatic');
                 Route::delete('backup/drive/{backupRecordId}/upload', [BackupController::class, 'cancelDriveUpload'])
                     ->whereUuid('backupRecordId')
                     ->name('backup.drive.cancel');
@@ -569,6 +598,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('permission:staff.manage')->group(function () {
             Route::get('staff', StaffIndexController::class)->name('staff.index');
             Route::post('staff', [StaffIndexController::class, 'store'])->name('staff.store');
+            Route::post('staff/seats/refresh', StaffSeatController::class)
+                ->middleware('throttle:20,1')
+                ->name('staff.seats.refresh');
             Route::put('staff/{user}', [StaffIndexController::class, 'update'])->name('staff.update');
             Route::delete('staff/{user}', [StaffIndexController::class, 'destroy'])->name('staff.destroy');
 

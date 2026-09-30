@@ -9,6 +9,8 @@ use App\Models\Cabinet;
 use App\Models\CabinetSetting;
 use App\Models\User;
 use App\Services\Cabinet\CabinetEntitlementService;
+use App\Services\Cabinet\CabinetSeatService;
+use App\Services\Sync\SyncTransportException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +27,7 @@ class StaffIndexController extends Controller
     /**
      * Display a paginated list of staff members.
      */
-    public function __invoke(Request $request, CabinetEntitlementService $entitlements): Response
+    public function __invoke(Request $request, CabinetEntitlementService $entitlements, CabinetSeatService $seats): Response
     {
         $this->authorize('viewAny', User::class);
 
@@ -60,6 +62,7 @@ class StaffIndexController extends Controller
             ]);
 
         $cabinet = CabinetSetting::current();
+        $tenant = $request->user()->cabinet;
 
         return Inertia::render('staff/Index', [
             'staff' => $staff,
@@ -68,10 +71,11 @@ class StaffIndexController extends Controller
             'cabinet' => $cabinet->only(['id', 'name']),
             'currentUserId' => $request->user()->getKey(),
             'multiUserCapability' => $this->multiUserCapability($entitlements, $request->user()),
+            'seats' => $tenant instanceof Cabinet ? $seats->summary($tenant) : null,
         ]);
     }
 
-    public function store(Request $request, CabinetEntitlementService $entitlements): RedirectResponse
+    public function store(Request $request, CabinetEntitlementService $entitlements, CabinetSeatService $seats): RedirectResponse
     {
         $this->authorize('create', User::class);
         abort_unless(
@@ -98,6 +102,19 @@ class StaffIndexController extends Controller
         // create an unscoped account when the actor has no cabinet.
         abort_if($cabinetId === null, 403);
 
+        // A desktop that looks full may only hold an old copy of its seats:
+        // ask the online service first, outside the lock, so seats granted
+        // while it was offline can be used straight away.
+        $tenant = Cabinet::query()->findOrFail($cabinetId);
+
+        if (! $tenant->hasAvailableSeat() && $seats->canCheckOnline($tenant)) {
+            try {
+                $seats->refresh($tenant);
+            } catch (SyncTransportException) {
+                // Offline or refused: the copy already held stays in force.
+            }
+        }
+
         DB::transaction(function () use ($actor, $cabinetId, $data): void {
             $cabinet = Cabinet::query()
                 ->whereKey($cabinetId)
@@ -105,10 +122,10 @@ class StaffIndexController extends Controller
                 ->firstOrFail();
 
             // Serialise every seat allocation on the tenant row. Pending and
-            // approved members both count toward the fixed cabinet limit.
-            if ($cabinet->users()->count() >= Cabinet::MAX_SEATS) {
+            // approved members both count toward the cabinet's seat limit.
+            if ($cabinet->users()->count() >= $cabinet->seatLimit()) {
                 throw ValidationException::withMessages([
-                    'email' => 'Ce cabinet a atteint sa limite de '.Cabinet::MAX_SEATS.' utilisateurs.',
+                    'email' => $cabinet->seatLimitReachedMessage(),
                 ]);
             }
 

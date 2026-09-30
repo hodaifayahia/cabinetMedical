@@ -376,6 +376,57 @@ class CabinetFulfillmentService
         return $redeemedCabinet;
     }
 
+    /**
+     * Set how many accounts a cabinet may hold and the per-seat price agreed
+     * with it. Lowering the limit below the seats in use removes nobody; the
+     * cabinet simply cannot add anyone until it is back under the limit. A
+     * local desktop picks the new limit up the next time it is online.
+     */
+    public function updateSeatAllowance(Cabinet $cabinet, int $seatLimit, ?int $seatPrice): Cabinet
+    {
+        $actor = auth()->user();
+
+        if (! $actor instanceof User || ! $actor->is_platform_admin) {
+            throw new AuthorizationException('Only a platform administrator may change a cabinet’s seats.');
+        }
+
+        if ($seatLimit < 1 || $seatLimit > Cabinet::MAX_GRANTABLE_SEATS) {
+            throw new LogicException('A cabinet must hold between 1 and '.Cabinet::MAX_GRANTABLE_SEATS.' seats.');
+        }
+
+        if ($seatPrice !== null && $seatPrice < 0) {
+            throw new LogicException('A seat price cannot be negative.');
+        }
+
+        return DB::transaction(function () use ($cabinet, $seatLimit, $seatPrice, $actor): Cabinet {
+            $lockedCabinet = Cabinet::query()
+                ->lockForUpdate()
+                ->findOrFail((int) $cabinet->getKey());
+
+            $previousLimit = $lockedCabinet->seatLimit();
+            $previousPrice = $lockedCabinet->seat_price;
+
+            if ($previousLimit === $seatLimit && $previousPrice === $seatPrice) {
+                return $lockedCabinet;
+            }
+
+            $lockedCabinet->forceFill([
+                'seat_limit' => $seatLimit,
+                'seat_price' => $seatPrice,
+            ])->save();
+
+            AuditLog::record('cabinet.seats_updated', $lockedCabinet, [
+                'previous_seat_limit' => $previousLimit,
+                'seat_limit' => $seatLimit,
+                'previous_seat_price' => $previousPrice,
+                'seat_price' => $seatPrice,
+                'seats_in_use' => $lockedCabinet->seatsInUse(),
+            ], $actor->getKey());
+
+            return $lockedCabinet;
+        });
+    }
+
     public function suspend(Cabinet $cabinet): Cabinet
     {
         return DB::transaction(function () use ($cabinet): Cabinet {

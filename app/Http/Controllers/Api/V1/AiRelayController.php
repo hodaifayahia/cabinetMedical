@@ -13,6 +13,7 @@ use App\Services\Ai\AiProviderClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * The hosted side of AI for local desktop installations. The desktop builds
@@ -54,6 +55,7 @@ class AiRelayController extends Controller
         $user = $this->user($request);
         $feature = AiFeature::from($data['feature']);
         $vision = (bool) ($data['vision'] ?? false);
+        $this->assertShapeOf($feature, $vision, $data['messages']);
 
         try {
             $completion = $ledger->spend(
@@ -80,6 +82,65 @@ class AiRelayController extends Controller
             'model' => $completion->model,
             'balance' => $completion->balance,
         ]);
+    }
+
+    /**
+     * Credits are priced per action, so a request must look like the action
+     * it names: plain text, or — for an action that reads an image — one
+     * image no heavier than a desktop sends. Otherwise a cheap action could
+     * carry an expensive one's work.
+     *
+     * @param  array<int|string, mixed>  $messages
+     *
+     * @throws ValidationException
+     */
+    private function assertShapeOf(AiFeature $feature, bool $vision, array $messages): void
+    {
+        if ($vision && ! $feature->readsImages()) {
+            throw ValidationException::withMessages([
+                'vision' => 'Cette action de l’assistant IA ne lit pas d’image.',
+            ]);
+        }
+
+        // A data URL: the base64 image plus its "data:image/…;base64," prefix.
+        $maxImageUrl = (int) ceil((int) config('ai.max_image_bytes') / 3) * 4 + 64;
+        $images = 0;
+
+        foreach ($messages as $message) {
+            $content = is_array($message) ? ($message['content'] ?? null) : null;
+
+            if (is_string($content)) {
+                continue;
+            }
+
+            if (! $vision || ! is_array($content)) {
+                throw ValidationException::withMessages(['messages' => 'Le contenu de la demande est illisible.']);
+            }
+
+            foreach ($content as $part) {
+                $type = is_array($part) ? ($part['type'] ?? null) : null;
+
+                if ($type === 'text' && is_string($part['text'] ?? null)) {
+                    continue;
+                }
+
+                $url = $type === 'image_url' && is_array($part['image_url'] ?? null) ? ($part['image_url']['url'] ?? null) : null;
+
+                if (! is_string($url)) {
+                    throw ValidationException::withMessages(['messages' => 'Le contenu de la demande est illisible.']);
+                }
+
+                if (strlen($url) > $maxImageUrl) {
+                    throw ValidationException::withMessages(['messages' => 'Cette image est trop lourde pour l’IA (4 Mo maximum).']);
+                }
+
+                $images++;
+            }
+        }
+
+        if ($images > 1) {
+            throw ValidationException::withMessages(['messages' => 'Une seule image peut être analysée par demande.']);
+        }
     }
 
     private function user(Request $request): User

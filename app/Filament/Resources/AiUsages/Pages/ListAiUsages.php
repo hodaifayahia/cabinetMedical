@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AiUsages\Pages;
 
 use App\Filament\Resources\AiUsages\AiUsageResource;
+use App\Filament\Resources\Cabinets\Tables\CabinetAiCredits;
 use Filament\Resources\Pages\ListRecords;
 
 class ListAiUsages extends ListRecords
@@ -11,6 +12,8 @@ class ListAiUsages extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            CabinetAiCredits::rechargeAction(),
+        ];
     }
 }

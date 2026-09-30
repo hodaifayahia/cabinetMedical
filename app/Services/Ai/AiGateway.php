@@ -7,6 +7,7 @@ use App\Models\Cabinet;
 use App\Models\LandingSetting;
 use App\Models\User;
 use App\Services\Sync\MobileSyncSettings;
+use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\PendingRequest;
@@ -30,13 +31,20 @@ final class AiGateway
         private readonly HttpFactory $http,
     ) {}
 
-    public function mode(): ?string
+    /**
+     * With $user given, a relay is offered only to a user of the cabinet the
+     * desktop was linked for: the hosted service charges the token owner's
+     * wallet.
+     */
+    public function mode(?User $user = null): ?string
     {
         if ($this->provider->isConfigured()) {
             return 'direct';
         }
 
-        return $this->syncSettings->endpoint() !== null && $this->syncSettings->token() !== null
+        return $this->syncSettings->endpoint() !== null
+            && $this->syncSettings->token() !== null
+            && ($user === null || $this->syncSettings->servesCabinet($user->cabinet_id))
             ? 'relay'
             : null;
     }
@@ -46,7 +54,7 @@ final class AiGateway
      */
     public function complete(User $user, AiFeature $feature, array $messages, bool $vision = false, bool $json = true): AiCompletion
     {
-        return match ($this->mode()) {
+        return match ($this->mode($user)) {
             'direct' => $this->ledger->spend(
                 $this->cabinetOf($user),
                 $user,
@@ -55,7 +63,7 @@ final class AiGateway
             ),
             'relay' => $this->relayComplete($feature, $messages, $vision, $json),
             default => throw new AiException(
-                'L’assistant IA n’est pas encore connecté sur ce poste. Connectez ce poste au service en ligne (Configuration › Connectivité) puis réessayez.',
+                'L’assistant IA n’est pas encore connecté sur ce poste. Reliez ce poste au service en ligne (Configuration › Service en ligne) puis réessayez.',
                 AiException::UNAVAILABLE,
             ),
         };
@@ -78,7 +86,9 @@ final class AiGateway
         ];
 
         try {
-            if ($this->mode() === 'direct') {
+            $mode = $this->mode($user);
+
+            if ($mode === 'direct') {
                 $cabinet = $this->cabinetOf($user);
 
                 return [
@@ -89,7 +99,7 @@ final class AiGateway
                 ];
             }
 
-            if ($this->mode() === 'relay') {
+            if ($mode === 'relay') {
                 $remote = $this->send(fn (PendingRequest $request) => $request->get('/api/v1/ai/status'));
 
                 return [
@@ -155,7 +165,7 @@ final class AiGateway
                 'messages' => $messages,
                 'vision' => $vision,
                 'json' => $json,
-            ]));
+            ]), charges: true);
 
         $content = $body['content'] ?? null;
 
@@ -172,9 +182,10 @@ final class AiGateway
 
     /**
      * @param  callable(PendingRequest): Response  $call
+     * @param  bool  $charges  whether the hosted service charges the wallet for this call
      * @return array<string, mixed>
      */
-    private function send(callable $call): array
+    private function send(callable $call, bool $charges = false): array
     {
         $request = $this->http
             ->baseUrl((string) $this->syncSettings->endpoint())
@@ -186,7 +197,16 @@ final class AiGateway
 
         try {
             $response = $call($request);
-        } catch (ConnectionException) {
+        } catch (ConnectionException $exception) {
+            if ($charges && $this->reachedService($exception)) {
+                // The hosted service charges before it calls the provider and
+                // keeps going when this side gives up, so a retry could pay twice.
+                throw new AiException(
+                    'La réponse de l’assistant IA n’est pas arrivée à temps. La demande a peut-être déjà été traitée et facturée : vérifiez le solde de crédits avant de réessayer.',
+                    AiException::UNAVAILABLE,
+                );
+            }
+
             throw new AiException('L’assistant IA a besoin d’Internet. Vérifiez la connexion puis réessayez.', AiException::UNAVAILABLE);
         }
 
@@ -194,7 +214,11 @@ final class AiGateway
         $body = is_array($body) ? $body : [];
 
         if ($response->unauthorized()) {
-            throw new AiException('La connexion de ce poste au service en ligne a expiré. Reconnectez-le dans Configuration › Connectivité.', AiException::UNAVAILABLE);
+            // A revoked token never works again; forgetting it lets the
+            // settings page offer to link this desktop again.
+            $this->syncSettings->forget();
+
+            throw new AiException('La connexion de ce poste au service en ligne a expiré. Reliez-le à nouveau dans Configuration › Service en ligne.', AiException::UNAVAILABLE);
         }
 
         if ($response->failed()) {
@@ -205,5 +229,24 @@ final class AiGateway
         }
 
         return $body;
+    }
+
+    /**
+     * Whether the connection was up when the call failed, so the request may
+     * have reached the hosted service. cURL reports a zero pre-transfer time
+     * when the connection (DNS, TCP, TLS) never completed.
+     */
+    private function reachedService(ConnectionException $exception): bool
+    {
+        $previous = $exception->getPrevious();
+
+        if (! $previous instanceof ConnectException) {
+            return false;
+        }
+
+        $context = $previous->getHandlerContext();
+
+        return (float) ($context['pretransfer_time'] ?? 0) > 0
+            || (float) ($context['size_upload'] ?? 0) > 0;
     }
 }

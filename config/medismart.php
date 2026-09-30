@@ -43,6 +43,16 @@ return [
         'lan_listener_status' => env('MEDISMART_LAN_LISTENER_STATUS', 'stopped'),
     ],
 
+    'online_service' => [
+        // The hosted Drclick service a local desktop links to under
+        // Configuration › Service en ligne. Only pre-fills that form; the
+        // address actually used is the one stored when the link is made.
+        'url' => env('MEDISMART_ONLINE_SERVICE_URL'),
+        // Whether this installation links to the online service at all: an
+        // installed desktop does, the online service itself never does.
+        'linkable' => (bool) env('MEDISMART_ONLINE_SERVICE_LINKABLE', env('MEDISMART_DESKTOP_SUPERVISED', false)),
+    ],
+
     'updates' => [
         // Set only by a release shell whose HTTPS endpoint and updater public
         // key were embedded at build time. Browser development remains

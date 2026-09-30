@@ -19,14 +19,19 @@ final class StagedSqliteValidator
     ) {}
 
     /**
-     * Only exact-current migration sets are accepted in this increment. This
+     * Only exact-current migration sets are accepted by default. This
      * deliberately prevents arbitrary project migrations from running while
      * a restored database is outside the supervised offline process.
+     *
+     * A new desktop starting from a backup may take one made by an older
+     * build ($allowOlderSchema): every migration it ran must exist in this
+     * build, and the import then brings it forward. A backup from a newer
+     * build is still refused.
      *
      * @param  array<string, mixed>  $manifest
      * @return list<string>
      */
-    public function validate(string $databasePath, array $manifest): array
+    public function validate(string $databasePath, array $manifest, bool $allowOlderSchema = false): array
     {
         $resolved = realpath($databasePath);
 
@@ -62,7 +67,7 @@ final class StagedSqliteValidator
             $this->assertRequiredTables($pdo);
             $migrations = $this->snapshotMigrations($pdo);
             $this->assertManifestMigrations($manifest, $migrations);
-            $this->assertCurrentMigrationCompatibility($migrations);
+            $this->assertCurrentMigrationCompatibility($migrations, $allowOlderSchema);
             $pdo = null;
         } catch (BackupArchiveException $exception) {
             throw $exception;
@@ -165,7 +170,7 @@ final class StagedSqliteValidator
     }
 
     /** @param list<string> $snapshotMigrations */
-    private function assertCurrentMigrationCompatibility(array $snapshotMigrations): void
+    private function assertCurrentMigrationCompatibility(array $snapshotMigrations, bool $allowOlderSchema): void
     {
         $directory = $this->migrationDirectory ?? database_path('migrations');
         $files = glob(rtrim($directory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'*.php');
@@ -179,6 +184,16 @@ final class StagedSqliteValidator
             $files,
         );
         sort($available, SORT_STRING);
+
+        if ($allowOlderSchema) {
+            if (array_diff($snapshotMigrations, $available) !== []) {
+                throw new BackupArchiveException(
+                    'The backup was made by a newer build of the application; update this installation first.',
+                );
+            }
+
+            return;
+        }
 
         if ($snapshotMigrations !== $available) {
             throw new BackupArchiveException(

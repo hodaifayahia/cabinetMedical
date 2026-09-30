@@ -45,6 +45,43 @@ class BackupRetentionPlannerTest extends TestCase
     }
 
     #[Test]
+    public function the_recent_tier_keeps_every_backup_of_the_latest_day_with_three(): void
+    {
+        $entries = [
+            $this->entry('evening', '2026-08-05T17:00:00Z', 0),
+            $this->entry('midday', '2026-08-05T13:00:00Z', 1),
+            $this->entry('morning', '2026-08-05T09:00:00Z', 2),
+            $this->entry('yesterday-evening', '2026-08-04T17:00:00Z', 3),
+            $this->entry('yesterday-midday', '2026-08-04T13:00:00Z', 4),
+        ];
+        $planner = new BackupRetentionPlanner;
+
+        $withoutRecent = $planner->plan(
+            $entries,
+            new BackupRetentionPolicy(daily: 7, weekly: 1, monthly: 1),
+        )->toArray();
+        $this->assertSame(
+            ['evening', 'yesterday-evening'],
+            array_column($withoutRecent['keep'], 'managed_file_id'),
+        );
+
+        $plan = $planner->plan(
+            $entries,
+            new BackupRetentionPolicy(daily: 7, weekly: 1, monthly: 1, recent: 3),
+        )->toArray();
+        $this->assertSame(
+            ['evening', 'midday', 'morning', 'yesterday-evening'],
+            array_column($plan['keep'], 'managed_file_id'),
+        );
+        $this->assertSame(['recent'], $plan['keep'][1]['reasons']);
+        $this->assertSame(
+            ['yesterday-midday'],
+            array_column($plan['deletion_candidates'], 'managed_file_id'),
+        );
+        $this->assertSame(3, $plan['policy']['recent']);
+    }
+
+    #[Test]
     public function utc_conversion_controls_day_and_iso_week_buckets(): void
     {
         $entries = [

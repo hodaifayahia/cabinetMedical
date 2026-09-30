@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Ai;
 
+use App\Enums\AiFeature;
 use App\Enums\CabinetStatus;
 use App\Enums\RoleName;
 use App\Models\AiInsight;
@@ -15,10 +16,14 @@ use App\Models\User;
 use App\Services\Ai\AiCreditLedger;
 use App\Services\Sync\MobileSyncSettings;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -296,6 +301,154 @@ class ClinicalAiTest extends TestCase
         ])->assertUnprocessable();
 
         $this->assertSame(495, $cabinet->fresh()->ai_credits);
+    }
+
+    public function test_the_relay_takes_an_image_only_for_an_action_that_reads_one(): void
+    {
+        [$cabinet, $doctor] = $this->consultationForDoctor();
+        Http::fake();
+        Sanctum::actingAs($doctor);
+        $image = ['type' => 'image_url', 'image_url' => ['url' => 'data:image/png;base64,'.base64_encode('png')]];
+
+        // A one-credit chat cannot carry an image, flagged as vision or not.
+        $this->postJson('/api/v1/ai/complete', [
+            'feature' => 'copilot_chat',
+            'vision' => true,
+            'messages' => [['role' => 'user', 'content' => [$image]]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('vision');
+
+        $this->postJson('/api/v1/ai/complete', [
+            'feature' => 'copilot_chat',
+            'messages' => [['role' => 'user', 'content' => [$image, ['type' => 'text', 'text' => 'Et ça ?']]]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('messages');
+
+        // An ECG question carries its one tracing, not a stack of them.
+        $this->postJson('/api/v1/ai/complete', [
+            'feature' => 'ecg_chat',
+            'vision' => true,
+            'messages' => [['role' => 'user', 'content' => [$image, $image]]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('messages');
+
+        $this->postJson('/api/v1/ai/complete', [
+            'feature' => 'ecg_chat',
+            'vision' => true,
+            'messages' => [['role' => 'user', 'content' => [
+                ['type' => 'image_url', 'image_url' => ['url' => 'data:image/png;base64,'.str_repeat('A', (int) config('ai.max_image_bytes') * 2)]],
+            ]]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('messages');
+
+        $this->assertSame(500, $cabinet->fresh()->ai_credits);
+        Http::assertNothingSent();
+    }
+
+    public function test_the_relay_accepts_an_ecg_question_with_its_tracing(): void
+    {
+        [$cabinet, $doctor] = $this->consultationForDoctor();
+        $this->fakeProvider(['ok' => true]);
+        Sanctum::actingAs($doctor);
+
+        $this->postJson('/api/v1/ai/complete', [
+            'feature' => 'ecg_chat',
+            'vision' => true,
+            'json' => false,
+            'messages' => [
+                ['role' => 'system', 'content' => 'Cardiologue'],
+                ['role' => 'user', 'content' => [
+                    ['type' => 'image_url', 'image_url' => ['url' => 'data:image/png;base64,'.base64_encode('png')]],
+                    ['type' => 'text', 'text' => 'Voici le tracé.'],
+                ]],
+                ['role' => 'assistant', 'content' => 'Entendu.'],
+                ['role' => 'user', 'content' => 'Un bloc ?'],
+            ],
+        ])->assertOk();
+
+        $this->assertSame(500 - AiFeature::ECG_CHAT->cost(), $cabinet->fresh()->ai_credits);
+    }
+
+    public function test_a_relay_that_times_out_after_sending_warns_it_may_have_been_charged(): void
+    {
+        [, , $consultation] = $this->consultationForDoctor();
+        config(['ai.api_key' => '']);
+        app(MobileSyncSettings::class)->configure('https://hosted.test', 'sync-token');
+        Http::fake([
+            'https://hosted.test/api/v1/ai/complete' => fn () => throw new ConnectionException(
+                'cURL error 28: Operation timed out after 75001 milliseconds with 0 bytes received',
+                0,
+                new ConnectException(
+                    'cURL error 28: Operation timed out after 75001 milliseconds with 0 bytes received',
+                    new GuzzleRequest('POST', 'https://hosted.test/api/v1/ai/complete'),
+                    null,
+                    ['errno' => 28, 'pretransfer_time' => 0.4, 'size_upload' => 2048.0],
+                ),
+            ),
+        ]);
+
+        $this->postJson(route('app.ai.consultations.text', $consultation))
+            ->assertStatus(503)
+            ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'facturée'));
+    }
+
+    public function test_a_relay_that_never_connects_says_internet_is_needed(): void
+    {
+        [, , $consultation] = $this->consultationForDoctor();
+        config(['ai.api_key' => '']);
+        app(MobileSyncSettings::class)->configure('https://hosted.test', 'sync-token');
+        Http::fake([
+            'https://hosted.test/api/v1/ai/complete' => fn () => throw new ConnectionException('cURL error 6: Could not resolve host'),
+        ]);
+
+        $this->postJson(route('app.ai.consultations.text', $consultation))
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'L’assistant IA a besoin d’Internet. Vérifiez la connexion puis réessayez.');
+    }
+
+    public function test_a_desktop_linked_for_another_cabinet_does_not_relay_this_ones_requests(): void
+    {
+        [, , $consultation] = $this->consultationForDoctor();
+        $other = Cabinet::query()->create(['name' => 'Autre', 'status' => CabinetStatus::ACTIVE, 'activated_at' => now()]);
+        config(['ai.api_key' => '']);
+        app(MobileSyncSettings::class)->configure('https://hosted.test', 'sync-token', cabinetId: (int) $other->getKey());
+        Http::fake();
+
+        $this->postJson(route('app.ai.consultations.text', $consultation))
+            ->assertStatus(503)
+            ->assertJsonPath('reason', 'unavailable');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_a_failed_call_does_not_undo_an_admin_cut_made_while_it_ran(): void
+    {
+        [$cabinet, $doctor] = $this->consultationForDoctor();
+        $ledger = app(AiCreditLedger::class);
+
+        $this->spendAndFail($ledger, $cabinet, $doctor, fn () => $ledger->adjust($cabinet, null, 'set', 0, 'Coupé'));
+
+        // Cut off at 0 while the ECG was read: the refund does not reopen it.
+        $this->assertSame(0, $cabinet->fresh()->ai_credits);
+
+        // A recharge made while a call runs still gets that call's credits back.
+        $ledger->adjust($cabinet, null, 'set', 10);
+        $this->spendAndFail($ledger, $cabinet, $doctor, fn () => $ledger->adjust($cabinet, null, 'add', 100));
+
+        $this->assertSame(110, $cabinet->fresh()->ai_credits);
+    }
+
+    private function spendAndFail(AiCreditLedger $ledger, Cabinet $cabinet, User $doctor, callable $meanwhile): void
+    {
+        try {
+            $ledger->spend($cabinet, $doctor, AiFeature::ECG_ANALYSIS, function () use ($meanwhile): never {
+                $meanwhile();
+
+                throw new RuntimeException('provider timeout');
+            });
+        } catch (RuntimeException $exception) {
+            $this->assertSame('provider timeout', $exception->getMessage());
+
+            return;
+        }
+
+        $this->fail('The provider call should have failed.');
     }
 
     public function test_the_admin_can_recharge_remove_and_set_credits(): void

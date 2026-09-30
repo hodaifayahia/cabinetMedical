@@ -79,8 +79,8 @@ export type ConnectivityBackupSettings = {
         firewall_diagnostics_enabled: boolean;
     };
     backups: {
-        automatic_enabled: boolean;
-        schedule_time: string;
+        /** Exactly three distinct HH:MM times, ascending. */
+        schedule_times: string[];
         retention_daily: number;
         retention_weekly: number;
         retention_monthly: number;
@@ -206,6 +206,29 @@ export type BackupDriveStatus = {
     verification_checked_at: string | null;
 };
 
+/** Scheduled backups copied to Drive; required on a supervised desktop. */
+/** The optional Drive copy of the scheduled local backups. */
+export type DriveAutomationStatus = {
+    enabled: boolean;
+    scheduler_active: boolean;
+};
+
+/**
+ * The required local backups of a supervised desktop: three times a day on
+ * this PC. `next_at`, `last_restore_point` and `location` are null for anyone
+ * who cannot manage them.
+ */
+export type BackupScheduleStatus = {
+    times: string[];
+    next_at: string | null;
+    last_restore_point: {
+        filename: string;
+        completed_at: string | null;
+        size_bytes: number | null;
+    } | null;
+    location: string | null;
+};
+
 export type BackupHistoryEntry = {
     id: string;
     filename: string;
@@ -319,6 +342,8 @@ export type ConnectivityBackupPermissions = {
     manage_backups: boolean;
     manage_restore: boolean;
     manage_drive: boolean;
+    /** Connect, change or disconnect the Google account; doctor only. */
+    control_drive: boolean;
     manage_license: boolean;
     view_diagnostics: boolean;
     manage_upload_sessions: boolean;
@@ -376,6 +401,8 @@ export type ConnectivityBackupPageProps = {
     capabilities: ConnectivityBackupCapabilities;
     adapters: NetworkAdapterOption[];
     backup: BackupDriveStatus;
+    driveAutomation: DriveAutomationStatus;
+    backupSchedule: BackupScheduleStatus;
     backupHistory?: BackupHistoryEntry[];
     permissions: ConnectivityBackupPermissions;
     license: LicenseRuntimeStatus;

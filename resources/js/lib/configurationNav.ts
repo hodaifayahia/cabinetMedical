@@ -2,7 +2,7 @@ export type ConfigLink = {
     title: string;
     href: string;
     permissions: string[];
-    capability?: 'manageRolePermissions';
+    capability?: 'manageRolePermissions' | 'linkOnlineService';
 };
 export type ConfigGroup = { label: string; links: ConfigLink[] };
 
@@ -35,6 +35,14 @@ export const configurationNav: ConfigGroup[] = [
                 title: 'Licence',
                 href: '/app/configuration/connectivity-backup#license',
                 permissions: sensitiveConfigurationPermissions,
+            },
+            {
+                // Installed desktops only: the server decides, since it knows
+                // whether this runtime is the online service itself.
+                title: 'Service en ligne',
+                href: '/app/configuration/online-service',
+                permissions: [],
+                capability: 'linkOnlineService',
             },
             {
                 title: 'Rôles & permissions',
@@ -104,6 +112,7 @@ export const configurationNav: ConfigGroup[] = [
 export const configurationNavForPermissions = (
     grantedPermissions: readonly string[],
     manageRolePermissions = false,
+    linkOnlineService = false,
 ): ConfigGroup[] => {
     const granted = new Set(grantedPermissions);
 
@@ -116,7 +125,9 @@ export const configurationNavForPermissions = (
                         granted.has(permission),
                     ) ||
                     (link.capability === 'manageRolePermissions' &&
-                        manageRolePermissions),
+                        manageRolePermissions) ||
+                    (link.capability === 'linkOnlineService' &&
+                        linkOnlineService),
             ),
         }))
         .filter((group) => group.links.length > 0);

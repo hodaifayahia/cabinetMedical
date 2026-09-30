@@ -44,6 +44,7 @@ import { dashboard, login } from '@/routes';
 // sign-in / sign-up / join links — its only conversion goal is the download.
 const props = defineProps<{
     canRegister: boolean;
+    canRestoreBackup?: boolean;
     landingSections?: LandingSection[];
     landingSettings?: LandingSetting[];
 }>();
@@ -375,6 +376,7 @@ onUnmounted(() => {
     <DesktopOnboarding
         v-else-if="showDesktopOnboarding"
         :can-register="canRegister"
+        :can-restore-backup="canRestoreBackup === true"
     />
 
     <div

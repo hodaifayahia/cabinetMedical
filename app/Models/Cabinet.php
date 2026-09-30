@@ -27,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property CarbonImmutable|null $activated_at
  * @property int $ai_credits
  * @property bool $ai_enabled
+ * @property int $seat_limit
+ * @property int|null $seat_price
+ * @property CarbonImmutable|null $seat_limit_synced_at
  * @property-read string|null $wilaya_name
  */
 #[Fillable([
@@ -42,10 +45,18 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Cabinet extends Model
 {
     /**
-     * Maximum number of seats (members) a single cabinet may hold. Both
-     * approved and pending-approval members count toward this limit.
+     * Seats a new cabinet receives: the doctor plus one colleague. The
+     * platform sells more per cabinet; see seatLimit().
      */
-    public const MAX_SEATS = 3;
+    public const DEFAULT_SEATS = 2;
+
+    /** Upper bound an administrator may grant, as a guard against typos. */
+    public const MAX_GRANTABLE_SEATS = 100;
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'seat_limit' => self::DEFAULT_SEATS,
+    ];
 
     protected function casts(): array
     {
@@ -56,6 +67,9 @@ class Cabinet extends Model
             'activated_at' => 'immutable_datetime',
             'ai_credits' => 'integer',
             'ai_enabled' => 'boolean',
+            'seat_limit' => 'integer',
+            'seat_price' => 'integer',
+            'seat_limit_synced_at' => 'immutable_datetime',
         ];
     }
 
@@ -181,9 +195,25 @@ class Cabinet extends Model
         return $this->users()->count();
     }
 
+    /**
+     * Accounts this cabinet may hold, the doctor included. Set by a platform
+     * administrator; on a local desktop it is the copy last received from the
+     * online service.
+     */
+    public function seatLimit(): int
+    {
+        return max(1, (int) ($this->seat_limit ?? self::DEFAULT_SEATS));
+    }
+
     public function hasAvailableSeat(): bool
     {
-        return $this->seatsInUse() < self::MAX_SEATS;
+        return $this->seatsInUse() < $this->seatLimit();
+    }
+
+    public function seatLimitReachedMessage(): string
+    {
+        return 'Ce cabinet a atteint sa limite de '.$this->seatLimit().' utilisateurs. '
+            .'Contactez l’administration Drclick pour obtenir des sièges supplémentaires.';
     }
 
     /**

@@ -30,7 +30,7 @@ class SyncMobileAppointments extends Command
             return self::FAILURE;
         }
 
-        $cabinetIds = $this->cabinetIds();
+        $cabinetIds = $this->cabinetIds($settings);
 
         if ($cabinetIds === []) {
             $this->components->warn('Aucun cabinet à synchroniser.');
@@ -87,14 +87,23 @@ class SyncMobileAppointments extends Command
     }
 
     /**
+     * A link made for one cabinet syncs that cabinet only; the synchroniser
+     * refuses any other one named with --cabinet.
+     *
      * @return list<int>
      */
-    private function cabinetIds(): array
+    private function cabinetIds(MobileSyncSettings $settings): array
     {
         $requested = $this->option('cabinet');
 
         if ($requested !== null) {
             return [(int) $requested];
+        }
+
+        $linked = $settings->cabinetId();
+
+        if ($linked !== null) {
+            return Cabinet::query()->whereKey($linked)->exists() ? [$linked] : [];
         }
 
         return array_values(Cabinet::query()

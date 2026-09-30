@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\CabinetSetting;
 use App\Models\GoogleDriveOAuthAttempt;
 use App\Models\User;
+use App\Services\Backups\DriveBackupAuthority;
 use App\Services\Backups\GoogleDriveBackup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ final class GoogleDriveOAuthFlow
     public function __construct(
         private readonly GoogleDriveBackup $drive,
         private readonly GoogleOAuthLoopbackOrigin $origin,
-        private readonly InstallationMaintenanceAccessService $installationMaintenance,
+        private readonly DriveBackupAuthority $driveAuthority,
     ) {}
 
     public function available(): bool
@@ -31,7 +32,8 @@ final class GoogleDriveOAuthFlow
     /** @return array{authorization_url: string} */
     public function prepare(CabinetSetting $cabinet, User $actor): array
     {
-        if (! $this->installationMaintenance->allows($actor)) {
+        // Only the clinic's doctor connects or switches the Google account.
+        if (! $this->driveAuthority->mayControlCabinet($actor, $cabinet)) {
             throw new GoogleDriveOAuthException('installation_maintenance_forbidden');
         }
 
@@ -96,9 +98,11 @@ final class GoogleDriveOAuthFlow
             $actor = $attempt->actor()->first();
             $cabinet = $attempt->cabinet()->first();
 
+            // Re-checked at callback time: the account may have lost the
+            // doctor role or changed cabinet while Google was open.
             if (! $actor instanceof User
                 || ! $cabinet instanceof CabinetSetting
-                || ! $this->installationMaintenance->allows($actor)
+                || ! $this->driveAuthority->mayControlCabinet($actor, $cabinet)
                 || ! $actor->can(PermissionName::CONFIGURATION_MANAGE->value)
                 || ! $actor->can(PermissionName::SETTINGS_MANAGE->value)
                 || ($actor->cabinet_setting_id !== null

@@ -453,6 +453,36 @@ Response `200 OK`: paginated collection of patient resources.
 - Auth: `auth:sanctum` + `cabinet.active.api`. Ability: `view`.
 - `200 OK` → `{ "data": { ...patient } }`; `404` if not in the cabinet.
 
+### 14. Seat allowance — `GET /api/v1/cabinet/seats`
+
+- Auth: `auth:sanctum` + `cabinet.active.api`.
+
+The number of accounts a platform administrator currently grants the token
+owner's cabinet (admin panel › Cabinets › *Sièges et tarif*). A local desktop
+calls it with the token it received when it was linked under *Configuration ›
+Service en ligne* (which signs in once through `POST /api/v1/auth/token` and
+keeps only the token) — every 15 minutes through `drclick:sync-seats`,
+from the staff screen's *Vérifier en ligne* button, and just before refusing a
+new user — and keeps the answer as its own copy of the limit, so seats granted
+while it was offline apply once it is back online.
+
+```json
+{
+  "data": {
+    "seat_limit": 3,
+    "seats_in_use": 2,
+    "owner_email": "owner@example.com"
+  }
+}
+```
+
+`seat_limit` counts the owner. `owner_email` lets the desktop match the answer
+to its own cabinet: it refuses an answer whose owner is not the owner of the
+cabinet it was linked for, even when it holds a single cabinet, and turns the
+link down when that check fails for any reason. A cabinet-less account gets
+`403 {"reason": "no_cabinet"}` and a platform administrator
+`403 {"reason": "platform_admin"}`.
+
 ---
 
 ## Resource schemas (summary)

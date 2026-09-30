@@ -68,7 +68,7 @@ class JoinCabinetAction
             // requests reserve seats and concurrent joins cannot over-allocate.
             if (! $cabinet->hasAvailableSeat()) {
                 throw ValidationException::withMessages([
-                    'owner_email' => 'Ce cabinet a atteint sa limite de '.Cabinet::MAX_SEATS.' utilisateurs.',
+                    'owner_email' => 'Ce cabinet a atteint sa limite de '.$cabinet->seatLimit().' utilisateurs.',
                 ]);
             }
 

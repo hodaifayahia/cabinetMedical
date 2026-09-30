@@ -57,6 +57,16 @@ final class MobileAppointmentSynchroniser
             return $report;
         }
 
+        // The token belongs to the online account of the cabinet the link was
+        // made for; another cabinet on this computer would import that
+        // cabinet's agenda and push its own into it.
+        if (! $this->settings->servesCabinet($cabinetId)) {
+            $report->error = 'Ce poste est relié au service en ligne pour un autre cabinet : '
+                .'la synchronisation ne concerne que celui-ci.';
+
+            return $report;
+        }
+
         $state = SyncState::forEndpoint($cabinetId, $endpoint, SyncState::STREAM_APPOINTMENTS);
 
         try {

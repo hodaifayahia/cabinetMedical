@@ -2,6 +2,7 @@
 
 namespace App\Configuration;
 
+use App\Backups\BackupSchedule;
 use Closure;
 use InvalidArgumentException;
 
@@ -27,9 +28,7 @@ final class ApplicationSettingRegistry
 
     public const CONNECTIVITY_FIREWALL_DIAGNOSTICS_ENABLED = 'connectivity.firewall_diagnostics_enabled';
 
-    public const BACKUP_AUTOMATIC_ENABLED = 'backups.automatic_enabled';
-
-    public const BACKUP_SCHEDULE_TIME = 'backups.schedule_time';
+    public const BACKUP_SCHEDULE_TIMES = 'backups.schedule_times';
 
     public const BACKUP_VERIFY_AFTER_CREATE = 'backups.verify_after_create';
 
@@ -44,6 +43,8 @@ final class ApplicationSettingRegistry
     public const BACKUP_MAXIMUM_STORAGE_BYTES = 'backups.maximum_storage_bytes';
 
     public const BACKUP_DRIVE_AUTO_UPLOAD = 'backups.drive_auto_upload';
+
+    public const BACKUP_DRIVE_AUTO_UPLOAD_PASSPHRASE = 'backups.drive_auto_upload_passphrase';
 
     public const UPDATE_AUTO_CHECK = 'updates.auto_check';
 
@@ -215,26 +216,17 @@ final class ApplicationSettingRegistry
                 scope: 'installation',
                 backupPolicy: 'machine_bound',
             ),
+            // Local backups on a supervised desktop are mandatory: there is
+            // no switch to turn them off, only the three daily times.
             new ApplicationSettingDefinition(
-                key: self::BACKUP_AUTOMATIC_ENABLED,
+                key: self::BACKUP_SCHEDULE_TIMES,
                 group: 'backups',
                 permission: 'configuration.backups.manage',
-                label: 'Sauvegardes automatiques',
-                helpText: 'Active la planification uniquement lorsque le scheduler supervisé est disponible.',
-                type: ApplicationSettingType::BOOLEAN,
-                defaultValue: false,
-                requiresRecentConfirmation: true,
-            ),
-            new ApplicationSettingDefinition(
-                key: self::BACKUP_SCHEDULE_TIME,
-                group: 'backups',
-                permission: 'configuration.backups.manage',
-                label: 'Heure de sauvegarde',
-                helpText: 'Heure locale du cabinet au format 24 heures.',
-                type: ApplicationSettingType::STRING,
-                defaultValue: '02:00',
-                rules: ['date_format:H:i'],
-                maximumLength: 5,
+                label: 'Heures des sauvegardes',
+                helpText: 'Trois heures locales distinctes au format 24 heures; une copie manquée pendant que le PC était éteint est faite à son redémarrage.',
+                type: ApplicationSettingType::JSON,
+                defaultValue: BackupSchedule::DEFAULT_TIMES,
+                rules: [$this->backupScheduleRule()],
             ),
             new ApplicationSettingDefinition(
                 key: self::BACKUP_VERIFY_AFTER_CREATE,
@@ -251,7 +243,7 @@ final class ApplicationSettingRegistry
                 group: 'backups',
                 permission: 'configuration.backups.manage',
                 label: 'Chiffrement portable obligatoire',
-                helpText: 'Les archives exportées et cloud utilisent le format authentifié v2 avec une phrase secrète non stockée.',
+                helpText: 'Les archives exportées et cloud utilisent le format authentifié v2; seule la phrase secrète de l\'envoi automatique vers Drive est conservée, chiffrée, sur ce poste.',
                 type: ApplicationSettingType::BOOLEAN,
                 defaultValue: true,
                 editable: false,
@@ -306,10 +298,30 @@ final class ApplicationSettingRegistry
                 group: 'backups',
                 permission: 'configuration.backups.manage',
                 label: 'Envoyer automatiquement vers Drive',
-                helpText: 'Clé réservée à une future politique dotée d\'un secret supervisé; aucun contrôle inactif n\'est affiché.',
+                helpText: 'Activé uniquement depuis le bloc Google Drive, avec une phrase secrète confirmée; chaque sauvegarde planifiée est alors aussi chiffrée puis envoyée vers Drive.',
                 type: ApplicationSettingType::BOOLEAN,
                 defaultValue: false,
                 backupPolicy: 'reconnect',
+                editable: false,
+            ),
+            // Written only through the doctor-only Drive route (never from
+            // the settings form); the permission names the settings group.
+            new ApplicationSettingDefinition(
+                key: self::BACKUP_DRIVE_AUTO_UPLOAD_PASSPHRASE,
+                group: 'backups',
+                permission: 'configuration.backups.manage',
+                label: 'Phrase secrète des envois Drive automatiques',
+                helpText: 'Secret interne chiffré avec la clé propre à ce poste, qui ne figure dans aucune archive; il n\'est jamais affiché et ne se déchiffre que sur cette installation.',
+                type: ApplicationSettingType::STRING,
+                defaultValue: null,
+                nullable: true,
+                rules: ['min:12'],
+                maximumLength: 1024,
+                scope: 'installation',
+                sensitive: true,
+                redaction: 'full',
+                requiresRecentConfirmation: true,
+                backupPolicy: 'machine_bound',
                 editable: false,
             ),
             new ApplicationSettingDefinition(
@@ -524,6 +536,15 @@ final class ApplicationSettingRegistry
         $channels = array_values(array_intersect(['stable', 'beta'], $configured));
 
         return in_array('stable', $channels, true) ? $channels : ['stable'];
+    }
+
+    private function backupScheduleRule(): Closure
+    {
+        return static function (string $attribute, mixed $value, Closure $fail): void {
+            if (BackupSchedule::normalize($value) === null) {
+                $fail('Indiquez trois heures de sauvegarde distinctes au format 24 heures.');
+            }
+        };
     }
 
     private function privateIpv4Rule(): Closure
