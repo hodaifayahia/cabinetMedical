@@ -135,9 +135,10 @@ TXT;
             .'CATALOGUE DE MÉDICAMENTS DU CABINET : '.($catalogue !== '' ? $catalogue : '(vide)')."\n"
             .'DÉJÀ SUR L’ORDONNANCE : '.($currentItems !== [] ? implode(', ', $currentItems) : 'rien')."\n\n".<<<'TXT'
 TÂCHE : propose l’ordonnance adaptée au diagnostic et au patient.
-- Préfère les produits du catalogue et reprends leur nom exact ; sinon un médicament courant en Algérie.
+- Fonde chaque proposition sur un élément pertinent et daté des consultations ou ordonnances précédentes du patient ; utilise la consultation actuelle pour vérifier que cet élément reste pertinent. Dans "reason", cite le fait et sa date. S’il n’existe pas d’élément antérieur pertinent, ne propose aucun médicament.
+- Utilise uniquement un produit du catalogue du cabinet et reprends exactement son nom. N’invente pas de produit absent du catalogue.
 - "dosage" = posologie (ex. « 1 cp x 3/j »), "duration" = quantité ou durée (ex. « 1 boîte », « 7 jours »), "instructions" = conseil de prise.
-- Ne répète pas ce qui est déjà sur l’ordonnance. Tiens compte des allergies et des traitements en cours.
+- Ne répète pas ce qui est déjà sur l’ordonnance. Tiens compte des allergies et des traitements au long cours enregistrés. Ces lignes restent des propositions : le médecin choisit manuellement celles à ajouter.
 Schéma : {"items": [{"medication": string, "dosage": string, "duration": string, "instructions": string, "reason": string}], "warnings": [string], "advice": string}
 "advice" = conseils hygiéno-diététiques courts pour le patient.
 TXT;

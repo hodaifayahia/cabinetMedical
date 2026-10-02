@@ -55,6 +55,19 @@ type PrescriptionRow = {
     notes: string | null;
 };
 
+type PriorMedicationSuggestion = {
+    medication: string;
+    prescribedAt: string | null;
+};
+
+type InteractionWarning = {
+    key: string;
+    source: string;
+    target: string;
+    interaction: string;
+    context: string;
+};
+
 const props = defineProps<{
     consultationId: number;
     prescriptions: PrescriptionRow[];
@@ -68,6 +81,7 @@ const props = defineProps<{
     canEdit: boolean;
     aiDraft?: ConsultationDraft;
     protocols?: PrescriptionProtocol[];
+    longTermTreatments?: { label: string; details: string | null }[];
 }>();
 
 // Same rule as the bilan and courrier headers.
@@ -154,6 +168,288 @@ const medicationSearchResults = computed(() => {
         })
         .slice(0, 8);
 });
+
+const normalizeMedicationText = (value: string): string =>
+    value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+
+const priorMedicationSuggestions = computed<PriorMedicationSuggestion[]>(
+    () => {
+        const seen = new Set<string>();
+
+        return [...props.prescriptions]
+            .sort((left, right) =>
+                (right.prescribed_at ?? '').localeCompare(
+                    left.prescribed_at ?? '',
+                ),
+            )
+            .flatMap((prescription) =>
+                prescription.items
+                    .map((item) => item.medication.trim())
+                    .filter(Boolean)
+                    .map((medication) => ({
+                        medication,
+                        prescribedAt: prescription.prescribed_at,
+                    })),
+            )
+            .filter((item) => {
+                const key = normalizeMedicationText(item.medication);
+
+                if (!key || seen.has(key)) {
+                    return false;
+                }
+
+                seen.add(key);
+
+                return true;
+            })
+            .slice(0, 8);
+    },
+);
+
+const addPriorMedication = (suggestion: PriorMedicationSuggestion) => {
+    if (!props.canEdit) {
+        return;
+    }
+
+    if (mode.value === 'history') {
+        startNew();
+    }
+
+    if (
+        form.items.some(
+            (item) =>
+                normalizeMedicationText(item.medication) ===
+                normalizeMedicationText(suggestion.medication),
+        )
+    ) {
+        return;
+    }
+
+    // Reuse the recorded product name only. The old dose may no longer fit.
+    form.items.push({
+        medication: suggestion.medication,
+        dosage: '',
+        duration: '',
+        instructions: '',
+    });
+    form.clearErrors('items');
+};
+
+const interactionClassAliases: Record<string, string[]> = {
+    anticoagulant: [
+        'warfarine',
+        'sintrom',
+        'acenocoumarol',
+        'apixaban',
+        'rivaroxaban',
+        'dabigatran',
+        'edoxaban',
+        'heparine',
+        'enoxaparine',
+    ],
+    ains: [
+        'ibuprofene',
+        'diclofenac',
+        'ketoprofene',
+        'naproxene',
+        'celecoxib',
+        'aspirine',
+    ],
+    'anti inflammatoire': [
+        'ibuprofene',
+        'diclofenac',
+        'ketoprofene',
+        'naproxene',
+        'celecoxib',
+        'aspirine',
+    ],
+    'beta bloquant': [
+        'bisoprolol',
+        'atenolol',
+        'propranolol',
+        'metoprolol',
+        'carvedilol',
+        'nebivolol',
+        'timolol',
+    ],
+    iec: ['perindopril', 'ramipril', 'enalapril', 'lisinopril', 'captopril'],
+    ara2: ['losartan', 'valsartan', 'candesartan', 'irbesartan', 'telmisartan'],
+    macrolide: [
+        'azithromycine',
+        'clarithromycine',
+        'erythromycine',
+        'spiramycine',
+        'roxithromycine',
+    ],
+    azole: ['ketoconazole', 'fluconazole', 'itraconazole', 'miconazole'],
+};
+
+const matchesInteractionTarget = (
+    target: string,
+    candidate: string,
+): boolean => {
+    const normalizedTarget = normalizeMedicationText(target);
+    const normalizedCandidate = normalizeMedicationText(candidate);
+
+    if (!normalizedTarget || !normalizedCandidate) {
+        return false;
+    }
+
+    if (normalizedCandidate.includes(normalizedTarget)) {
+        return true;
+    }
+
+    const aliasTarget = normalizedTarget.replace(/^autre\s+/, '');
+    const aliases = Object.entries(interactionClassAliases).find(
+        ([group]) =>
+            aliasTarget === group || aliasTarget.startsWith(`${group} `),
+    )?.[1];
+
+    return aliases?.some((alias) => normalizedCandidate.includes(alias)) ?? false;
+};
+
+const interactionsInNotes = (notes: string | null): string[] => {
+    if (!notes) {
+        return [];
+    }
+
+    const section = notes.match(
+        /(?:^|\n)\s*Interactions?\s*:\s*([^\r\n]+)/i,
+    )?.[1];
+
+    if (!section || /^(aucun|aucune|neant)/i.test(section.trim())) {
+        return [];
+    }
+
+    return section
+        .split(/[,;/]+/)
+        .map((term) => term.trim())
+        .filter(Boolean);
+};
+
+const interactionWarnings = computed<InteractionWarning[]>(() => {
+    const entries = form.items
+        .map((item, index) => {
+            const product = props.medications.find(
+                (medication) =>
+                    normalizeMedicationText(medication.name) ===
+                    normalizeMedicationText(item.medication),
+            );
+
+            return {
+                key: `prescription-${index}`,
+                name: item.medication.trim(),
+                details: product
+                    ? [
+                          product.name,
+                          product.dci,
+                          product.form,
+                          product.notes?.match(
+                              /(?:^|\n)\s*Classe\s*:\s*([^\r\n]+)/i,
+                          )?.[1],
+                      ]
+                          .filter(Boolean)
+                          .join(' ')
+                    : item.medication,
+                interactions: interactionsInNotes(product?.notes ?? null),
+                context: 'cette ordonnance',
+            };
+        })
+        .filter((entry) => entry.name);
+
+    const ongoingTreatments = (props.longTermTreatments ?? []).map(
+        (treatment, index) => {
+            const normalizedLabel = normalizeMedicationText(treatment.label);
+            const product = props.medications.find(
+                (medication) =>
+                    normalizeMedicationText(medication.name) ===
+                        normalizedLabel ||
+                    normalizeMedicationText(medication.dci ?? '') ===
+                        normalizedLabel,
+            );
+
+            return {
+                key: `long-term-${index}`,
+                name: treatment.label,
+                details: [
+                    treatment.label,
+                    treatment.details,
+                    product?.dci,
+                    product?.form,
+                    product?.notes?.match(
+                        /(?:^|\n)\s*Classe\s*:\s*([^\r\n]+)/i,
+                    )?.[1],
+                ]
+                    .filter(Boolean)
+                    .join(' '),
+                interactions: [] as string[],
+                context: 'traitement au long cours enregistré',
+            };
+        },
+    );
+
+    const warnings: InteractionWarning[] = [];
+    const seen = new Set<string>();
+
+    entries.forEach((entry, index) => {
+        const otherEntries = [
+            ...entries.filter((_, otherIndex) => otherIndex !== index),
+            ...ongoingTreatments,
+        ];
+
+        entry.interactions.forEach((interaction) => {
+            otherEntries.forEach((other) => {
+                if (!matchesInteractionTarget(interaction, other.details)) {
+                    return;
+                }
+
+                const pair = [entry.name, other.name].sort().join('|');
+                const key = `${pair}|${normalizeMedicationText(interaction)}`;
+
+                if (seen.has(key)) {
+                    return;
+                }
+
+                seen.add(key);
+                warnings.push({
+                    key,
+                    source: entry.name,
+                    target: other.name,
+                    interaction,
+                    context: other.context,
+                });
+            });
+        });
+    });
+
+    return warnings;
+});
+
+const interactionReferenceGaps = computed(() =>
+    Array.from(
+        new Set(
+            form.items
+                .filter((item) => {
+                    const product = props.medications.find(
+                        (medication) =>
+                            normalizeMedicationText(medication.name) ===
+                            normalizeMedicationText(item.medication),
+                    );
+
+                    return !/(?:^|\n)\s*Interactions?\s*:/i.test(
+                        product?.notes ?? '',
+                    );
+                })
+                .map((item) => item.medication.trim())
+                .filter(Boolean),
+        ),
+    ),
+);
 
 watch(
     ordonnanceTemplates,
@@ -394,7 +690,7 @@ const isAiItemAdded = (suggestion: PrescriptionSuggestion): boolean =>
     );
 
 const addAiItem = (suggestion: PrescriptionSuggestion) => {
-    if (!props.canEdit || isAiItemAdded(suggestion)) {
+    if (!props.canEdit || !suggestion.in_catalogue || isAiItemAdded(suggestion)) {
         return;
     }
 
@@ -749,14 +1045,22 @@ const save = () => {
                                         : 'outline'
                                 "
                                 class="h-7 shrink-0 text-xs"
-                                :disabled="isAiItemAdded(suggestion)"
+                                :disabled="
+                                    !suggestion.in_catalogue ||
+                                    isAiItemAdded(suggestion)
+                                "
                                 @click="addAiItem(suggestion)"
                             >
                                 <template v-if="isAiItemAdded(suggestion)"
                                     ><Check class="size-3.5" /> Ajouté</template
                                 >
                                 <template v-else
-                                    ><Plus class="size-3.5" /> Ajouter</template
+                                    ><Plus class="size-3.5" />
+                                    {{
+                                        suggestion.in_catalogue
+                                            ? 'Ajouter'
+                                            : 'Catalogue requis'
+                                    }}</template
                                 >
                             </Button>
                         </div>
@@ -794,6 +1098,110 @@ const save = () => {
                         </div>
 
                         <AiDisclaimer />
+                    </section>
+
+                    <section
+                        v-if="form.items.length"
+                        class="mt-4 rounded-xl border border-amber-300/70 bg-amber-50/60 p-3 text-xs dark:border-amber-500/30 dark:bg-amber-950/20"
+                        data-testid="ordonnance-interaction-check"
+                    >
+                        <p
+                            class="flex items-center gap-1.5 font-semibold text-amber-950 dark:text-amber-100"
+                        >
+                            <TriangleAlert class="size-4 shrink-0" />
+                            Vérification des interactions
+                        </p>
+                        <ul
+                            v-if="interactionWarnings.length"
+                            class="mt-2 space-y-1.5 text-amber-950 dark:text-amber-100"
+                            role="alert"
+                        >
+                            <li
+                                v-for="warning in interactionWarnings"
+                                :key="warning.key"
+                            >
+                                Le catalogue signale que
+                                <strong>{{ warning.source }}</strong>
+                                peut interagir avec
+                                <strong>{{ warning.target }}</strong>
+                                ({{ warning.interaction }};
+                                {{ warning.context }}). À vérifier avant validation.
+                            </li>
+                        </ul>
+                        <p
+                            v-else
+                            class="mt-2 text-amber-950 dark:text-amber-100"
+                        >
+                            Aucune interaction n’a été repérée dans les notes
+                            disponibles du catalogue.
+                        </p>
+                        <p
+                            v-if="interactionReferenceGaps.length"
+                            class="mt-2 text-muted-foreground"
+                        >
+                            Le catalogue ne contient pas de rubrique
+                            « Interactions » pour :
+                            {{ interactionReferenceGaps.join(', ') }}.
+                        </p>
+                        <p class="mt-2 text-muted-foreground">
+                            Contrôle limité aux interactions documentées dans le
+                            catalogue et aux traitements au long cours
+                            enregistrés. L’absence d’alerte ne garantit pas
+                            l’absence d’interaction.
+                        </p>
+                    </section>
+
+                    <section
+                        v-if="priorMedicationSuggestions.length"
+                        class="mt-4 space-y-2 rounded-xl border border-sidebar-border/70 p-3"
+                        data-testid="ordonnance-prior-medications"
+                    >
+                        <div>
+                            <p class="text-xs font-semibold">Ordonnances précédentes</p>
+                            <p class="mt-0.5 text-xs text-muted-foreground">
+                                Produits déjà prescrits à ce patient. Vérifiez
+                                qu’ils conviennent encore; la posologie
+                                antérieure n’est pas reprise.
+                            </p>
+                        </div>
+                        <div
+                            v-for="suggestion in priorMedicationSuggestions"
+                            :key="`${suggestion.medication}-${suggestion.prescribedAt ?? ''}`"
+                            class="flex items-center gap-2 rounded-lg bg-muted/30 px-2.5 py-2"
+                        >
+                            <Pill
+                                class="size-3.5 shrink-0 text-muted-foreground"
+                            />
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-xs font-medium">
+                                    {{ suggestion.medication }}
+                                </p>
+                                <p class="text-[11px] text-muted-foreground">
+                                    Ordonnance du {{ displayDate(suggestion.prescribedAt) }}
+                                </p>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                class="h-7 shrink-0 text-xs"
+                                :disabled="
+                                    !canEdit ||
+                                    form.items.some(
+                                        (item) =>
+                                            normalizeMedicationText(
+                                                item.medication,
+                                            ) ===
+                                            normalizeMedicationText(
+                                                suggestion.medication,
+                                            ),
+                                    )
+                                "
+                                @click="addPriorMedication(suggestion)"
+                            >
+                                <Plus class="size-3.5" />
+                                Ajouter le nom
+                            </Button>
+                        </div>
                     </section>
 
                     <section class="mt-4 space-y-3">

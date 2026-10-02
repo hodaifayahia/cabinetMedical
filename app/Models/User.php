@@ -20,6 +20,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -29,6 +30,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
+ * @property string|null $public_id
  * @property string $name
  * @property string|null $email
  * @property string|null $phone
@@ -47,7 +49,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'email', 'phone', 'password', 'cabinet_setting_id', 'cabinet_id', 'is_platform_admin', 'approved_at'])]
-#[Hidden(['password', 'local_pin_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['public_id', 'password', 'local_pin_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
@@ -101,6 +103,12 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
 
     protected static function booted(): void
     {
+        static::creating(static function (User $user): void {
+            if (blank($user->getAttribute('public_id'))) {
+                $user->setAttribute('public_id', (string) Str::uuid7());
+            }
+        });
+
         static::updated(static function (User $user): void {
             if (! $user->wasChanged('password')) {
                 return;

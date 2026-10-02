@@ -16,3 +16,16 @@ const normalizeTechnicalValue = (value: string): string =>
 
 export const appointmentStatusLabel = (status: string): string =>
     appointmentStatusLabels[normalizeTechnicalValue(status)] ?? status;
+
+const familyRelationLabels: Readonly<Record<string, string>> = {
+    father: 'père',
+    mother: 'mère',
+    husband: 'époux',
+    wife: 'épouse',
+    son: 'fils',
+    daughter: 'fille',
+    other: 'proche',
+};
+
+export const familyRelationLabel = (relation: string | null): string =>
+    relation ? (familyRelationLabels[relation] ?? relation) : 'proche';

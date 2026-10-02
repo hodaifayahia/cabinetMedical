@@ -23,6 +23,9 @@ use Illuminate\Support\Str;
  * @property string|null $public_id
  * @property int|null $patient_user_id
  * @property int|null $family_member_id
+ * @property string|null $family_group_public_id
+ * @property string|null $family_relation
+ * @property string|null $family_contact_name
  * @property int|null $merged_into_id
  * @property CarbonImmutable|null $merged_at
  * @property CarbonImmutable|null $date_of_birth

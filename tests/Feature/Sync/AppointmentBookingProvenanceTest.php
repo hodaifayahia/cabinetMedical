@@ -247,6 +247,11 @@ class AppointmentBookingProvenanceTest extends TestCase
             'first_name' => 'Yacine',
             'last_name' => 'Benali',
         ]);
+        $patient->forceFill([
+            'family_group_public_id' => $user->public_id,
+            'family_relation' => FamilyRelation::SON->value,
+            'family_contact_name' => 'Amine Benali',
+        ])->saveQuietly();
 
         $payload = $this->sync->payload($this->appointmentBookedWith($patient, [
             'booked_by_user_id' => $user->getKey(),
@@ -264,6 +269,9 @@ class AppointmentBookingProvenanceTest extends TestCase
             ['name' => 'Amine Benali', 'phone' => '0660000001'],
             $payload['booking']['booked_by'],
         );
+        $this->assertSame($user->public_id, $payload['patient']['family_group_public_id']);
+        $this->assertSame('son', $payload['patient']['family_relation']);
+        $this->assertSame('Amine Benali', $payload['patient']['family_contact_name']);
     }
 
     public function test_a_staff_created_appointment_carries_no_provenance(): void

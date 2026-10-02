@@ -12,6 +12,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -215,6 +216,81 @@ class ConsultationControllerTest extends TestCase
                 ->where('consultation.payment_outstanding', 1000)
                 ->where('consultation.payment_status', 'unpaid')
                 ->where('canCollectPayment', true)
+            );
+    }
+
+    public function test_workspace_shows_clinical_history_from_a_related_family_member(): void
+    {
+        $user = $this->userWithRole(RoleName::DOCTOR);
+        $user->givePermissionTo('consultations.view');
+        $familyGroupId = (string) Str::uuid7();
+
+        $son = Patient::factory()->create([
+            'first_name' => 'Yacine',
+            'last_name' => 'Benali',
+        ]);
+        $son->forceFill([
+            'family_group_public_id' => $familyGroupId,
+            'family_relation' => 'son',
+            'family_contact_name' => 'Amine Benali',
+        ])->saveQuietly();
+
+        $father = Patient::factory()->create([
+            'first_name' => 'Amine',
+            'last_name' => 'Benali',
+        ]);
+        $father->forceFill([
+            'family_group_public_id' => $familyGroupId,
+            'family_relation' => 'father',
+            'family_contact_name' => 'Amine Benali',
+        ])->saveQuietly();
+
+        $unrelated = Patient::factory()->create([
+            'first_name' => 'Another',
+            'last_name' => 'Patient',
+        ]);
+        $unrelated->forceFill([
+            'family_group_public_id' => (string) Str::uuid7(),
+            'family_relation' => 'father',
+        ])->saveQuietly();
+
+        Consultation::query()->create([
+            'patient_id' => $father->getKey(),
+            'consulted_at' => now()->subMonth(),
+            'status' => 'completed',
+            'motif' => 'Douleur thoracique',
+            'diagnostic' => 'Hypertension',
+            'traitement' => 'Suivi cardiologique',
+            'created_by' => $user->getKey(),
+        ]);
+        Consultation::query()->create([
+            'patient_id' => $unrelated->getKey(),
+            'consulted_at' => now()->subWeek(),
+            'status' => 'completed',
+            'motif' => 'Donnée privée sans lien familial',
+            'created_by' => $user->getKey(),
+        ]);
+
+        $current = Consultation::query()->create([
+            'patient_id' => $son->getKey(),
+            'consulted_at' => now(),
+            'status' => 'in_progress',
+            'created_by' => $user->getKey(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('app.consultations.show', $current))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('consultations/Workspace')
+                ->where('familyContext.relation', 'son')
+                ->where('familyContext.contact_name', 'Amine Benali')
+                ->has('familyHistory', 1)
+                ->where('familyHistory.0.patient_name', 'Amine Benali')
+                ->where('familyHistory.0.relation', 'father')
+                ->where('familyHistory.0.motif', 'Douleur thoracique')
+                ->where('familyHistory.0.diagnostic', 'Hypertension')
+                ->where('familyHistory.0.traitement', 'Suivi cardiologique')
             );
     }
 

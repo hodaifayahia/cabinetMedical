@@ -147,6 +147,44 @@ class PatientResolverTest extends TestCase
         $this->assertNotEmpty($resolved->patient_number);
     }
 
+    public function test_a_synced_family_identity_is_saved_to_the_patient(): void
+    {
+        $groupId = (string) Str::uuid7();
+        $identity = $this->identity([
+            'family_group_public_id' => $groupId,
+            'family_relation' => 'father',
+            'family_contact_name' => 'Amina Benali',
+        ]);
+
+        $resolved = $this->resolver->resolve($this->cabinetId, $identity);
+
+        $this->assertSame($groupId, $resolved->fresh()->family_group_public_id);
+        $this->assertSame('father', $resolved->fresh()->family_relation);
+        $this->assertSame('Amina Benali', $resolved->fresh()->family_contact_name);
+    }
+
+    public function test_a_patient_cannot_be_reassigned_to_a_different_family_group(): void
+    {
+        $groupId = (string) Str::uuid7();
+        $identity = $this->identity([
+            'family_group_public_id' => $groupId,
+            'family_relation' => 'father',
+            'family_contact_name' => 'Amina Benali',
+        ]);
+        $patient = $this->resolver->resolve($this->cabinetId, $identity);
+
+        $this->resolver->resolve($this->cabinetId, array_merge($identity, [
+            'family_group_public_id' => (string) Str::uuid7(),
+            'family_relation' => 'mother',
+            'family_contact_name' => 'Another Account',
+        ]));
+
+        $patient->refresh();
+        $this->assertSame($groupId, $patient->family_group_public_id);
+        $this->assertSame('father', $patient->family_relation);
+        $this->assertSame('Amina Benali', $patient->family_contact_name);
+    }
+
     public function test_a_patient_from_another_cabinet_is_never_reused(): void
     {
         [$otherCabinet, $otherOwner] = $this->activeCabinetWithOwner('other@example.com');

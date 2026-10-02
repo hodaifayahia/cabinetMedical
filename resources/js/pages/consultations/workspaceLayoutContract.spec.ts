@@ -40,4 +40,14 @@ describe('consultation workspace responsive layout', () => {
             'lg:grid-cols-[13.5rem_minmax(0,1fr)_minmax(0,1.05fr)]',
         );
     });
+
+    it('renders family identity and related consultations in the workspace', () => {
+        expect(workspace).toContain('familyContext:');
+        expect(workspace).toContain('familyHistory: FamilyConsultation[]');
+        expect(workspace).toContain('Antécédents des proches');
+        expect(workspace).toContain('Motif / symptômes :');
+        expect(workspace).toContain('displayDate(item.consulted_at)');
+        expect(workspace).toContain('familyRelationLabel(');
+        expect(workspace).toContain('item.relation');
+    });
 });

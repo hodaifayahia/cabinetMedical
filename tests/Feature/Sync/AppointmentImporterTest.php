@@ -116,6 +116,65 @@ class AppointmentImporterTest extends TestCase
         $this->assertSame($this->cabinetId, (int) $appointment->cabinet_id);
     }
 
+    public function test_imported_family_identity_is_persisted_with_the_patient(): void
+    {
+        $groupId = (string) Str::uuid7();
+        $payload = $this->payload([
+            'patient' => array_merge($this->payload()['patient'], [
+                'family_group_public_id' => $groupId,
+                'family_relation' => 'father',
+                'family_contact_name' => 'Amina Benali',
+            ]),
+            'booking' => [
+                'channel' => 'mobile_patient',
+                'booked_for' => [
+                    'type' => 'family',
+                    'name' => 'Yacine Benali',
+                    'relation' => 'father',
+                ],
+                'booked_by' => ['name' => 'Amina Benali', 'phone' => '0551223344'],
+            ],
+        ]);
+
+        $this->importer->import($this->cabinetId, $this->event($payload));
+
+        $patient = Patient::query()->sole();
+        $this->assertSame($groupId, $patient->family_group_public_id);
+        $this->assertSame('father', $patient->family_relation);
+        $this->assertSame('Amina Benali', $patient->family_contact_name);
+    }
+
+    public function test_same_version_replay_backfills_new_family_identity(): void
+    {
+        $payload = $this->payload([
+            'booking' => [
+                'channel' => 'mobile_patient',
+                'booked_for' => [
+                    'type' => 'family',
+                    'name' => 'Yacine Benali',
+                    'relation' => 'father',
+                ],
+                'booked_by' => ['name' => 'Amina Benali', 'phone' => '0551223344'],
+            ],
+        ]);
+        $this->importer->import($this->cabinetId, $this->event($payload));
+        $groupId = (string) Str::uuid7();
+
+        $replay = $payload;
+        $replay['patient'] += [
+            'family_group_public_id' => $groupId,
+            'family_relation' => 'father',
+            'family_contact_name' => 'Amina Benali',
+        ];
+        $result = $this->importer->import($this->cabinetId, $this->event($replay));
+
+        $this->assertSame(ImportResult::OUTCOME_SKIPPED, $result->outcome);
+        $patient = Patient::query()->sole();
+        $this->assertSame($groupId, $patient->family_group_public_id);
+        $this->assertSame('father', $patient->family_relation);
+        $this->assertSame('Amina Benali', $patient->family_contact_name);
+    }
+
     public function test_the_appointment_time_survives_the_timezone_round_trip(): void
     {
         // The remote publishes UTC; this installation runs in Africa/Algiers.

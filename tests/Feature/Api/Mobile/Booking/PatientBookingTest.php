@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\Mobile\Booking;
 
+use App\Enums\FamilyRelation;
 use App\Enums\Weekday;
 use App\Models\Appointment;
 use App\Models\Cabinet;
@@ -121,6 +122,13 @@ class PatientBookingTest extends TestCase
         // patient_number follows the existing cabinet scheme (GeneratePatientNumberAction).
         $this->assertMatchesRegularExpression('/^PAT-\d{8}-[A-Z0-9]{6}$/', (string) $dossier->patient_number);
         $this->assertSame($patient->phone, $dossier->phone);
+        $this->assertNotEmpty($patient->public_id);
+        $this->assertSame($patient->public_id, $dossier->family_group_public_id);
+        $this->assertNull($dossier->family_relation);
+        $this->assertSame(
+            trim($patient->patientProfile->first_name.' '.$patient->patientProfile->last_name),
+            $dossier->family_contact_name,
+        );
     }
 
     public function test_booking_twice_reuses_the_same_dossier_row(): void
@@ -262,6 +270,7 @@ class PatientBookingTest extends TestCase
 
         $member = FamilyMember::factory()->dependent()->create([
             'owner_user_id' => $patient->getKey(),
+            'relation' => FamilyRelation::FATHER,
             'first_name' => 'Yacine',
             'last_name' => 'Benali',
         ]);
@@ -284,6 +293,11 @@ class PatientBookingTest extends TestCase
             'family_member_id' => $member->getKey(),
             'first_name' => 'Yacine',
             'phone' => $patient->phone,
+            'family_group_public_id' => $patient->public_id,
+            'family_relation' => FamilyRelation::FATHER->value,
+            'family_contact_name' => trim(
+                $patient->patientProfile->first_name.' '.$patient->patientProfile->last_name,
+            ),
         ]);
 
         $this->assertDatabaseHas('appointments', [

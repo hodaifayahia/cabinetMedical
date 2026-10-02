@@ -183,9 +183,9 @@ class AppointmentSyncService
     /**
      * The portable patient identity carried alongside every appointment.
      *
-     * This exposes nothing the cabinet's own clients cannot already read from
-     * `GET /api/v1/patients`; it is inlined so a consumer can resolve or create
-     * the patient without a second round trip per appointment.
+     * It is inlined so a consumer can resolve or create the patient without a
+     * second round trip per appointment. Family identity appears only for
+     * mobile-linked dossiers and never contains a local foreign key.
      *
      * @return array<string, mixed>|null
      */
@@ -197,7 +197,7 @@ class AppointmentSyncService
             return null;
         }
 
-        return [
+        $identity = [
             'public_id' => $patient->public_id,
             'patient_number' => $patient->patient_number,
             'first_name' => $patient->first_name,
@@ -207,6 +207,19 @@ class AppointmentSyncService
             'phone' => $patient->phone,
             'email' => $patient->email,
         ];
+
+        // Keep older and staff-created patient payloads byte-compatible. The
+        // family extension travels only when this dossier has a real mobile
+        // account relationship to carry.
+        if (filled($patient->family_group_public_id)) {
+            $identity += [
+                'family_group_public_id' => $patient->family_group_public_id,
+                'family_relation' => $patient->family_relation,
+                'family_contact_name' => $patient->family_contact_name,
+            ];
+        }
+
+        return $identity;
     }
 
     /**

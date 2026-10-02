@@ -118,6 +118,7 @@ final class AppointmentImporter
                 // stays blank on the doctor's desktop forever, because a past
                 // appointment is never edited again.
                 $this->backfillProvenance($local, $payload);
+                $this->backfillPatientFamilyIdentity($local, $payload);
 
                 return ImportResult::skipped('not_newer');
             }
@@ -130,7 +131,7 @@ final class AppointmentImporter
                     : ImportResult::skipped('unknown_tombstone');
             }
 
-            $patient = $this->patients->resolve($cabinetId, $payload['patient'] ?? null);
+            $patient = $this->patients->resolve($cabinetId, $this->patientIdentity($payload));
 
             if (! $patient instanceof Patient) {
                 return ImportResult::rejected('patient_unresolvable');
@@ -327,8 +328,8 @@ final class AppointmentImporter
      * keys, exactly like `patient_id`, and this installation has no matching
      * `users` row and no `family_members` content at all. Writing them would
      * violate the foreign keys or, worse, silently attribute the booking to an
-     * unrelated local person. The portable `booking` block is stored verbatim
-     * in `booking_context` instead.
+     * unrelated local person. The booking context stays portable, and the
+     * patient's family group UUID and relation travel on the patient identity.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
@@ -411,6 +412,67 @@ final class AppointmentImporter
     private function bookingContext(array $payload): ?array
     {
         return $this->events->normalisedBookingProvenance($payload['booking'] ?? null);
+    }
+
+    /**
+     * Include the booking account identity as a fallback for older patient
+     * payloads that predate the family fields on the patient block.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>|null
+     */
+    private function patientIdentity(array $payload): ?array
+    {
+        $identity = $payload['patient'] ?? null;
+
+        if (! is_array($identity)) {
+            return null;
+        }
+
+        $booking = $payload['booking'] ?? null;
+        $bookedFor = is_array($booking) && is_array($booking['booked_for'] ?? null)
+            ? $booking['booked_for']
+            : [];
+        $bookedBy = is_array($booking) && is_array($booking['booked_by'] ?? null)
+            ? $booking['booked_by']
+            : [];
+
+        if (blank($identity['family_relation'] ?? null)
+            && ($bookedFor['type'] ?? null) === 'family') {
+            $identity['family_relation'] = $bookedFor['relation'] ?? null;
+        }
+
+        if (blank($identity['family_contact_name'] ?? null)) {
+            $identity['family_contact_name'] = $bookedBy['name'] ?? null;
+        }
+
+        return $identity;
+    }
+
+    /**
+     * A same-version replay can carry family identity added by a newer sender.
+     * Backfill it without changing the clinical appointment.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function backfillPatientFamilyIdentity(Appointment $appointment, array $payload): void
+    {
+        $identity = $this->patientIdentity($payload);
+
+        if ($identity === null) {
+            return;
+        }
+
+        $patient = Patient::withoutCabinetScope()
+            ->withTrashed()
+            ->whereKey($appointment->patient_id)
+            ->first();
+
+        if ($patient instanceof Patient
+            && isset($identity['public_id'])
+            && $patient->public_id === $identity['public_id']) {
+            $this->patients->applyFamilyIdentity($patient, $identity);
+        }
     }
 
     /**

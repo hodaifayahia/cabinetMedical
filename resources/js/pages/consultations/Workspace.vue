@@ -38,6 +38,7 @@ import BilansPanel from '@/components/consultations/BilansPanel.vue';
 import CourbesPanel from '@/components/consultations/CourbesPanel.vue';
 import CourriersPanel from '@/components/consultations/CourriersPanel.vue';
 import DiagnosisCodes from '@/components/consultations/DiagnosisCodes.vue';
+import { familyRelationLabel } from '@/components/consultations/display';
 import DocumentsPanel from '@/components/consultations/DocumentsPanel.vue';
 import OrdonnancesPanel from '@/components/consultations/OrdonnancesPanel.vue';
 import type { PrescriptionProtocol } from '@/components/consultations/PrescriptionProtocols.vue';
@@ -174,10 +175,24 @@ type ConsultationData = {
         received_by: string | null;
     }[];
 };
+type FamilyConsultation = {
+    id: number;
+    patient_name: string | null;
+    relation: string | null;
+    consulted_at: string | null;
+    motif: string | null;
+    diagnostic: string | null;
+    traitement: string | null;
+};
 
 const props = defineProps<{
     consultation: ConsultationData;
     patient: PatientInfo;
+    familyContext: {
+        relation: string | null;
+        contact_name: string | null;
+    };
+    familyHistory: FamilyConsultation[];
     patientDebt: {
         total: number;
         consultations: {
@@ -1124,6 +1139,15 @@ const tabClass = (activeTab: boolean): string =>
                             · {{ patient.blood_group }}</template
                         >
                     </p>
+                    <p
+                        v-if="
+                            familyContext.relation && familyContext.contact_name
+                        "
+                        class="mt-1 truncate text-xs text-muted-foreground"
+                    >
+                        {{ familyRelationLabel(familyContext.relation) }} de
+                        {{ familyContext.contact_name }}
+                    </p>
                 </div>
                 <div
                     class="ml-auto flex flex-wrap items-center justify-end gap-2"
@@ -1925,6 +1949,7 @@ const tabClass = (activeTab: boolean): string =>
                     :can-edit="canEdit"
                     :ai-draft="aiDraft"
                     :protocols="protocols"
+                    :long-term-treatments="safety.treatments"
                 />
 
                 <BilansPanel
@@ -2543,6 +2568,81 @@ const tabClass = (activeTab: boolean): string =>
                         >
                             Aucune consultation précédente pour ce patient.
                         </p>
+                    </article>
+
+                    <article
+                        v-if="familyHistory.length"
+                        class="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
+                    >
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <h4
+                                    class="text-sm font-semibold text-foreground"
+                                >
+                                    Antécédents des proches
+                                </h4>
+                                <p class="mt-1 text-xs text-muted-foreground">
+                                    Consultations des patients liés au même
+                                    compte mobile.
+                                </p>
+                            </div>
+                            <HeartPulse class="size-4 text-rose-600" />
+                        </div>
+                        <ul class="mt-4 grid gap-2 lg:grid-cols-2">
+                            <li
+                                v-for="item in familyHistory"
+                                :key="item.id"
+                                class="rounded-lg border border-sidebar-border/70 bg-muted/20 px-4 py-3 text-sm dark:border-sidebar-border"
+                            >
+                                <div
+                                    class="flex flex-wrap items-center justify-between gap-2"
+                                >
+                                    <span class="font-semibold text-foreground">
+                                        {{ item.patient_name || 'Patient' }}
+                                        <span
+                                            class="font-normal text-muted-foreground"
+                                        >
+                                            ·
+                                            {{
+                                                familyRelationLabel(
+                                                    item.relation,
+                                                )
+                                            }}
+                                        </span>
+                                    </span>
+                                    <span class="text-xs text-muted-foreground">
+                                        {{ displayDate(item.consulted_at) }}
+                                    </span>
+                                </div>
+                                <p
+                                    v-if="item.motif"
+                                    class="mt-2 text-muted-foreground"
+                                >
+                                    <span class="font-medium"
+                                        >Motif / symptômes :</span
+                                    >
+                                    {{ item.motif }}
+                                </p>
+                                <p
+                                    v-if="item.diagnostic"
+                                    class="mt-1 text-muted-foreground"
+                                >
+                                    <span class="font-medium"
+                                        >Diagnostic :</span
+                                    >
+                                    {{ item.diagnostic }}
+                                </p>
+                                <p
+                                    v-if="item.traitement"
+                                    class="mt-1 text-muted-foreground"
+                                >
+                                    <span class="font-medium"
+                                        >Traitement :</span
+                                    >
+                                    {{ item.traitement }}
+                                </p>
+                            </li>
+                        </ul>
                     </article>
                 </section>
 

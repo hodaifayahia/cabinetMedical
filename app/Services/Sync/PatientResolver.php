@@ -2,6 +2,7 @@
 
 namespace App\Services\Sync;
 
+use App\Enums\FamilyRelation;
 use App\Enums\Gender;
 use App\Models\Patient;
 use Illuminate\Support\Str;
@@ -69,6 +70,8 @@ final class PatientResolver
                     $byPublicId->restore();
                 }
 
+                $this->applyFamilyIdentity($byPublicId, $identity);
+
                 return $byPublicId;
             }
         }
@@ -78,10 +81,65 @@ final class PatientResolver
         if ($match instanceof Patient) {
             $this->adoptPublicId($match, $publicId);
 
+            if ($publicId !== null && $match->public_id === $publicId) {
+                $this->applyFamilyIdentity($match, $identity);
+            }
+
             return $match;
         }
 
-        return $this->create($cabinetId, $identity, $publicId);
+        $patient = $this->create($cabinetId, $identity, $publicId);
+        $this->applyFamilyIdentity($patient, $identity);
+
+        return $patient;
+    }
+
+    /**
+     * Apply portable family links only after the patient identity has matched.
+     * These fields are not inferred from shared phone numbers.
+     *
+     * @param  array<string, mixed>  $identity
+     */
+    public function applyFamilyIdentity(Patient $patient, array $identity): void
+    {
+        $attributes = [];
+        $groupId = $this->cleanString($identity['family_group_public_id'] ?? null);
+        $existingGroupId = $patient->family_group_public_id;
+        $validGroupId = $groupId !== null && Str::isUuid($groupId);
+        $mayApplyGroup = $validGroupId
+            && (blank($existingGroupId)
+                || strtolower((string) $existingGroupId) === strtolower($groupId));
+
+        if ($mayApplyGroup) {
+            $attributes['family_group_public_id'] = strtolower($groupId);
+        }
+
+        $mayApplyDetails = $mayApplyGroup
+            || (! $validGroupId && blank($existingGroupId));
+
+        if ($mayApplyDetails) {
+            $relation = $this->cleanString($identity['family_relation'] ?? null);
+
+            if ($relation !== null && FamilyRelation::tryFrom($relation) !== null) {
+                $attributes['family_relation'] = $relation;
+            }
+
+            $contactName = $this->cleanString($identity['family_contact_name'] ?? null);
+
+            if ($contactName !== null) {
+                $attributes['family_contact_name'] = mb_substr($contactName, 0, 200);
+            }
+        }
+
+        if ($attributes === []) {
+            return;
+        }
+
+        $patient->forceFill($attributes);
+
+        if ($patient->isDirty(array_keys($attributes))) {
+            $patient->saveQuietly();
+        }
     }
 
     /**

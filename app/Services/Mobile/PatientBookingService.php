@@ -126,7 +126,9 @@ class PatientBookingService
         /** @var Patient $patient */
         $patient = Patient::withoutCabinetScope()->firstOrNew($keys);
 
-        if (! $patient->exists) {
+        $isNewPatient = ! $patient->exists;
+
+        if ($isNewPatient) {
             $patient->fill($familyMember === null
                 ? $this->demographicsForSelf($user)
                 : $this->demographicsForFamilyMember($user, $familyMember));
@@ -136,13 +138,42 @@ class PatientBookingService
             foreach ($keys as $column => $value) {
                 $patient->setAttribute($column, $value);
             }
+        }
 
-            // patient_number and public_id are assigned by the Patient
-            // model's creating hook (GeneratePatientNumberAction).
+        $patient->forceFill([
+            'family_group_public_id' => $user->public_id,
+            'family_relation' => $familyMember?->relation?->value,
+            'family_contact_name' => $this->accountName($user),
+        ]);
+
+        // patient_number and public_id are assigned by the Patient
+        // model's creating hook (GeneratePatientNumberAction). Existing rows
+        // refresh only this account relationship when the mobile member changes.
+        if ($isNewPatient) {
             $patient->save();
+        } elseif ($patient->isDirty([
+            'family_group_public_id',
+            'family_relation',
+            'family_contact_name',
+        ])) {
+            $patient->saveQuietly();
         }
 
         return $patient;
+    }
+
+    private function accountName(User $user): ?string
+    {
+        $profile = $user->patientProfile;
+        $name = trim(sprintf(
+            '%s %s',
+            $profile->first_name ?? '',
+            $profile->last_name ?? '',
+        ));
+
+        $name = $name !== '' ? $name : trim($user->name);
+
+        return $name !== '' ? $name : null;
     }
 
     /**

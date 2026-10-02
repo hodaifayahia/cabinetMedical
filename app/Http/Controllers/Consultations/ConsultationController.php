@@ -32,6 +32,7 @@ use App\Models\PrescriptionProtocol;
 use App\Models\User;
 use App\Services\Clinical\PatientSafety;
 use App\Services\DocumentBrandingService;
+use App\Support\Appointments\BookingProvenance;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -123,11 +124,67 @@ class ConsultationController extends Controller
         DocumentBrandingService $documentBranding,
         PatientSafety $safety,
     ): Response {
-        $consultation->load(['patient', 'payments.receivedBy:id,name'])
+        $consultation->load(['patient', 'appointment', 'payments.receivedBy:id,name'])
             ->loadSum('payments', 'amount_minor');
 
         /** @var Patient $patient */
         $patient = $consultation->patient;
+
+        $appointment = $consultation->appointment;
+
+        if ($appointment !== null) {
+            $appointment->setRelation('patient', $patient);
+        }
+
+        $booking = $appointment !== null ? BookingProvenance::for($appointment) : null;
+        $bookedFor = is_array($booking['booked_for'] ?? null) ? $booking['booked_for'] : [];
+        $bookedBy = is_array($booking['booked_by'] ?? null) ? $booking['booked_by'] : [];
+        $familyRelation = $patient->family_relation;
+
+        if (! filled($familyRelation) && ($bookedFor['type'] ?? null) === 'family') {
+            $familyRelation = $bookedFor['relation'] ?? null;
+        }
+
+        $familyContext = [
+            'relation' => $familyRelation,
+            'contact_name' => $patient->family_contact_name ?? ($bookedBy['name'] ?? null),
+        ];
+
+        $familyHistory = [];
+        $familyGroupId = $patient->family_group_public_id;
+
+        if (filled($familyGroupId)) {
+            $familyPatients = Patient::withTrashed()
+                ->where('family_group_public_id', $familyGroupId)
+                ->whereKeyNot($patient->getKey())
+                ->get(['id', 'first_name', 'last_name', 'family_relation']);
+            $familyPatientsById = $familyPatients->keyBy(fn (Patient $relative): int => (int) $relative->getKey());
+
+            $familyHistory = Consultation::query()
+                ->whereIn('patient_id', $familyPatientsById->keys())
+                ->orderByDesc('consulted_at')
+                ->limit(30)
+                ->get(['id', 'patient_id', 'consulted_at', 'motif', 'diagnostic', 'traitement'])
+                ->map(function (Consultation $item) use ($familyPatientsById): array {
+                    /** @var Patient|null $relative */
+                    $relative = $familyPatientsById->get((int) $item->patient_id);
+
+                    return [
+                        'id' => (int) $item->getKey(),
+                        'patient_name' => $relative?->full_name,
+                        'relation' => $relative?->family_relation,
+                        'consulted_at' => $item->consulted_at?->toDateString(),
+                        'motif' => $item->motif,
+                        'diagnostic' => $item->diagnostic,
+                        'traitement' => $item->traitement,
+                    ];
+                })
+                ->filter(fn (array $item): bool => filled($item['motif'])
+                    || filled($item['diagnostic'])
+                    || filled($item['traitement']))
+                ->values()
+                ->all();
+        }
 
         $history = Consultation::query()
             ->where('patient_id', $patient->getKey())
@@ -288,6 +345,8 @@ class ConsultationController extends Controller
                 'antecedents_gyneco' => $patient->antecedents_gyneco,
                 'antecedents_other' => $patient->antecedents_other,
             ],
+            'familyContext' => $familyContext,
+            'familyHistory' => $familyHistory,
             'options' => [
                 'genders' => $this->genderOptions(),
                 'bloodGroups' => $this->bloodGroupOptions(),
