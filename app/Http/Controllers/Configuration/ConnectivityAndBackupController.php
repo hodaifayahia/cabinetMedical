@@ -21,6 +21,7 @@ use App\Services\Backups\DriveBackupAuthority;
 use App\Services\Backups\DriveBackupEntitlement;
 use App\Services\Backups\LocalBackupAuthority;
 use App\Services\Cabinet\CabinetEntitlementService;
+use App\Services\DesktopUpdateInstallAuthority;
 use App\Services\GoogleDriveService;
 use App\Services\InstallationMaintenanceAccessService;
 use App\Services\LicenseActivationService;
@@ -45,6 +46,7 @@ final class ConnectivityAndBackupController extends Controller
         private readonly InstallationMaintenanceAccessService $installationMaintenance,
         private readonly DriveBackupAuthority $driveAuthority,
         private readonly LocalBackupAuthority $localBackups,
+        private readonly DesktopUpdateInstallAuthority $updateInstallAuthority,
     ) {}
 
     public function edit(
@@ -198,7 +200,7 @@ final class ConnectivityAndBackupController extends Controller
         $queueWorkerActive = $this->queueWorkerActive($driveRuntimeStatus);
         $schedulerActive = $this->schedulerActive($status);
         $driveSchedulerActive = $this->schedulerActive($driveRuntimeStatus);
-        $signedUpdaterAvailable = $maintenanceAllowed
+        $signedUpdaterAvailable = $this->updateInstallAuthority->allows($actor)
             && (bool) config('medismart.runtime.desktop_supervised', false)
             && (bool) config('medismart.updates.signed_updater_configured', false);
         $automaticUpdatesLicensed = $foundationReady && $licenses->featureEnabled('automatic_updates');

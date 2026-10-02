@@ -25,8 +25,8 @@
             }
         </style>
 
-        <link rel="icon" href="/brand/drclick-mark.png?v=20260810" type="image/png" sizes="512x512">
-        <link rel="apple-touch-icon" href="/brand/drclick-mark.png?v=20260810" sizes="512x512">
+        <link rel="icon" href="/brand/drclick-mark.png?v=20261002" type="image/png" sizes="512x512">
+        <link rel="apple-touch-icon" href="/brand/drclick-mark.png?v=20261002" sizes="512x512">
 
         @fonts
 

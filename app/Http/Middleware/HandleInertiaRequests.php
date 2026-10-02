@@ -9,6 +9,7 @@ use App\Services\Auth\DesktopPinService;
 use App\Services\Authorization\CabinetRolePermissionAuthorizer;
 use App\Services\Backups\BackupReminder;
 use App\Services\DesktopDownloadService;
+use App\Services\DesktopUpdateInstallAuthority;
 use App\Services\DocumentBrandingService;
 use App\Services\SessionLockService;
 use App\Services\Sync\OnlineServiceLink;
@@ -84,6 +85,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $this->resolveAuthenticatedUser($request->user()),
             ],
             'desktopDownload' => app(DesktopDownloadService::class)->sharedProps(),
+            'desktopUpdateInstallAvailable' => fn (): bool => $user instanceof User
+                && (bool) config('medismart.runtime.desktop_supervised', false)
+                && (bool) config('medismart.updates.signed_updater_configured', false)
+                && app(DesktopUpdateInstallAuthority::class)->allows($user),
             // Local backups are required on a supervised desktop; null elsewhere.
             'backupReminder' => fn (): ?array => app(BackupReminder::class)->sharedProps($user instanceof User ? $user : null),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

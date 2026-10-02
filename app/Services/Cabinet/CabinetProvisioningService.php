@@ -18,9 +18,9 @@ use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Materialises a brand-new cabinet in the pending state together with its
- * owner account, doctor profile, default weekly schedule and per-cabinet
- * settings.
+ * Completes a pending cabinet with its owner account, doctor profile, default
+ * weekly schedule and per-cabinet settings. It can claim a matching cabinet
+ * created by a Windows download request before falling back to a new cabinet.
  *
  * Extracted verbatim from RegisterCabinetAction so that web self-registration
  * and the platform-admin mobile API provision clinics through exactly the same
@@ -37,23 +37,46 @@ class CabinetProvisioningService
     ) {}
 
     /**
-     * Create the cabinet and everything hanging off it in one transaction,
-     * returning the owner account.
+     * Create or complete the cabinet and everything hanging off it in one
+     * transaction, returning the owner account.
      *
      * @param  array{name: string, email: string, password: string, phone: string, cabinet_name: string, specialization: string, wilaya: int|string}  $data
      */
-    public function provision(array $data): User
+    public function provision(array $data, bool $claimDownloadCabinet = false): User
     {
         return DB::transaction(function () use ($data): User {
             $specialty = trim((string) $data['specialization']);
             $phone = trim((string) $data['phone']);
 
-            $cabinet = Cabinet::query()->create([
+            // A doctor may have requested the Windows installer before
+            // creating an account. In that case the download form already
+            // created a pending cabinet so an administrator can issue its
+            // activation code. Attach registration to that cabinet by the
+            // same email address instead of creating a duplicate.
+            $cabinet = $claimDownloadCabinet
+                ? Cabinet::query()
+                    ->whereNull('owner_user_id')
+                    ->where('status', CabinetStatus::PENDING->value)
+                    ->whereNull('license_id')
+                    ->whereHas('desktopDownloadLeads', fn ($leads) => $leads
+                        ->whereRaw('LOWER(email) = ?', [strtolower(trim((string) $data['email']))]))
+                    ->latest()
+                    ->lockForUpdate()
+                    ->first()
+                : null;
+
+            $cabinetData = [
                 'name' => trim((string) $data['cabinet_name']),
                 'status' => CabinetStatus::PENDING,
                 'specialization' => $this->specialties->display($specialty),
                 'wilaya_code' => (int) $data['wilaya'],
-            ]);
+            ];
+
+            if ($cabinet === null) {
+                $cabinet = Cabinet::query()->create($cabinetData);
+            } else {
+                $cabinet->forceFill($cabinetData)->save();
+            }
 
             $user = User::query()->create([
                 'name' => $data['name'],

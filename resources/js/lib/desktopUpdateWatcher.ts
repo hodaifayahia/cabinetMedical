@@ -16,7 +16,7 @@ import { normalizeNativeUpdateCheck } from '@/pages/configuration/updateContract
  */
 
 /** How long to wait between checks while the app stays open. */
-export const UPDATE_POLL_INTERVAL_MS = 15 * 60 * 1000;
+export const UPDATE_POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 /** How long to wait after launch before the first check. */
 export const UPDATE_FIRST_CHECK_DELAY_MS = 20 * 1000;

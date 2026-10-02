@@ -23,6 +23,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class CabinetsTable
@@ -42,9 +43,13 @@ class CabinetsTable
                     ->label('Cabinet')
                     ->searchable()
                     ->weight('bold'),
-                TextColumn::make('owner.email')
-                    ->label('Propriétaire')
-                    ->searchable()
+                TextColumn::make('contact_email')
+                    ->label('Propriétaire / contact')
+                    ->state(fn (Cabinet $record): ?string => $record->contactEmail())
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query
+                        ->whereHas('owner', fn (Builder $owner): Builder => $owner->where('email', 'like', "%{$search}%"))
+                        ->orWhereHas('desktopDownloadLeads', fn (Builder $lead): Builder => $lead->where('email', 'like', "%{$search}%")))
+                    ->copyable()
                     ->placeholder('—'),
                 TextColumn::make('specialization')
                     ->label('Spécialité')
@@ -112,7 +117,9 @@ class CabinetsTable
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->with('publicProfile')->withCount('users'))
+            ->modifyQueryUsing(fn ($query) => $query
+                ->with(['publicProfile', 'owner', 'desktopDownloadLeads'])
+                ->withCount('users'))
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
@@ -149,7 +156,7 @@ class CabinetsTable
                             $seats = CabinetSeats::apply($record, $data)->seatLimit();
                             Notification::make()
                                 ->title('Code de licence généré')
-                                ->body("Copiez et remettez ce code au propriétaire : **{$issued->code}**. Il lui a également été envoyé par e-mail. Sièges accordés : **{$seats}**.")
+                                ->body("Copiez et remettez ce code au contact : **{$issued->code}**. Il lui a également été envoyé par e-mail. Sièges accordés : **{$seats}**.")
                                 ->actions([
                                     Action::make('copyLicenseCode')
                                         ->label('Copier le code')

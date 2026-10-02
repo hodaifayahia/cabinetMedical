@@ -36,7 +36,7 @@ class ActivationKeysTable
                 TextColumn::make('cabinet.name')
                     ->label('Cabinet')
                     ->weight(FontWeight::SemiBold)
-                    ->description(fn (HostedLicenseGrant $record): ?string => $record->cabinet?->owner?->email)
+                    ->description(fn (HostedLicenseGrant $record): ?string => $record->cabinet?->contactEmail())
                     ->searchable()
                     ->placeholder('—'),
                 TextColumn::make('type_name')
@@ -109,7 +109,7 @@ class ActivationKeysTable
                         ->icon(Heroicon::OutlinedEye)
                         ->color('primary')
                         ->modalHeading('Clé d’activation')
-                        ->modalDescription(fn (HostedLicenseGrant $record): string => 'Remettez cette clé au propriétaire de '.($record->cabinet?->name ?? 'ce cabinet').'.')
+                        ->modalDescription(fn (HostedLicenseGrant $record): string => 'Remettez cette clé au contact de '.($record->cabinet?->name ?? 'ce cabinet').'.')
                         ->modalSubmitAction(false)
                         ->modalCancelActionLabel('Fermer')
                         ->modalContent(fn (HostedLicenseGrant $record) => view('filament.activation-keys.reveal', [
@@ -122,9 +122,9 @@ class ActivationKeysTable
                         ->color('gray')
                         ->visible(fn (HostedLicenseGrant $record): bool => $record->isOutstanding()
                             && $record->plainCode() !== null
-                            && filled($record->cabinet?->owner?->email))
+                            && filled($record->cabinet?->contactEmail()))
                         ->requiresConfirmation()
-                        ->modalDescription(fn (HostedLicenseGrant $record): string => 'La clé sera renvoyée à '.($record->cabinet?->owner?->email ?? '').'.')
+                        ->modalDescription(fn (HostedLicenseGrant $record): string => 'La clé sera renvoyée à '.($record->cabinet?->contactEmail() ?? '').'.')
                         ->action(function (HostedLicenseGrant $record): void {
                             $code = $record->plainCode();
 
@@ -136,7 +136,7 @@ class ActivationKeysTable
 
                             Notification::make()
                                 ->title('Clé renvoyée')
-                                ->body('Le propriétaire a reçu la clé par e-mail.')
+                                ->body('Le contact a reçu la clé par e-mail.')
                                 ->success()
                                 ->send();
                         }),
@@ -193,7 +193,7 @@ class ActivationKeysTable
     {
         $rows = $records->map(static fn (HostedLicenseGrant $grant): array => [
             $grant->cabinet?->name ?? '',
-            $grant->cabinet?->owner?->email ?? '',
+            $grant->cabinet?->contactEmail() ?? '',
             $grant->typeLabel(),
             $grant->statusLabel(),
             $grant->plainCode() ?? $grant->maskedCode(),

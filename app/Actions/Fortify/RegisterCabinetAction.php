@@ -63,7 +63,7 @@ class RegisterCabinetAction
     {
         try {
             /** @var array{name: string, email: string, password: string, phone: string, cabinet_name: string, specialization: string, wilaya: int|string} $data */
-            return $this->provisioning->provision($data);
+            return $this->provisioning->provision($data, claimDownloadCabinet: true);
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {

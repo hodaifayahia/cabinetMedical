@@ -37,7 +37,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Drclick')
+            ->favicon(asset('brand/drclick-mark.png?v=20261002'))
             ->defaultAvatarProvider(InitialsAvatarProvider::class)
+            ->databaseNotifications()
             ->colors([
                 // The teal the product uses everywhere else (app.css sets
                 // --primary to hsl(186 100% 20%)), so the back office reads

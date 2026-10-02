@@ -215,7 +215,7 @@ class CabinetFulfillmentService
     }
 
     /**
-     * Re-send an outstanding code to the cabinet owner. Callers hold the
+     * Re-send an outstanding code to the cabinet contact. Callers hold the
      * plaintext (read back from the encrypted column) because the service
      * never stores it in a form the mailer could reach on its own.
      */
@@ -817,19 +817,21 @@ class CabinetFulfillmentService
         Cabinet $cabinet,
         IssuedHostedLicenseCode $issued,
     ): void {
-        $cabinet->loadMissing('owner');
+        $cabinet->loadMissing('owner', 'desktopDownloadLeads');
         $owner = $cabinet->owner;
+        $recipientEmail = $cabinet->contactEmail();
 
-        if ($owner === null || blank($owner->email)) {
+        if (blank($recipientEmail)) {
             return;
         }
 
         try {
-            Mail::to($owner->email)->send(new CabinetLicenseCodeIssuedMail(
+            Mail::to($recipientEmail)->send(new CabinetLicenseCodeIssuedMail(
                 $cabinet,
                 $issued->grant,
-                $owner->name,
+                $cabinet->contactName() ?? $cabinet->name,
                 $issued->code,
+                requiresAccountSetup: $owner === null,
             ));
         } catch (Throwable $exception) {
             Log::warning('Cabinet licence-code e-mail could not be sent.', [

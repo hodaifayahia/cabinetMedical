@@ -274,9 +274,10 @@ function submit(): void {
                             aria-hidden="true"
                         />
                         <p class="min-w-0">
-                            Ces coordonnées servent à identifier votre demande
-                            et à vous accompagner. Le lien généré est personnel,
-                            temporaire et valable uniquement dans cette session.
+                            Ces coordonnées créent un dossier de cabinet. Gardez
+                            cette adresse e-mail : elle servira à créer votre
+                            compte et à associer le code d’activation. Le lien
+                            de téléchargement est personnel et temporaire.
                         </p>
                     </div>
                 </div>

@@ -118,6 +118,38 @@ class Cabinet extends Model
     }
 
     /**
+     * Public Windows download requests that created or were matched to this cabinet.
+     *
+     * @return HasMany<DesktopDownloadLead, $this>
+     */
+    public function desktopDownloadLeads(): HasMany
+    {
+        return $this->hasMany(DesktopDownloadLead::class);
+    }
+
+    public function contactEmail(): ?string
+    {
+        if (filled($this->owner?->email)) {
+            return $this->owner->email;
+        }
+
+        $lead = $this->latestDownloadLead();
+
+        return filled($lead?->email) ? $lead->email : null;
+    }
+
+    public function contactName(): ?string
+    {
+        if (filled($this->owner?->name)) {
+            return $this->owner->name;
+        }
+
+        $lead = $this->latestDownloadLead();
+
+        return filled($lead?->name) ? $lead->name : null;
+    }
+
+    /**
      * @return HasMany<DesktopPinCredential, $this>
      */
     public function desktopPinCredentials(): HasMany
@@ -147,6 +179,17 @@ class Cabinet extends Model
     public function settings(): HasOne
     {
         return $this->hasOne(CabinetSetting::class);
+    }
+
+    private function latestDownloadLead(): ?DesktopDownloadLead
+    {
+        if ($this->relationLoaded('desktopDownloadLeads')) {
+            return $this->desktopDownloadLeads
+                ->sortByDesc('created_at')
+                ->first();
+        }
+
+        return $this->desktopDownloadLeads()->latest()->first();
     }
 
     /**

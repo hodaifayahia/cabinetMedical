@@ -576,10 +576,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('license.destroy');
             });
 
+            // Every approved account on a single-cabinet supervised desktop
+            // may start the signed update from the in-app release notice. The
+            // controller enforces that installation boundary; recent password
+            // confirmation, a verified backup and the native signature check
+            // remain required.
+            Route::post('updates/prepare-install', PrepareUpdateInstallController::class)
+                ->middleware(['password.confirm', 'throttle:update-install-prepare'])
+                ->name('updates.prepare-install');
+
             Route::middleware('permission:configuration.connectivity.manage')->group(function (): void {
-                Route::post('updates/prepare-install', PrepareUpdateInstallController::class)
-                    ->middleware(['password.confirm', 'throttle:update-install-prepare'])
-                    ->name('updates.prepare-install');
                 Route::post('connectivity-backup/upload-sessions', [UploadSessionController::class, 'store'])
                     ->name('connectivity-backup.upload-sessions.store');
                 Route::post('connectivity-backup/upload-sessions/{uploadSession}/test', [UploadSessionController::class, 'test'])

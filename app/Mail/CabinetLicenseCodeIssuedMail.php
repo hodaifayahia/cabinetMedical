@@ -23,6 +23,7 @@ class CabinetLicenseCodeIssuedMail extends Mailable
         public readonly HostedLicenseGrant $grant,
         public readonly string $ownerName,
         public readonly string $licenseCode,
+        public readonly bool $requiresAccountSetup = false,
     ) {}
 
     public function envelope(): Envelope
@@ -41,7 +42,8 @@ class CabinetLicenseCodeIssuedMail extends Mailable
                 'ownerName' => $this->ownerName,
                 'licensePlan' => $this->grant->typeLabel(),
                 'licenseCode' => $this->licenseCode,
-                'activationUrl' => route('cabinet.pending'),
+                'activationUrl' => $this->requiresAccountSetup ? route('register') : route('cabinet.pending'),
+                'requiresAccountSetup' => $this->requiresAccountSetup,
             ],
         );
     }

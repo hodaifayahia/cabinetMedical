@@ -101,11 +101,11 @@ class ListActivationKeys extends ListRecords
     {
         return Cabinet::query()
             ->awaitingActivationCode()
-            ->with('owner:id,email')
+            ->with(['owner:id,email', 'desktopDownloadLeads'])
             ->orderBy('name')
             ->get()
             ->mapWithKeys(fn (Cabinet $cabinet): array => [
-                $cabinet->getKey() => $cabinet->name.($cabinet->owner?->email ? ' — '.$cabinet->owner->email : ''),
+                $cabinet->getKey() => $cabinet->name.($cabinet->contactEmail() ? ' — '.$cabinet->contactEmail() : ''),
             ])
             ->all();
     }
