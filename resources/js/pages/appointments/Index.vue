@@ -26,7 +26,8 @@ import {
     UserCheck,
     X,
 } from '@lucide/vue';
-import { computed, ref, shallowRef, watch } from 'vue';
+import { isTauri } from '@tauri-apps/api/core';
+import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import AvailabilityCalendar from '@/components/appointments/AvailabilityCalendar.vue';
 import Heading from '@/components/Heading.vue';
@@ -105,6 +106,12 @@ const props = defineProps<{
 }>();
 
 usePage();
+
+const desktopRuntime = ref(false);
+
+onMounted(() => {
+    desktopRuntime.value = isTauri();
+});
 
 // ----- Filters -----
 const dateFormatter = new DateFormatter('fr-FR', {
@@ -358,6 +365,13 @@ const bookingProvenance = computed(() => {
 
     return labels;
 });
+
+const familyBookingCount = computed(
+    () =>
+        props.appointments.data.filter(
+            (appointment) => appointment.booking?.booked_for?.type === 'family',
+        ).length,
+);
 
 const waitingAppointments = computed(() =>
     props.appointments.data.filter(
@@ -1065,6 +1079,32 @@ const printAppointments = () => {
                 </div>
             </div>
 
+            <aside
+                v-if="desktopRuntime && familyBookingCount > 0"
+                class="mt-5 flex items-center gap-4 rounded-2xl border border-brand/15 bg-white px-4 py-3 shadow-[0_4px_18px_rgba(38,70,91,0.05)]"
+                aria-label="Réservations pour un membre de la famille"
+            >
+                <img
+                    src="/brands/Smartphone%20clinic%20finder-1.png"
+                    alt=""
+                    class="size-16 shrink-0 object-contain"
+                    loading="lazy"
+                />
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-800">
+                        Réservations pour un proche
+                        <span
+                            class="ml-1 inline-flex rounded-full bg-brand-soft px-2 py-0.5 text-xs font-bold text-brand"
+                            >{{ familyBookingCount }}</span
+                        >
+                    </p>
+                    <p class="mt-0.5 text-xs leading-5 text-slate-500">
+                        Le nom du proche et le lien familial apparaissent sous
+                        le nom du patient.
+                    </p>
+                </div>
+            </aside>
+
             <div
                 class="mt-7 grid gap-5 xl:grid-cols-[minmax(0,1.72fr)_minmax(320px,0.82fr)]"
             >
@@ -1122,7 +1162,15 @@ const printAppointments = () => {
                             v-if="appointments.data.length === 0"
                             class="rounded-2xl border border-white/80 bg-white px-5 py-12 text-center shadow-[0_4px_18px_rgba(38,70,91,0.06)]"
                         >
+                            <img
+                                v-if="desktopRuntime"
+                                src="/brands/Empty%20Calendar%20with%20Clock%20and%20Teal%20Plus-5.png"
+                                alt=""
+                                class="mx-auto size-28 object-contain"
+                                loading="lazy"
+                            />
                             <CalendarDays
+                                v-else
                                 class="mx-auto size-8 text-slate-300"
                             />
                             <p
@@ -1838,11 +1886,22 @@ const printAppointments = () => {
                 class="max-h-[calc(100vh-2rem)] sm:max-w-6xl xl:max-w-7xl"
             >
                 <DialogHeader>
-                    <DialogTitle>Prendre un rendez-vous</DialogTitle>
-                    <DialogDescription>
-                        Recherchez un patient, choisissez une journée, puis un
-                        créneau disponible.
-                    </DialogDescription>
+                    <div class="flex items-center gap-3">
+                        <img
+                            v-if="desktopRuntime"
+                            src="/brands/Appointment%20calendar%20with%20checkmark%20confirmation-2.png"
+                            alt=""
+                            class="size-16 object-contain"
+                            loading="lazy"
+                        />
+                        <div class="min-w-0">
+                            <DialogTitle>Prendre un rendez-vous</DialogTitle>
+                            <DialogDescription>
+                                Recherchez un patient, choisissez une journée,
+                                puis un créneau disponible.
+                            </DialogDescription>
+                        </div>
+                    </div>
                 </DialogHeader>
 
                 <div

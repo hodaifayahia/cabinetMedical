@@ -15,6 +15,7 @@ import { home, login } from '@/routes';
 
 const page = usePage();
 const authHome = ref(home());
+const desktopRuntime = ref(false);
 const isWideForm = computed(() =>
     ['auth/Register', 'auth/JoinCabinet', 'auth/DesktopCabinetLogin'].includes(
         page.component,
@@ -27,7 +28,9 @@ defineProps<{
 }>();
 
 onMounted(() => {
-    if (isTauri()) {
+    desktopRuntime.value = isTauri();
+
+    if (desktopRuntime.value) {
         authHome.value = login();
     }
 });
@@ -49,6 +52,30 @@ onMounted(() => {
                 <AppLogoIcon class="size-11 object-contain" />
                 <span class="text-xl font-bold tracking-tight">Drclick</span>
             </Link>
+
+            <section
+                v-if="desktopRuntime"
+                class="mb-5 flex w-full items-center gap-4 rounded-2xl border border-brand/15 bg-brand-soft/45 px-4 py-3 text-left sm:px-5"
+                aria-label="Espace de travail Drclick sécurisé"
+            >
+                <img
+                    src="/brands/Appointment%20confirmed%20with%20a%20teal%20checkmark-6.png"
+                    alt=""
+                    class="size-[4.5rem] shrink-0 object-contain"
+                    fetchpriority="high"
+                />
+                <div class="min-w-0">
+                    <p
+                        class="text-[11px] font-extrabold tracking-[0.14em] text-brand uppercase"
+                    >
+                        Votre cabinet, prêt à travailler
+                    </p>
+                    <p class="mt-1 text-xs leading-5 text-slate-600">
+                        Accédez à vos patients, rendez-vous et dossiers dans un
+                        espace protégé.
+                    </p>
+                </div>
+            </section>
 
             <Card class="w-full border-border/70 shadow-sm">
                 <CardHeader class="space-y-2 px-6 pt-7 pb-5 sm:px-8 sm:pt-8">

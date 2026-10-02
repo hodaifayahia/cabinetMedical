@@ -22,7 +22,8 @@ import {
     Users,
     Wallet,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { isTauri } from '@tauri-apps/api/core';
+import { computed, onMounted, ref } from 'vue';
 import AreaChart from '@/components/charts/AreaChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import ComparisonBarChart from '@/components/charts/ComparisonBarChart.vue';
@@ -163,6 +164,12 @@ const props = defineProps<{
         prescriptions_total: number;
     };
 }>();
+
+const desktopRuntime = ref(false);
+
+onMounted(() => {
+    desktopRuntime.value = isTauri();
+});
 
 defineOptions({
     layout: {
@@ -408,7 +415,10 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
                 <div
                     class="absolute -bottom-24 left-1/3 size-56 rounded-full bg-brand-mint/15 blur-3xl"
                 />
-                <div class="relative">
+                <div
+                    class="relative z-10"
+                    :class="desktopRuntime ? 'lg:max-w-[68%]' : ''"
+                >
                     <div
                         class="flex items-center gap-2 text-sm font-medium text-white/75"
                     >
@@ -454,6 +464,13 @@ const todayLabel = new Intl.DateTimeFormat('fr-DZ', {
                         </Link>
                     </div>
                 </div>
+                <img
+                    v-if="desktopRuntime"
+                    src="/brands/Bell%2C%20calendar%2C%20and%20phone%20reminders-3.png"
+                    alt=""
+                    class="pointer-events-none absolute right-3 bottom-0 hidden h-52 w-52 object-contain lg:block xl:right-5 xl:h-64 xl:w-64"
+                    loading="lazy"
+                />
             </section>
 
             <section class="med-panel p-5">

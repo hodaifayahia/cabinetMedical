@@ -52,6 +52,18 @@ const capabilityIcons: Component[] = [
     ClipboardList,
 ];
 
+// Use the shared medical icon set where it names the capability directly.
+const capabilityIconSources = [
+    null,
+    null,
+    null,
+    '/icons/pharmacy.svg',
+    '/icons/lab-flask.svg',
+    null,
+    '/icons/heart-health.svg',
+    '/icons/medical-cross.svg',
+] as const;
+
 // Same order as copy.principles.
 const principleIcons: Component[] = [
     UserCheck,
@@ -301,9 +313,26 @@ function moveFocus(event: KeyboardEvent, index: number): void {
                         class="group bg-brand-deep p-4 transition-colors hover:bg-[color-mix(in_oklab,var(--brand-deep),white_6%)] sm:p-6"
                     >
                         <span
-                            class="flex size-10 items-center justify-center rounded-xl bg-white/5 text-brand-mint ring-1 ring-white/10 transition group-hover:ring-brand-mint/40"
+                            class="flex size-10 items-center justify-center rounded-xl text-brand-mint ring-1 transition"
+                            :class="
+                                capabilityIconSources[index]
+                                    ? 'bg-white ring-white/20'
+                                    : 'bg-white/5 ring-white/10 group-hover:ring-brand-mint/40'
+                            "
                         >
+                            <img
+                                v-if="capabilityIconSources[index]"
+                                :src="capabilityIconSources[index] ?? ''"
+                                alt=""
+                                aria-hidden="true"
+                                width="24"
+                                height="24"
+                                loading="lazy"
+                                decoding="async"
+                                class="size-5"
+                            />
                             <component
+                                v-else
                                 :is="capabilityIcons[index]"
                                 class="size-5"
                             />

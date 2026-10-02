@@ -4,18 +4,12 @@ import {
     Building2,
     CalendarClock,
     Check,
-    FileText,
-    HardDrive,
-    HeartPulse,
     Mail,
     Menu,
     Monitor,
     MonitorDown,
     Phone,
     Sparkles,
-    Stethoscope,
-    UserCheck,
-    UserCog,
     Users,
     Wifi,
     X,
@@ -151,18 +145,33 @@ const contactHours = computed(
 
 const mobileNavOpen = ref(false);
 
-// Icons paired with the six benefits, in the same order as the copy.
-const benefitIcons: Component[] = [
-    Users,
-    CalendarClock,
-    FileText,
-    HeartPulse,
-    UserCheck,
-    HardDrive,
-];
+// Self-hosted medical SVGs paired with their translated copy, in order.
+const heroHighlightIcons = [
+    '/icons/heart-health.svg',
+    '/icons/calendar.svg',
+    '/icons/prescription.svg',
+] as const;
 
-const roleIcons: Component[] = [Stethoscope, UserCog];
+const benefitIcons = [
+    '/icons/heart-health.svg',
+    '/icons/calendar.svg',
+    '/icons/prescription.svg',
+    '/icons/stethoscope.svg',
+    '/icons/chat.svg',
+    '/icons/medical-cross.svg',
+] as const;
+
+const roleIcons = ['/icons/stethoscope.svg', '/icons/clinic.svg'] as const;
 const requirementIcons: Component[] = [Monitor, Wifi, Building2];
+const requirementIconSources = [null, null, '/icons/clinic.svg'] as const;
+
+const mobileAppPointIcons = [
+    '/icons/search.svg',
+    '/icons/calendar.svg',
+    '/icons/notification-bell.svg',
+    '/icons/medical-cross.svg',
+    '/icons/clinic.svg',
+] as const;
 
 // Hero reassurances, in copy order: instant activation, single install, team.
 const assuranceIcons: Component[] = [Zap, MonitorDown, Users];
@@ -597,14 +606,21 @@ onUnmounted(() => {
                             class="mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3"
                         >
                             <li
-                                v-for="item in copy.hero.highlights"
+                                v-for="(item, index) in copy.hero.highlights"
                                 :key="item"
                                 class="flex items-center gap-2.5 text-sm leading-6 font-medium text-foreground"
                             >
                                 <span
-                                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                                    class="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-soft/70"
                                 >
-                                    <Check class="size-3.5" />
+                                    <img
+                                        :src="heroHighlightIcons[index]"
+                                        alt=""
+                                        aria-hidden="true"
+                                        width="24"
+                                        height="24"
+                                        class="size-5"
+                                    />
                                 </span>
                                 {{ item }}
                             </li>
@@ -726,10 +742,16 @@ onUnmounted(() => {
                                         0{{ index + 1 }}
                                     </span>
                                     <span
-                                        class="flex size-11 items-center justify-center rounded-xl bg-brand-soft/70 text-primary transition-colors group-hover:bg-brand-soft"
+                                        class="flex size-11 items-center justify-center rounded-xl bg-brand-soft/70 transition-colors group-hover:bg-brand-soft"
                                     >
-                                        <component
-                                            :is="benefitIcons[index]"
+                                        <img
+                                            :src="benefitIcons[index]"
+                                            alt=""
+                                            aria-hidden="true"
+                                            width="24"
+                                            height="24"
+                                            loading="lazy"
+                                            decoding="async"
                                             class="size-5"
                                         />
                                     </span>
@@ -1004,10 +1026,16 @@ onUnmounted(() => {
                                 >
                                     <div class="flex items-center gap-3.5">
                                         <span
-                                            class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft/70 text-primary"
+                                            class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft/70"
                                         >
-                                            <component
-                                                :is="roleIcons[index]"
+                                            <img
+                                                :src="roleIcons[index]"
+                                                alt=""
+                                                aria-hidden="true"
+                                                width="24"
+                                                height="24"
+                                                loading="lazy"
+                                                decoding="async"
                                                 class="size-5"
                                             />
                                         </span>
@@ -1082,14 +1110,23 @@ onUnmounted(() => {
                             </p>
                             <ul class="mt-8 space-y-3">
                                 <li
-                                    v-for="point in copy.mobileApp.points"
+                                    v-for="(point, index) in copy.mobileApp.points"
                                     :key="point"
                                     class="flex items-start gap-2.5 text-sm leading-6 font-medium text-foreground"
                                 >
                                     <span
-                                        class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                                        class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft/70"
                                     >
-                                        <Check class="size-3.5" />
+                                        <img
+                                            :src="mobileAppPointIcons[index]"
+                                            alt=""
+                                            aria-hidden="true"
+                                            width="24"
+                                            height="24"
+                                            loading="lazy"
+                                            decoding="async"
+                                            class="size-5"
+                                        />
                                     </span>
                                     {{ point }}
                                 </li>
@@ -1309,7 +1346,23 @@ onUnmounted(() => {
                                         <span
                                             class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft/70 text-primary"
                                         >
+                                            <img
+                                                v-if="requirementIconSources[index]"
+                                                :src="
+                                                    requirementIconSources[
+                                                        index
+                                                    ] ?? ''
+                                                "
+                                                alt=""
+                                                aria-hidden="true"
+                                                width="24"
+                                                height="24"
+                                                loading="lazy"
+                                                decoding="async"
+                                                class="size-5"
+                                            />
                                             <component
+                                                v-else
                                                 :is="requirementIcons[index]"
                                                 class="size-5"
                                             />

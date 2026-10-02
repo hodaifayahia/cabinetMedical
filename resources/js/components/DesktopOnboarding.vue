@@ -14,7 +14,6 @@ import {
     Stethoscope,
     UsersRound,
 } from '@lucide/vue';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { login, register } from '@/routes';
 
 withDefaults(
@@ -50,9 +49,9 @@ const profileDetails = [
             class="relative w-full max-w-4xl overflow-hidden rounded-[2rem] border border-white/15 bg-white shadow-[0_35px_100px_rgba(2,8,23,0.55)]"
         >
             <div
-                class="grid border-b border-slate-200 bg-slate-50/90 lg:grid-cols-[1fr_auto]"
+                class="grid items-center gap-2 border-b border-slate-200 bg-slate-50/90 lg:grid-cols-[minmax(0,1fr)_18rem]"
             >
-                <div class="p-7 sm:p-9">
+                <div class="p-7 sm:p-9 lg:pr-2">
                     <div
                         class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold tracking-wide text-emerald-700 uppercase"
                     >
@@ -74,9 +73,14 @@ const profileDetails = [
                     </p>
                 </div>
                 <div
-                    class="hidden items-center border-l border-slate-200 px-9 lg:flex"
+                    class="hidden h-full min-h-64 items-center justify-center border-l border-slate-200 bg-brand-soft/40 p-5 lg:flex"
                 >
-                    <AppLogoIcon class="size-20 object-contain" />
+                    <img
+                        src="/brands/Floating%20healthcare%20booking%20essentials-4.png"
+                        alt="Illustration des outils de rendez-vous du cabinet"
+                        class="h-60 w-full object-contain"
+                        fetchpriority="high"
+                    />
                 </div>
             </div>
 
