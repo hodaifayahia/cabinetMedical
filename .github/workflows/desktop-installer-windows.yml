@@ -1,8 +1,9 @@
 name: desktop-installer-windows
 
-# Builds the Drclick Windows desktop installer (.msi + .exe NSIS)
-# and uploads it as a workflow artifact. On tags (v*), it also attaches
-# the installers to a GitHub Release.
+# Builds the Drclick Windows desktop installer (NSIS .exe): the local-first,
+# offline-capable application with its bundled PHP runtime, Laravel tree and
+# empty SQLite template, staged by the stage-payload job. Uploads it as a
+# workflow artifact; on tags (v*), also attaches it to a GitHub Release.
 
 on:
   push:
@@ -21,8 +22,82 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  stage-payload:
+    # The offline payload (Windows PHP runtime, production Laravel tree, empty
+    # migrated SQLite template: src-tauri/resources/README.md) is staged on
+    # Linux, where stage-local-payload.mjs can run composer, unzip and artisan.
+    # The Windows job only packages it; build.rs still refuses an installer
+    # without it.
+    name: Stage offline payload
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+          extensions: ctype, curl, dom, fileinfo, gd, intl, mbstring, openssl, pdo_sqlite, sodium, sqlite3, xml, zip
+          tools: composer:2.8.9
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies for the asset build
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress --no-ansi
+          npm ci
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Download and verify the Windows PHP runtime
+        run: |
+          set -euo pipefail
+          curl -fsSL https://windows.php.net/downloads/releases/releases.json -o "$RUNNER_TEMP/php-releases.json"
+          zip_path="$(jq -r '.["8.3"]["nts-vs16-x64"].zip.path' "$RUNNER_TEMP/php-releases.json")"
+          zip_sha="$(jq -r '.["8.3"]["nts-vs16-x64"].zip.sha256' "$RUNNER_TEMP/php-releases.json")"
+          [[ "$zip_path" =~ ^php-8\.3\.[0-9]+-nts-Win32-vs16-x64\.zip$ ]] || { echo "unexpected PHP build: $zip_path"; exit 1; }
+          [[ "$zip_sha" =~ ^[0-9a-f]{64}$ ]] || { echo "no checksum published for $zip_path"; exit 1; }
+          curl -fsSL "https://windows.php.net/downloads/releases/$zip_path" -o "$RUNNER_TEMP/php-windows.zip"
+          echo "PHP_WINDOWS_ZIP=$RUNNER_TEMP/php-windows.zip" >> "$GITHUB_ENV"
+          echo "PHP_WINDOWS_SHA256=$zip_sha" >> "$GITHUB_ENV"
+          echo "Windows PHP runtime: $zip_path"
+
+      - name: Stage the offline payload
+        # stage-local-payload.mjs compares the checksum before extracting.
+        run: node scripts/desktop/stage-local-payload.mjs --php-zip "$PHP_WINDOWS_ZIP" --php-sha256 "$PHP_WINDOWS_SHA256" --skip-assets
+
+      - name: Upload the offline payload
+        uses: actions/upload-artifact@v4
+        with:
+          name: drclick-offline-payload
+          path: |
+            src-tauri/resources/php
+            src-tauri/resources/laravel
+            src-tauri/resources/initial
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+
   build-installer:
     name: Build Windows installer
+    needs: stage-payload
     runs-on: windows-latest
     timeout-minutes: 60
     env:
@@ -49,6 +124,12 @@ jobs:
           if ($env:GITHUB_REF_NAME -cne $expectedTag) {
             throw "Release tag '$env:GITHUB_REF_NAME' must exactly match desktop version '$expectedTag'."
           }
+
+      - name: Download the offline payload
+        uses: actions/download-artifact@v4
+        with:
+          name: drclick-offline-payload
+          path: src-tauri/resources
 
       - name: Setup Node
         uses: actions/setup-node@v4
