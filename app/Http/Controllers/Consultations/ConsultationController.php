@@ -34,6 +34,7 @@ use App\Services\Clinical\PatientSafety;
 use App\Services\DocumentBrandingService;
 use App\Support\Appointments\BookingProvenance;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -467,6 +468,7 @@ class ConsultationController extends Controller
             ],
             'canEdit' => $canEdit,
             'canCollectPayment' => $request->user()?->can('payments.create') ?? false,
+            'canManageActs' => $request->user()?->can('configuration.manage') ?? false,
             'safety' => $safety->summary($patient),
             'diagnosisCodes' => ConsultationDiagnosis::query()
                 ->where('consultation_id', $consultation->getKey())
@@ -916,6 +918,37 @@ class ConsultationController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('File removed.')]);
 
         return back();
+    }
+
+    /**
+     * Create a new prestation (name + price) from the consultation payment
+     * panel, returning it so the picker can use it immediately.
+     *
+     * Doctor-only: the route is gated by `configuration.manage`, a permission
+     * the assistant role does not hold, so an assistant can collect payments
+     * but cannot invent new acts.
+     */
+    public function storePrestation(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'price' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+        ]);
+
+        $price = $validated['price'] ?? null;
+
+        $fee = ConsultationFee::query()->create([
+            'label' => $validated['name'],
+            'amount_minor' => $price !== null ? (int) round(((float) $price) * 100) : null,
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'prestation' => [
+                'label' => $fee->label,
+                'amount' => $fee->amount_minor !== null ? $fee->amount_minor / 100 : null,
+            ],
+        ]);
     }
 
     /**

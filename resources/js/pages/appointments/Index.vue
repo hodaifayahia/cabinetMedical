@@ -522,6 +522,7 @@ const prestationOpen = ref(false);
 const prestationEditorMode = ref<'create' | 'edit' | null>(null);
 const prestationEditingOption = ref<AppointmentPrestationOption | null>(null);
 const prestationEditorValue = ref('');
+const prestationEditorPrice = ref('');
 const prestationEditorError = ref('');
 const prestationProcessing = ref(false);
 
@@ -771,6 +772,7 @@ const startPrestationCreate = () => {
     prestationEditorMode.value = 'create';
     prestationEditingOption.value = null;
     prestationEditorValue.value = '';
+    prestationEditorPrice.value = '';
     prestationEditorError.value = '';
 };
 
@@ -778,6 +780,7 @@ const startPrestationEdit = (prestation: AppointmentPrestationOption) => {
     prestationEditorMode.value = 'edit';
     prestationEditingOption.value = prestation;
     prestationEditorValue.value = prestation.label;
+    prestationEditorPrice.value = '';
     prestationEditorError.value = '';
 };
 
@@ -785,6 +788,7 @@ const cancelPrestationEditor = () => {
     prestationEditorMode.value = null;
     prestationEditingOption.value = null;
     prestationEditorValue.value = '';
+    prestationEditorPrice.value = '';
     prestationEditorError.value = '';
 };
 
@@ -830,6 +834,17 @@ const savePrestation = async () => {
     prestationProcessing.value = true;
     prestationEditorError.value = '';
 
+    const trimmedPrice = prestationEditorPrice.value.trim();
+    const price =
+        trimmedPrice === '' ? null : Number(trimmedPrice.replace(',', '.'));
+
+    if (price !== null && (Number.isNaN(price) || price < 0)) {
+        prestationEditorError.value = 'Saisissez un prix valide.';
+        prestationProcessing.value = false;
+
+        return;
+    }
+
     try {
         const response = prestationEditingOption.value
             ? await putJson<{ prestation: AppointmentPrestationOption }>(
@@ -841,7 +856,7 @@ const savePrestation = async () => {
               )
             : await postJson<{ prestation: AppointmentPrestationOption }>(
                   '/app/appointments/prestations',
-                  { name },
+                  { name, price },
               );
         const saved = response.prestation;
 
@@ -2163,6 +2178,24 @@ const printAppointments = () => {
                                                     "
                                                     class="h-8"
                                                     placeholder="Nom de l’acte"
+                                                    autocomplete="off"
+                                                    @keydown.enter.prevent="
+                                                        savePrestation
+                                                    "
+                                                />
+                                                <Input
+                                                    v-if="
+                                                        prestationEditorMode ===
+                                                        'create'
+                                                    "
+                                                    v-model="
+                                                        prestationEditorPrice
+                                                    "
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    class="h-8 w-28"
+                                                    placeholder="Prix (DA)"
                                                     autocomplete="off"
                                                     @keydown.enter.prevent="
                                                         savePrestation

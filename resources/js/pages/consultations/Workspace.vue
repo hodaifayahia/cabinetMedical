@@ -65,6 +65,7 @@ import type {
 } from '@/lib/ai';
 import { consultationAiUrl, runAi } from '@/lib/ai';
 import { bindAiWorkspace } from '@/lib/aiWorkspace';
+import { isValidationError, postJson } from '@/lib/http';
 import type {
     BilanTemplate,
     ClinicalDocument,
@@ -239,6 +240,7 @@ const props = defineProps<{
     stats: { consultations: number; appointments: number };
     canEdit: boolean;
     canCollectPayment: boolean;
+    canManageActs: boolean;
     safety: PatientSafetySummary;
     canEditSafety: boolean;
     protocols: PrescriptionProtocol[];
@@ -729,14 +731,79 @@ const confirmConsultation = () => {
     }
 };
 
+const availablePrestations = ref([...props.prestations]);
+const prestationCreating = ref(false);
+const newPrestationName = ref('');
+const newPrestationPrice = ref('');
+const prestationError = ref('');
+const prestationSaving = ref(false);
+
 const selectPaymentService = (value: string) => {
     consultationForm.payment_service = value;
     paymentForm.service = value;
-    const prestation = props.prestations.find((item) => item.label === value);
+    const prestation = availablePrestations.value.find(
+        (item) => item.label === value,
+    );
 
     if (prestation?.amount != null) {
         consultationForm.payment_amount = String(prestation.amount);
         paymentForm.amount = String(prestation.amount);
+    }
+};
+
+const openPrestationCreator = () => {
+    prestationCreating.value = true;
+    newPrestationName.value = '';
+    newPrestationPrice.value = '';
+    prestationError.value = '';
+};
+
+const cancelPrestationCreator = () => {
+    prestationCreating.value = false;
+    newPrestationName.value = '';
+    newPrestationPrice.value = '';
+    prestationError.value = '';
+};
+
+const createPrestation = async () => {
+    const name = newPrestationName.value.trim();
+
+    if (!name) {
+        prestationError.value = 'Saisissez le nom de la prestation.';
+
+        return;
+    }
+
+    const trimmedPrice = newPrestationPrice.value.trim();
+    const price =
+        trimmedPrice === '' ? null : Number(trimmedPrice.replace(',', '.'));
+
+    if (price !== null && (Number.isNaN(price) || price < 0)) {
+        prestationError.value = 'Saisissez un prix valide.';
+
+        return;
+    }
+
+    prestationSaving.value = true;
+    prestationError.value = '';
+
+    try {
+        const response = await postJson<{
+            prestation: { label: string; amount: number | null };
+        }>('/app/consultations/prestations', { name, price });
+        const saved = response.prestation;
+
+        availablePrestations.value = [saved, ...availablePrestations.value];
+        selectPaymentService(saved.label);
+        cancelPrestationCreator();
+    } catch (error) {
+        prestationError.value = isValidationError(error)
+            ? (error.errors.name?.[0] ??
+              error.errors.price?.[0] ??
+              'Enregistrement impossible.')
+            : 'Impossible d’enregistrer la prestation. Veuillez réessayer.';
+    } finally {
+        prestationSaving.value = false;
     }
 };
 
@@ -2142,7 +2209,7 @@ const tabClass = (activeTab: boolean): string =>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
-                                            v-for="prestation in prestations"
+                                            v-for="prestation in availablePrestations"
                                             :key="prestation.label"
                                             :value="prestation.label"
                                         >
@@ -2163,6 +2230,71 @@ const tabClass = (activeTab: boolean): string =>
                                 <InputError
                                     :message="paymentForm.errors.service"
                                 />
+                                <div v-if="canManageActs" class="mt-1">
+                                    <Button
+                                        v-if="!prestationCreating"
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 justify-start gap-1.5 px-1 text-brand hover:text-brand"
+                                        @click="openPrestationCreator"
+                                    >
+                                        <Plus class="size-4" />
+                                        Nouvelle prestation
+                                    </Button>
+                                    <div
+                                        v-else
+                                        class="space-y-2 rounded-lg border border-sidebar-border/70 p-2 dark:border-sidebar-border"
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            <Input
+                                                v-model="newPrestationName"
+                                                class="h-8"
+                                                placeholder="Nom de la prestation"
+                                                autocomplete="off"
+                                                @keydown.enter.prevent="
+                                                    createPrestation
+                                                "
+                                            />
+                                            <Input
+                                                v-model="newPrestationPrice"
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                class="h-8 w-28"
+                                                placeholder="Prix (DA)"
+                                                autocomplete="off"
+                                                @keydown.enter.prevent="
+                                                    createPrestation
+                                                "
+                                            />
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                :disabled="prestationSaving"
+                                                @click="createPrestation"
+                                            >
+                                                Enregistrer
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                @click="cancelPrestationCreator"
+                                            >
+                                                Annuler
+                                            </Button>
+                                        </div>
+                                        <p
+                                            v-if="prestationError"
+                                            class="text-xs text-destructive"
+                                        >
+                                            {{ prestationError }}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                             <div class="grid gap-1.5">
                                 <Label for="c-amount">Prix total (DA)</Label>

@@ -358,10 +358,14 @@ class AppointmentController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'price' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
         ]);
+
+        $price = $validated['price'] ?? null;
 
         $fee = ConsultationFee::query()->create([
             'label' => $validated['name'],
+            'amount_minor' => $price !== null ? (int) round(((float) $price) * 100) : null,
             'is_active' => true,
         ]);
 

@@ -336,6 +336,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('consultations/{consultation}/word-documents/{document}/convert', [ClinicalDocumentController::class, 'convert'])
             ->middleware('permission:consultations.update')->name('consultations.word-documents.convert');
 
+        // New prestation (name + price) added straight from the payment panel.
+        // Doctor-only: configuration.manage is not granted to the assistant.
+        Route::post('consultations/prestations', [ConsultationController::class, 'storePrestation'])
+            ->middleware('permission:configuration.manage')->name('consultations.prestations.store');
+
         // Reusable exam selections saved from the bilan editor. They belong to
         // the cabinet rather than to one consultation, hence no {consultation}.
         Route::post('bilan-templates', [BilanTemplateController::class, 'store'])
