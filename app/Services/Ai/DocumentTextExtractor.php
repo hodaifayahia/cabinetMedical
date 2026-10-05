@@ -89,14 +89,18 @@ final class DocumentTextExtractor
             preg_match_all('/\((?:\\\\.|[^\\\\)])*\)\s*(?:Tj|\'|")|\[(.*?)\]\s*TJ|(T\*|Td|TD|Tm)/s', $block, $ops, PREG_SET_ORDER);
 
             foreach ($ops as $op) {
-                if (isset($op[3]) && $op[3] !== '') {
-                    $out .= in_array($op[3], ['T*', 'Td', 'TD'], true) ? "\n" : ' ';
+                // Group 2 is the positioning operator (T*, Td, TD, Tm): a new
+                // line for the vertical movers, a space otherwise.
+                if (isset($op[2]) && $op[2] !== '') {
+                    $out .= in_array($op[2], ['T*', 'Td', 'TD'], true) ? "\n" : ' ';
 
                     continue;
                 }
 
-                if (isset($op[2]) && $op[2] !== '') {
-                    preg_match_all('/\((?:\\\\.|[^\\\\)])*\)|(-?\d+(?:\.\d+)?)/', $op[2], $parts, PREG_SET_ORDER);
+                // Group 1 is the contents of a [...] TJ array: a run of string
+                // fragments interleaved with numeric kerning adjustments.
+                if (isset($op[1]) && $op[1] !== '') {
+                    preg_match_all('/\((?:\\\\.|[^\\\\)])*\)|(-?\d+(?:\.\d+)?)/', $op[1], $parts, PREG_SET_ORDER);
 
                     foreach ($parts as $part) {
                         if (isset($part[1]) && $part[1] !== '' && (float) $part[1] < -200) {
