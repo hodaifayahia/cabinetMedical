@@ -1431,4 +1431,496 @@ mod tests {
         assert!(first.len() >= 40);
         assert!(!first.contains('='));
     }
+
+    fn contract(
+        queue_worker: QueueWorkerStatus,
+        scheduler: SchedulerStatus,
+        lan_listener: LanListenerStatus,
+        lan_generation: u64,
+    ) -> PhpRuntimeContract {
+        PhpRuntimeContract {
+            queue_worker,
+            scheduler,
+            lan_listener,
+            lan_generation,
+        }
+    }
+
+    #[test]
+    fn identical_runtime_contracts_require_no_refresh() {
+        let current = contract(
+            QueueWorkerStatus::Active,
+            SchedulerStatus::Active,
+            LanListenerStatus::Active,
+            7,
+        );
+
+        assert_eq!(runtime_contract_change_code(current, current), None);
+    }
+
+    #[test]
+    fn runtime_contract_changes_are_reported_in_priority_order() {
+        let expected = contract(
+            QueueWorkerStatus::Active,
+            SchedulerStatus::Active,
+            LanListenerStatus::Active,
+            1,
+        );
+        let everything_changed = contract(
+            QueueWorkerStatus::Stopped,
+            SchedulerStatus::Stopped,
+            LanListenerStatus::Stopped,
+            2,
+        );
+        assert_eq!(
+            runtime_contract_change_code(expected, everything_changed),
+            Some("queue_worker_status_changed")
+        );
+
+        let scheduler_and_lan = PhpRuntimeContract {
+            queue_worker: QueueWorkerStatus::Active,
+            ..everything_changed
+        };
+        assert_eq!(
+            runtime_contract_change_code(expected, scheduler_and_lan),
+            Some("scheduler_status_changed")
+        );
+
+        let lan_and_generation = PhpRuntimeContract {
+            scheduler: SchedulerStatus::Active,
+            ..scheduler_and_lan
+        };
+        assert_eq!(
+            runtime_contract_change_code(expected, lan_and_generation),
+            Some("lan_listener_status_changed")
+        );
+    }
+
+    #[test]
+    fn queue_worker_status_change_is_a_contract_refresh() {
+        let expected = contract(
+            QueueWorkerStatus::Stopped,
+            SchedulerStatus::Active,
+            LanListenerStatus::Stopped,
+            0,
+        );
+        let observed = PhpRuntimeContract {
+            queue_worker: QueueWorkerStatus::Active,
+            ..expected
+        };
+
+        assert_eq!(
+            runtime_contract_change_code(expected, observed),
+            Some("queue_worker_status_changed")
+        );
+    }
+
+    #[test]
+    fn only_contract_codes_are_classified_as_refreshes() {
+        for code in [
+            "queue_worker_status_changed",
+            "scheduler_status_changed",
+            "lan_listener_status_changed",
+            "lan_listener_configuration_changed",
+        ] {
+            assert!(is_runtime_contract_status_change(code), "{code}");
+        }
+        for code in [
+            "",
+            "laravel_exited",
+            "process_spawn_failed",
+            "health_timeout",
+            "runtime_stopping",
+            "QUEUE_WORKER_STATUS_CHANGED",
+            "queue_worker_status_changed ",
+        ] {
+            assert!(!is_runtime_contract_status_change(code), "{code}");
+        }
+    }
+
+    #[test]
+    fn disabled_lan_contract_still_publishes_the_stopped_status() {
+        let mut command = Command::new("php");
+        configure_lan_upload_contract(&mut command, None, LanListenerStatus::Stopped);
+
+        let status = command
+            .get_envs()
+            .find(|(name, _)| *name == "MEDISMART_LAN_LISTENER_STATUS")
+            .and_then(|(_, value)| value)
+            .and_then(|value| value.to_str());
+
+        assert_eq!(status, Some("stopped"));
+    }
+
+    #[test]
+    fn recorded_port_parsing_accepts_only_unprivileged_trimmed_ports() {
+        let directory = scratch_runtime_directory();
+        let record = directory.join(LOOPBACK_PORT_FILE);
+
+        for (contents, expected) in [
+            ("1024", Some(1024)),
+            ("65535", Some(65535)),
+            ("  43123\n", Some(43123)),
+            ("1023", None),
+            ("-1", None),
+            ("65536", None),
+            ("43123 43124", None),
+            ("0x1000", None),
+            ("+5000", Some(5000)),
+        ] {
+            fs::write(&record, contents).unwrap();
+            assert_eq!(read_recorded_port(&record), expected, "{contents:?}");
+        }
+        fs::remove_file(&record).unwrap();
+        assert_eq!(read_recorded_port(&record), None);
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn unwritable_runtime_directory_still_yields_a_port() {
+        let directory = scratch_runtime_directory();
+        let missing = directory.join("does-not-exist");
+
+        let port = reserve_stable_loopback_port(&missing).unwrap();
+
+        assert!(port > 0);
+        assert!(!missing.exists());
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn a_free_recorded_port_is_reused_verbatim() {
+        let directory = scratch_runtime_directory();
+        let free = allocate_loopback_port().unwrap();
+        fs::write(directory.join(LOOPBACK_PORT_FILE), free.to_string()).unwrap();
+
+        assert_eq!(reserve_stable_loopback_port(&directory).unwrap(), free);
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn runtime_secrets_are_43_url_safe_characters_encoding_32_bytes() {
+        let secret = generate_runtime_secret();
+
+        assert_eq!(secret.len(), 43);
+        assert!(secret
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_')));
+        assert_eq!(URL_SAFE_NO_PAD.decode(&secret).unwrap().len(), 32);
+    }
+
+    #[test]
+    fn readiness_requires_every_health_component() {
+        let body =
+            |status: &str, connected: bool, foundation: bool, writable: bool, queue: bool| {
+                serde_json::from_value::<DetailedHealthResponse>(serde_json::json!({
+                    "status": status,
+                    "database": {"connected": connected, "foundation_ready": foundation},
+                    "storage": {"writable": writable},
+                    "queue": {"available": queue},
+                }))
+                .unwrap()
+            };
+
+        assert!(body("healthy", true, true, true, true).is_ready());
+        assert!(!body("degraded", true, true, true, true).is_ready());
+        assert!(!body("Healthy", true, true, true, true).is_ready());
+        assert!(!body("healthy", false, true, true, true).is_ready());
+        assert!(!body("healthy", true, false, true, true).is_ready());
+        assert!(!body("healthy", true, true, false, true).is_ready());
+        assert!(!body("healthy", true, true, true, false).is_ready());
+    }
+
+    #[test]
+    fn readiness_fails_when_any_component_section_is_missing() {
+        for missing in ["database", "storage", "queue"] {
+            let mut value = serde_json::json!({
+                "status": "healthy",
+                "database": {"connected": true, "foundation_ready": true},
+                "storage": {"writable": true},
+                "queue": {"available": true},
+            });
+            value.as_object_mut().unwrap().remove(missing);
+            let response: DetailedHealthResponse = serde_json::from_value(value).unwrap();
+            assert!(!response.is_ready(), "missing {missing}");
+        }
+    }
+
+    #[test]
+    fn malformed_health_component_fields_do_not_parse() {
+        assert!(serde_json::from_str::<DetailedHealthResponse>(
+            r#"{"status":"healthy","database":{"connected":"yes","foundation_ready":true}}"#
+        )
+        .is_err());
+        assert!(serde_json::from_str::<DetailedHealthResponse>(r#"{"database":null}"#).is_err());
+    }
+
+    #[test]
+    fn runtime_error_display_includes_code_and_detail() {
+        let error = RuntimeError::new("health_timeout", "no answer");
+
+        assert_eq!(error.to_string(), "health_timeout: no answer");
+        assert_eq!(error.code(), "health_timeout");
+    }
+
+    fn pump_into_log(input: Vec<u8>) -> String {
+        let directory = scratch_runtime_directory();
+        let logger = Arc::new(RuntimeLogger::open(&directory, &[], &[]).unwrap());
+
+        pump_child_output(std::io::Cursor::new(input), "PHP-OUT", Arc::clone(&logger));
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while Arc::strong_count(&logger) > 1 && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(5));
+        }
+        assert_eq!(Arc::strong_count(&logger), 1, "output pump did not finish");
+        drop(logger);
+
+        let output = fs::read_to_string(directory.join("desktop-supervisor.log")).unwrap();
+        fs::remove_dir_all(&directory).ok();
+        output
+            .lines()
+            .map(|line| line.split_once("] [PHP-OUT] ").unwrap().1.to_owned())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn child_output_is_logged_line_by_line_including_unterminated_tail() {
+        let logged = pump_into_log(b"first\nsecond\r\nthird".to_vec());
+
+        assert_eq!(logged, "first\nsecond\nthird");
+    }
+
+    #[test]
+    fn invalid_utf8_child_output_is_logged_lossily() {
+        let logged = pump_into_log(b"bad \xff byte\n".to_vec());
+
+        assert_eq!(logged, "bad \u{fffd} byte");
+    }
+
+    #[test]
+    fn oversized_child_lines_are_replaced_and_following_lines_survive() {
+        let mut input = vec![b'a'; MAX_CHILD_LOG_LINE_BYTES * 3];
+        input.extend_from_slice(b"\nafter\n");
+        input.extend_from_slice(&vec![b'b'; MAX_CHILD_LOG_LINE_BYTES + 1]);
+
+        let logged = pump_into_log(input);
+
+        assert_eq!(
+            logged,
+            "[oversized process line omitted]\nafter\n[oversized process line omitted]"
+        );
+    }
+
+    #[test]
+    fn child_line_at_the_limit_is_kept_intact() {
+        let mut input = vec![b'c'; MAX_CHILD_LOG_LINE_BYTES];
+        input.push(b'\n');
+
+        let logged = pump_into_log(input);
+
+        assert_eq!(logged, "c".repeat(MAX_CHILD_LOG_LINE_BYTES));
+    }
+
+    fn idle_services(
+        directory: &std::path::Path,
+    ) -> (
+        Arc<QueueWorkerSupervisor>,
+        Arc<SchedulerSupervisor>,
+        Arc<LanUploadSupervisor>,
+    ) {
+        let logs = directory.join("logs");
+        let logger =
+            |name: &str| Arc::new(RuntimeLogger::open_named(&logs, name, &[], &[]).unwrap());
+        let queue_worker = QueueWorkerSupervisor::new(
+            crate::QueueWorkerConfig {
+                php_binary: PathBuf::from("php"),
+                app_root: directory.to_path_buf(),
+                runtime_directory: directory.join("runtime"),
+                temporary_directory: directory.join("tmp"),
+                framework_cache_directory: directory.join("cache"),
+                database_path: None,
+                storage_path: None,
+                app_key: None,
+                installation_id: None,
+                application_version: "0.1.0-test".to_owned(),
+                production: false,
+                startup_stability_timeout: Duration::from_millis(50),
+                shutdown_timeout: Duration::from_secs(1),
+                retry_limit: 0,
+                retry_delay: Duration::from_millis(1),
+            },
+            logger("queue-worker-supervisor.log"),
+        )
+        .unwrap();
+        let scheduler = SchedulerSupervisor::new(
+            crate::SchedulerConfig {
+                php_binary: PathBuf::from("php"),
+                app_root: directory.to_path_buf(),
+                runtime_directory: directory.join("runtime"),
+                temporary_directory: directory.join("tmp"),
+                framework_cache_directory: directory.join("cache"),
+                database_path: None,
+                storage_path: None,
+                app_key: None,
+                installation_id: None,
+                application_version: "0.1.0-test".to_owned(),
+                production: false,
+                startup_stability_timeout: Duration::from_millis(50),
+                shutdown_timeout: Duration::from_secs(1),
+                retry_limit: 0,
+                retry_delay: Duration::from_millis(1),
+            },
+            logger("scheduler-supervisor.log"),
+        )
+        .unwrap();
+        let lan =
+            LanUploadSupervisor::disabled(&directory.join("runtime"), logger("lan-supervisor.log"))
+                .unwrap();
+        (Arc::new(queue_worker), Arc::new(scheduler), Arc::new(lan))
+    }
+
+    fn unlaunchable_supervisor(directory: &std::path::Path, retry_limit: u8) -> Arc<Supervisor> {
+        let (queue_worker, scheduler, lan) = idle_services(directory);
+        Arc::new(
+            Supervisor::new(
+                SupervisorConfig {
+                    php_binary: directory.join("no-such-php-binary"),
+                    app_root: directory.to_path_buf(),
+                    public_directory: directory.to_path_buf(),
+                    router_script: directory.join("router.php"),
+                    runtime_directory: directory.join("runtime"),
+                    temporary_directory: directory.join("tmp"),
+                    framework_cache_directory: directory.join("cache"),
+                    database_path: None,
+                    storage_path: None,
+                    app_key: None,
+                    installation_id: None,
+                    application_version: "0.1.0-test".to_owned(),
+                    signed_updater_configured: false,
+                    production: false,
+                    health_key: "test-health-key".to_owned(),
+                    tunnel_upload_hostname: None,
+                    health_timeout: Duration::from_millis(100),
+                    shutdown_timeout: Duration::from_millis(100),
+                    retry_limit,
+                    retry_delay: Duration::from_millis(1),
+                },
+                queue_worker,
+                scheduler,
+                lan,
+                Arc::new(RuntimeLogger::open(&directory.join("logs"), &[], &[]).unwrap()),
+            )
+            .unwrap(),
+        )
+    }
+
+    fn run_collecting_events(supervisor: Arc<Supervisor>) -> Vec<String> {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let sink = Arc::clone(&events);
+        supervisor.run(move |event| sink.lock().unwrap().push(format!("{event:?}")));
+        let collected = events.lock().unwrap().clone();
+        collected
+    }
+
+    fn read_desktop_state(directory: &std::path::Path) -> RuntimeSnapshot {
+        serde_json::from_slice(&fs::read(directory.join("runtime/desktop-state.json")).unwrap())
+            .unwrap()
+    }
+
+    #[test]
+    fn spawn_failures_retry_with_bounded_budget_then_fail_and_stop() {
+        let directory = scratch_runtime_directory();
+        let supervisor = unlaunchable_supervisor(&directory, 2);
+
+        let events = run_collecting_events(Arc::clone(&supervisor));
+
+        assert_eq!(
+            events,
+            vec![
+                "Starting { retry_count: 0 }",
+                "Retrying { retry_count: 1, code: \"process_spawn_failed\" }",
+                "Starting { retry_count: 1 }",
+                "Retrying { retry_count: 2, code: \"process_spawn_failed\" }",
+                "Starting { retry_count: 2 }",
+                "Failed { code: \"process_retries_exhausted\" }",
+                "Stopped",
+            ]
+        );
+        let state = read_desktop_state(&directory);
+        assert_eq!(state.phase, RuntimePhase::Stopped);
+        assert_eq!(state.retry_count, 2);
+        assert!(
+            !fs::read_to_string(directory.join("runtime/desktop-state.json"))
+                .unwrap()
+                .contains(directory.to_string_lossy().as_ref())
+        );
+        drop(supervisor);
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn zero_retry_budget_fails_after_the_first_attempt() {
+        let directory = scratch_runtime_directory();
+        let supervisor = unlaunchable_supervisor(&directory, 0);
+
+        let events = run_collecting_events(Arc::clone(&supervisor));
+
+        assert_eq!(
+            events,
+            vec![
+                "Starting { retry_count: 0 }",
+                "Failed { code: \"process_retries_exhausted\" }",
+                "Stopped",
+            ]
+        );
+        drop(supervisor);
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn stop_before_run_skips_launching_and_reports_stopped() {
+        let directory = scratch_runtime_directory();
+        let supervisor = unlaunchable_supervisor(&directory, 3);
+
+        supervisor.stop();
+        assert_eq!(read_desktop_state(&directory).phase, RuntimePhase::Stopping);
+        supervisor.stop();
+        let events = run_collecting_events(Arc::clone(&supervisor));
+
+        assert_eq!(events, vec!["Stopped"]);
+        assert_eq!(read_desktop_state(&directory).phase, RuntimePhase::Stopped);
+        let log = fs::read_to_string(directory.join("logs/desktop-supervisor.log")).unwrap();
+        assert_eq!(log.matches("Desktop shutdown requested").count(), 1);
+        drop(supervisor);
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn run_is_single_shot_per_supervisor() {
+        let directory = scratch_runtime_directory();
+        let supervisor = unlaunchable_supervisor(&directory, 0);
+
+        let first = run_collecting_events(Arc::clone(&supervisor));
+        let second = run_collecting_events(Arc::clone(&supervisor));
+
+        assert_eq!(first.last().map(String::as_str), Some("Stopped"));
+        assert!(second.is_empty());
+        drop(supervisor);
+        fs::remove_dir_all(&directory).ok();
+    }
+
+    #[test]
+    fn idle_dependencies_are_observed_as_stopped_in_the_runtime_contract() {
+        let directory = scratch_runtime_directory();
+        let supervisor = unlaunchable_supervisor(&directory, 0);
+
+        let observed = supervisor.observed_runtime_contract();
+
+        assert_eq!(observed.queue_worker, QueueWorkerStatus::Stopped);
+        assert_eq!(observed.scheduler, SchedulerStatus::Stopped);
+        assert_eq!(observed.lan_listener, LanListenerStatus::Stopped);
+        drop(supervisor);
+        fs::remove_dir_all(&directory).ok();
+    }
 }

@@ -309,4 +309,295 @@ mod tests {
             assert!(validate_server_url(rejected).is_err(), "{rejected}");
         }
     }
+
+    use std::{io::Read, net::TcpListener, sync::mpsc, thread};
+
+    /// Serve exactly one canned HTTP response on a loopback port and report
+    /// the raw request back, so `probe_server` is exercised without a network.
+    fn one_shot_server(response: Vec<u8>) -> (Url, mpsc::Receiver<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let (sender, receiver) = mpsc::channel();
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut buffer = [0_u8; 1024];
+            while !request.windows(4).any(|window| window == b"\r\n\r\n") {
+                let read = stream.read(&mut buffer).unwrap_or(0);
+                if read == 0 {
+                    break;
+                }
+                request.extend_from_slice(&buffer[..read]);
+            }
+            let _ = stream.write_all(&response);
+            let _ = stream.flush();
+            let _ = sender.send(String::from_utf8_lossy(&request).into_owned());
+        });
+        (Url::parse(&format!("http://{address}/")).unwrap(), receiver)
+    }
+
+    fn http_response(status: &str, body: &str) -> Vec<u8> {
+        format!(
+            "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        )
+        .into_bytes()
+    }
+
+    fn probe(response: Vec<u8>) -> (Result<ServerProbe, String>, String) {
+        let (url, request) = one_shot_server(response);
+        let result = tauri::async_runtime::block_on(probe_server(&url));
+        let request = request
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .unwrap_or_default();
+        (result, request)
+    }
+
+    const HEALTHY: &str =
+        r#"{"status":"healthy","application":{"name":"Drclick","version":"2.3.4"}}"#;
+
+    #[test]
+    fn validation_trims_whitespace_and_normalises_to_the_root_path() {
+        let url = validate_server_url("  https://Hub.Example.TEST  ").unwrap();
+
+        assert_eq!(url.as_str(), "https://hub.example.test/");
+        assert_eq!(
+            validate_server_url("https://hub.example.test:8443")
+                .unwrap()
+                .as_str(),
+            "https://hub.example.test:8443/"
+        );
+        assert_eq!(
+            validate_server_url("https://hub.example.test:443/")
+                .unwrap()
+                .port(),
+            None
+        );
+    }
+
+    #[test]
+    fn validation_reports_the_specific_problem_in_french() {
+        assert_eq!(
+            validate_server_url("").unwrap_err(),
+            "Saisissez une adresse de serveur valide."
+        );
+        assert_eq!(
+            validate_server_url("not a url").unwrap_err(),
+            "Saisissez une adresse de serveur valide."
+        );
+        assert_eq!(
+            validate_server_url("https://user@hub.example.test/").unwrap_err(),
+            "Les identifiants ne doivent pas figurer dans l’adresse."
+        );
+        assert_eq!(
+            validate_server_url("http://user:pw@hub.example.test/").unwrap_err(),
+            "Les identifiants ne doivent pas figurer dans l’adresse."
+        );
+        assert_eq!(
+            validate_server_url("https://hub.example.test/?").unwrap_err(),
+            "Saisissez uniquement l’adresse du serveur, sans chemin ni paramètres."
+        );
+        assert_eq!(
+            validate_server_url("http://hub.example.test/").unwrap_err(),
+            "Le serveur doit utiliser HTTPS."
+        );
+    }
+
+    #[test]
+    fn non_web_schemes_are_never_accepted() {
+        for rejected in [
+            "file:///etc/passwd",
+            "javascript:alert(1)",
+            "data:text/html,hi",
+            "wss://hub.example.test/",
+            "mailto:support@drclick.dz",
+        ] {
+            assert!(validate_server_url(rejected).is_err(), "{rejected}");
+        }
+    }
+
+    #[test]
+    fn a_non_hub_mode_is_refused_with_a_hub_specific_message() {
+        let mut cloud = hub();
+        cloud.mode = "cloud".to_owned();
+
+        assert_eq!(
+            validate_hub_identity(&cloud).unwrap_err(),
+            "Cette adresse ne répond pas comme un Hub Drclick."
+        );
+    }
+
+    #[test]
+    fn older_protocol_versions_remain_readable() {
+        let mut older = hub();
+        older.protocol_version = 0;
+
+        assert!(validate_hub_identity(&older).is_ok());
+    }
+
+    #[test]
+    fn a_hub_that_is_not_ready_is_refused_even_with_identity() {
+        let mut not_ready = hub();
+        not_ready.ready = false;
+
+        assert_eq!(
+            validate_hub_identity(&not_ready).unwrap_err(),
+            "Ce Hub n’est relié à aucun cabinet valide. Contactez le support Drclick."
+        );
+    }
+
+    #[test]
+    fn missing_optional_hub_fields_parse_as_absent() {
+        let identity: HubIdentity =
+            serde_json::from_str(r#"{"mode":"hub","protocol_version":1,"ready":false}"#).unwrap();
+
+        assert_eq!(identity.hub_id, None);
+        assert_eq!(identity.cabinet_id, None);
+        assert!(validate_hub_identity(&identity).is_err());
+        assert!(serde_json::from_str::<HubIdentity>(r#"{"mode":"hub","ready":true}"#).is_err());
+    }
+
+    #[test]
+    fn health_without_application_details_does_not_parse() {
+        assert!(serde_json::from_str::<HealthResponse>(r#"{"status":"healthy"}"#).is_err());
+        assert!(serde_json::from_str::<HealthResponse>(
+            r#"{"status":"healthy","application":{"name":"Drclick"}}"#
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn probe_results_serialise_for_the_connection_screen() {
+        let probe = ServerProbe {
+            url: "https://hub.example.test/".to_owned(),
+            status: "healthy".to_owned(),
+            version: "2.3.4".to_owned(),
+            hub: None,
+        };
+
+        assert_eq!(
+            serde_json::to_value(&probe).unwrap(),
+            serde_json::json!({
+                "url": "https://hub.example.test/",
+                "status": "healthy",
+                "version": "2.3.4",
+                "hub": null,
+            })
+        );
+        assert_eq!(
+            serde_json::to_string(&ServerConfiguration {
+                url: "https://x.test/"
+            })
+            .unwrap(),
+            r#"{"url":"https://x.test/"}"#
+        );
+    }
+
+    #[test]
+    fn probing_a_healthy_server_reads_its_version_from_the_health_endpoint() {
+        let (result, request) = probe(http_response("200 OK", HEALTHY));
+
+        let probe = result.unwrap();
+        assert_eq!(probe.status, "healthy");
+        assert_eq!(probe.version, "2.3.4");
+        assert!(probe.hub.is_none());
+        assert!(probe.url.starts_with("http://127.0.0.1:"));
+        assert!(request.starts_with("GET /health HTTP/1.1\r\n"), "{request}");
+        assert!(request
+            .to_ascii_lowercase()
+            .contains("accept: application/json"));
+        assert!(request.contains("Drclick-Desktop/"));
+    }
+
+    #[test]
+    fn a_degraded_server_answering_503_is_still_recognised() {
+        let body = r#"{"status":"degraded","application":{"name":"Drclick","version":"2.3.4"}}"#;
+
+        let (result, _) = probe(http_response("503 Service Unavailable", body));
+
+        assert_eq!(result.unwrap().status, "degraded");
+    }
+
+    #[test]
+    fn probing_rejects_other_statuses_and_redirects() {
+        let (not_found, _) = probe(http_response("404 Not Found", HEALTHY));
+        assert_eq!(
+            not_found.unwrap_err(),
+            "Cette adresse ne répond pas comme un serveur Drclick."
+        );
+
+        let (redirect, _) = probe(
+            b"HTTP/1.1 302 Found\r\nLocation: https://evil.example/health\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                .to_vec(),
+        );
+        assert!(redirect.is_err());
+    }
+
+    #[test]
+    fn probing_rejects_foreign_applications_and_unknown_statuses() {
+        let foreign = r#"{"status":"healthy","application":{"name":"OtherApp","version":"1.0.0"}}"#;
+        let (result, _) = probe(http_response("200 OK", foreign));
+        assert_eq!(
+            result.unwrap_err(),
+            "Cette adresse ne répond pas comme un serveur Drclick."
+        );
+
+        let broken = r#"{"status":"broken","application":{"name":"Drclick","version":"1.0.0"}}"#;
+        let (result, _) = probe(http_response("200 OK", broken));
+        assert!(result.is_err());
+
+        let (result, _) = probe(http_response("200 OK", "<html>login</html>"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn probing_rejects_oversized_health_responses() {
+        let declared = format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            HEALTH_RESPONSE_LIMIT + 1
+        )
+        .into_bytes();
+        let (result, _) = probe(declared);
+        assert_eq!(result.unwrap_err(), "La réponse du serveur est invalide.");
+
+        let padding = " ".repeat(HEALTH_RESPONSE_LIMIT as usize);
+        let mut streamed = b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n".to_vec();
+        streamed.extend_from_slice(format!("{HEALTHY}{padding}").as_bytes());
+        let (result, _) = probe(streamed);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn probing_a_hub_validates_its_identity_before_returning_it() {
+        let ready = r#"{"status":"healthy","application":{"name":"Drclick","version":"2.3.4"},
+            "hub":{"mode":"hub","protocol_version":1,"hub_id":"hub-1","cabinet_id":7,
+            "hostname":"hub.local","tls_spki_sha256":null,"ready":true,"reason":null}}"#;
+        let (result, _) = probe(http_response("200 OK", ready));
+        assert_eq!(result.unwrap().hub.unwrap().cabinet_id, Some(7));
+
+        let unbound = r#"{"status":"healthy","application":{"name":"Drclick","version":"2.3.4"},
+            "hub":{"mode":"hub","protocol_version":1,"hub_id":"hub-1","cabinet_id":null,
+            "hostname":null,"tls_spki_sha256":null,"ready":false,"reason":"hub_cabinet_missing"}}"#;
+        let (result, _) = probe(http_response("200 OK", unbound));
+        assert_eq!(
+            result.unwrap_err(),
+            "Ce Hub n’est relié à aucun cabinet valide. Contactez le support Drclick."
+        );
+    }
+
+    #[test]
+    fn probing_an_unreachable_server_reports_a_connection_problem() {
+        let port = {
+            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+            listener.local_addr().unwrap().port()
+        };
+        let url = Url::parse(&format!("http://127.0.0.1:{port}/")).unwrap();
+
+        let result = tauri::async_runtime::block_on(probe_server(&url));
+
+        assert_eq!(
+            result.unwrap_err(),
+            "Le serveur ne répond pas ou son certificat HTTPS n’est pas valide."
+        );
+    }
 }

@@ -358,4 +358,241 @@ mod tests {
         assert_eq!(error.kind(), io::ErrorKind::InvalidData);
         fs::remove_dir_all(directory).unwrap();
     }
+
+    fn write_valid_identity(directory: &Path, installation_id: Uuid) {
+        fs::write(
+            directory.join("installation.json"),
+            serde_json::to_vec(&PublicIdentity {
+                schema_version: IDENTITY_SCHEMA_VERSION,
+                installation_id,
+            })
+            .unwrap(),
+        )
+        .unwrap();
+    }
+
+    fn valid_key() -> String {
+        format!("base64:{}", STANDARD.encode([7_u8; 32]))
+    }
+
+    #[test]
+    fn missing_configuration_directory_is_created_recursively() {
+        let root = temporary_directory();
+        let nested = root.join("a").join("b").join("config");
+
+        let identity = load_or_create_installation_identity(&nested).unwrap();
+
+        assert!(nested.join("installation.json").is_file());
+        assert!(nested.join("laravel.key").is_file());
+        assert!(!identity.installation_id.is_nil());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn created_key_decodes_to_exactly_32_bytes_and_is_stored_with_newline() {
+        let directory = temporary_directory();
+        let identity = load_or_create_installation_identity(&directory).unwrap();
+
+        let decoded = STANDARD
+            .decode(identity.app_key.strip_prefix("base64:").unwrap())
+            .unwrap();
+        assert_eq!(decoded.len(), 32);
+        #[cfg(not(windows))]
+        assert_eq!(
+            fs::read_to_string(directory.join("laravel.key")).unwrap(),
+            format!("{}\n", identity.app_key)
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn public_identity_file_records_schema_and_matching_installation_id() {
+        let directory = temporary_directory();
+        let identity = load_or_create_installation_identity(&directory).unwrap();
+
+        let stored: serde_json::Value =
+            serde_json::from_slice(&fs::read(directory.join("installation.json")).unwrap())
+                .unwrap();
+        assert_eq!(stored["schema_version"], 1);
+        assert_eq!(
+            stored["installation_id"],
+            identity.installation_id.to_string()
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn separate_installations_get_distinct_ids_and_keys() {
+        let first_directory = temporary_directory();
+        let second_directory = temporary_directory();
+
+        let first = load_or_create_installation_identity(&first_directory).unwrap();
+        let second = load_or_create_installation_identity(&second_directory).unwrap();
+
+        assert_ne!(first.installation_id, second.installation_id);
+        assert_ne!(first.app_key, second.app_key);
+        fs::remove_dir_all(first_directory).unwrap();
+        fs::remove_dir_all(second_directory).unwrap();
+    }
+
+    #[test]
+    fn creation_leaves_no_temporary_files_behind() {
+        let directory = temporary_directory();
+        load_or_create_installation_identity(&directory).unwrap();
+
+        let mut names = fs::read_dir(&directory)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+            .collect::<Vec<_>>();
+        names.sort();
+        assert_eq!(names, vec!["installation.json", "laravel.key"]);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn key_without_identity_is_rejected_and_left_untouched() {
+        let directory = temporary_directory();
+        let key = valid_key();
+        fs::write(directory.join("laravel.key"), &key).unwrap();
+
+        let error = load_or_create_installation_identity(&directory).unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        assert!(!directory.join("installation.json").exists());
+        assert_eq!(
+            fs::read_to_string(directory.join("laravel.key")).unwrap(),
+            key
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn unsupported_identity_schema_version_is_rejected() {
+        let directory = temporary_directory();
+        fs::write(
+            directory.join("installation.json"),
+            format!(
+                r#"{{"schema_version":2,"installation_id":"{}"}}"#,
+                Uuid::new_v4()
+            ),
+        )
+        .unwrap();
+        fs::write(directory.join("laravel.key"), valid_key()).unwrap();
+
+        let error = read_identity(&directory.join("installation.json")).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        assert_eq!(
+            load_or_create_installation_identity(&directory)
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::InvalidData
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn malformed_identity_json_is_invalid_data() {
+        let directory = temporary_directory();
+        fs::write(directory.join("installation.json"), b"not json").unwrap();
+
+        let error = read_identity(&directory.join("installation.json")).unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn existing_valid_files_are_loaded_verbatim() {
+        let directory = temporary_directory();
+        let installation_id = Uuid::new_v4();
+        write_valid_identity(&directory, installation_id);
+        fs::write(
+            directory.join("laravel.key"),
+            format!("  {}\n\n", valid_key()),
+        )
+        .unwrap();
+
+        let identity = load_or_create_installation_identity(&directory).unwrap();
+
+        assert_eq!(identity.installation_id, installation_id);
+        assert_eq!(identity.app_key, valid_key());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn key_validation_rejects_bad_prefix_encoding_and_length() {
+        let directory = temporary_directory();
+        let key_path = directory.join("laravel.key");
+        let cases = [
+            STANDARD.encode([7_u8; 32]),
+            format!("base32:{}", STANDARD.encode([7_u8; 32])),
+            "base64:%%%not-base64%%%".to_owned(),
+            format!("base64:{}", STANDARD.encode([7_u8; 16])),
+            format!("base64:{}", STANDARD.encode([7_u8; 33])),
+            "base64:".to_owned(),
+            String::new(),
+        ];
+
+        for case in cases {
+            fs::write(&key_path, &case).unwrap();
+            let error = read_key(&key_path).unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::InvalidData, "case {case:?}");
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn directory_in_place_of_identity_file_is_rejected() {
+        let directory = temporary_directory();
+        fs::create_dir(directory.join("installation.json")).unwrap();
+        fs::write(directory.join("laravel.key"), valid_key()).unwrap();
+
+        let error = load_or_create_installation_identity(&directory).unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        assert!(directory.join("installation.json").is_dir());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn missing_file_reports_not_found_for_the_regular_file_guard() {
+        let directory = temporary_directory();
+
+        let error = ensure_regular_file(&directory.join("absent")).unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::NotFound);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn temporary_paths_are_unique_siblings_with_tmp_extension() {
+        let target = Path::new("/config/laravel.key");
+
+        let first = temporary_path_for(target);
+        let second = temporary_path_for(target);
+
+        assert_ne!(first, second);
+        assert_eq!(first.parent(), target.parent());
+        let extension = first.extension().unwrap().to_str().unwrap();
+        assert!(extension.starts_with("tmp-"));
+        assert_eq!(extension.len(), "tmp-".len() + 16);
+        assert!(extension["tmp-".len()..]
+            .chars()
+            .all(|character| character.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn private_file_writer_replaces_contents_atomically() {
+        let directory = temporary_directory();
+        let path = directory.join("file.json");
+
+        write_new_private_file(&path, b"first").unwrap();
+        write_new_private_file(&path, b"second").unwrap();
+
+        assert_eq!(fs::read(&path).unwrap(), b"second");
+        assert_eq!(fs::read_dir(&directory).unwrap().count(), 1);
+        fs::remove_dir_all(directory).unwrap();
+    }
 }

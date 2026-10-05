@@ -1068,4 +1068,284 @@ mod tests {
             Some("123-abc.apps.googleusercontent.com")
         );
     }
+
+    fn unique_scratch(name: &str) -> PathBuf {
+        scratch(&format!("x-{name}-{}", std::process::id()))
+    }
+
+    fn complete_application(root: &Path) -> PathBuf {
+        let app_root = root.join("laravel");
+        fs::create_dir_all(app_root.join("public")).unwrap();
+        fs::create_dir_all(app_root.join("vendor")).unwrap();
+        fs::write(app_root.join("artisan"), b"<?php").unwrap();
+        fs::write(app_root.join("public/index.php"), b"<?php").unwrap();
+        fs::write(app_root.join("vendor/autoload.php"), b"<?php").unwrap();
+        app_root
+    }
+
+    #[test]
+    fn errors_display_their_stable_code_and_french_message() {
+        let error = LocalRuntimeError::new("local_runtime_php_missing", "PHP absent");
+
+        assert_eq!(error.to_string(), "[local_runtime_php_missing] PHP absent");
+    }
+
+    #[test]
+    fn the_damaged_configuration_error_reuses_the_shell_message() {
+        let error = LocalRuntimeError::damaged_configuration();
+
+        assert_eq!(error.code, "local_runtime_configuration_damaged");
+        assert_eq!(error.message, crate::DAMAGED_CONFIGURATION_MESSAGE);
+    }
+
+    #[test]
+    fn the_layout_matches_the_documented_tree() {
+        let root = PathBuf::from("/data");
+        let paths = LocalPaths::rooted_at(&root);
+
+        assert_eq!(paths.configuration, root.join("config"));
+        assert_eq!(paths.database, root.join("data/database.sqlite"));
+        assert_eq!(paths.storage, root.join("data/storage"));
+        assert_eq!(paths.runtime, root.join("runtime"));
+        assert_eq!(paths.temporary, root.join("tmp"));
+        assert_eq!(paths.framework_cache, root.join("cache"));
+        assert_eq!(paths.logs, root.join("logs"));
+        assert!(!paths.database.starts_with(&paths.storage));
+    }
+
+    #[test]
+    fn creating_the_layout_fails_cleanly_when_a_file_blocks_a_directory() {
+        let root = unique_scratch("blocked-layout");
+        fs::write(root.join("logs"), b"not a directory").unwrap();
+        let paths = LocalPaths::rooted_at(&root);
+
+        let error = paths.create_all().unwrap_err();
+
+        assert_eq!(error.code, "local_runtime_io_failed");
+        assert_eq!(fs::read(root.join("logs")).unwrap(), b"not a directory");
+    }
+
+    #[test]
+    fn a_missing_template_file_is_a_seed_failure_and_creates_nothing() {
+        let root = unique_scratch("missing-template");
+        let database = root.join("database.sqlite");
+
+        let error =
+            seed_database_if_absent(Some(&root.join("absent.sqlite")), &database).unwrap_err();
+
+        assert_eq!(error.code, "local_runtime_database_seed_failed");
+        assert!(!database.exists());
+    }
+
+    #[test]
+    fn a_missing_public_entry_point_is_reported_as_incomplete() {
+        let root = unique_scratch("no-index");
+        let php_binary = root.join(php_executable_name());
+        fs::write(&php_binary, b"#!/bin/sh\n").unwrap();
+        let app_root = complete_application(&root);
+        fs::remove_file(app_root.join("public/index.php")).unwrap();
+
+        let error = verify_packaged_runtime(&PackagedRuntime {
+            php_binary,
+            app_root,
+            database_template: None,
+            bundled: true,
+        })
+        .unwrap_err();
+
+        assert_eq!(error.code, "local_runtime_application_missing");
+        assert!(error.message.contains("incomplète"));
+    }
+
+    #[test]
+    fn a_declared_but_missing_database_template_is_reported() {
+        let root = unique_scratch("no-template-file");
+        let php_binary = root.join(php_executable_name());
+        fs::write(&php_binary, b"#!/bin/sh\n").unwrap();
+        let app_root = complete_application(&root);
+
+        let error = verify_packaged_runtime(&PackagedRuntime {
+            php_binary,
+            app_root,
+            database_template: Some(root.join("initial/database.sqlite")),
+            bundled: true,
+        })
+        .unwrap_err();
+
+        assert_eq!(error.code, "local_runtime_database_template_missing");
+    }
+
+    #[test]
+    fn a_directory_in_place_of_the_interpreter_is_refused() {
+        let root = unique_scratch("php-dir");
+        let php_binary = root.join(php_executable_name());
+        fs::create_dir_all(&php_binary).unwrap();
+        let app_root = complete_application(&root);
+
+        let error = verify_packaged_runtime(&PackagedRuntime {
+            php_binary,
+            app_root,
+            database_template: None,
+            bundled: true,
+        })
+        .unwrap_err();
+
+        assert_eq!(error.code, "local_runtime_php_missing");
+    }
+
+    #[test]
+    fn development_trees_are_checked_without_requiring_a_bundled_interpreter() {
+        let root = unique_scratch("dev-tree");
+        let app_root = complete_application(&root);
+        let runtime = PackagedRuntime {
+            php_binary: PathBuf::from("php"),
+            app_root,
+            database_template: None,
+            bundled: false,
+        };
+
+        assert!(verify_development_runtime(&runtime).is_ok());
+        assert_eq!(
+            verify_packaged_runtime(&runtime).unwrap_err().code,
+            "local_runtime_php_missing"
+        );
+    }
+
+    #[test]
+    fn a_bare_interpreter_name_has_no_php_directory() {
+        let runtime = PackagedRuntime {
+            php_binary: PathBuf::from("php"),
+            app_root: PathBuf::from("/opt/app"),
+            database_template: None,
+            bundled: false,
+        };
+
+        assert_eq!(runtime.php_directory(), PathBuf::new());
+    }
+
+    #[test]
+    fn the_interpreter_name_follows_the_platform() {
+        if cfg!(windows) {
+            assert_eq!(php_executable_name(), "php.exe");
+        } else {
+            assert_eq!(php_executable_name(), "php");
+        }
+    }
+
+    #[test]
+    fn writing_the_router_creates_its_directory_and_is_repeatable() {
+        let root = unique_scratch("router-repeat");
+        let runtime_directory = root.join("nested/runtime");
+
+        let first = write_router_script(&runtime_directory).unwrap();
+        let second = write_router_script(&runtime_directory).unwrap();
+
+        assert_eq!(first, runtime_directory.join("router.php"));
+        assert_eq!(first, second);
+        assert_eq!(fs::read_to_string(&first).unwrap(), ROUTER_SCRIPT);
+    }
+
+    #[test]
+    fn writing_the_router_into_a_file_path_fails_with_an_io_error() {
+        let root = unique_scratch("router-blocked");
+        let blocker = root.join("runtime");
+        fs::write(&blocker, b"file").unwrap();
+
+        let error = write_router_script(&blocker).unwrap_err();
+
+        assert_eq!(error.code, "local_runtime_io_failed");
+    }
+
+    #[test]
+    fn the_router_lets_php_serve_existing_static_files_but_not_directories() {
+        assert!(ROUTER_SCRIPT.starts_with("<?php"));
+        assert!(ROUTER_SCRIPT.contains("$uri !== '/'"));
+        assert!(ROUTER_SCRIPT.contains("! is_dir($publicPath.$uri)"));
+        assert!(ROUTER_SCRIPT.contains("return false;"));
+        assert!(!ROUTER_SCRIPT.contains("error_log"));
+    }
+
+    #[test]
+    fn the_php_configuration_enables_every_required_extension_once() {
+        let root = unique_scratch("php-ini-extensions");
+        let runtime = PackagedRuntime {
+            php_binary: root.join("php").join(php_executable_name()),
+            app_root: root.join("laravel"),
+            database_template: None,
+            bundled: true,
+        };
+
+        let directory = write_php_configuration(&runtime, &root.join("runtime")).unwrap();
+        let configuration = fs::read_to_string(directory.join("php.ini")).unwrap();
+
+        assert_eq!(directory, root.join("runtime"));
+        for extension in [
+            "curl",
+            "exif",
+            "fileinfo",
+            "gd",
+            "intl",
+            "mbstring",
+            "openssl",
+            "pdo_sqlite",
+            "sodium",
+            "sqlite3",
+            "zip",
+        ] {
+            assert_eq!(
+                configuration
+                    .matches(&format!("extension={extension}\n"))
+                    .count(),
+                1,
+                "{extension}"
+            );
+        }
+        assert_eq!(configuration.matches("extension_dir = ").count(), 1);
+        for setting in [
+            "allow_url_include = Off",
+            "expose_php = Off",
+            "display_errors = Off",
+            "display_startup_errors = Off",
+            "log_errors = On",
+            "date.timezone = UTC",
+        ] {
+            assert!(configuration.contains(setting), "{setting}");
+        }
+    }
+
+    #[test]
+    fn the_php_configuration_is_rewritten_on_every_start() {
+        let root = unique_scratch("php-ini-rewrite");
+        let runtime_directory = root.join("runtime");
+        fs::create_dir_all(&runtime_directory).unwrap();
+        fs::write(runtime_directory.join("php.ini"), b"display_errors = On\n").unwrap();
+        let runtime = PackagedRuntime {
+            php_binary: root.join("php").join(php_executable_name()),
+            app_root: root.join("laravel"),
+            database_template: None,
+            bundled: true,
+        };
+
+        write_php_configuration(&runtime, &runtime_directory).unwrap();
+
+        let configuration = fs::read_to_string(runtime_directory.join("php.ini")).unwrap();
+        assert!(!configuration.contains("display_errors = On"));
+    }
+
+    #[test]
+    fn the_online_service_url_is_exported_without_a_trailing_slash() {
+        export_online_service_url();
+
+        let exported = std::env::var("MEDISMART_ONLINE_SERVICE_URL").unwrap();
+        assert_eq!(exported, crate::CLOUD_SERVER_URL.trim_end_matches('/'));
+        assert!(!exported.ends_with('/'));
+    }
+
+    #[test]
+    fn the_drive_scope_is_the_least_privileged_file_scope() {
+        assert_eq!(
+            GOOGLE_DRIVE_SCOPE,
+            "https://www.googleapis.com/auth/drive.file"
+        );
+    }
 }

@@ -433,4 +433,272 @@ mod tests {
         assert!(runtime_mode_path(&directory).exists());
         assert!(!runtime_mode_path(&directory).with_extension("json.tmp").exists());
     }
+
+    fn unique_scratch(name: &str) -> PathBuf {
+        let directory = env::temp_dir().join(format!(
+            "drclick-runtime-mode-x-{name}-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        let _ = fs::remove_dir_all(&directory);
+        fs::create_dir_all(&directory).unwrap();
+        directory
+    }
+
+    fn write_mode(directory: &Path, json: &str) {
+        fs::write(runtime_mode_path(directory), json).unwrap();
+    }
+
+    #[test]
+    fn mode_accessors_describe_ownership() {
+        let hub = Url::parse("https://192.168.1.20/").unwrap();
+        let attach = RuntimeMode::Attach { url: hub.clone() };
+        let hosted = RuntimeMode::Cloud { url: cloud() };
+
+        assert!(RuntimeMode::Local.is_local());
+        assert!(!attach.is_local());
+        assert!(!hosted.is_local());
+        assert_eq!(RuntimeMode::Local.remote_url(), None);
+        assert_eq!(attach.remote_url(), Some(&hub));
+        assert_eq!(hosted.remote_url(), Some(&cloud()));
+        assert_eq!(RuntimeMode::Local.as_str(), "local");
+        assert_eq!(attach.as_str(), "attach");
+        assert_eq!(hosted.as_str(), "cloud");
+    }
+
+    #[test]
+    fn configuration_file_names_are_fixed() {
+        let directory = Path::new("/cfg");
+
+        assert_eq!(
+            runtime_mode_path(directory),
+            Path::new("/cfg/runtime-mode.json")
+        );
+        assert_eq!(legacy_server_path(directory), Path::new("/cfg/server.json"));
+    }
+
+    #[test]
+    fn cloud_mode_round_trips_through_disk() {
+        let directory = unique_scratch("round-trip-cloud");
+        let hosted = Url::parse("https://staging.drclick.dz/").unwrap();
+
+        persist_runtime_mode(
+            &directory,
+            &RuntimeMode::Cloud {
+                url: hosted.clone(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            resolve_runtime_mode(&directory, &cloud()),
+            Ok(RuntimeMode::Cloud { url: hosted })
+        );
+    }
+
+    #[test]
+    fn persisted_files_use_the_documented_schema() {
+        let directory = unique_scratch("schema-shape");
+
+        persist_runtime_mode(&directory, &RuntimeMode::Local).unwrap();
+        let local: serde_json::Value =
+            serde_json::from_slice(&fs::read(runtime_mode_path(&directory)).unwrap()).unwrap();
+        assert_eq!(
+            local,
+            serde_json::json!({"schema_version": 1, "mode": "local"})
+        );
+
+        persist_runtime_mode(
+            &directory,
+            &RuntimeMode::Attach {
+                url: Url::parse("https://192.168.1.20:8443/").unwrap(),
+            },
+        )
+        .unwrap();
+        let attach: serde_json::Value =
+            serde_json::from_slice(&fs::read(runtime_mode_path(&directory)).unwrap()).unwrap();
+        assert_eq!(
+            attach,
+            serde_json::json!({
+                "schema_version": 1,
+                "mode": "attach",
+                "url": "https://192.168.1.20:8443/",
+            })
+        );
+    }
+
+    #[test]
+    fn a_cloud_entry_without_a_usable_url_falls_back_to_the_compiled_origin() {
+        for json in [
+            r#"{"schema_version":1,"mode":"cloud"}"#,
+            r#"{"schema_version":1,"mode":"cloud","url":"http://app.drclick.dz/"}"#,
+            r#"{"schema_version":1,"mode":"cloud","url":"garbage"}"#,
+        ] {
+            let directory = unique_scratch("cloud-fallback");
+            write_mode(&directory, json);
+
+            assert_eq!(
+                resolve_runtime_mode(&directory, &cloud()),
+                Ok(RuntimeMode::Cloud { url: cloud() }),
+                "{json}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_local_entry_ignores_any_stray_url() {
+        let directory = unique_scratch("local-stray-url");
+        write_mode(
+            &directory,
+            r#"{"schema_version":1,"mode":"local","url":"https://192.168.1.20/"}"#,
+        );
+
+        assert_eq!(
+            resolve_runtime_mode(&directory, &cloud()),
+            Ok(RuntimeMode::Local)
+        );
+    }
+
+    #[test]
+    fn unknown_or_incomplete_mode_entries_are_damaged() {
+        for json in [
+            r#"{"schema_version":1,"mode":"hub","url":"https://192.168.1.20/"}"#,
+            r#"{"schema_version":1,"mode":"LOCAL"}"#,
+            r#"{"schema_version":1}"#,
+            r#"{"mode":"local"}"#,
+            r#"{"schema_version":0,"mode":"local"}"#,
+            r#"{"schema_version":1,"mode":"attach"}"#,
+            r#"{"schema_version":1,"mode":"attach","url":"https://192.168.1.20/admin"}"#,
+            r#"[]"#,
+            "",
+        ] {
+            let directory = unique_scratch("damaged-entries");
+            write_mode(&directory, json);
+
+            assert_eq!(
+                resolve_runtime_mode(&directory, &cloud()),
+                Err(DamagedRuntimeMode),
+                "{json:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_unreadable_mode_path_is_damaged_not_defaulted() {
+        let directory = unique_scratch("unreadable");
+        fs::create_dir(runtime_mode_path(&directory)).unwrap();
+
+        assert_eq!(
+            resolve_runtime_mode(&directory, &cloud()),
+            Err(DamagedRuntimeMode)
+        );
+    }
+
+    #[test]
+    fn the_current_mode_file_wins_over_the_legacy_server_file() {
+        let directory = unique_scratch("precedence");
+        fs::write(
+            legacy_server_path(&directory),
+            br#"{"url":"https://192.168.1.20/"}"#,
+        )
+        .unwrap();
+        write_mode(&directory, r#"{"schema_version":1,"mode":"local"}"#);
+
+        assert_eq!(
+            resolve_runtime_mode(&directory, &cloud()),
+            Ok(RuntimeMode::Local)
+        );
+    }
+
+    #[test]
+    fn a_damaged_mode_file_is_not_rescued_by_a_valid_legacy_file() {
+        let directory = unique_scratch("no-rescue");
+        fs::write(
+            legacy_server_path(&directory),
+            br#"{"url":"https://192.168.1.20/"}"#,
+        )
+        .unwrap();
+        write_mode(&directory, "{ broken");
+
+        assert_eq!(
+            resolve_runtime_mode(&directory, &cloud()),
+            Err(DamagedRuntimeMode)
+        );
+    }
+
+    #[test]
+    fn legacy_files_with_unusable_urls_are_damaged() {
+        for json in [
+            r#"{"url":"http://192.168.1.20/"}"#,
+            r#"{"url":"https://192.168.1.20/login"}"#,
+            r#"{"url":""}"#,
+            r#"{"address":"https://192.168.1.20/"}"#,
+        ] {
+            let directory = unique_scratch("legacy-unusable");
+            fs::write(legacy_server_path(&directory), json).unwrap();
+
+            assert_eq!(
+                resolve_runtime_mode(&directory, &cloud()),
+                Err(DamagedRuntimeMode),
+                "{json}"
+            );
+        }
+    }
+
+    #[test]
+    fn persisting_a_remote_mode_keeps_the_legacy_file_for_downgrades() {
+        let directory = unique_scratch("keeps-legacy");
+        fs::write(
+            legacy_server_path(&directory),
+            br#"{"url":"https://192.168.1.20/"}"#,
+        )
+        .unwrap();
+
+        persist_runtime_mode(
+            &directory,
+            &RuntimeMode::Attach {
+                url: Url::parse("https://192.168.1.20/").unwrap(),
+            },
+        )
+        .unwrap();
+
+        assert!(legacy_server_path(&directory).exists());
+    }
+
+    #[test]
+    fn persisting_creates_a_missing_configuration_directory() {
+        let root = unique_scratch("nested-create");
+        let directory = root.join("a").join("config");
+
+        persist_runtime_mode(&directory, &RuntimeMode::Local).unwrap();
+
+        assert_eq!(
+            resolve_runtime_mode(&directory, &cloud()),
+            Ok(RuntimeMode::Local)
+        );
+    }
+
+    #[test]
+    fn persisting_into_a_file_path_reports_an_error() {
+        let root = unique_scratch("blocked");
+        let blocker = root.join("config");
+        fs::write(&blocker, b"not a directory").unwrap();
+
+        let error = persist_runtime_mode(&blocker, &RuntimeMode::Local).unwrap_err();
+
+        assert_eq!(error, "Impossible de créer le dossier de configuration.");
+        assert_eq!(fs::read(&blocker).unwrap(), b"not a directory");
+    }
+
+    #[test]
+    fn atomic_writes_replace_existing_content_without_leftovers() {
+        let directory = unique_scratch("atomic-content");
+        let target = directory.join("file.json");
+        fs::write(&target, b"old").unwrap();
+
+        write_atomically(&target, b"new").unwrap();
+
+        assert_eq!(fs::read(&target).unwrap(), b"new");
+        assert!(!target.with_extension("json.tmp").exists());
+    }
 }
