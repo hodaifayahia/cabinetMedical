@@ -72,4 +72,10 @@ describe('configurationNavForPermissions', () => {
             '/app/appointments/configure',
         ]);
     });
+
+    it('exposes the document-template builder to catalogue managers', () => {
+        expect(visibleLinks(['configuration.manage'])).toContain(
+            '/app/configuration/document-templates',
+        );
+    });
 });

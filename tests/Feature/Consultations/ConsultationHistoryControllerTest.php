@@ -38,12 +38,7 @@ class ConsultationHistoryControllerTest extends TestCase
     public function test_history_lists_patient_consultations_ordered_by_date_desc(): void
     {
         $doctor = $this->doctor();
-        $patient = Patient::factory()->create([
-            'allergies' => 'Aspirine',
-            'antecedents_medical' => 'Diabète',
-            'antecedents_surgical' => 'Appendicectomie',
-            'antecedents_family' => 'Frère hypertendu',
-        ]);
+        $patient = Patient::factory()->create();
 
         $older = Consultation::query()->create([
             'patient_id' => $patient->id,
@@ -117,7 +112,12 @@ class ConsultationHistoryControllerTest extends TestCase
     public function test_detail_includes_clinical_fields_prescriptions_documents_and_pricing(): void
     {
         $doctor = $this->doctor();
-        $patient = Patient::factory()->create();
+        $patient = Patient::factory()->create([
+            'allergies' => 'Aspirine',
+            'antecedents_medical' => 'Diabète',
+            'antecedents_surgical' => 'Appendicectomie',
+            'antecedents_family' => 'Frère hypertendu',
+        ]);
 
         $consultation = Consultation::query()->create([
             'patient_id' => $patient->id,

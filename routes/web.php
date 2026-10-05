@@ -24,6 +24,7 @@ use App\Http\Controllers\Configuration\AccountingController;
 use App\Http\Controllers\Configuration\BackupController;
 use App\Http\Controllers\Configuration\ClinicIdentityController;
 use App\Http\Controllers\Configuration\ConnectivityAndBackupController;
+use App\Http\Controllers\Configuration\DocumentTemplateController;
 use App\Http\Controllers\Configuration\LicenseController;
 use App\Http\Controllers\Configuration\MedicationController;
 use App\Http\Controllers\Configuration\OnlineServiceController;
@@ -482,6 +483,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('ref/{referential}', [ReferentialController::class, 'store'])->name('referentials.store');
                 Route::put('ref/{referential}/{id}', [ReferentialController::class, 'update'])->name('referentials.update');
                 Route::delete('ref/{referential}/{id}', [ReferentialController::class, 'destroy'])->name('referentials.destroy');
+
+                // Cabinet-authored consultation document templates ("modèles").
+                Route::get('document-templates', [DocumentTemplateController::class, 'index'])->name('document-templates.index');
+                Route::post('document-templates', [DocumentTemplateController::class, 'store'])->name('document-templates.store');
+                Route::put('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'update'])->name('document-templates.update');
+                Route::delete('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
             });
 
             Route::middleware('permission:configuration.branding.manage')->group(function (): void {
