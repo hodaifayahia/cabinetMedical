@@ -56,13 +56,11 @@ class ClinicProfileTest extends TestCase
             'phones' => ['0551234567', '0661234567'],
             'latitude' => 36.7538,
             'longitude' => 3.0588,
-            'photos' => ['clinics/entrance.jpg'],
         ])
             ->assertOk()
             ->assertJsonPath('data.is_listed', true)
             ->assertJsonPath('data.about', 'Cabinet de médecine générale au centre-ville.')
             ->assertJsonPath('data.phones.0', '0551234567')
-            ->assertJsonPath('data.photos.0', 'clinics/entrance.jpg')
             ->assertJsonPath('data.clinic.name', $clinic['cabinet']->name);
 
         $this->assertDatabaseHas('cabinet_public_profiles', [

@@ -5,6 +5,7 @@ namespace App\Http\Resources\Mobile;
 use App\Models\CabinetPublicProfile;
 use App\Models\DoctorProfile;
 use App\Models\Wilaya;
+use App\Support\ClinicPhotos;
 use App\Support\Mobile\WeeklySchedule;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -50,7 +51,7 @@ class ClinicProfileResource extends JsonResource
             'phones' => $this->phones ?? [],
             'latitude' => $this->latitude === null ? null : (float) $this->latitude,
             'longitude' => $this->longitude === null ? null : (float) $this->longitude,
-            'photos' => $this->photos ?? [],
+            'photos' => ClinicPhotos::urls($this->photos),
             'working_hours' => WeeklySchedule::forDoctor($this->activeDoctor()),
         ];
     }

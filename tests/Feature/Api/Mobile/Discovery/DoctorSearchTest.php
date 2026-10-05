@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Wilaya;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -170,7 +171,8 @@ class DoctorSearchTest extends TestCase
             ->assertJsonPath('data.wilaya.code', 16)
             ->assertJsonPath('data.baladiya.name_fr', 'Hydra')
             ->assertJsonPath('data.phones.0', '0550123456')
-            ->assertJsonPath('data.photos.0', 'clinics/one.jpg')
+            // A stored path is handed out as a link the app can load.
+            ->assertJsonPath('data.photos.0', Storage::disk('public')->url('clinics/one.jpg'))
             ->assertJsonPath('data.doctor.id', $doctor->getKey())
             ->assertJsonPath('data.doctor.name', 'Dr Amine Kaci')
             ->assertJsonPath('data.doctor.specialty.code', 'cardiology')

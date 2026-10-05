@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1\Mobile;
 
+use App\Enums\FacilityType;
 use App\Http\Controllers\Controller;
 use App\Models\Baladiya;
 use App\Models\Wilaya;
+use App\Support\FacilityTypeAvailability;
 use App\Support\MedicalSpecialtyCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -87,5 +89,20 @@ class ReferenceController extends Controller
     public function specialties(MedicalSpecialtyCatalog $catalog): JsonResponse
     {
         return response()->json(['data' => $catalog->directory()]);
+    }
+
+    /**
+     * The kinds of place the platform admin has switched on, in tab order —
+     * the patient app's search tabs offer these and nothing else.
+     */
+    public function facilityTypes(FacilityTypeAvailability $availability): JsonResponse
+    {
+        return response()->json([
+            'data' => array_map(static fn (FacilityType $type): array => [
+                'value' => $type->value,
+                'label_fr' => $type->label(),
+                'label_ar' => $type->labelAr(),
+            ], $availability->enabled()),
+        ]);
     }
 }

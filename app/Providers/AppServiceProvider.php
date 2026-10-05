@@ -152,6 +152,31 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($key);
         });
 
+        // "Forgot password" sends an e-mail: a few per hour per account, and
+        // a ceiling per address so one client cannot spray every account.
+        RateLimiter::for('mobile-password-forgot', static function (Request $request): array {
+            $identifierKey = hash('sha256', implode('|', [
+                mb_strtolower(trim((string) $request->input('identifier'))),
+                'mobile-password-forgot',
+            ]));
+
+            return [
+                Limit::perHour(5)->by($identifierKey),
+                Limit::perHour(20)->by(hash('sha256', (string) $request->ip())),
+            ];
+        });
+
+        // The code itself dies after five wrong guesses; this caps the rate.
+        RateLimiter::for('mobile-password-reset', static function (Request $request): Limit {
+            $key = hash('sha256', implode('|', [
+                (string) $request->input('identifier'),
+                (string) $request->ip(),
+                'mobile-password-reset',
+            ]));
+
+            return Limit::perMinute(10)->by($key);
+        });
+
         RateLimiter::for('mobile-public', static function (Request $request): Limit {
             return Limit::perMinute(60)->by(hash('sha256', (string) $request->ip()));
         });

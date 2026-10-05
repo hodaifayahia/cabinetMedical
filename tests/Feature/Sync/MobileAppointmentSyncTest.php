@@ -5,6 +5,9 @@ namespace Tests\Feature\Sync;
 use App\Models\ApplicationSetting;
 use App\Models\Appointment;
 use App\Models\AppointmentSyncEvent;
+use App\Models\DoctorOpenMonth;
+use App\Models\DoctorSchedule;
+use App\Models\DoctorTimeOff;
 use App\Models\Patient;
 use App\Models\SyncState;
 use App\Services\Sync\MobileAppointmentSynchroniser;
@@ -43,6 +46,9 @@ class MobileAppointmentSyncTest extends TestCase
     /** Cursor the fake remote was last asked to acknowledge. */
     private ?int $acknowledgedCursor = null;
 
+    /** Every URL the fake remote was asked for, in order. */
+    private array $requestedUrls = [];
+
     private bool $offline = false;
 
     private ?int $forcedStatus = null;
@@ -70,6 +76,8 @@ class MobileAppointmentSyncTest extends TestCase
     private function installFakeRemote(): void
     {
         Http::fake(function (Request $request) {
+            $this->requestedUrls[] = $request->url();
+
             if ($this->offline) {
                 throw new ConnectionException('offline');
             }
@@ -291,6 +299,39 @@ class MobileAppointmentSyncTest extends TestCase
             'sha256',
             json_encode($match['payload'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         ), $match['payload_sha256']);
+    }
+
+    public function test_the_desktop_availability_configuration_never_reaches_the_mobile_app(): void
+    {
+        // The desktop's "Disponibilités des rendez-vous" and the doctor's
+        // mobile working hours / time off are configured independently: a
+        // sync moves appointments only, in both directions.
+        DoctorSchedule::factory()->create();
+        DoctorTimeOff::factory()->create();
+        DoctorOpenMonth::factory()->create();
+        Appointment::factory()->for(Patient::factory()->create())->create();
+        $this->remoteEvents = [$this->remoteEvent(7)];
+
+        $snapshot = fn (): array => [
+            DoctorSchedule::withoutCabinetScope()->get()->toArray(),
+            DoctorTimeOff::withoutCabinetScope()->get()->toArray(),
+            DoctorOpenMonth::withoutCabinetScope()->get()->toArray(),
+        ];
+        $before = $snapshot();
+
+        $report = $this->synchronise();
+
+        $this->assertGreaterThan(0, $report->pushed);
+        $this->assertNotEmpty($this->requestedUrls);
+        foreach ($this->requestedUrls as $url) {
+            $this->assertStringContainsString('/sync/appointments', $url);
+        }
+        foreach ($this->pushedEnvelopes as $envelope) {
+            foreach (['schedule', 'schedules', 'working_hours', 'time_off', 'open_months', 'slot_duration'] as $key) {
+                $this->assertArrayNotHasKey($key, $envelope['payload']);
+            }
+        }
+        $this->assertSame($before, $snapshot(), 'Pulling from the mobile service must not touch the desktop configuration.');
     }
 
     public function test_an_imported_appointment_is_not_pushed_straight_back(): void

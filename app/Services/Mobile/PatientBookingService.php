@@ -9,6 +9,7 @@ use App\Models\DoctorProfile;
 use App\Models\FamilyMember;
 use App\Models\Patient;
 use App\Models\User;
+use App\Support\FacilityTypeAvailability;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -40,6 +41,11 @@ class PatientBookingService
             ->first();
 
         if ($doctor === null || $doctor->cabinet === null || ! $doctor->cabinet->isActive()) {
+            return null;
+        }
+
+        // A kind of place the platform has switched off takes no new bookings.
+        if (! app(FacilityTypeAvailability::class)->isEnabled($doctor->cabinet->facility_type)) {
             return null;
         }
 

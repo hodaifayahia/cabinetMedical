@@ -30,7 +30,7 @@ class StoreAdminCabinetRequest extends AdminFormRequest
             'wilaya_code' => [
                 'required',
                 'integer',
-                'between:'.Wilayas::MIN.','.Wilayas::MAX,
+                'between:'.Wilayas::MIN.','.Wilayas::CODE_MAX,
                 Rule::exists('wilayas', 'code'),
             ],
             'doctor_name' => ['required', 'string', 'min:2', 'max:255'],

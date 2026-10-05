@@ -148,6 +148,8 @@ Transitions available to the mobile app:
 |---|---|---|
 | `mobile-register` | `POST /auth/register` | 5/hour per IP **and** 3/hour per phone number |
 | `mobile-login` | `POST /auth/login` | 10/min per identifier+IP |
+| `mobile-password-forgot` | `POST /auth/password/forgot` | 5/hour per identifier **and** 20/hour per IP |
+| `mobile-password-reset` | `POST /auth/password/reset` | 10/min per identifier+IP (the code itself dies after 5 wrong tries) |
 | `mobile-public` | all public reference/discovery/availability GETs | 60/min per IP |
 | `login` | `POST /auth/token` (legacy) | 5/min per email+IP |
 | `mobile-admin` | every `/admin/*` endpoint (§8.7) | 60/min per admin account + IP |
@@ -203,6 +205,7 @@ Examples (captured):
 | 1 | `GET /wilayas` | none |
 | 2 | `GET /wilayas/{code}/baladiyas` | none |
 | 3 | `GET /specialties` | none |
+| 3a | `GET /facility-types` | none |
 | 4 | `GET /doctors` | none |
 | 5 | `GET /clinics/{cabinetId}` | none |
 | 6 | `GET /doctors/{doctorId}/availability/month` | none |
@@ -320,6 +323,25 @@ The full bilingual catalogue (21 entries). Use `code` in the doctors filter.
 `endocrinology`, `gastroenterology`, `obstetrics_gynecology`, `nephrology`,
 `neurology`, `ophthalmology`, `otorhinolaryngology`, `pulmonology`,
 `psychiatry`, `radiology`, `rheumatology`, `urology`.)
+
+#### GET /facility-types
+
+The kinds of place the platform admin has switched on, in tab order — the
+search tabs to show. Never empty (the admin can't switch off the last one).
+A switched-off type is invisible everywhere: `GET /doctors` never returns its
+cabinets (filtered or not), and its clinic page, availability and booking
+answer 404. Admins manage it with `GET /admin/facility-types` and
+`PATCH /admin/facility-types/{type}` (`{ "is_active": bool }`).
+
+```json
+{
+  "data": [
+    { "value": "doctor", "label_fr": "Cabinet médical", "label_ar": "عيادة طبيب" },
+    { "value": "clinic", "label_fr": "Clinique", "label_ar": "عيادة متعددة الخدمات" },
+    { "value": "radiology", "label_fr": "Centre d'imagerie", "label_ar": "مركز أشعة" }
+  ]
+}
+```
 
 #### GET /doctors
 
@@ -628,6 +650,34 @@ No body. Revokes the token used on the request.
 ```json
 { "message": "Déconnexion réussie." }
 ```
+
+#### POST /auth/password/forgot — throttle `mobile-password-forgot`
+
+Body `{ "identifier": "0550123456" | "name@mail.dz" }` (phone matched as typed
+and in its canonical `0XXXXXXXXX` form). When it matches an account **that has
+an e-mail**, a six-digit code valid 15 minutes is e-mailed (FR + AR); a second
+request within 60 s keeps the code already sent. There is no SMS gateway: an
+account without an e-mail gets nothing, and the app tells the person to ask
+their clinic. The answer is always the same, so it never reveals whether an
+account exists:
+
+```json
+{ "message": "Si un compte correspond, …", "channel": "email", "expires_in_minutes": 15 }
+```
+
+#### POST /auth/password/reset — throttle `mobile-password-reset`
+
+Body `{ "identifier", "code": "123456", "password": "min 8" }`. On success the
+password changes, the code is spent and **every token of the account is
+revoked**; sign in again with `POST /auth/login`.
+
+```json
+{ "message": "Votre mot de passe a été modifié. Vous pouvez vous connecter." }
+```
+
+`422` with `reason` `reset_code_invalid` (wrong code; counts as a try) or
+`reset_code_expired` (expired, already used, never requested, or the 5th wrong
+try), plus `errors.code`. A too-short password is a plain `422` on `password`.
 
 ### 8.3 Devices & notifications (any authenticated role)
 
@@ -1322,8 +1372,29 @@ PUT request (all fields optional/partial):
 
 Rules: `about` ≤ 2000; `address` ≤ 255; `phones` ≤ 3 entries, each matching
 `^0[567][0-9]{8}$`; `latitude` −90..90, `longitude` −180..180; `photos` ≤ 6
-plain path/URL strings (**no file upload in Phase 1**). Flipping `is_listed`
-immediately shows/hides the clinic in public discovery.
+and may only **keep, reorder or drop** photos the listing already has (send
+back the links the API returned); a new link is refused with `422` on
+`photos.N` — photos are uploaded with the endpoints below. Flipping
+`is_listed` immediately shows/hides the clinic in public discovery.
+
+Every `photos` entry in a response (here and in `GET /clinics/{id}`) is a
+full link the app can load.
+
+#### POST /mobile/clinic-profile/photos · DELETE …/photos/{index} · POST …/photos/{index}/cover
+
+Same permission as the PUT. Each call takes effect at once and answers with
+the whole profile (shape below).
+
+- `POST /mobile/clinic-profile/photos` — `multipart/form-data`: `photo`
+  (JPEG/PNG/WebP image, ≤ 10 MB), optional `replace` (index to swap). Without
+  `replace` the photo is appended; a 7th photo is a `422` on `photo`. The
+  server turns it upright, shrinks it to ≤ 1600 px, re-encodes it as JPEG
+  (dropping EXIF/GPS) and stores it on the public disk. An unreadable image is
+  a `422` on `photo`. A replaced photo's file is deleted.
+- `DELETE /mobile/clinic-profile/photos/{index}` — removes it (and its file);
+  `404` for an index that does not exist.
+- `POST /mobile/clinic-profile/photos/{index}/cover` — moves it to the front;
+  the first photo is the listing's cover.
 
 Response (`GET` and `PUT` identical shape):
 

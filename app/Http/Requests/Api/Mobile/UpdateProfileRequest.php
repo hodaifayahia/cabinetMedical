@@ -27,7 +27,7 @@ class UpdateProfileRequest extends FormRequest
             'gender' => ['sometimes', 'required', 'string', Rule::in(Gender::values())],
             'date_of_birth' => ['sometimes', 'required', 'date', 'after:1900-01-01', 'before:today'],
             'place_of_birth' => ['sometimes', 'nullable', 'string', 'max:150'],
-            'wilaya_code' => ['sometimes', 'required', 'integer', 'between:1,58'],
+            'wilaya_code' => ['sometimes', 'required', 'integer', 'between:1,99', 'exists:wilayas,code'],
             'baladiya_id' => ['sometimes', 'nullable', 'integer', Rule::exists('baladiyas', 'id'), $this->baladiyaBelongsToWilaya()],
             'email' => [
                 'sometimes',

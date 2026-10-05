@@ -26,7 +26,7 @@ class StoreFamilyMemberRequest extends FormRequest
             'gender' => ['required', 'string', Rule::in(Gender::values())],
             'date_of_birth' => ['required', 'date', 'before:today', 'after:1900-01-01'],
             'place_of_birth' => ['nullable', 'string', 'max:150'],
-            'wilaya_code' => ['nullable', 'integer', 'between:1,58'],
+            'wilaya_code' => ['nullable', 'integer', 'between:1,99', 'exists:wilayas,code'],
             'baladiya_id' => ['nullable', 'integer', 'exists:baladiyas,id'],
         ];
     }

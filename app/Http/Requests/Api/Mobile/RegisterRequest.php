@@ -28,7 +28,7 @@ class RegisterRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:100'],
             'gender' => ['required', 'string', Rule::in(Gender::values())],
             'date_of_birth' => ['required', 'date', 'after:1900-01-01', 'before:today'],
-            'wilaya_code' => ['required', 'integer', 'between:1,58'],
+            'wilaya_code' => ['required', 'integer', 'between:1,99', 'exists:wilayas,code'],
             'baladiya_id' => ['nullable', 'integer', Rule::exists('baladiyas', 'id'), $this->baladiyaBelongsToWilaya()],
             'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
             'terms_accepted' => ['required', 'accepted'],

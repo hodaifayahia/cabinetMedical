@@ -13,6 +13,7 @@ use App\Models\CabinetPublicProfile;
 use App\Models\DoctorProfile;
 use App\Models\DoctorSchedule;
 use App\Models\Wilaya;
+use App\Support\FacilityTypeAvailability;
 use App\Support\MedicalSpecialtyCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -31,13 +32,15 @@ class DoctorDirectoryController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $validated = $request->validate([
-            'wilaya_code' => ['sometimes', 'integer', 'between:1,58'],
+            'wilaya_code' => ['sometimes', 'integer', 'between:1,99'],
             'baladiya_id' => ['sometimes', 'integer', 'min:1'],
             'specialty' => ['sometimes', 'string', 'max:100'],
             'facility_type' => ['sometimes', 'string', Rule::enum(FacilityType::class)],
             'q' => ['sometimes', 'string', 'max:100'],
             'per_page' => ['sometimes', 'integer', 'between:1,50'],
         ]);
+
+        $disabledTypes = app(FacilityTypeAvailability::class)->disabledValues();
 
         $doctors = DoctorProfile::withoutCabinetScope()
             ->join('cabinets', 'cabinets.id', '=', 'doctor_profiles.cabinet_id')
@@ -56,6 +59,12 @@ class DoctorDirectoryController extends Controller
                     ->from('baladiyas')
                     ->whereColumn('baladiyas.id', 'cabinet_public_profiles.baladiya_id')
                     ->where('baladiyas.is_active', true)))
+            // A kind of place the platform has switched off (no imaging yet,
+            // say) is invisible the same way, filtered or not.
+            ->when(
+                $disabledTypes !== [],
+                static fn (Builder $query) => $query->whereNotIn('cabinets.facility_type', $disabledTypes),
+            )
             ->when(
                 isset($validated['facility_type']),
                 static fn (Builder $query) => $query->where('cabinets.facility_type', $validated['facility_type']),
@@ -113,7 +122,7 @@ class DoctorDirectoryController extends Controller
             ->where('status', CabinetStatus::ACTIVE->value)
             ->first();
 
-        if ($clinic === null) {
+        if ($clinic === null || ! app(FacilityTypeAvailability::class)->isEnabled($clinic->facility_type)) {
             abort(404, 'Cabinet introuvable.');
         }
 
