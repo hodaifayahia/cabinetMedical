@@ -44,7 +44,7 @@ class CabinetProvisioningService
      */
     public function provision(array $data, bool $claimDownloadCabinet = false): User
     {
-        return DB::transaction(function () use ($data): User {
+        return DB::transaction(function () use ($data, $claimDownloadCabinet): User {
             $specialty = trim((string) $data['specialization']);
             $phone = trim((string) $data['phone']);
 
