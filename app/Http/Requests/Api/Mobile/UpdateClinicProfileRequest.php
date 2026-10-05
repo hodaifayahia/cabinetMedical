@@ -7,8 +7,10 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Staff mobile: manage the cabinet's public directory listing. Photo upload
- * is not part of Phase 1 — photos are plain path/URL strings.
+ * Staff mobile: manage the cabinet's public directory listing. Photos are
+ * uploaded through ClinicPhotoController; here `photos` may only keep,
+ * reorder or drop photos the listing already has (as the links the API
+ * returned) — a new link is refused by ClinicProfileController.
  */
 class UpdateClinicProfileRequest extends FormRequest
 {

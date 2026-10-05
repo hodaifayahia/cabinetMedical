@@ -8,6 +8,7 @@ use App\Models\Cabinet;
 use App\Models\CabinetPublicProfile;
 use App\Models\DoctorProfile;
 use App\Services\Mobile\PublicAvailabilityService;
+use App\Support\FacilityTypeAvailability;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -69,10 +70,15 @@ class AvailabilityController extends Controller
     private function clinicIsVisible(DoctorProfile $doctor): bool
     {
         $cabinetId = $doctor->getAttribute('cabinet_id');
+        $disabledTypes = app(FacilityTypeAvailability::class)->disabledValues();
 
         return Cabinet::query()
             ->whereKey($cabinetId)
             ->where('status', CabinetStatus::ACTIVE->value)
+            ->when(
+                $disabledTypes !== [],
+                static fn ($query) => $query->whereNotIn('facility_type', $disabledTypes),
+            )
             ->exists()
             && CabinetPublicProfile::withoutCabinetScope()
                 ->where('cabinet_id', $cabinetId)

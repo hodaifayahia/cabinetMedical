@@ -264,6 +264,8 @@ class Cabinet extends Model
      */
     protected function wilayaName(): Attribute
     {
-        return Attribute::get(fn (): ?string => Wilayas::name($this->wilaya_code));
+        // A wilaya the platform admin added is only in the table, not config.
+        return Attribute::get(fn (): ?string => Wilayas::name($this->wilaya_code)
+            ?? ($this->wilaya_code === null ? null : Wilaya::query()->whereKey($this->wilaya_code)->value('name_fr')));
     }
 }
