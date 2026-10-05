@@ -336,4 +336,199 @@ mod tests {
         );
         fs::remove_dir_all(directory).unwrap();
     }
+
+    #[cfg(unix)]
+    fn write_private(path: &Path, contents: &[u8]) {
+        use std::os::unix::fs::PermissionsExt;
+        fs::write(path, contents).unwrap();
+        fs::set_permissions(path, fs::Permissions::from_mode(0o600)).unwrap();
+    }
+
+    #[test]
+    fn debug_output_never_reveals_the_secret() {
+        let secret = ProtectedSecret(Zeroizing::new("super-secret-value".to_owned()));
+
+        let rendered = format!("{secret:?}");
+
+        assert_eq!(rendered, "ProtectedSecret([REDACTED])");
+        assert!(!rendered.contains("super-secret-value"));
+    }
+
+    #[test]
+    fn invalid_secret_payloads_are_rejected_before_touching_disk() {
+        let directory = temporary_directory();
+        let path = directory.join("nested").join("secret.token");
+        let oversized = "x".repeat(MAX_SECRET_BYTES + 1);
+
+        for secret in ["", "contains\0nul", oversized.as_str()] {
+            let error = write_new_protected_secret(&path, secret).unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        }
+        assert!(!directory.join("nested").exists());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn maximum_sized_secret_round_trips() {
+        let directory = temporary_directory();
+        let path = directory.join("max.token");
+        let secret = "a".repeat(MAX_SECRET_BYTES);
+
+        write_new_protected_secret(&path, &secret).unwrap();
+
+        assert_eq!(read_protected_secret(&path).unwrap().expose(), secret);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn unicode_secret_round_trips() {
+        let directory = temporary_directory();
+        let path = directory.join("unicode.token");
+        let secret = "clé-secrète-日本語-🔐";
+
+        write_new_protected_secret(&path, secret).unwrap();
+
+        assert_eq!(read_protected_secret(&path).unwrap().expose(), secret);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn writer_creates_missing_parent_directories_and_leaves_no_temporary_file() {
+        let directory = temporary_directory();
+        let path = directory.join("a").join("b").join("secret.token");
+
+        write_new_protected_secret(&path, "value").unwrap();
+
+        let names = fs::read_dir(path.parent().unwrap())
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(names, vec!["secret.token"]);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn path_without_parent_is_rejected() {
+        let error = write_new_protected_secret(Path::new("/"), "value").unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn missing_secret_file_reports_not_found() {
+        let directory = temporary_directory();
+
+        let error = read_protected_secret(&directory.join("absent")).unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::NotFound);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn directory_is_not_accepted_as_secret_file() {
+        let directory = temporary_directory();
+        let path = directory.join("dir.token");
+        fs::create_dir(&path).unwrap();
+
+        let error = read_protected_secret(&path).unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn written_secret_is_user_only() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = temporary_directory();
+        let path = directory.join("secret.token");
+        write_new_protected_secret(&path, "value").unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+
+        assert_eq!(mode, 0o600);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn group_readable_secret_is_rejected() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = temporary_directory();
+        let path = directory.join("secret.token");
+        write_new_protected_secret(&path, "value").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o640)).unwrap();
+
+        let error = read_protected_secret(&path).unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn empty_and_oversized_stored_files_are_rejected_by_size() {
+        let directory = temporary_directory();
+        let empty = directory.join("empty.token");
+        let huge = directory.join("huge.token");
+        write_private(&empty, b"");
+        write_private(&huge, &vec![b'a'; MAX_PROTECTED_FILE_BYTES as usize + 1]);
+
+        assert_eq!(
+            read_protected_secret(&empty).unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
+        assert_eq!(
+            read_protected_secret(&huge).unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn stored_payload_with_wrong_prefix_or_encoding_is_rejected() {
+        let directory = temporary_directory();
+        let path = directory.join("secret.token");
+        let cases: Vec<String> = vec![
+            STANDARD.encode("value"),
+            format!("plain-v2:{}", STANDARD.encode("value")),
+            "plain-v1:###".to_owned(),
+            format!("plain-v1:{}", STANDARD.encode([0xff_u8, 0xfe, 0xfd])),
+            "plain-v1:".to_owned(),
+            format!("plain-v1:{}", STANDARD.encode("a\0b")),
+        ];
+
+        for case in cases {
+            write_private(&path, case.as_bytes());
+            let error = read_protected_secret(&path).unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::InvalidData, "case {case:?}");
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn stored_payload_tolerates_surrounding_whitespace() {
+        let directory = temporary_directory();
+        let path = directory.join("secret.token");
+        write_private(
+            &path,
+            format!("\n  plain-v1:{}  \r\n", STANDARD.encode("value")).as_bytes(),
+        );
+
+        assert_eq!(read_protected_secret(&path).unwrap().expose(), "value");
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn non_windows_protection_is_a_versioned_base64_envelope() {
+        let stored = protect("abc").unwrap();
+
+        assert_eq!(stored, "plain-v1:YWJj");
+        assert_eq!(unprotect(&stored).unwrap(), "abc");
+    }
 }

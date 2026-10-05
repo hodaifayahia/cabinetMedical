@@ -2523,4 +2523,844 @@ mod tests {
         drop(supervisor);
         fs::remove_dir_all(directory).unwrap();
     }
+
+    fn settings_from(value: serde_json::Value) -> TunnelSettings {
+        serde_json::from_value(value).unwrap()
+    }
+
+    fn enabled_settings_json() -> serde_json::Value {
+        serde_json::json!({
+            "schema_version": 1,
+            "enabled": true,
+            "provider": "cloudflare",
+            "management": "remote",
+            "tunnel_id": Uuid::new_v4(),
+            "upload_hostname": "uploads.clinic.example",
+        })
+    }
+
+    fn read_snapshot(directory: &Path) -> TunnelSnapshot {
+        serde_json::from_slice(&fs::read(directory.join("tunnel-state.json")).unwrap()).unwrap()
+    }
+
+    fn configuration_error(
+        directory: &Path,
+        settings: TunnelSettings,
+        version: &str,
+        readiness: Duration,
+        shutdown: Duration,
+        retry_limit: u8,
+        retry_delay: Duration,
+    ) -> Option<&'static str> {
+        let _ = fs::remove_file(directory.join("cloudflared.token"));
+        TunnelConfiguration::new(
+            settings,
+            CloudflaredExecutable {
+                path: directory.join("cloudflared"),
+                version: "2026.8.0".to_owned(),
+            },
+            test_token(directory),
+            version.to_owned(),
+            readiness,
+            shutdown,
+            retry_limit,
+            retry_delay,
+        )
+        .err()
+        .map(|error| error.code())
+    }
+
+    #[test]
+    fn upload_hostname_validation_rejects_ips_quick_tunnels_and_bad_labels() {
+        assert!(validate_upload_hostname("uploads.clinic.example").is_ok());
+        assert!(validate_upload_hostname("a-1.b2.example").is_ok());
+        for hostname in [
+            "",
+            "localhost",
+            "app.localhost",
+            "trycloudflare.com",
+            "x.trycloudflare.com",
+            "Uploads.clinic.example",
+            "10.0.0.1",
+            "127.0.0.1",
+            "nodots",
+            "a..example",
+            "example.com.",
+            "-a.example",
+            "a-.example",
+            "a_b.example",
+            "ünicode.example",
+        ] {
+            assert_eq!(
+                validate_upload_hostname(hostname).unwrap_err().code(),
+                "tunnel_hostname_invalid",
+                "{hostname:?}"
+            );
+        }
+        let long_label = format!("{}.example", "a".repeat(64));
+        assert!(validate_upload_hostname(&long_label).is_err());
+        let max_label = format!("{}.example", "a".repeat(63));
+        assert!(validate_upload_hostname(&max_label).is_ok());
+        let too_long = format!("{}example", "a.".repeat(124));
+        assert!(too_long.len() > 253);
+        assert!(validate_upload_hostname(&too_long).is_err());
+    }
+
+    #[test]
+    fn enabled_settings_require_remote_cloudflare_named_tunnel() {
+        assert!(settings_from(enabled_settings_json()).validate().is_ok());
+
+        let mut wrong_provider = enabled_settings_json();
+        wrong_provider["provider"] = serde_json::json!("ngrok");
+        let mut local_management = enabled_settings_json();
+        local_management["management"] = serde_json::json!("local");
+        let mut missing_id = enabled_settings_json();
+        missing_id.as_object_mut().unwrap().remove("tunnel_id");
+        let mut nil_id = enabled_settings_json();
+        nil_id["tunnel_id"] = serde_json::json!(Uuid::nil());
+        let mut wrong_schema = enabled_settings_json();
+        wrong_schema["schema_version"] = serde_json::json!(2);
+
+        for value in [
+            wrong_provider,
+            local_management,
+            missing_id,
+            nil_id,
+            wrong_schema,
+        ] {
+            assert_eq!(
+                settings_from(value).validate().unwrap_err().code(),
+                "tunnel_configuration_invalid"
+            );
+        }
+
+        let mut missing_hostname = enabled_settings_json();
+        missing_hostname
+            .as_object_mut()
+            .unwrap()
+            .remove("upload_hostname");
+        assert_eq!(
+            settings_from(missing_hostname)
+                .validate()
+                .unwrap_err()
+                .code(),
+            "tunnel_hostname_invalid"
+        );
+    }
+
+    #[test]
+    fn disabled_settings_skip_provider_checks_but_not_schema_version() {
+        let disabled = settings_from(serde_json::json!({
+            "schema_version": 1,
+            "enabled": false,
+            "provider": "anything",
+            "upload_hostname": "NOT VALID",
+        }));
+        assert!(disabled.validate().is_ok());
+        assert!(!disabled.enabled());
+        assert_eq!(disabled.upload_hostname(), Some("NOT VALID"));
+
+        let wrong_schema = settings_from(serde_json::json!({
+            "schema_version": 0,
+            "enabled": false,
+        }));
+        assert_eq!(
+            wrong_schema.validate().unwrap_err().code(),
+            "tunnel_configuration_invalid"
+        );
+    }
+
+    #[test]
+    fn settings_files_must_be_present_regular_bounded_and_well_formed() {
+        let directory = temporary_directory();
+        let path = directory.join("tunnel.json");
+
+        assert_eq!(
+            load_tunnel_settings(&path).unwrap_err().code(),
+            "tunnel_configuration_invalid"
+        );
+        fs::write(&path, b"").unwrap();
+        assert_eq!(
+            load_tunnel_settings(&path).unwrap_err().code(),
+            "tunnel_configuration_invalid"
+        );
+        fs::write(&path, vec![b' '; MAX_SETTINGS_BYTES as usize + 1]).unwrap();
+        assert_eq!(
+            load_tunnel_settings(&path).unwrap_err().code(),
+            "tunnel_configuration_invalid"
+        );
+        fs::write(&path, b"{\"schema_version\":1,").unwrap();
+        assert_eq!(
+            load_tunnel_settings(&path).unwrap_err().code(),
+            "tunnel_configuration_invalid"
+        );
+        fs::write(&path, serde_json::to_vec(&enabled_settings_json()).unwrap()).unwrap();
+        let loaded = load_tunnel_settings(&path).unwrap();
+        assert!(loaded.enabled());
+        assert_eq!(loaded.upload_hostname(), Some("uploads.clinic.example"));
+
+        let dir_path = directory.join("dir.json");
+        fs::create_dir(&dir_path).unwrap();
+        assert_eq!(
+            load_tunnel_settings(&dir_path).unwrap_err().code(),
+            "tunnel_configuration_invalid"
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn cloudflared_versions_follow_the_calendar_release_scheme() {
+        for valid in ["2025.1.0", "2026.8.0", "2100.12.65535", "2026.8.0.1"] {
+            assert!(valid_cloudflared_version(valid), "{valid}");
+        }
+        for invalid in [
+            "",
+            "2024.12.0",
+            "2101.1.0",
+            "2026.0.0",
+            "2026.13.0",
+            "2026.8",
+            "2026.8.0.1.2",
+            "v2026.8.0",
+            "2026.8.x",
+            "2026.8.0-beta",
+            "2026.8.65536",
+            "2026..0",
+        ] {
+            assert!(!valid_cloudflared_version(invalid), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn file_digest_matches_known_sha256_vectors() {
+        let directory = temporary_directory();
+        let empty = directory.join("empty");
+        let abc = directory.join("abc");
+        fs::write(&empty, b"").unwrap();
+        fs::write(&abc, b"abc").unwrap();
+
+        assert_eq!(
+            sha256_file(&empty).unwrap(),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        assert_eq!(
+            sha256_file(&abc).unwrap(),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        assert_eq!(
+            sha256_file(&directory.join("missing")).unwrap_err().code(),
+            "tunnel_executable_unverified"
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn large_file_digest_spans_multiple_buffers() {
+        let directory = temporary_directory();
+        let path = directory.join("large");
+        let contents = (0..200_000_u32)
+            .map(|value| value as u8)
+            .collect::<Vec<_>>();
+        fs::write(&path, &contents).unwrap();
+
+        assert_eq!(
+            sha256_file(&path).unwrap(),
+            format!("{:x}", Sha256::digest(&contents))
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn bounded_reader_retains_one_byte_past_the_limit_and_drains_the_rest() {
+        let mut cursor = io::Cursor::new(vec![b'v'; MAX_VERSION_OUTPUT_BYTES * 3]);
+
+        let retained = read_bounded_and_drain(&mut cursor).unwrap();
+
+        assert_eq!(retained.len(), MAX_VERSION_OUTPUT_BYTES + 1);
+        assert_eq!(cursor.position() as usize, MAX_VERSION_OUTPUT_BYTES * 3);
+        assert_eq!(
+            read_bounded_and_drain(io::Cursor::new(b"short".to_vec())).unwrap(),
+            b"short"
+        );
+    }
+
+    #[test]
+    fn manifest_must_be_well_formed_before_the_executable_is_hashed() {
+        let directory = temporary_directory();
+        let executable = directory.join("cloudflared");
+        fs::write(&executable, b"binary").unwrap();
+        let digest = sha256_file(&executable).unwrap();
+        let manifest = directory.join("cloudflared.manifest.json");
+
+        for contents in [
+            String::new(),
+            " ".repeat(MAX_MANIFEST_BYTES as usize + 1),
+            "not json".to_owned(),
+            format!(r#"{{"schema_version":2,"version":"2026.8.0","sha256":"{digest}"}}"#),
+            format!(r#"{{"schema_version":1,"version":"latest","sha256":"{digest}"}}"#),
+            format!(
+                r#"{{"schema_version":1,"version":"2026.8.0","sha256":"{}"}}"#,
+                digest.to_ascii_uppercase()
+            ),
+            format!(
+                r#"{{"schema_version":1,"version":"2026.8.0","sha256":"{}"}}"#,
+                &digest[1..]
+            ),
+            format!(r#"{{"schema_version":1,"version":"2026.8.0","sha256":"{digest}","extra":1}}"#),
+            format!(
+                r#"{{"schema_version":1,"version":"2026.8.0","sha256":"{}"}}"#,
+                "0".repeat(64)
+            ),
+        ] {
+            fs::write(&manifest, &contents).unwrap();
+            assert_eq!(
+                verify_cloudflared_executable(&executable, &manifest)
+                    .unwrap_err()
+                    .code(),
+                "tunnel_executable_unverified",
+                "{contents:?}"
+            );
+        }
+        assert!(verify_cloudflared_executable(&directory.join("absent"), &manifest).is_err());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn reported_version_must_match_manifest_exactly() {
+        let directory = temporary_directory();
+        for (body, accepted) in [
+            ("echo 'cloudflared version 2026.8.0'", true),
+            (
+                "echo 'noise'; echo '  cloudflared version 2026.8.0 (built 2026-08-01)'",
+                true,
+            ),
+            ("echo 'cloudflared version 2026.8.0' >&2", true),
+            ("echo 'cloudflared version 2026.8.01'", false),
+            ("echo 'cloudflared version 2026.8.1'", false),
+            ("echo 'Cloudflared version 2026.8.0'", false),
+            ("echo 'cloudflared version 2026.8.0'; exit 3", false),
+            (
+                "head -c 9000 /dev/zero | tr '\\0' 'a'; echo; echo 'cloudflared version 2026.8.0'",
+                false,
+            ),
+        ] {
+            let case = directory.join(Uuid::new_v4().to_string());
+            fs::create_dir(&case).unwrap();
+            let (executable, manifest) = write_executable(&case, &format!("#!/bin/sh\n{body}\n"));
+            assert_eq!(
+                verify_cloudflared_executable(&executable, &manifest).is_ok(),
+                accepted,
+                "{body}"
+            );
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlinked_executable_is_rejected() {
+        use std::os::unix::fs::symlink;
+
+        let directory = temporary_directory();
+        let (executable, manifest) = write_executable(
+            &directory,
+            "#!/bin/sh\necho 'cloudflared version 2026.8.0'\n",
+        );
+        let link = directory.join("cloudflared-link");
+        symlink(&executable, &link).unwrap();
+
+        assert_eq!(
+            verify_cloudflared_executable(&link, &manifest)
+                .unwrap_err()
+                .code(),
+            "tunnel_executable_unverified"
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn connector_tokens_must_be_bounded_base64ish_strings() {
+        assert!(validate_connector_token(&"a".repeat(32)).is_ok());
+        assert!(validate_connector_token(&"A".repeat(16 * 1024)).is_ok());
+        assert!(validate_connector_token("abcABC012+/_-=.abcABC012+/_-=.xx").is_ok());
+        for token in [
+            "a".repeat(31),
+            "a".repeat(16 * 1024 + 1),
+            format!("{} ", "a".repeat(32)),
+            format!("{}\n", "a".repeat(32)),
+            format!("{}\"", "a".repeat(32)),
+            format!("{}é", "a".repeat(32)),
+        ] {
+            assert_eq!(
+                validate_connector_token(&token).unwrap_err().code(),
+                "tunnel_credentials_unavailable"
+            );
+        }
+    }
+
+    #[test]
+    fn configuration_rejects_disabled_settings_and_out_of_range_bounds() {
+        let directory = temporary_directory();
+        let ok = |settings, version: &str, readiness, shutdown, retry, delay| {
+            configuration_error(
+                &directory, settings, version, readiness, shutdown, retry, delay,
+            )
+        };
+        let secs = Duration::from_secs;
+        let disabled = settings_from(serde_json::json!({"schema_version": 1, "enabled": false}));
+
+        assert_eq!(
+            ok(disabled, "1.0.0", secs(2), secs(2), 0, secs(1)),
+            Some("tunnel_disabled")
+        );
+        assert_eq!(
+            ok(
+                enabled_settings(),
+                "1.0.0",
+                secs(120),
+                secs(30),
+                5,
+                secs(30)
+            ),
+            None
+        );
+        let invalid = Some("tunnel_configuration_invalid");
+        assert_eq!(
+            ok(enabled_settings(), "", secs(2), secs(2), 0, secs(1)),
+            invalid
+        );
+        assert_eq!(
+            ok(
+                enabled_settings(),
+                "1.0.0",
+                Duration::ZERO,
+                secs(2),
+                0,
+                secs(1)
+            ),
+            invalid
+        );
+        assert_eq!(
+            ok(enabled_settings(), "1.0.0", secs(121), secs(2), 0, secs(1)),
+            invalid
+        );
+        assert_eq!(
+            ok(
+                enabled_settings(),
+                "1.0.0",
+                secs(2),
+                Duration::ZERO,
+                0,
+                secs(1)
+            ),
+            invalid
+        );
+        assert_eq!(
+            ok(enabled_settings(), "1.0.0", secs(2), secs(31), 0, secs(1)),
+            invalid
+        );
+        assert_eq!(
+            ok(enabled_settings(), "1.0.0", secs(2), secs(2), 6, secs(1)),
+            invalid
+        );
+        assert_eq!(
+            ok(enabled_settings(), "1.0.0", secs(2), secs(2), 0, secs(31)),
+            invalid
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn configuration_rejects_malformed_connector_tokens() {
+        let directory = temporary_directory();
+        let path = directory.join("short.token");
+        write_new_protected_secret(&path, "too-short").unwrap();
+
+        let error = TunnelConfiguration::new(
+            enabled_settings(),
+            CloudflaredExecutable {
+                path: directory.join("cloudflared"),
+                version: "2026.8.0".to_owned(),
+            },
+            read_protected_secret(&path).unwrap(),
+            "1.0.0".to_owned(),
+            Duration::from_secs(2),
+            Duration::from_secs(2),
+            0,
+            Duration::from_secs(1),
+        )
+        .err()
+        .unwrap();
+
+        assert_eq!(error.code(), "tunnel_credentials_unavailable");
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn probe_failures_map_to_stable_error_codes() {
+        assert_eq!(ProbeFailure::Cancelled.code(), "tunnel_cancelled");
+        assert_eq!(
+            ProbeFailure::LocalTimeout.code(),
+            "tunnel_local_readiness_timeout"
+        );
+        assert_eq!(
+            ProbeFailure::IdentityMismatch.code(),
+            "tunnel_identity_mismatch"
+        );
+        assert_eq!(
+            ProbeFailure::RouteMismatch.code(),
+            "tunnel_effective_route_mismatch"
+        );
+        assert_eq!(
+            ProbeFailure::PublicTimeout.code(),
+            "tunnel_public_readiness_timeout"
+        );
+    }
+
+    #[test]
+    fn loopback_origin_parsing_canonicalizes_and_rejects_extras() {
+        let canonical = LoopbackOrigin::parse("http://127.0.0.1:49152/").unwrap();
+        assert_eq!(canonical.url, "http://127.0.0.1:49152");
+        assert_eq!(canonical.port, 49152);
+
+        for invalid in [
+            "http://127.0.0.1",
+            "http://127.0.0.1:80",
+            "http://user@127.0.0.1:49152",
+            "http://user:pw@127.0.0.1:49152",
+            "http://127.0.0.1:49152/?a=1",
+            "http://127.0.0.1:49152/#x",
+            "http://[::1]:49152",
+            "http://0.0.0.0:49152",
+            "127.0.0.1:49152",
+            "",
+        ] {
+            assert_eq!(
+                LoopbackOrigin::parse(invalid)
+                    .map(|origin| origin.url)
+                    .unwrap_err()
+                    .code(),
+                "tunnel_origin_invalid",
+                "{invalid}"
+            );
+        }
+    }
+
+    #[test]
+    fn attestation_requires_canonical_expected_inputs() {
+        let listener_origin = "http://127.0.0.1:49152";
+        let boundary = valid_remote_upload_boundary(listener_origin);
+
+        assert!(verify_boundary_value(
+            &boundary,
+            "uploads.clinic.example",
+            "http://127.0.0.1:49152/"
+        )
+        .is_none());
+        assert!(verify_boundary_value(&boundary, "x.trycloudflare.com", listener_origin).is_none());
+        assert!(VerifiedRemoteUploadBoundary::from_health_response(
+            b"not json",
+            "uploads.clinic.example",
+            listener_origin
+        )
+        .is_none());
+    }
+
+    #[test]
+    fn verified_boundary_debug_output_hides_its_contents() {
+        let rendered = format!("{:?}", verified_boundary("http://127.0.0.1:49152"));
+
+        assert!(rendered.starts_with("VerifiedRemoteUploadBoundary"));
+        assert!(!rendered.contains("uploads.clinic.example"));
+        assert!(!rendered.contains("49152"));
+    }
+
+    #[test]
+    fn effective_configuration_rejects_every_deviation_from_the_exact_shape() {
+        let origin = "http://127.0.0.1:49152";
+        let parse = |value: serde_json::Value| -> EffectiveTunnelConfiguration {
+            serde_json::from_value(value).unwrap()
+        };
+        let upload = serde_json::json!({"hostname": "uploads.clinic.example", "service": origin});
+        let fallback = serde_json::json!({"service": "http_status:404"});
+
+        assert!(effective_configuration_matches(
+            &parse(serde_json::json!({"ingress": [upload, fallback]})),
+            "uploads.clinic.example",
+            origin
+        ));
+        for configuration in [
+            serde_json::json!({}),
+            serde_json::json!({"ingress": [upload]}),
+            serde_json::json!({"ingress": [fallback, upload]}),
+            serde_json::json!({"ingress": [
+                {"hostname": "uploads.clinic.example", "path": "/upload", "service": origin},
+                fallback
+            ]}),
+            serde_json::json!({"ingress": [
+                {"hostname": "other.clinic.example", "service": origin},
+                fallback
+            ]}),
+            serde_json::json!({"ingress": [
+                {"hostname": "uploads.clinic.example", "service": "http://localhost:49152"},
+                fallback
+            ]}),
+            serde_json::json!({"ingress": [
+                {"hostname": "uploads.clinic.example", "service": "http://127.0.0.1:49152/admin"},
+                fallback
+            ]}),
+            serde_json::json!({"ingress": [upload, {"service": "http_status:503"}]}),
+            serde_json::json!({"ingress": [upload, {"hostname": "x.example", "service": "http_status:404"}]}),
+            serde_json::json!({"ingress": [upload, {"path": "/", "service": "http_status:404"}]}),
+        ] {
+            assert!(
+                !effective_configuration_matches(
+                    &parse(configuration.clone()),
+                    "uploads.clinic.example",
+                    origin
+                ),
+                "{configuration}"
+            );
+        }
+    }
+
+    #[test]
+    fn upload_rule_service_with_trailing_slash_is_canonicalized() {
+        let configuration: EffectiveTunnelConfiguration =
+            serde_json::from_value(serde_json::json!({
+                "ingress": [
+                    {"hostname": "uploads.clinic.example", "service": "http://127.0.0.1:49152/"},
+                    {"service": "http_status:404"}
+                ]
+            }))
+            .unwrap();
+
+        assert!(effective_configuration_matches(
+            &configuration,
+            "uploads.clinic.example",
+            "http://127.0.0.1:49152"
+        ));
+    }
+
+    #[test]
+    fn grace_period_is_derived_from_shutdown_timeout_and_clamped() {
+        let directory = temporary_directory();
+        let origin = LoopbackOrigin::parse("http://127.0.0.1:49152").unwrap();
+
+        for (shutdown_seconds, expected) in [(1, "1s"), (2, "1s"), (3, "2s"), (4, "3s"), (30, "3s")]
+        {
+            let mut configuration = test_configuration(
+                &directory,
+                CloudflaredExecutable {
+                    path: directory.join("cloudflared"),
+                    version: "2026.8.0".to_owned(),
+                },
+                0,
+            );
+            configuration.shutdown_timeout = Duration::from_secs(shutdown_seconds);
+            let command = build_cloudflared_command(&configuration, &origin, 49153);
+            let arguments = command
+                .get_args()
+                .map(|argument| argument.to_string_lossy().into_owned())
+                .collect::<Vec<_>>();
+            let grace_index = arguments
+                .iter()
+                .position(|argument| argument == "--grace-period")
+                .unwrap();
+            assert_eq!(arguments[grace_index + 1], expected, "{shutdown_seconds}s");
+            let environment_grace = command
+                .get_envs()
+                .find(|(name, _)| *name == "TUNNEL_GRACE_PERIOD")
+                .and_then(|(_, value)| value)
+                .map(|value| value.to_string_lossy().into_owned());
+            assert_eq!(environment_grace.as_deref(), Some(expected));
+            fs::remove_file(directory.join("cloudflared.token")).unwrap();
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn command_pins_metrics_to_loopback_and_disables_autoupdate() {
+        let directory = temporary_directory();
+        let configuration = test_configuration(
+            &directory,
+            CloudflaredExecutable {
+                path: directory.join("cloudflared"),
+                version: "2026.8.0".to_owned(),
+            },
+            0,
+        );
+        let origin = LoopbackOrigin::parse("http://127.0.0.1:49152").unwrap();
+        let command = build_cloudflared_command(&configuration, &origin, 50001);
+        let arguments = command
+            .get_args()
+            .map(|argument| argument.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            command.get_program(),
+            directory.join("cloudflared").as_os_str()
+        );
+        assert_eq!(
+            arguments,
+            [
+                "tunnel",
+                "--config",
+                null_configuration_path(),
+                "--no-autoupdate",
+                "--metrics",
+                "127.0.0.1:50001",
+                "--loglevel",
+                "warn",
+                "--grace-period",
+                "1s",
+                "--retries",
+                "2",
+                "run",
+            ]
+        );
+        let environment = |name: &str| {
+            command
+                .get_envs()
+                .find(|(key, _)| *key == name)
+                .map(|(_, value)| value.map(|value| value.to_string_lossy().into_owned()))
+        };
+        assert_eq!(
+            environment("TUNNEL_METRICS"),
+            Some(Some("127.0.0.1:50001".to_owned()))
+        );
+        assert_eq!(environment("NO_AUTOUPDATE"), Some(Some("true".to_owned())));
+        assert_eq!(
+            environment("TUNNEL_HA_CONNECTIONS"),
+            Some(Some("1".to_owned()))
+        );
+        for removed in [
+            "TUNNEL_CRED_FILE",
+            "TUNNEL_ORIGIN_CERT",
+            "TUNNEL_CONFIG",
+            "TUNNEL_HOSTNAME",
+        ] {
+            assert_eq!(environment(removed), Some(None), "{removed}");
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn version_probe_environment_strips_every_cloudflared_secret_variable() {
+        let mut command = Command::new("cloudflared");
+        command.env("TUNNEL_TOKEN", "leak").env("UNRELATED", "kept");
+
+        clear_cloudflared_secret_environment(&mut command);
+
+        let removed = command
+            .get_envs()
+            .filter(|(_, value)| value.is_none())
+            .count();
+        assert_eq!(removed, 13);
+        assert!(command
+            .get_envs()
+            .any(|(name, value)| name == "UNRELATED" && value == Some(OsStr::new("kept"))));
+        assert!(command
+            .get_envs()
+            .any(|(name, value)| name == "TUNNEL_TOKEN" && value.is_none()));
+    }
+
+    #[test]
+    fn disabled_supervisor_publishes_stopped_state_and_ignores_start_requests() {
+        let directory = temporary_directory();
+        let supervisor =
+            Arc::new(TunnelSupervisor::disabled(&directory, test_logger(&directory)).unwrap());
+
+        let snapshot = read_snapshot(&directory);
+        assert_eq!(snapshot.phase, TunnelPhase::Stopped);
+        assert_eq!(snapshot.last_error_code.as_deref(), Some("tunnel_disabled"));
+        assert_eq!(snapshot.upload_hostname, None);
+        assert_eq!(supervisor.required_attestation_hostname(), None);
+
+        supervisor.start_for_origin(
+            "http://127.0.0.1:49152",
+            verified_boundary("http://127.0.0.1:49152"),
+        );
+        supervisor.deny_unverified_origin();
+        supervisor.stop_active();
+
+        let snapshot = read_snapshot(&directory);
+        assert_eq!(snapshot.phase, TunnelPhase::Stopped);
+        assert_eq!(snapshot.last_error_code.as_deref(), Some("tunnel_disabled"));
+        assert!(supervisor.lifecycle.lock().unwrap().worker.is_none());
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn native_status_requires_a_valid_non_nil_installation_id() {
+        let directory = temporary_directory();
+        for installation_id in ["not-a-uuid", "00000000-0000-0000-0000-000000000000"] {
+            let error = TunnelSupervisor::disabled(&directory, test_logger(&directory))
+                .unwrap()
+                .with_authenticated_native_status(TEST_STATUS_KEY, installation_id, "2.1.0")
+                .err()
+                .unwrap();
+            assert_eq!(error.code(), "tunnel_status_configuration_invalid");
+        }
+        let error = TunnelSupervisor::disabled(&directory, test_logger(&directory))
+            .unwrap()
+            .with_authenticated_native_status("short", TEST_INSTALLATION_ID, "2.1.0")
+            .err()
+            .unwrap();
+        assert_eq!(error.code(), "native_tunnel_status_configuration_invalid");
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn active_supervisor_without_child_stops_cleanly() {
+        let directory = temporary_directory();
+        let configuration = test_configuration(
+            &directory,
+            CloudflaredExecutable {
+                path: directory.join("must-not-run"),
+                version: "2026.8.0".to_owned(),
+            },
+            0,
+        );
+        let supervisor = Arc::new(
+            TunnelSupervisor::new_with_readiness_probe(
+                configuration,
+                &directory,
+                test_logger(&directory),
+                Arc::new(ImmediateReadiness),
+            )
+            .unwrap(),
+        );
+        let initial = read_snapshot(&directory);
+        assert_eq!(initial.phase, TunnelPhase::Stopped);
+        assert_eq!(
+            initial.upload_hostname.as_deref(),
+            Some("uploads.clinic.example")
+        );
+        assert_eq!(initial.last_error_code.as_deref(), Some("tunnel_stopped"));
+
+        supervisor.stop_active();
+        let stopped = read_snapshot(&directory);
+        assert_eq!(stopped.phase, TunnelPhase::Stopped);
+        assert_eq!(stopped.last_error_code.as_deref(), Some("tunnel_stopped"));
+
+        supervisor.shutdown();
+        supervisor.start_for_origin(
+            "http://127.0.0.1:49152",
+            verified_boundary("http://127.0.0.1:49152"),
+        );
+        assert!(supervisor.lifecycle.lock().unwrap().worker.is_none());
+        assert_eq!(read_snapshot(&directory).phase, TunnelPhase::Stopped);
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn tunnel_error_display_includes_code_and_detail() {
+        let error = TunnelError::new("tunnel_disabled", "off");
+
+        assert_eq!(error.to_string(), "tunnel_disabled: off");
+    }
 }

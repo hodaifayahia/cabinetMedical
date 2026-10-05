@@ -71,4 +71,67 @@ mod tests {
         assert!(!json.contains("key"));
         assert!(json.contains("health_timeout"));
     }
+
+    #[test]
+    fn first_attempt_starts_and_later_attempts_retry() {
+        let first = RuntimeSnapshot::starting(0);
+        let retry = RuntimeSnapshot::starting(3);
+
+        assert_eq!(first.phase, RuntimePhase::Starting);
+        assert_eq!(retry.phase, RuntimePhase::Retrying);
+        assert_eq!(retry.retry_count, 3);
+        assert_eq!(first.schema_version, 1);
+        assert_eq!(first.local_port, None);
+        assert_eq!(first.process_id, None);
+        assert_eq!(first.last_error_code, None);
+        assert!(first.updated_at_unix_ms > 0);
+    }
+
+    #[test]
+    fn touch_never_moves_the_timestamp_backwards() {
+        let mut snapshot = RuntimeSnapshot::starting(0);
+        snapshot.updated_at_unix_ms = 1;
+
+        snapshot.touch();
+
+        assert!(snapshot.updated_at_unix_ms > 1);
+        assert!(snapshot.updated_at_unix_ms <= now_unix_ms());
+    }
+
+    #[test]
+    fn phases_serialize_as_snake_case() {
+        for (phase, name) in [
+            (RuntimePhase::Starting, "starting"),
+            (RuntimePhase::Healthy, "healthy"),
+            (RuntimePhase::Retrying, "retrying"),
+            (RuntimePhase::Failed, "failed"),
+            (RuntimePhase::Stopping, "stopping"),
+            (RuntimePhase::Stopped, "stopped"),
+        ] {
+            assert_eq!(
+                serde_json::to_string(&phase).unwrap(),
+                format!("\"{name}\"")
+            );
+        }
+    }
+
+    #[test]
+    fn snapshot_round_trips_through_json() {
+        let mut snapshot = RuntimeSnapshot::starting(2);
+        snapshot.local_port = Some(43123);
+        snapshot.process_id = Some(4242);
+        snapshot.last_error_code = Some("laravel_exited".to_owned());
+
+        let json = serde_json::to_string(&snapshot).unwrap();
+        let decoded: RuntimeSnapshot = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(decoded, snapshot);
+    }
+
+    #[test]
+    fn unknown_phase_is_rejected_when_reading_a_snapshot() {
+        let json = r#"{"schema_version":1,"phase":"exploded","local_port":null,"process_id":null,"retry_count":0,"last_error_code":null,"updated_at_unix_ms":1}"#;
+
+        assert!(serde_json::from_str::<RuntimeSnapshot>(json).is_err());
+    }
 }

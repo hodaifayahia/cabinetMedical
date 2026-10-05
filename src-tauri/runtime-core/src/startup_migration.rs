@@ -2678,4 +2678,1017 @@ mod tests {
         bytes.extend_from_slice(marker);
         bytes
     }
+
+    type LabeledInspectionChange = (&'static str, fn(&mut MigrationInspection));
+    type LabeledChange<T> = (&'static str, Box<dyn Fn(&mut T)>);
+
+    struct ScriptedLauncher {
+        inner: FakeLauncher,
+        fail_snapshot: bool,
+        migration_is_noop: bool,
+        newer_database: bool,
+        snapshots_taken: std::sync::Mutex<u32>,
+    }
+
+    impl ScriptedLauncher {
+        fn new() -> Self {
+            Self {
+                inner: FakeLauncher::new(false),
+                fail_snapshot: false,
+                migration_is_noop: false,
+                newer_database: false,
+                snapshots_taken: std::sync::Mutex::new(0),
+            }
+        }
+    }
+
+    impl MigrationCommandLauncher for ScriptedLauncher {
+        fn inspect(&self, database: &Path) -> Result<MigrationInspection, StartupMigrationError> {
+            let mut inspection = self.inner.inspection(database, "inspect");
+            if self.newer_database {
+                inspection.applied_migrations = vec![
+                    TEST_MIGRATION.to_owned(),
+                    "2027_01_01_000000_future".to_owned(),
+                ];
+                inspection.pending_migrations = Vec::new();
+                inspection.required_tables_present = true;
+                inspection.missing_required_tables = Vec::new();
+            }
+            Ok(inspection)
+        }
+
+        fn snapshot(
+            &self,
+            database: &Path,
+            snapshot: &Path,
+            snapshot_root: &Path,
+        ) -> Result<MigrationInspection, StartupMigrationError> {
+            *self.snapshots_taken.lock().unwrap() += 1;
+            if self.fail_snapshot {
+                return Err(StartupMigrationError::new(
+                    "migration_snapshot_failed",
+                    "test",
+                ));
+            }
+            self.inner.snapshot(database, snapshot, snapshot_root)
+        }
+
+        fn migrate_forward(&self, database: &Path) -> Result<(), StartupMigrationError> {
+            if self.migration_is_noop {
+                return Ok(());
+            }
+            self.inner.migrate_forward(database)
+        }
+    }
+
+    fn coordinate(
+        fixture: &MigrationFixture,
+        launcher: &dyn MigrationCommandLauncher,
+    ) -> Result<StartupMigrationOutcome, StartupMigrationError> {
+        coordinate_startup_migration_gate(
+            &fixture.resources,
+            &fixture.config,
+            &fixture.paths,
+            launcher,
+            Arc::clone(&fixture.logger),
+        )
+    }
+
+    fn inspection(operation: &str, applied: &[&str], pending: &[&str]) -> MigrationInspection {
+        let target = pending.is_empty();
+        MigrationInspection {
+            protocol: "medismart-native-migration-state".to_owned(),
+            schema_version: SCHEMA_VERSION,
+            operation: operation.to_owned(),
+            integrity_ok: true,
+            foreign_keys_ok: true,
+            journal_mode: "wal".to_owned(),
+            migrations_table_present: true,
+            expected_migrations: vec!["m_one".to_owned(), "m_two".to_owned()],
+            applied_migrations: applied.iter().map(|name| (*name).to_owned()).collect(),
+            pending_migrations: pending.iter().map(|name| (*name).to_owned()).collect(),
+            required_tables_present: target,
+            missing_required_tables: if target {
+                Vec::new()
+            } else {
+                vec!["patients".to_owned()]
+            },
+            snapshot_created: operation == "snapshot",
+            checkpoint: (operation == "snapshot").then_some(CheckpointObservation {
+                busy: 0,
+                log: 4,
+                checkpointed: 4,
+            }),
+        }
+    }
+
+    fn two_migration_resources() -> VerifiedMigrationResources {
+        let fixture = MigrationFixture::new();
+        let mut resources = fixture.resources.clone();
+        resources.expected_migrations = vec!["m_one".to_owned(), "m_two".to_owned()];
+        resources
+    }
+
+    fn journal_record(fixture: &MigrationFixture, phase: JournalPhase) -> MigrationJournalRecord {
+        let now = unix_time();
+        MigrationJournalRecord {
+            schema_version: SCHEMA_VERSION,
+            operation_id: Uuid::new_v4().hyphenated().to_string(),
+            phase,
+            application_version: fixture.config.application_version.clone(),
+            migration_set_sha256: fixture.resources.migration_set_sha256.clone(),
+            migration_contract_sha256: fixture.resources.migration_contract_sha256.clone(),
+            installation_binding_sha256: installation_binding(&fixture.config.installation_id),
+            snapshot_filename: format!("migration-safety-{}.sqlite", Uuid::new_v4().hyphenated()),
+            snapshot_sha256: None,
+            snapshot_size: None,
+            failure_code: None,
+            created_at_unix: now,
+            updated_at_unix: now,
+        }
+    }
+
+    #[test]
+    fn operator_messages_distinguish_actionable_failures() {
+        let message = |code| StartupMigrationError::new(code, "detail").operator_message_fr();
+        let fallback = message("migration_process_failed");
+
+        assert_eq!(
+            message("migration_resources_invalid"),
+            message("migration_runtime_mismatch")
+        );
+        assert_eq!(
+            message("migration_recovery_required"),
+            message("migration_recovery_snapshot_invalid")
+        );
+        for code in [
+            "migration_lock_contended",
+            "migration_resources_invalid",
+            "migration_database_newer_than_release",
+            "migration_recovery_required",
+            "migration_disk_space_insufficient",
+        ] {
+            assert_ne!(message(code), fallback, "{code}");
+        }
+        assert_eq!(message("anything_else"), fallback);
+        assert_eq!(
+            StartupMigrationError::new("migration_lock_contended", "held").to_string(),
+            "migration_lock_contended: held"
+        );
+    }
+
+    #[test]
+    fn application_versions_must_be_bounded_semver() {
+        for valid in [
+            "0.0.0",
+            "1.2.3",
+            "10.20.30",
+            "1.2.3-beta.1",
+            "1.2.3-rc-1+build.7",
+            "2.0.0-test",
+        ] {
+            assert!(validate_version(valid).is_ok(), "{valid}");
+        }
+        let long = format!("1.2.3-{}", "a".repeat(59));
+        assert_eq!(long.len(), 65);
+        for invalid in [
+            "",
+            "1.2",
+            "1.2.3.4",
+            "v1.2.3",
+            "01.2.3",
+            "1.02.3",
+            "1.2.3-",
+            "1.2.3+",
+            "1.2.3-beta..1",
+            " 1.2.3",
+            "1.2.3 ",
+            long.as_str(),
+        ] {
+            assert_eq!(
+                validate_version(invalid).err().map(|error| error.code()),
+                Some("migration_resources_invalid"),
+                "{invalid:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn digests_and_release_paths_are_strictly_canonical() {
+        assert!(validate_sha256(&"0f".repeat(32)).is_ok());
+        for invalid in [
+            "0F".repeat(32),
+            "0f".repeat(31),
+            "0f".repeat(33),
+            "zz".repeat(32),
+        ] {
+            assert!(validate_sha256(&invalid).is_err(), "{invalid}");
+        }
+
+        for valid in [
+            "artisan",
+            "app/Console/Commands/NativeMigrationGate.php",
+            "a.b/c-d_e",
+        ] {
+            assert!(validate_relative_path(valid).is_ok(), "{valid}");
+        }
+        let long = "a".repeat(MAX_PATH_BYTES + 1);
+        for invalid in [
+            "",
+            "/abs",
+            "trailing/",
+            "a//b",
+            "./a",
+            "a/./b",
+            "a/../b",
+            "..",
+            "a\\b",
+            "a\0b",
+            long.as_str(),
+        ] {
+            assert_eq!(
+                validate_relative_path(invalid)
+                    .err()
+                    .map(|error| error.code()),
+                Some("migration_resources_invalid"),
+                "{invalid:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn migration_names_are_bounded_identifiers() {
+        assert!(valid_migration_name(
+            "2026_08_05_000000_create_patients_table"
+        ));
+        assert!(valid_migration_name(&"a".repeat(240)));
+        for invalid in [
+            "",
+            "has-dash",
+            "has space",
+            "dots.php",
+            "ünicode",
+            &"a".repeat(241),
+        ] {
+            assert!(!valid_migration_name(invalid), "{invalid:?}");
+        }
+    }
+
+    #[test]
+    fn snapshot_filenames_embed_a_canonical_uuid() {
+        let id = Uuid::new_v4().hyphenated().to_string();
+        assert!(validate_snapshot_filename(&format!("migration-safety-{id}.sqlite")).is_ok());
+        for invalid in [
+            format!("migration-safety-{}.sqlite", id.to_uppercase()),
+            format!("migration-safety-{}.sqlite", id.replace('-', "")),
+            format!("migration-safety-{id}.sqlite3"),
+            format!("safety-{id}.sqlite"),
+            format!("migration-safety-../{id}.sqlite"),
+            "migration-safety-.sqlite".to_owned(),
+        ] {
+            assert_eq!(
+                validate_snapshot_filename(&invalid)
+                    .err()
+                    .map(|error| error.code()),
+                Some("migration_recovery_required"),
+                "{invalid}"
+            );
+        }
+    }
+
+    #[test]
+    fn installation_binding_is_deterministic_and_installation_specific() {
+        let first = Uuid::new_v4().hyphenated().to_string();
+        let second = Uuid::new_v4().hyphenated().to_string();
+
+        assert_eq!(installation_binding(&first), installation_binding(&first));
+        assert_ne!(installation_binding(&first), installation_binding(&second));
+        assert!(validate_sha256(&installation_binding(&first)).is_ok());
+        assert_eq!(
+            installation_binding(""),
+            hex_lower(&Sha256::digest(b"medismart-migration-installation-v1\n"))
+        );
+    }
+
+    #[test]
+    fn hmac_matches_rfc_4231_vectors() {
+        assert_eq!(
+            hex_lower(&hmac_sha256(b"Jefe", b"what do ya want for nothing?")),
+            "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+        );
+        assert_eq!(
+            hex_lower(&hmac_sha256(
+                &[0xaa; 131],
+                b"Test Using Larger Than Block-Size Key - Hash Key First"
+            )),
+            "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+        );
+        assert!(constant_time_eq(b"abc", b"abc"));
+        assert!(!constant_time_eq(b"abc", b"abd"));
+        assert!(!constant_time_eq(b"abc", b"ab"));
+    }
+
+    #[test]
+    fn inspections_classify_pending_and_target_prefixes() {
+        let resources = two_migration_resources();
+
+        assert_eq!(
+            classify_inspection(&resources, &inspection("inspect", &[], &["m_one", "m_two"]))
+                .unwrap(),
+            DatabaseMigrationState::Pending
+        );
+        assert_eq!(
+            classify_inspection(&resources, &inspection("inspect", &["m_one"], &["m_two"]))
+                .unwrap(),
+            DatabaseMigrationState::Pending
+        );
+        assert_eq!(
+            classify_inspection(&resources, &inspection("inspect", &["m_one", "m_two"], &[]))
+                .unwrap(),
+            DatabaseMigrationState::Target
+        );
+        assert_eq!(
+            require_target_inspection(&resources, &inspection("inspect", &["m_one"], &["m_two"]))
+                .unwrap_err()
+                .code(),
+            "migration_postflight_failed"
+        );
+        assert!(require_target_inspection(
+            &resources,
+            &inspection("inspect", &["m_one", "m_two"], &[])
+        )
+        .is_ok());
+    }
+
+    #[test]
+    fn databases_ahead_of_or_diverged_from_the_release_are_refused() {
+        let resources = two_migration_resources();
+        let mut ahead = inspection("inspect", &["m_one", "m_two"], &[]);
+        ahead.applied_migrations.push("m_three".to_owned());
+        assert_eq!(
+            classify_inspection(&resources, &ahead).unwrap_err().code(),
+            "migration_database_newer_than_release"
+        );
+        assert_eq!(
+            classify_inspection(&resources, &inspection("inspect", &["m_two"], &["m_one"]))
+                .unwrap_err()
+                .code(),
+            "migration_database_newer_than_release"
+        );
+        assert_eq!(
+            classify_inspection(&resources, &inspection("inspect", &["m_one"], &[]))
+                .unwrap_err()
+                .code(),
+            "migration_database_invalid"
+        );
+        assert_eq!(
+            classify_inspection(&resources, &inspection("inspect", &[], &["m_two", "m_one"]))
+                .unwrap_err()
+                .code(),
+            "migration_database_invalid"
+        );
+    }
+
+    #[test]
+    fn unhealthy_databases_are_refused() {
+        let resources = two_migration_resources();
+        let cases: Vec<fn(&mut MigrationInspection)> = vec![
+            |i| i.integrity_ok = false,
+            |i| i.foreign_keys_ok = false,
+            |i| i.migrations_table_present = false,
+        ];
+        for change in cases {
+            let mut value = inspection("inspect", &["m_one", "m_two"], &[]);
+            change(&mut value);
+            assert_eq!(
+                classify_inspection(&resources, &value).unwrap_err().code(),
+                "migration_database_invalid"
+            );
+        }
+        let mut duplicate = inspection("inspect", &["m_one", "m_two"], &[]);
+        duplicate.expected_migrations = vec!["m_one".to_owned(), "M_ONE".to_owned()];
+        let mut duplicate_resources = resources.clone();
+        duplicate_resources.expected_migrations = duplicate.expected_migrations.clone();
+        duplicate.applied_migrations = duplicate.expected_migrations.clone();
+        assert_eq!(
+            classify_inspection(&duplicate_resources, &duplicate)
+                .unwrap_err()
+                .code(),
+            "migration_database_invalid"
+        );
+    }
+
+    #[test]
+    fn helper_envelope_violations_are_contract_errors() {
+        let resources = two_migration_resources();
+        let cases: Vec<LabeledInspectionChange> = vec![
+            ("protocol", |i| i.protocol = "other".to_owned()),
+            ("schema", |i| i.schema_version = 2),
+            ("operation", |i| i.operation = "migrate".to_owned()),
+            ("expected list", |i| {
+                i.expected_migrations.pop().map(|_| ()).unwrap_or(())
+            }),
+            ("journal mode", |i| i.journal_mode = "memory".to_owned()),
+            ("inconsistent tables", |i| i.required_tables_present = false),
+            ("inspect claims snapshot", |i| i.snapshot_created = true),
+            ("inspect has checkpoint", |i| {
+                i.checkpoint = Some(CheckpointObservation {
+                    busy: 0,
+                    log: 0,
+                    checkpointed: 0,
+                })
+            }),
+            ("invalid name", |i| {
+                i.applied_migrations = vec!["bad-name".to_owned()]
+            }),
+        ];
+        for (label, change) in cases {
+            let mut value = inspection("inspect", &["m_one", "m_two"], &[]);
+            change(&mut value);
+            assert_eq!(
+                classify_inspection(&resources, &value).unwrap_err().code(),
+                "migration_helper_contract_invalid",
+                "{label}"
+            );
+        }
+        let mut delete_mode = inspection("inspect", &["m_one", "m_two"], &[]);
+        delete_mode.journal_mode = "delete".to_owned();
+        assert!(classify_inspection(&resources, &delete_mode).is_ok());
+    }
+
+    #[test]
+    fn snapshot_results_require_complete_checkpoint_evidence() {
+        let resources = two_migration_resources();
+        assert_eq!(
+            classify_inspection(
+                &resources,
+                &inspection("snapshot", &[], &["m_one", "m_two"])
+            )
+            .unwrap(),
+            DatabaseMigrationState::Pending
+        );
+
+        let mut missing = inspection("snapshot", &[], &["m_one", "m_two"]);
+        missing.checkpoint = None;
+        assert_eq!(
+            classify_inspection(&resources, &missing)
+                .unwrap_err()
+                .code(),
+            "migration_helper_contract_invalid"
+        );
+        let cases: Vec<fn(&mut MigrationInspection)> = vec![
+            |i| i.snapshot_created = false,
+            |i| i.checkpoint.as_mut().unwrap().busy = 1,
+            |i| i.checkpoint.as_mut().unwrap().checkpointed = 3,
+        ];
+        for change in cases {
+            let mut value = inspection("snapshot", &[], &["m_one", "m_two"]);
+            change(&mut value);
+            assert_eq!(
+                classify_inspection(&resources, &value).unwrap_err().code(),
+                "migration_snapshot_invalid"
+            );
+        }
+    }
+
+    #[test]
+    fn inspection_json_rejects_unknown_fields() {
+        let mut value = serde_json::json!({
+            "protocol": "medismart-native-migration-state",
+            "schema_version": 1,
+            "operation": "inspect",
+            "integrity_ok": true,
+            "foreign_keys_ok": true,
+            "journal_mode": "wal",
+            "migrations_table_present": true,
+            "expected_migrations": [],
+            "applied_migrations": [],
+            "pending_migrations": [],
+            "required_tables_present": true,
+            "missing_required_tables": [],
+            "snapshot_created": false,
+            "checkpoint": null,
+        });
+        assert!(serde_json::from_value::<MigrationInspection>(value.clone()).is_ok());
+        value["sql"] = serde_json::json!("DROP TABLE patients");
+        assert!(serde_json::from_value::<MigrationInspection>(value).is_err());
+    }
+
+    #[test]
+    fn signed_journal_round_trips_and_missing_journal_is_none() {
+        let fixture = MigrationFixture::new();
+        assert!(
+            read_signed_journal(&fixture.paths.active_journal, &fixture.config.app_key)
+                .unwrap()
+                .is_none()
+        );
+
+        let record = journal_record(&fixture, JournalPhase::SafetyBackupVerified);
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+        let loaded = read_signed_journal(&fixture.paths.active_journal, &fixture.config.app_key)
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(loaded.operation_id, record.operation_id);
+        assert_eq!(loaded.phase, JournalPhase::SafetyBackupVerified);
+        assert!(validate_journal(&loaded, &fixture.config, &fixture.paths).is_ok());
+        let raw = fs::read_to_string(&fixture.paths.active_journal).unwrap();
+        assert!(!raw.contains(&fixture.config.app_key));
+        assert!(!raw.contains(&fixture.config.installation_id));
+    }
+
+    #[test]
+    fn signed_journal_fails_closed_for_wrong_key_or_corruption() {
+        let fixture = MigrationFixture::new();
+        let record = journal_record(&fixture, JournalPhase::MigrationStarted);
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+
+        assert_eq!(
+            read_signed_journal(
+                &fixture.paths.active_journal,
+                "base64:another-installation-key-material"
+            )
+            .unwrap_err()
+            .code(),
+            "migration_recovery_required"
+        );
+
+        fs::write(&fixture.paths.active_journal, b"{\"record\":").unwrap();
+        assert_eq!(
+            read_signed_journal(&fixture.paths.active_journal, &fixture.config.app_key)
+                .unwrap_err()
+                .code(),
+            "migration_recovery_required"
+        );
+
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+        let mut document: serde_json::Value =
+            serde_json::from_slice(&fs::read(&fixture.paths.active_journal).unwrap()).unwrap();
+        document["hmac_sha256"] = serde_json::json!("not-a-digest");
+        fs::write(
+            &fixture.paths.active_journal,
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+        assert!(
+            read_signed_journal(&fixture.paths.active_journal, &fixture.config.app_key).is_err()
+        );
+    }
+
+    #[test]
+    fn journal_identity_and_snapshot_evidence_are_validated() {
+        let fixture = MigrationFixture::new();
+        let cases: Vec<LabeledChange<MigrationJournalRecord>> = vec![
+            ("schema", Box::new(|r| r.schema_version = 2)),
+            (
+                "operation uppercase",
+                Box::new(|r| r.operation_id = r.operation_id.to_uppercase()),
+            ),
+            (
+                "operation garbage",
+                Box::new(|r| r.operation_id = "op".to_owned()),
+            ),
+            (
+                "long version",
+                Box::new(|r| r.application_version = "1".repeat(65)),
+            ),
+            (
+                "binding",
+                Box::new(|r| r.installation_binding_sha256 = "c".repeat(64)),
+            ),
+            ("created zero", Box::new(|r| r.created_at_unix = 0)),
+            (
+                "updated before created",
+                Box::new(|r| r.updated_at_unix = r.created_at_unix - 1),
+            ),
+            (
+                "updated far future",
+                Box::new(|r| r.updated_at_unix = unix_time() + 3_600),
+            ),
+            (
+                "hash without size",
+                Box::new(|r| r.snapshot_sha256 = Some("d".repeat(64))),
+            ),
+            (
+                "size without hash",
+                Box::new(|r| r.snapshot_size = Some(1024)),
+            ),
+            (
+                "tiny snapshot",
+                Box::new(|r| {
+                    r.snapshot_sha256 = Some("d".repeat(64));
+                    r.snapshot_size = Some(15);
+                }),
+            ),
+            (
+                "snapshot filename",
+                Box::new(|r| r.snapshot_filename = "../../database.sqlite".to_owned()),
+            ),
+        ];
+        for (label, change) in cases {
+            let mut record = journal_record(&fixture, JournalPhase::MigrationStarted);
+            change(&mut record);
+            assert!(
+                validate_journal(&record, &fixture.config, &fixture.paths).is_err(),
+                "{label} was accepted"
+            );
+        }
+        let mut complete = journal_record(&fixture, JournalPhase::MigrationStarted);
+        complete.snapshot_sha256 = Some("d".repeat(64));
+        complete.snapshot_size = Some(16);
+        complete.updated_at_unix = unix_time() + 299;
+        assert!(validate_journal(&complete, &fixture.config, &fixture.paths).is_ok());
+    }
+
+    #[test]
+    fn database_already_at_target_is_a_noop_without_snapshots() {
+        let fixture = MigrationFixture::new();
+        fs::write(&fixture.paths.database, sqlite_bytes(b"target")).unwrap();
+        let launcher = ScriptedLauncher::new();
+
+        assert_eq!(
+            coordinate(&fixture, &launcher).unwrap(),
+            StartupMigrationOutcome::Noop
+        );
+        assert_eq!(*launcher.snapshots_taken.lock().unwrap(), 0);
+        assert!(!fixture.paths.active_journal.exists());
+        assert_eq!(fs::read_dir(&fixture.paths.snapshots).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn database_newer_than_release_is_refused_before_any_snapshot() {
+        let fixture = MigrationFixture::new();
+        let before = fs::read(&fixture.paths.database).unwrap();
+        let mut launcher = ScriptedLauncher::new();
+        launcher.newer_database = true;
+
+        let error = coordinate(&fixture, &launcher).unwrap_err();
+
+        assert_eq!(error.code(), "migration_database_newer_than_release");
+        assert_eq!(*launcher.snapshots_taken.lock().unwrap(), 0);
+        assert_eq!(fs::read(&fixture.paths.database).unwrap(), before);
+    }
+
+    #[test]
+    fn snapshot_failure_records_the_failure_and_leaves_the_database_untouched() {
+        let fixture = MigrationFixture::new();
+        let before = fs::read(&fixture.paths.database).unwrap();
+        let mut launcher = ScriptedLauncher::new();
+        launcher.fail_snapshot = true;
+
+        let error = coordinate(&fixture, &launcher).unwrap_err();
+
+        assert_eq!(error.code(), "migration_snapshot_failed");
+        assert_eq!(fs::read(&fixture.paths.database).unwrap(), before);
+        let journal = read_signed_journal(&fixture.paths.active_journal, &fixture.config.app_key)
+            .unwrap()
+            .unwrap();
+        assert_eq!(journal.phase, JournalPhase::SnapshotStarted);
+        assert_eq!(
+            journal.failure_code.as_deref(),
+            Some("migration_snapshot_failed")
+        );
+    }
+
+    #[test]
+    fn interrupted_snapshot_is_discarded_and_migration_retried_on_next_start() {
+        let fixture = MigrationFixture::new();
+        let mut failing = ScriptedLauncher::new();
+        failing.fail_snapshot = true;
+        coordinate(&fixture, &failing).unwrap_err();
+        let journal = read_signed_journal(&fixture.paths.active_journal, &fixture.config.app_key)
+            .unwrap()
+            .unwrap();
+        let partial = fixture.paths.snapshots.join(&journal.snapshot_filename);
+        fs::write(&partial, b"partial snapshot").unwrap();
+
+        let outcome = coordinate(&fixture, &ScriptedLauncher::new()).unwrap();
+
+        assert_eq!(outcome, StartupMigrationOutcome::RecoveredThenMigrated);
+        assert!(!partial.exists());
+        assert!(!fixture.paths.active_journal.exists());
+        assert!(fs::read(&fixture.paths.database)
+            .unwrap()
+            .ends_with(b"target"));
+    }
+
+    #[test]
+    fn migration_that_does_not_reach_target_is_rolled_back() {
+        let fixture = MigrationFixture::new();
+        let before = fs::read(&fixture.paths.database).unwrap();
+        let mut launcher = ScriptedLauncher::new();
+        launcher.migration_is_noop = true;
+
+        let error = coordinate(&fixture, &launcher).unwrap_err();
+
+        assert_eq!(error.code(), "migration_failed_rolled_back");
+        assert_eq!(fs::read(&fixture.paths.database).unwrap(), before);
+        let journal = read_signed_journal(&fixture.paths.active_journal, &fixture.config.app_key)
+            .unwrap()
+            .unwrap();
+        assert_eq!(journal.phase, JournalPhase::Restored);
+        assert_eq!(
+            journal.failure_code.as_deref(),
+            Some("migration_postflight_failed")
+        );
+    }
+
+    #[test]
+    fn committed_journal_with_target_database_is_cleared() {
+        let fixture = MigrationFixture::new();
+        fs::write(&fixture.paths.database, sqlite_bytes(b"target")).unwrap();
+        let record = journal_record(&fixture, JournalPhase::Committed);
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+
+        let outcome = coordinate(&fixture, &ScriptedLauncher::new()).unwrap();
+
+        assert_eq!(outcome, StartupMigrationOutcome::Noop);
+        assert!(!fixture.paths.active_journal.exists());
+    }
+
+    #[test]
+    fn committed_journal_with_pending_database_requires_recovery() {
+        let fixture = MigrationFixture::new();
+        let record = journal_record(&fixture, JournalPhase::Committed);
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+
+        let error = coordinate(&fixture, &ScriptedLauncher::new()).unwrap_err();
+
+        assert_eq!(error.code(), "migration_postflight_failed");
+        assert!(fixture.paths.active_journal.exists());
+    }
+
+    #[test]
+    fn interrupted_migration_without_snapshot_evidence_stays_offline() {
+        let fixture = MigrationFixture::new();
+        let record = journal_record(&fixture, JournalPhase::MigrationStarted);
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+        let before = fs::read(&fixture.paths.database).unwrap();
+
+        let error = coordinate(&fixture, &ScriptedLauncher::new()).unwrap_err();
+
+        assert_eq!(error.code(), "migration_recovery_snapshot_invalid");
+        assert_eq!(fs::read(&fixture.paths.database).unwrap(), before);
+        assert!(fixture.paths.active_journal.exists());
+    }
+
+    #[test]
+    fn interrupted_migration_with_tampered_snapshot_stays_offline() {
+        let fixture = MigrationFixture::new();
+        let mut record = journal_record(&fixture, JournalPhase::MigrationStarted);
+        let snapshot = fixture.paths.snapshots.join(&record.snapshot_filename);
+        let snapshot_bytes = sqlite_bytes(b"pending");
+        fs::write(&snapshot, &snapshot_bytes).unwrap();
+        record.snapshot_sha256 = Some(hex_lower(&Sha256::digest(&snapshot_bytes)));
+        record.snapshot_size = Some(snapshot_bytes.len() as u64);
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+        fs::write(&snapshot, sqlite_bytes(b"pendinX")).unwrap();
+        fs::write(&fixture.paths.database, sqlite_bytes(b"half-migrated")).unwrap();
+
+        let error = coordinate(&fixture, &ScriptedLauncher::new()).unwrap_err();
+
+        assert_eq!(error.code(), "migration_recovery_snapshot_invalid");
+        assert_eq!(
+            fs::read(&fixture.paths.database).unwrap(),
+            sqlite_bytes(b"half-migrated")
+        );
+    }
+
+    #[test]
+    fn interrupted_migration_with_verified_snapshot_restores_then_migrates() {
+        let fixture = MigrationFixture::new();
+        let mut record = journal_record(&fixture, JournalPhase::MigrationProcessSucceeded);
+        let snapshot = fixture.paths.snapshots.join(&record.snapshot_filename);
+        let snapshot_bytes = sqlite_bytes(b"pending");
+        fs::write(&snapshot, &snapshot_bytes).unwrap();
+        record.snapshot_sha256 = Some(hex_lower(&Sha256::digest(&snapshot_bytes)));
+        record.snapshot_size = Some(snapshot_bytes.len() as u64);
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+        fs::write(&fixture.paths.database, sqlite_bytes(b"half-migrated")).unwrap();
+        let mut sidecar = fixture.paths.database.as_os_str().to_os_string();
+        sidecar.push("-wal");
+        fs::write(PathBuf::from(&sidecar), b"stale wal").unwrap();
+
+        let outcome = coordinate(&fixture, &ScriptedLauncher::new()).unwrap();
+
+        assert_eq!(outcome, StartupMigrationOutcome::RecoveredThenMigrated);
+        assert!(fs::read(&fixture.paths.database)
+            .unwrap()
+            .ends_with(b"target"));
+        assert!(!PathBuf::from(sidecar).exists());
+        assert!(!fixture.paths.active_journal.exists());
+    }
+
+    #[test]
+    fn restored_journal_must_match_the_active_database() {
+        let fixture = MigrationFixture::new();
+        let mut record = journal_record(&fixture, JournalPhase::Restored);
+        let snapshot = fixture.paths.snapshots.join(&record.snapshot_filename);
+        let snapshot_bytes = sqlite_bytes(b"pending-snapshot");
+        fs::write(&snapshot, &snapshot_bytes).unwrap();
+        record.snapshot_sha256 = Some(hex_lower(&Sha256::digest(&snapshot_bytes)));
+        record.snapshot_size = Some(snapshot_bytes.len() as u64);
+        write_signed_journal(
+            &fixture.paths.active_journal,
+            &record,
+            &fixture.config.app_key,
+        )
+        .unwrap();
+
+        let error = coordinate(&fixture, &ScriptedLauncher::new()).unwrap_err();
+        assert_eq!(error.code(), "migration_recovery_required");
+
+        fs::write(&fixture.paths.database, &snapshot_bytes).unwrap();
+        let outcome = coordinate(&fixture, &ScriptedLauncher::new()).unwrap();
+        assert_eq!(outcome, StartupMigrationOutcome::RecoveredThenMigrated);
+    }
+
+    #[test]
+    fn snapshot_retention_keeps_only_the_newest_managed_snapshots() {
+        let fixture = MigrationFixture::new();
+        let base = SystemTime::now() - Duration::from_secs(3_600);
+        let mut names = Vec::new();
+        for index in 0..5_u64 {
+            let name = format!("migration-safety-{}.sqlite", Uuid::new_v4().hyphenated());
+            let path = fixture.paths.snapshots.join(&name);
+            fs::write(&path, sqlite_bytes(b"snapshot")).unwrap();
+            File::options()
+                .write(true)
+                .open(&path)
+                .unwrap()
+                .set_modified(base + Duration::from_secs(index * 60))
+                .unwrap();
+            names.push(name);
+        }
+        let unrelated = fixture.paths.snapshots.join("notes.txt");
+        fs::write(&unrelated, b"keep").unwrap();
+
+        prune_safety_snapshots(&fixture.paths.snapshots, Some(&names[0]), &fixture.logger);
+
+        let remaining = fs::read_dir(&fixture.paths.snapshots)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+            .collect::<BTreeSet<_>>();
+        let expected = [&names[0], &names[2], &names[3], &names[4]]
+            .iter()
+            .map(|name| (*name).clone())
+            .chain(["notes.txt".to_owned()])
+            .collect::<BTreeSet<_>>();
+        assert_eq!(remaining, expected);
+    }
+
+    #[test]
+    fn gate_configuration_accepts_the_fixed_appdata_layout() {
+        let fixture = MigrationFixture::new();
+
+        let paths = validate_gate_configuration(&fixture.resources, &fixture.config).unwrap();
+
+        assert_eq!(
+            paths.database,
+            fixture.paths.database.canonicalize().unwrap()
+        );
+        assert!(paths
+            .lifecycle_lock
+            .ends_with("storage/app/private/restore-lifecycle.lock"));
+        assert!(paths
+            .active_journal
+            .ends_with("migration-recovery/active-migration.json"));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                fs::metadata(&paths.snapshots).unwrap().permissions().mode() & 0o777,
+                0o700
+            );
+        }
+    }
+
+    #[test]
+    fn gate_configuration_rejects_identity_and_timeout_violations() {
+        let fixture = MigrationFixture::new();
+        let cases: Vec<LabeledChange<StartupMigrationGateConfig>> = vec![
+            (
+                "version mismatch",
+                Box::new(|c| c.application_version = "9.9.9".to_owned()),
+            ),
+            ("short key", Box::new(|c| c.app_key = "k".repeat(31))),
+            (
+                "uppercase installation",
+                Box::new(|c| c.installation_id = c.installation_id.to_uppercase()),
+            ),
+            (
+                "garbage installation",
+                Box::new(|c| c.installation_id = "install".to_owned()),
+            ),
+            (
+                "short timeout",
+                Box::new(|c| c.command_timeout = Duration::from_secs(4)),
+            ),
+            (
+                "long timeout",
+                Box::new(|c| c.command_timeout = Duration::from_secs(30 * 60 + 1)),
+            ),
+            (
+                "storage elsewhere",
+                Box::new(|c| c.storage_path = c.temporary_directory.clone()),
+            ),
+            (
+                "cache elsewhere",
+                Box::new(|c| c.framework_cache_directory = c.temporary_directory.clone()),
+            ),
+        ];
+        for (label, change) in cases {
+            let mut config = fixture.config.clone();
+            change(&mut config);
+            assert_eq!(
+                validate_gate_configuration(&fixture.resources, &config)
+                    .err()
+                    .map(|error| error.code()),
+                Some("migration_configuration_invalid"),
+                "{label}"
+            );
+        }
+    }
+
+    #[test]
+    fn gate_configuration_requires_a_sqlite_database_inside_appdata() {
+        let fixture = MigrationFixture::new();
+        fs::write(&fixture.paths.database, b"not a sqlite database").unwrap();
+        assert_eq!(
+            validate_gate_configuration(&fixture.resources, &fixture.config)
+                .err()
+                .map(|error| error.code())
+                .unwrap(),
+            "migration_database_invalid"
+        );
+
+        let fixture = MigrationFixture::new();
+        let outside = fixture.root.join("tmp/other.sqlite");
+        fs::write(&outside, sqlite_bytes(b"pending")).unwrap();
+        let mut config = fixture.config.clone();
+        config.database_path = outside;
+        assert_eq!(
+            validate_gate_configuration(&fixture.resources, &config)
+                .err()
+                .map(|error| error.code())
+                .unwrap(),
+            "migration_configuration_invalid"
+        );
+    }
+
+    #[test]
+    fn lifecycle_lock_is_exclusive_until_released() {
+        let fixture = MigrationFixture::new();
+        fs::create_dir_all(fixture.paths.lifecycle_lock.parent().unwrap()).unwrap();
+
+        let first = MigrationLifecycleLease::acquire(&fixture.paths.lifecycle_lock).unwrap();
+        assert_eq!(
+            MigrationLifecycleLease::acquire(&fixture.paths.lifecycle_lock)
+                .err()
+                .map(|error| error.code()),
+            Some("migration_lock_contended")
+        );
+        drop(first);
+        assert!(MigrationLifecycleLease::acquire(&fixture.paths.lifecycle_lock).is_ok());
+    }
 }

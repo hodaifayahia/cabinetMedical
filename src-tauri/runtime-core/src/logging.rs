@@ -371,4 +371,343 @@ mod tests {
         assert!(output.contains("scheduler process output omitted"));
         fs::remove_dir_all(directory).unwrap();
     }
+
+    fn temporary_log_directory() -> PathBuf {
+        let directory = std::env::temp_dir().join(format!("medismart-log-x-{}", Uuid::new_v4()));
+        fs::create_dir_all(&directory).unwrap();
+        directory
+    }
+
+    fn redactor(secrets: &[&str], paths: &[&str]) -> Redactor {
+        Redactor::new(
+            secrets,
+            &paths.iter().map(PathBuf::from).collect::<Vec<_>>(),
+        )
+    }
+
+    #[test]
+    fn log_file_names_must_be_short_plain_dot_log_names() {
+        assert!(valid_log_file_name("desktop-supervisor.log"));
+        assert!(valid_log_file_name("a_b.c-d.log"));
+        assert!(valid_log_file_name(&format!("{}.log", "a".repeat(60))));
+
+        assert!(!valid_log_file_name(&format!("{}.log", "a".repeat(61))));
+        assert!(!valid_log_file_name("desktop.txt"));
+        assert!(!valid_log_file_name("../escape.log"));
+        assert!(!valid_log_file_name("nested/file.log"));
+        assert!(!valid_log_file_name("nested\\file.log"));
+        assert!(!valid_log_file_name("space name.log"));
+        assert!(!valid_log_file_name("unicodé.log"));
+        assert!(!valid_log_file_name(""));
+    }
+
+    #[test]
+    fn opening_with_invalid_file_name_fails_without_creating_directory() {
+        let root = temporary_log_directory();
+        let directory = root.join("logs");
+
+        let error = RuntimeLogger::open_named(&directory, "../evil.log", &[], &[])
+            .err()
+            .unwrap();
+
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(!directory.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn opening_creates_missing_log_directory() {
+        let root = temporary_log_directory();
+        let directory = root.join("deep").join("logs");
+
+        let logger = RuntimeLogger::open(&directory, &[], &[]).unwrap();
+        logger.info("hello");
+        drop(logger);
+
+        assert!(directory.join("desktop-supervisor.log").is_file());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn directory_at_log_path_is_rejected() {
+        let directory = temporary_log_directory();
+        fs::create_dir(directory.join("desktop-supervisor.log")).unwrap();
+
+        let error = RuntimeLogger::open(&directory, &[], &[]).err().unwrap();
+
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn levels_are_written_with_timestamp_and_trailing_whitespace_trimmed() {
+        let directory = temporary_log_directory();
+        let logger = RuntimeLogger::open(&directory, &[], &[]).unwrap();
+
+        logger.info("first message   \n");
+        logger.warn("second");
+        logger.error("third");
+        logger.child_output("PHP-OUT", "child line");
+        drop(logger);
+
+        let output = fs::read_to_string(directory.join("desktop-supervisor.log")).unwrap();
+        let lines = output.lines().collect::<Vec<_>>();
+        assert_eq!(lines.len(), 4);
+        let expected = [
+            "[INFO] first message",
+            "[WARN] second",
+            "[ERROR] third",
+            "[PHP-OUT] child line",
+        ];
+        for (line, suffix) in lines.iter().zip(expected) {
+            assert!(line.starts_with('['), "{line}");
+            let timestamp = &line[1..line.find(']').unwrap()];
+            assert!(timestamp.parse::<u128>().unwrap() > 0);
+            assert!(line.ends_with(suffix), "{line} should end with {suffix}");
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn reopening_appends_rather_than_truncating() {
+        let directory = temporary_log_directory();
+        let logger = RuntimeLogger::open(&directory, &[], &[]).unwrap();
+        logger.info("one");
+        drop(logger);
+        let logger = RuntimeLogger::open(&directory, &[], &[]).unwrap();
+        logger.info("two");
+        drop(logger);
+
+        let output = fs::read_to_string(directory.join("desktop-supervisor.log")).unwrap();
+        assert!(output.contains("[INFO] one"));
+        assert!(output.contains("[INFO] two"));
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn oversized_messages_are_replaced_with_a_placeholder() {
+        let directory = temporary_log_directory();
+        let logger = RuntimeLogger::open(&directory, &[], &[]).unwrap();
+        let exact = "e".repeat(MAX_MESSAGE_BYTES);
+        let oversized = "o".repeat(MAX_MESSAGE_BYTES + 1);
+
+        logger.info(&exact);
+        logger.info(&oversized);
+        drop(logger);
+
+        let output = fs::read_to_string(directory.join("desktop-supervisor.log")).unwrap();
+        assert!(output.contains(&exact));
+        assert!(!output.contains(&"o".repeat(64)));
+        assert!(output.contains("[oversized process message omitted]"));
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn blank_supervised_child_output_is_not_logged() {
+        let directory = temporary_log_directory();
+        let logger = RuntimeLogger::open(&directory, &[], &[]).unwrap();
+
+        logger.child_output("TUNNEL-OUT", "   ");
+        logger.child_output("QUEUE-OUT", "\n");
+        logger.child_output("SCHEDULER-OUT", "");
+        drop(logger);
+
+        let output = fs::read_to_string(directory.join("desktop-supervisor.log")).unwrap();
+        assert!(output.is_empty());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn stream_prefix_matching_is_case_sensitive_and_prefix_only() {
+        let directory = temporary_log_directory();
+        let logger = RuntimeLogger::open(&directory, &[], &[]).unwrap();
+
+        logger.child_output("tunnel-out", "lowercase-stream-visible");
+        logger.child_output("PHP-TUNNEL-OUT", "embedded-stream-visible");
+        drop(logger);
+
+        let output = fs::read_to_string(directory.join("desktop-supervisor.log")).unwrap();
+        assert!(output.contains("lowercase-stream-visible"));
+        assert!(output.contains("embedded-stream-visible"));
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn small_logs_are_not_rotated() {
+        let directory = temporary_log_directory();
+        let path = directory.join("desktop-supervisor.log");
+        fs::write(&path, b"existing\n").unwrap();
+
+        rotate_if_needed(&path).unwrap();
+
+        assert_eq!(fs::read(&path).unwrap(), b"existing\n");
+        assert!(!directory.join("desktop-supervisor.log.1").exists());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn rotation_of_missing_log_is_a_no_op() {
+        let directory = temporary_log_directory();
+
+        rotate_if_needed(&directory.join("absent.log")).unwrap();
+
+        assert_eq!(fs::read_dir(&directory).unwrap().count(), 0);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn logs_at_the_size_limit_rotate_and_replace_previous_rotation() {
+        let directory = temporary_log_directory();
+        let path = directory.join("desktop-supervisor.log");
+        let rotated = directory.join("desktop-supervisor.log.1");
+        fs::write(&rotated, b"old rotation").unwrap();
+        let file = File::create(&path).unwrap();
+        file.set_len(MAX_LOG_BYTES).unwrap();
+        drop(file);
+
+        let logger = RuntimeLogger::open(&directory, &[], &[]).unwrap();
+        logger.info("fresh");
+        drop(logger);
+
+        assert_eq!(fs::metadata(&rotated).unwrap().len(), MAX_LOG_BYTES);
+        let fresh = fs::read_to_string(&path).unwrap();
+        assert!(fresh.contains("[INFO] fresh"));
+        assert!((fresh.len() as u64) < 1024);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn logs_just_below_the_size_limit_are_kept() {
+        let directory = temporary_log_directory();
+        let path = directory.join("desktop-supervisor.log");
+        let file = File::create(&path).unwrap();
+        file.set_len(MAX_LOG_BYTES - 1).unwrap();
+        drop(file);
+
+        rotate_if_needed(&path).unwrap();
+
+        assert_eq!(fs::metadata(&path).unwrap().len(), MAX_LOG_BYTES - 1);
+        assert!(!directory.join("desktop-supervisor.log.1").exists());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn known_secrets_shorter_than_eight_bytes_are_not_used_for_redaction() {
+        let redactor = redactor(&["short", "long-enough-secret"], &[]);
+
+        let output = redactor.redact("short words and long-enough-secret here");
+
+        assert_eq!(output, "short words and [REDACTED] here");
+    }
+
+    #[test]
+    fn every_occurrence_of_a_known_secret_is_redacted() {
+        let redactor = redactor(&["repeat-secret"], &[]);
+
+        let output = redactor.redact("repeat-secret/repeat-secret:repeat-secret");
+
+        assert!(!output.contains("repeat-secret"));
+        assert_eq!(output.matches("[REDACTED]").count(), 3);
+    }
+
+    #[test]
+    fn credential_assignments_are_redacted_case_insensitively() {
+        let redactor = redactor(&[], &[]);
+
+        for (input, expected) in [
+            ("password=hunter2", "password=[REDACTED]"),
+            ("PASSWORD : hunter2", "PASSWORD : [REDACTED]"),
+            ("client_secret=abc,next", "client_secret=[REDACTED],next"),
+            ("refresh_token: r1;rest", "refresh_token: [REDACTED];rest"),
+            ("APP_KEY=base64:xyz", "APP_KEY=[REDACTED]"),
+            (
+                "x-medismart-health-key: k123",
+                "x-medismart-health-key: [REDACTED]",
+            ),
+        ] {
+            assert_eq!(redactor.redact(input), expected, "input {input}");
+        }
+    }
+
+    #[test]
+    fn query_string_secrets_are_redacted_but_other_parameters_kept() {
+        let redactor = redactor(&[], &[]);
+
+        let output = redactor.redact("GET /callback?code=c0de&page=2&state=s7ate&key=k3y HTTP/1.1");
+
+        assert!(!output.contains("c0de"));
+        assert!(!output.contains("s7ate"));
+        assert!(!output.contains("k3y"));
+        assert!(output.contains("page=2"));
+        assert!(output.contains("HTTP/1.1"));
+    }
+
+    #[test]
+    fn bearer_tokens_are_redacted_regardless_of_case() {
+        let redactor = redactor(&[], &[]);
+
+        let output = redactor.redact("sent bearer eyJhbGciOi.payload.sig~+/= ok");
+
+        assert_eq!(output, "sent Bearer [REDACTED] ok");
+    }
+
+    #[test]
+    fn only_long_upload_tokens_are_redacted() {
+        let redactor = redactor(&[], &[]);
+
+        assert_eq!(
+            redactor.redact("/upload/ABCDEFGHIJKLMNOP/done"),
+            "/upload/[REDACTED]/done"
+        );
+        assert_eq!(
+            redactor.redact("/upload/short-id/done"),
+            "/upload/short-id/done"
+        );
+    }
+
+    #[test]
+    fn longer_private_paths_are_replaced_before_their_prefixes() {
+        let redactor = redactor(&[], &["/data", "/data/clinic/private", ""]);
+
+        let output = redactor.redact("open /data/clinic/private/db.sqlite and /data/other");
+
+        assert_eq!(
+            output,
+            "open [PRIVATE_PATH]/db.sqlite and [PRIVATE_PATH]/other"
+        );
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn private_paths_are_case_sensitive_off_windows() {
+        let redactor = redactor(&[], &["/Home/Clinic"]);
+
+        assert_eq!(redactor.redact("/home/clinic/x"), "/home/clinic/x");
+        assert_eq!(redactor.redact("/Home/Clinic/x"), "[PRIVATE_PATH]/x");
+    }
+
+    #[test]
+    fn plain_text_without_sensitive_content_is_unchanged() {
+        let redactor = redactor(&["known-secret-value"], &["/private/root"]);
+        let input = "Laravel server started on http://127.0.0.1:8123 in 42ms";
+
+        assert_eq!(redactor.redact(input), input);
+    }
+
+    #[test]
+    fn case_insensitive_replacement_escapes_regex_metacharacters() {
+        assert_eq!(
+            replace_case_insensitive(
+                r"C:\USERS\Clinic (1)\db and c:\users\clinic (1)\x",
+                r"c:\users\clinic (1)",
+                "[P]"
+            ),
+            r"[P]\db and [P]\x"
+        );
+        assert_eq!(replace_case_insensitive("a.b axb", "a.b", "[P]"), "[P] axb");
+        assert_eq!(
+            replace_case_insensitive("unchanged", "", "[P]"),
+            "unchanged"
+        );
+    }
 }

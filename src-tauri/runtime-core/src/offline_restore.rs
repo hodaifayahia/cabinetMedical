@@ -1985,4 +1985,1359 @@ mod tests {
             Some("1")
         );
     }
+
+    type LabeledJsonMutation = (&'static str, Box<dyn Fn(&mut serde_json::Value)>);
+
+    const OPERATION_ID: &str = "9b82c22e-4eef-47ad-b2db-2f2c904d69d2";
+
+    fn status_name(status: OfflineRestoreStatus) -> String {
+        serde_json::to_value(status)
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_owned()
+    }
+
+    fn result_line(status: OfflineRestoreStatus, message: &str) -> String {
+        serde_json::json!({
+            "protocol": RESULT_PROTOCOL,
+            "version": RESULT_VERSION,
+            "status": status_name(status),
+            "message_fr": message,
+        })
+        .to_string()
+    }
+
+    fn write_journal(
+        fixture: &PreparedFixture,
+        sequence: u64,
+        event: &str,
+        web_apply_enabled: bool,
+        plan_sha256: &str,
+    ) {
+        let context = ReadyJournalContext {
+            plan_sha256: plan_sha256.to_owned(),
+            web_apply_enabled,
+        };
+        let unsigned = UnsignedReadyJournalRecord {
+            sequence,
+            operation_id: OPERATION_ID,
+            event,
+            occurred_at: "2026-08-05T10:01:00+00:00",
+            context: &context,
+        };
+        let sha256 = hex_lower(&Sha256::digest(serde_json::to_vec(&unsigned).unwrap()));
+        let mut record = serde_json::to_value(&unsigned).unwrap();
+        record["sha256"] = serde_json::json!(sha256);
+        fs::write(&fixture.journal_path, format!("{record}\n")).unwrap();
+    }
+
+    fn rewrite_plan(fixture: &mut PreparedFixture, change: impl FnOnce(&mut serde_json::Value)) {
+        let document: serde_json::Value =
+            serde_json::from_slice(&fs::read(&fixture.plan_path).unwrap()).unwrap();
+        let mut plan = document["plan"].clone();
+        change(&mut plan);
+        let plan_json = serde_json::to_string(&plan).unwrap();
+        let plan_sha256 = hex_lower(&Sha256::digest(plan_json.as_bytes()));
+        fs::write(
+            &fixture.plan_path,
+            format!(r#"{{"plan":{plan_json},"sha256":"{plan_sha256}"}}"#),
+        )
+        .unwrap();
+        write_journal(fixture, 5, "ready_for_offline_apply", false, &plan_sha256);
+        fixture.authorization.plan_sha256 = plan_sha256;
+    }
+
+    fn preflight(
+        fixture: &PreparedFixture,
+    ) -> Result<VerifiedPreparedRestore, OfflineRestoreError> {
+        verify_prepared_restore_authorization(
+            &fixture.work_root,
+            &fixture.journal_root,
+            &fixture.authorization,
+        )
+    }
+
+    fn assert_preflight_fails(fixture: &PreparedFixture, label: &str) {
+        let error = preflight(fixture)
+            .err()
+            .unwrap_or_else(|| panic!("{label} was accepted"));
+        assert_eq!(error.code(), "restore_preflight_failed", "{label}");
+        assert!(!error.keep_runtime_offline(), "{label}");
+    }
+
+    fn add_staged_file(fixture: &mut PreparedFixture, relative: &str, bytes: &[u8]) {
+        let staged = fixture.staged_database.parent().unwrap().to_path_buf();
+        let path = staged.join(relative);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, bytes).unwrap();
+        let sha256 = hex_lower(&Sha256::digest(bytes));
+        let size = bytes.len() as u64;
+        let relative = relative.to_owned();
+        rewrite_plan(fixture, move |plan| {
+            plan["inventory"]
+                .as_array_mut()
+                .unwrap()
+                .push(serde_json::json!({
+                    "path": relative, "size": size, "sha256": sha256,
+                }));
+            plan["staged_file_count"] =
+                serde_json::json!(plan["staged_file_count"].as_u64().unwrap() + 1);
+            plan["staged_bytes"] = serde_json::json!(plan["staged_bytes"].as_u64().unwrap() + size);
+            let private = &mut plan["manifest"]["components"][1];
+            private["file_count"] = serde_json::json!(private["file_count"].as_u64().unwrap() + 1);
+            private["size"] = serde_json::json!(private["size"].as_u64().unwrap() + size);
+        });
+    }
+
+    struct ScriptedOwner {
+        events: Arc<Mutex<Vec<&'static str>>>,
+        stop_fails: bool,
+        lease_valid: bool,
+        start_fails: bool,
+        resume_fails: bool,
+    }
+
+    impl ScriptedOwner {
+        fn new(events: &Arc<Mutex<Vec<&'static str>>>) -> Self {
+            Self {
+                events: Arc::clone(events),
+                stop_fails: false,
+                lease_valid: true,
+                start_fails: false,
+                resume_fails: false,
+            }
+        }
+    }
+
+    impl OfflineRestoreProcessOwner for ScriptedOwner {
+        fn stop_writers_and_acquire_restore_lease(
+            &self,
+        ) -> Result<Arc<dyn ExclusiveRestoreProcessLease>, OfflineRestoreError> {
+            self.events.lock().unwrap().push("stop");
+            if self.stop_fails {
+                return Err(command_error("stop_failed", "test", true));
+            }
+            Ok(Arc::new(TestLease {
+                valid: AtomicBool::new(self.lease_valid),
+                checks: Arc::new(Mutex::new(Vec::new())),
+            }))
+        }
+
+        fn start_restored_runtime_and_verify(&self) -> Result<(), OfflineRestoreError> {
+            self.events.lock().unwrap().push("start_restored");
+            if self.start_fails {
+                return Err(command_error("unhealthy", "test", true));
+            }
+            Ok(())
+        }
+
+        fn resume_previous_runtime(&self) -> Result<(), OfflineRestoreError> {
+            self.events.lock().unwrap().push("resume_previous");
+            if self.resume_fails {
+                return Err(command_error("resume_failed", "test", true));
+            }
+            Ok(())
+        }
+    }
+
+    fn run_coordinator(
+        owner: &ScriptedOwner,
+        outcome: Result<OfflineRestoreOutcome, OfflineRestoreError>,
+        operation_id: &str,
+    ) -> Result<OfflineRestoreOutcome, OfflineRestoreError> {
+        let launcher = TestLauncher {
+            events: Arc::clone(&owner.events),
+            outcome,
+        };
+        coordinate_offline_restore(owner, &launcher, operation_id)
+    }
+
+    #[test]
+    fn invalid_operation_id_is_rejected_before_any_service_stops() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let owner = ScriptedOwner::new(&events);
+
+        let error = run_coordinator(
+            &owner,
+            Ok(outcome(OfflineRestoreStatus::AppliedPendingRestart)),
+            "not-a-uuid",
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "restore_operation_invalid");
+        assert!(!error.keep_runtime_offline());
+        assert!(events.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn failing_to_stop_writers_keeps_runtime_offline_without_launching() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let mut owner = ScriptedOwner::new(&events);
+        owner.stop_fails = true;
+
+        let error = run_coordinator(
+            &owner,
+            Ok(outcome(OfflineRestoreStatus::AppliedPendingRestart)),
+            OPERATION_ID,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "restore_ownership_failed");
+        assert!(error.keep_runtime_offline());
+        assert_eq!(*events.lock().unwrap(), vec!["stop"]);
+    }
+
+    #[test]
+    fn a_non_exclusive_lease_aborts_before_launch() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let mut owner = ScriptedOwner::new(&events);
+        owner.lease_valid = false;
+
+        let error = run_coordinator(
+            &owner,
+            Ok(outcome(OfflineRestoreStatus::AppliedPendingRestart)),
+            OPERATION_ID,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "restore_ownership_failed");
+        assert!(error.keep_runtime_offline());
+        assert_eq!(*events.lock().unwrap(), vec!["stop"]);
+    }
+
+    #[test]
+    fn safe_launcher_failure_resumes_the_previous_runtime_and_returns_the_original_error() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let owner = ScriptedOwner::new(&events);
+
+        let error = run_coordinator(
+            &owner,
+            Err(command_error("restore_command_spawn_failed", "test", false)),
+            OPERATION_ID,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "restore_command_spawn_failed");
+        assert!(!error.keep_runtime_offline());
+        assert_eq!(
+            *events.lock().unwrap(),
+            vec!["stop", "launch", "resume_previous"]
+        );
+    }
+
+    #[test]
+    fn failing_to_resume_after_a_safe_failure_keeps_runtime_offline() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let mut owner = ScriptedOwner::new(&events);
+        owner.resume_fails = true;
+
+        let error = run_coordinator(
+            &owner,
+            Err(command_error("restore_command_spawn_failed", "test", false)),
+            OPERATION_ID,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "restore_runtime_resume_failed");
+        assert!(error.keep_runtime_offline());
+    }
+
+    #[test]
+    fn rolled_back_result_resumes_previous_runtime() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let owner = ScriptedOwner::new(&events);
+
+        let result = run_coordinator(
+            &owner,
+            Ok(outcome(OfflineRestoreStatus::RolledBack)),
+            OPERATION_ID,
+        )
+        .unwrap();
+
+        assert_eq!(result.message_fr, MESSAGE_ROLLED_BACK);
+        assert_eq!(
+            *events.lock().unwrap(),
+            vec!["stop", "launch", "resume_previous"]
+        );
+    }
+
+    #[test]
+    fn unhealthy_restored_runtime_is_reported_and_kept_offline() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let mut owner = ScriptedOwner::new(&events);
+        owner.start_fails = true;
+
+        let error = run_coordinator(
+            &owner,
+            Ok(outcome(OfflineRestoreStatus::AppliedPendingRestart)),
+            OPERATION_ID,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "restored_runtime_unhealthy");
+        assert!(error.keep_runtime_offline());
+        assert_eq!(
+            *events.lock().unwrap(),
+            vec!["stop", "launch", "start_restored"]
+        );
+    }
+
+    #[test]
+    fn failing_to_resume_after_refusal_is_an_error() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let mut owner = ScriptedOwner::new(&events);
+        owner.resume_fails = true;
+
+        let error = run_coordinator(
+            &owner,
+            Ok(outcome(OfflineRestoreStatus::RefusedNoMutation)),
+            OPERATION_ID,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "restore_runtime_resume_failed");
+        assert!(error.keep_runtime_offline());
+    }
+
+    #[test]
+    fn native_results_map_each_status_to_its_exit_code() {
+        for (status, exit, message) in [
+            (
+                OfflineRestoreStatus::AppliedPendingRestart,
+                0,
+                MESSAGE_APPLIED,
+            ),
+            (OfflineRestoreStatus::RefusedNoMutation, 10, MESSAGE_REFUSED),
+            (OfflineRestoreStatus::RolledBack, 20, MESSAGE_ROLLED_BACK),
+            (
+                OfflineRestoreStatus::ManualRecoveryRequired,
+                30,
+                MESSAGE_MANUAL_RECOVERY,
+            ),
+        ] {
+            let line = result_line(status, message);
+            let parsed = parse_native_result(Some(exit), line.as_bytes()).unwrap();
+            assert_eq!(parsed, outcome(status));
+            for wrong_exit in [None, Some(exit + 1), Some(-1)] {
+                assert_eq!(
+                    parse_native_result(wrong_exit, line.as_bytes())
+                        .unwrap_err()
+                        .code(),
+                    "restore_result_invalid"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn native_result_tolerates_surrounding_blank_lines_only() {
+        let line = result_line(OfflineRestoreStatus::RolledBack, MESSAGE_ROLLED_BACK);
+
+        assert!(parse_native_result(Some(20), format!("\n  \n{line}\n\n").as_bytes()).is_ok());
+        assert!(parse_native_result(Some(20), format!("{line}\n{line}\n").as_bytes()).is_err());
+        assert!(parse_native_result(Some(20), format!("noise\n{line}\n").as_bytes()).is_err());
+        assert!(parse_native_result(Some(20), b"").is_err());
+        assert!(parse_native_result(Some(20), b"\xff\xfe").is_err());
+    }
+
+    #[test]
+    fn native_result_rejects_any_deviation_from_the_record_contract() {
+        let valid: serde_json::Value = serde_json::from_str(&result_line(
+            OfflineRestoreStatus::RolledBack,
+            MESSAGE_ROLLED_BACK,
+        ))
+        .unwrap();
+        let mut cases = Vec::new();
+        for (field, value) in [
+            ("protocol", serde_json::json!("other-protocol")),
+            ("version", serde_json::json!(2)),
+            ("message_fr", serde_json::json!(MESSAGE_APPLIED)),
+            ("status", serde_json::json!("exploded")),
+        ] {
+            let mut case = valid.clone();
+            case[field] = value;
+            cases.push(case);
+        }
+        let mut extra = valid.clone();
+        extra["detail"] = serde_json::json!("x");
+        cases.push(extra);
+        let mut missing = valid.clone();
+        missing.as_object_mut().unwrap().remove("message_fr");
+        cases.push(missing);
+
+        for case in cases {
+            let error = parse_native_result(Some(20), case.to_string().as_bytes()).unwrap_err();
+            assert_eq!(error.code(), "restore_result_invalid", "{case}");
+            assert!(error.keep_runtime_offline());
+            assert_eq!(error.operator_message_fr(), MESSAGE_MANUAL_RECOVERY);
+        }
+    }
+
+    #[test]
+    fn restore_statuses_serialize_as_snake_case() {
+        assert_eq!(
+            status_name(OfflineRestoreStatus::AppliedPendingRestart),
+            "applied_pending_restart"
+        );
+        assert_eq!(status_name(OfflineRestoreStatus::RolledBack), "rolled_back");
+        assert_eq!(
+            status_name(OfflineRestoreStatus::RefusedNoMutation),
+            "refused_no_mutation"
+        );
+        assert_eq!(
+            status_name(OfflineRestoreStatus::ManualRecoveryRequired),
+            "manual_recovery_required"
+        );
+    }
+
+    #[test]
+    fn command_errors_pick_the_operator_message_from_the_offline_flag() {
+        let offline = command_error("x", "detail", true);
+        let safe = command_error("y", "detail", false);
+
+        assert_eq!(offline.operator_message_fr(), MESSAGE_MANUAL_RECOVERY);
+        assert!(offline.keep_runtime_offline());
+        assert_ne!(safe.operator_message_fr(), MESSAGE_MANUAL_RECOVERY);
+        assert!(!safe.keep_runtime_offline());
+        assert_eq!(safe.to_string(), "y: detail");
+    }
+
+    #[test]
+    fn hmac_matches_rfc_4231_vectors_including_long_keys() {
+        assert_eq!(
+            hex_lower(&hmac_sha256(&[0x0b; 20], b"Hi There")),
+            "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"
+        );
+        assert_eq!(
+            hex_lower(&hmac_sha256(
+                &[0xaa; 131],
+                b"Test Using Larger Than Block-Size Key - Hash Key First"
+            )),
+            "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+        );
+    }
+
+    #[test]
+    fn lease_proofs_are_bound_to_direction_and_every_input() {
+        let secret = [0x42_u8; 32];
+        let base = lease_proof("request", OPERATION_ID, "challenge", 10, &secret);
+
+        assert_eq!(base.len(), 64);
+        assert_ne!(
+            base,
+            lease_proof("response", OPERATION_ID, "challenge", 10, &secret)
+        );
+        assert_ne!(
+            base,
+            lease_proof("request", "other", "challenge", 10, &secret)
+        );
+        assert_ne!(
+            base,
+            lease_proof("request", OPERATION_ID, "challengf", 10, &secret)
+        );
+        assert_ne!(
+            base,
+            lease_proof("request", OPERATION_ID, "challenge", 11, &secret)
+        );
+        assert_ne!(
+            base,
+            lease_proof("request", OPERATION_ID, "challenge", 10, &[0x43_u8; 32])
+        );
+    }
+
+    #[test]
+    fn hex_and_digest_helpers_are_strict() {
+        assert_eq!(hex_lower(&[0x00, 0x0f, 0xa0, 0xff]), "000fa0ff");
+        assert_eq!(hex_lower(&[]), "");
+        assert!(is_sha256(&"ab".repeat(32)));
+        assert!(!is_sha256(&"AB".repeat(32)));
+        assert!(!is_sha256(&"ab".repeat(31)));
+        assert!(!is_sha256(&"gg".repeat(32)));
+        assert!(constant_time_eq(b"same", b"same"));
+        assert!(!constant_time_eq(b"same", b"Same"));
+        assert!(!constant_time_eq(b"same", b"sam"));
+    }
+
+    #[test]
+    fn only_canonical_hyphenated_lowercase_uuids_are_canonical() {
+        assert!(is_canonical_uuid(OPERATION_ID));
+        for invalid in [
+            OPERATION_ID.to_uppercase(),
+            OPERATION_ID.replace('-', ""),
+            format!("{{{OPERATION_ID}}}"),
+            format!("urn:uuid:{OPERATION_ID}"),
+            String::new(),
+            "not-a-uuid".to_owned(),
+        ] {
+            assert!(!is_canonical_uuid(&invalid), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn managed_inventory_paths_are_portable_and_inside_managed_roots() {
+        for valid in [
+            "database.sqlite3",
+            "private/clinical-documents/a.pdf",
+            "private/patient-documents/2026/scan 1.png",
+            "private/medical-models/model.json",
+            "public/cabinet/logo.png",
+        ] {
+            assert!(validate_managed_inventory_path(valid).is_ok(), "{valid}");
+        }
+        let too_deep = format!("public/cabinet/{}x", "d/".repeat(31));
+        let long_segment = format!("public/cabinet/{}", "a".repeat(256));
+        let too_long = format!("public/cabinet/{}", "a/".repeat(1100));
+        for invalid in [
+            "",
+            "/database.sqlite3",
+            "database.sqlite",
+            "private/clinical-documents/",
+            "private/clinical-documents",
+            "private/other/a.pdf",
+            "public/cabinet/../../etc/passwd",
+            "public/cabinet/./a",
+            "public/cabinet//a",
+            "public\\cabinet\\a",
+            "public/cabinet/C:a",
+            "public/cabinet/a?.png",
+            "public/cabinet/a*.png",
+            "public/cabinet/a|b",
+            "public/cabinet/a<b>",
+            "public/cabinet/\"q\"",
+            "public/cabinet/tab\tname",
+            "public/cabinet/trailing.",
+            "public/cabinet/trailing ",
+            "public/cabinet/CON",
+            "public/cabinet/nul.txt",
+            "public/cabinet/com1.log",
+            too_deep.as_str(),
+            long_segment.as_str(),
+            too_long.as_str(),
+        ] {
+            assert_eq!(
+                validate_managed_inventory_path(invalid)
+                    .err()
+                    .map(|error| error.code()),
+                Some("restore_preflight_failed"),
+                "{invalid:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn reserved_windows_device_names_are_detected_by_stem() {
+        for reserved in [
+            "CON", "con", "Con.txt", "PRN", "AUX.log", "NUL", "COM1", "com9.x", "LPT1", "lpt9",
+            "CONIN$", "conout$",
+        ] {
+            assert!(is_reserved_windows_name(reserved), "{reserved}");
+        }
+        for allowed in [
+            "COM10", "LPT0", "COM", "CONSOLE", "nullable", "aux-file", "x.con",
+        ] {
+            assert!(!is_reserved_windows_name(allowed), "{allowed}");
+        }
+    }
+
+    #[test]
+    fn authorization_must_match_the_fixed_native_contract() {
+        let fixture = prepared_fixture();
+        let mutations: Vec<fn(&mut OfflineRestoreAuthorizationArtifact)> = vec![
+            |authorization| authorization.protocol = "other".to_owned(),
+            |authorization| authorization.version = 2,
+            |authorization| authorization.operation_id = authorization.operation_id.to_uppercase(),
+            |authorization| authorization.operation_id = "../escape".to_owned(),
+            |authorization| authorization.plan_sha256 = authorization.plan_sha256.to_uppercase(),
+            |authorization| authorization.plan_sha256.truncate(10),
+        ];
+        for mutation in mutations {
+            let mut authorization = fixture.authorization.clone();
+            mutation(&mut authorization);
+            let error = verify_prepared_restore_authorization(
+                &fixture.work_root,
+                &fixture.journal_root,
+                &authorization,
+            )
+            .unwrap_err();
+            assert_eq!(error.code(), "restore_authorization_invalid");
+            assert!(!error.keep_runtime_offline());
+        }
+    }
+
+    #[test]
+    fn authorization_artifacts_reject_unknown_fields_and_round_trip() {
+        let fixture = prepared_fixture();
+        let json = serde_json::to_value(&fixture.authorization).unwrap();
+        let decoded: OfflineRestoreAuthorizationArtifact =
+            serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(decoded, fixture.authorization);
+
+        let mut with_path = json;
+        with_path["archive_path"] = serde_json::json!("C:/evil.zip");
+        assert!(serde_json::from_value::<OfflineRestoreAuthorizationArtifact>(with_path).is_err());
+    }
+
+    #[test]
+    fn rewritten_fixture_plan_still_verifies() {
+        let mut fixture = prepared_fixture();
+        rewrite_plan(&mut fixture, |_| {});
+
+        assert!(preflight(&fixture).is_ok());
+    }
+
+    #[test]
+    fn plan_digest_must_match_authorization_and_contents() {
+        let mut fixture = prepared_fixture();
+        fixture.authorization.plan_sha256 = "ab".repeat(32);
+        assert_preflight_fails(&fixture, "authorization digest mismatch");
+
+        let fixture = prepared_fixture();
+        let original = fs::read_to_string(&fixture.plan_path).unwrap();
+        fs::write(
+            &fixture.plan_path,
+            original.replace("2.2.0-test", "2.2.1-test"),
+        )
+        .unwrap();
+        assert_preflight_fails(&fixture, "plan body tampered");
+    }
+
+    #[test]
+    fn plan_document_and_workspace_must_be_present_and_well_formed() {
+        let fixture = prepared_fixture();
+        fs::write(&fixture.plan_path, b"{").unwrap();
+        assert_preflight_fails(&fixture, "truncated plan");
+
+        let fixture = prepared_fixture();
+        fs::write(&fixture.plan_path, b"x").unwrap();
+        assert_preflight_fails(&fixture, "one-byte plan");
+
+        let fixture = prepared_fixture();
+        fs::remove_file(&fixture.plan_path).unwrap();
+        assert_preflight_fails(&fixture, "missing plan");
+
+        let fixture = prepared_fixture();
+        assert!(verify_prepared_restore_authorization(
+            &fixture.root.join("absent"),
+            &fixture.journal_root,
+            &fixture.authorization
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn plan_metadata_mutations_are_rejected() {
+        let cases: Vec<LabeledJsonMutation> = vec![
+            (
+                "plan_version",
+                Box::new(|plan| plan["plan_version"] = serde_json::json!(2)),
+            ),
+            (
+                "operation_id",
+                Box::new(|plan| {
+                    plan["operation_id"] = serde_json::json!("8d6708f1-7bb9-43df-abcf-2e1b9fbf2654")
+                }),
+            ),
+            (
+                "encrypted digest",
+                Box::new(|plan| plan["encrypted_archive_sha256"] = serde_json::json!("nope")),
+            ),
+            (
+                "inner digest",
+                Box::new(|plan| plan["inner_archive_sha256"] = serde_json::json!("AB".repeat(32))),
+            ),
+            (
+                "zero count",
+                Box::new(|plan| plan["staged_file_count"] = serde_json::json!(0)),
+            ),
+            (
+                "count mismatch",
+                Box::new(|plan| plan["staged_file_count"] = serde_json::json!(2)),
+            ),
+            (
+                "zero bytes",
+                Box::new(|plan| plan["staged_bytes"] = serde_json::json!(0)),
+            ),
+            (
+                "bytes mismatch",
+                Box::new(|plan| {
+                    plan["staged_bytes"] =
+                        serde_json::json!(plan["staged_bytes"].as_u64().unwrap() + 1);
+                }),
+            ),
+            (
+                "unknown field",
+                Box::new(|plan| plan["web_apply"] = serde_json::json!(true)),
+            ),
+            (
+                "unsafe inventory path",
+                Box::new(|plan| {
+                    plan["inventory"][0]["path"] = serde_json::json!("../database.sqlite3")
+                }),
+            ),
+            (
+                "inventory digest",
+                Box::new(|plan| plan["inventory"][0]["sha256"] = serde_json::json!("x")),
+            ),
+        ];
+        for (label, change) in cases {
+            let mut fixture = prepared_fixture();
+            rewrite_plan(&mut fixture, |plan| change(plan));
+            assert_preflight_fails(&fixture, label);
+        }
+    }
+
+    #[test]
+    fn manifest_contract_mutations_are_rejected() {
+        let cases: Vec<LabeledJsonMutation> = vec![
+            (
+                "format",
+                Box::new(|m| m["format"] = serde_json::json!("other-backup")),
+            ),
+            (
+                "format_version",
+                Box::new(|m| m["format_version"] = serde_json::json!(2)),
+            ),
+            (
+                "schema_version",
+                Box::new(|m| m["schema_version"] = serde_json::json!(2)),
+            ),
+            (
+                "driver",
+                Box::new(|m| m["database_driver"] = serde_json::json!("mysql")),
+            ),
+            (
+                "blank version",
+                Box::new(|m| m["application_version"] = serde_json::json!("   ")),
+            ),
+            (
+                "long version",
+                Box::new(|m| m["application_version"] = serde_json::json!("1".repeat(129))),
+            ),
+            (
+                "empty created_at",
+                Box::new(|m| m["created_at"] = serde_json::json!("")),
+            ),
+            (
+                "installation uuid",
+                Box::new(|m| {
+                    m["installation_id"] = serde_json::json!("8C138DB2-B8CA-4551-AEC3-5BE85FB3537A")
+                }),
+            ),
+            (
+                "backup uuid",
+                Box::new(|m| m["backup_id"] = serde_json::json!("backup")),
+            ),
+            (
+                "empty latest migration",
+                Box::new(|m| m["latest_migration"] = serde_json::json!("")),
+            ),
+            (
+                "numeric latest migration",
+                Box::new(|m| m["latest_migration"] = serde_json::json!(5)),
+            ),
+            (
+                "long latest migration",
+                Box::new(|m| m["latest_migration"] = serde_json::json!("m".repeat(256))),
+            ),
+            (
+                "migration digest",
+                Box::new(|m| m["migration_set_sha256"] = serde_json::json!("33")),
+            ),
+            (
+                "writers quiesced",
+                Box::new(|m| m["consistency"]["writers_quiesced"] = serde_json::json!(true)),
+            ),
+            (
+                "consistency database",
+                Box::new(|m| m["consistency"]["database"] = serde_json::json!("copy")),
+            ),
+            (
+                "authenticated",
+                Box::new(|m| m["integrity"]["authenticated"] = serde_json::json!(true)),
+            ),
+            (
+                "integrity profile",
+                Box::new(|m| m["integrity"]["profile"] = serde_json::json!("md5")),
+            ),
+            (
+                "portability secrets",
+                Box::new(|m| m["portability"]["secrets"] = serde_json::json!("included")),
+            ),
+            (
+                "encryption",
+                Box::new(|m| m["encryption"]["enabled"] = serde_json::json!(true)),
+            ),
+            (
+                "algorithm",
+                Box::new(|m| m["encryption"]["algorithm"] = serde_json::json!("aes")),
+            ),
+            (
+                "component path",
+                Box::new(|m| m["components"][1]["path"] = serde_json::json!("storage/other")),
+            ),
+            (
+                "missing component",
+                Box::new(|m| {
+                    m["components"].as_array_mut().unwrap().pop();
+                }),
+            ),
+            (
+                "duplicate component",
+                Box::new(|m| m["components"][2]["name"] = serde_json::json!("private_storage")),
+            ),
+            (
+                "extra manifest field",
+                Box::new(|m| m["notes"] = serde_json::json!("x")),
+            ),
+        ];
+        for (label, change) in cases {
+            let mut fixture = prepared_fixture();
+            rewrite_plan(&mut fixture, |plan| change(&mut plan["manifest"]));
+            assert_preflight_fails(&fixture, label);
+        }
+    }
+
+    #[test]
+    fn null_latest_migration_is_accepted() {
+        let mut fixture = prepared_fixture();
+        rewrite_plan(&mut fixture, |plan| {
+            plan["manifest"]["latest_migration"] = serde_json::Value::Null;
+        });
+
+        assert!(preflight(&fixture).is_ok());
+    }
+
+    #[test]
+    fn ready_journal_must_be_signed_ready_and_bound_to_the_plan() {
+        let fixture = prepared_fixture();
+        let plan_sha256 = fixture.authorization.plan_sha256.clone();
+
+        write_journal(&fixture, 0, "ready_for_offline_apply", false, &plan_sha256);
+        assert_preflight_fails(&fixture, "sequence zero");
+        write_journal(&fixture, 5, "prepared", false, &plan_sha256);
+        assert_preflight_fails(&fixture, "wrong event");
+        write_journal(&fixture, 5, "ready_for_offline_apply", true, &plan_sha256);
+        assert_preflight_fails(&fixture, "web apply enabled");
+        write_journal(
+            &fixture,
+            5,
+            "ready_for_offline_apply",
+            false,
+            &"ab".repeat(32),
+        );
+        assert_preflight_fails(&fixture, "other plan");
+
+        write_journal(&fixture, 5, "ready_for_offline_apply", false, &plan_sha256);
+        assert!(preflight(&fixture).is_ok());
+        let signed = fs::read_to_string(&fixture.journal_path).unwrap();
+        fs::write(
+            &fixture.journal_path,
+            signed.replace("\"sequence\":5", "\"sequence\":6"),
+        )
+        .unwrap();
+        assert_preflight_fails(&fixture, "tampered sequence");
+    }
+
+    #[test]
+    fn only_the_last_complete_journal_line_is_authoritative() {
+        let fixture = prepared_fixture();
+        let ready = fs::read_to_string(&fixture.journal_path).unwrap();
+
+        fs::write(
+            &fixture.journal_path,
+            format!("{{\"older\":\"record\"}}\n{ready}"),
+        )
+        .unwrap();
+        assert!(preflight(&fixture).is_ok());
+
+        fs::write(
+            &fixture.journal_path,
+            format!("{ready}{{\"later\":true}}\n"),
+        )
+        .unwrap();
+        assert_preflight_fails(&fixture, "later record");
+
+        fs::write(&fixture.journal_path, ready.trim_end()).unwrap();
+        assert_preflight_fails(&fixture, "missing trailing newline");
+
+        fs::write(&fixture.journal_path, format!("{ready}\n")).unwrap();
+        assert_preflight_fails(&fixture, "blank last line");
+
+        fs::remove_file(&fixture.journal_path).unwrap();
+        assert_preflight_fails(&fixture, "missing journal");
+    }
+
+    #[test]
+    fn staged_files_must_exactly_match_the_inventory() {
+        let mut fixture = prepared_fixture();
+        add_staged_file(
+            &mut fixture,
+            "private/patient-documents/scan.pdf",
+            b"%PDF-1.7 fixture",
+        );
+        assert!(preflight(&fixture).is_ok());
+
+        let staged = fixture.staged_database.parent().unwrap().to_path_buf();
+        fs::write(
+            staged.join("private/patient-documents/extra.pdf"),
+            b"unexpected",
+        )
+        .unwrap();
+        assert_preflight_fails(&fixture, "extra staged file");
+        fs::remove_file(staged.join("private/patient-documents/extra.pdf")).unwrap();
+
+        fs::write(
+            staged.join("private/patient-documents/scan.pdf"),
+            b"%PDF-1.7 fixturX",
+        )
+        .unwrap();
+        assert_preflight_fails(&fixture, "same-size tampering");
+        fs::remove_file(staged.join("private/patient-documents/scan.pdf")).unwrap();
+        assert_preflight_fails(&fixture, "missing staged file");
+    }
+
+    #[test]
+    fn staged_files_outside_managed_roots_are_rejected() {
+        let fixture = prepared_fixture();
+        let staged = fixture.staged_database.parent().unwrap().to_path_buf();
+        fs::create_dir_all(staged.join("unmanaged")).unwrap();
+        fs::write(staged.join("unmanaged/file.txt"), b"x").unwrap();
+
+        assert_preflight_fails(&fixture, "unmanaged staged path");
+    }
+
+    #[test]
+    fn case_insensitive_inventory_collisions_are_rejected() {
+        let mut fixture = prepared_fixture();
+        add_staged_file(&mut fixture, "private/patient-documents/Scan.pdf", b"one");
+        add_staged_file(&mut fixture, "private/patient-documents/scan.pdf", b"two");
+
+        assert_preflight_fails(&fixture, "portable collision");
+    }
+
+    #[test]
+    fn staged_database_must_carry_the_sqlite_header() {
+        let mut fixture = prepared_fixture();
+        let bytes = b"Not SQLite header but long enough".to_vec();
+        fs::write(&fixture.staged_database, &bytes).unwrap();
+        let sha256 = hex_lower(&Sha256::digest(&bytes));
+        let size = bytes.len();
+        rewrite_plan(&mut fixture, move |plan| {
+            plan["inventory"][0]["sha256"] = serde_json::json!(sha256);
+            plan["inventory"][0]["size"] = serde_json::json!(size);
+            plan["staged_bytes"] = serde_json::json!(size);
+            plan["manifest"]["components"][0]["size"] = serde_json::json!(size);
+        });
+
+        assert_preflight_fails(&fixture, "sqlite header");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlinks_anywhere_in_the_managed_tree_are_rejected() {
+        let fixture = prepared_fixture();
+        let staged = fixture.staged_database.parent().unwrap().to_path_buf();
+        std::os::unix::fs::symlink(&fixture.staged_database, staged.join("link")).unwrap();
+        assert_preflight_fails(&fixture, "staged symlink");
+
+        let fixture = prepared_fixture();
+        let workspace = fixture.plan_path.parent().unwrap().to_path_buf();
+        let moved = fixture.root.join("moved-plan.json");
+        fs::rename(&fixture.plan_path, &moved).unwrap();
+        std::os::unix::fs::symlink(&moved, workspace.join("restore-plan.json")).unwrap();
+        assert_preflight_fails(&fixture, "plan symlink");
+
+        let fixture = prepared_fixture();
+        let link_root = fixture.root.join("work-link");
+        std::os::unix::fs::symlink(&fixture.work_root, &link_root).unwrap();
+        assert!(verify_prepared_restore_authorization(
+            &link_root,
+            &fixture.journal_root,
+            &fixture.authorization
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn bounded_reader_keeps_the_limit_and_flags_truncation() {
+        let exact = spawn_bounded_reader(std::io::Cursor::new(vec![
+            b'a';
+            MAXIMUM_COMMAND_OUTPUT_BYTES
+        ]))
+        .join()
+        .unwrap();
+        assert_eq!(exact.0.len(), MAXIMUM_COMMAND_OUTPUT_BYTES);
+        assert!(!exact.1);
+
+        let over = spawn_bounded_reader(std::io::Cursor::new(vec![
+            b'a';
+            MAXIMUM_COMMAND_OUTPUT_BYTES + 1
+        ]))
+        .join()
+        .unwrap();
+        assert_eq!(over.0.len(), MAXIMUM_COMMAND_OUTPUT_BYTES);
+        assert!(over.1);
+
+        assert_eq!(join_output(None), (Vec::new(), true));
+    }
+
+    #[test]
+    fn lease_server_rejects_invalid_validity_windows_and_operation_ids() {
+        let lease: Arc<dyn ExclusiveRestoreProcessLease> = Arc::new(TestLease {
+            valid: AtomicBool::new(true),
+            checks: Arc::new(Mutex::new(Vec::new())),
+        });
+
+        for validity in [
+            Duration::ZERO,
+            Duration::from_secs(MAXIMUM_LEASE_SECONDS + 1),
+        ] {
+            let error = RestoreLeaseServer::start(OPERATION_ID, Arc::clone(&lease), validity)
+                .err()
+                .unwrap();
+            assert_eq!(error.code(), "restore_lease_invalid");
+            assert!(!error.keep_runtime_offline());
+        }
+        assert_eq!(
+            RestoreLeaseServer::start("bad", lease, Duration::from_secs(5))
+                .err()
+                .unwrap()
+                .code(),
+            "restore_operation_invalid"
+        );
+    }
+
+    #[test]
+    fn lease_capability_line_describes_the_loopback_server() {
+        let lease: Arc<dyn ExclusiveRestoreProcessLease> = Arc::new(TestLease {
+            valid: AtomicBool::new(true),
+            checks: Arc::new(Mutex::new(Vec::new())),
+        });
+        let server =
+            RestoreLeaseServer::start(OPERATION_ID, lease, Duration::from_secs(60)).unwrap();
+
+        let line = server.capability_json_line().unwrap();
+        assert!(line.ends_with('\n'));
+        let capability: serde_json::Value = serde_json::from_str(line.trim_end()).unwrap();
+
+        assert_eq!(capability["protocol"], LEASE_PROTOCOL);
+        assert_eq!(capability["version"], 1);
+        assert_eq!(capability["operation_id"], OPERATION_ID);
+        assert_eq!(capability["port"], server.port);
+        assert_eq!(capability["expires_at_unix"], server.expires_at_unix);
+        assert!(server.expires_at_unix >= unix_time() + 59);
+        let secret = URL_SAFE_NO_PAD
+            .decode(capability["secret"].as_str().unwrap())
+            .unwrap();
+        assert_eq!(secret, server.secret.0);
+    }
+
+    fn lease_request(
+        server: &RestoreLeaseServer,
+        change: impl FnOnce(&mut serde_json::Value),
+    ) -> String {
+        let challenge = URL_SAFE_NO_PAD.encode([9_u8; 32]);
+        let proof = lease_proof(
+            "request",
+            OPERATION_ID,
+            &challenge,
+            server.expires_at_unix,
+            &server.secret.0,
+        );
+        let mut request = serde_json::json!({
+            "protocol": LEASE_PROTOCOL,
+            "version": 1,
+            "operation_id": OPERATION_ID,
+            "expires_at_unix": server.expires_at_unix,
+            "challenge": challenge,
+            "proof": proof,
+        });
+        change(&mut request);
+        format!("{request}\n")
+    }
+
+    fn exchange(server: &RestoreLeaseServer, request: &str) -> String {
+        let mut stream = TcpStream::connect((Ipv4Addr::LOCALHOST, server.port)).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
+        stream.write_all(request.as_bytes()).unwrap();
+        let mut response = String::new();
+        let _ = BufReader::new(stream).read_line(&mut response);
+        response
+    }
+
+    #[test]
+    fn lease_server_answers_with_a_verifiable_response_proof() {
+        let lease: Arc<dyn ExclusiveRestoreProcessLease> = Arc::new(TestLease {
+            valid: AtomicBool::new(true),
+            checks: Arc::new(Mutex::new(Vec::new())),
+        });
+        let server =
+            RestoreLeaseServer::start(OPERATION_ID, lease, Duration::from_secs(30)).unwrap();
+
+        let response: serde_json::Value =
+            serde_json::from_str(&exchange(&server, &lease_request(&server, |_| {}))).unwrap();
+
+        let challenge = URL_SAFE_NO_PAD.encode([9_u8; 32]);
+        assert_eq!(response["ok"], true);
+        assert_eq!(response["challenge"], challenge);
+        assert_eq!(
+            response["proof"],
+            lease_proof(
+                "response",
+                OPERATION_ID,
+                &challenge,
+                server.expires_at_unix,
+                &server.secret.0
+            )
+        );
+    }
+
+    #[test]
+    fn lease_server_silently_drops_forged_or_malformed_requests() {
+        let lease: Arc<dyn ExclusiveRestoreProcessLease> = Arc::new(TestLease {
+            valid: AtomicBool::new(true),
+            checks: Arc::new(Mutex::new(Vec::new())),
+        });
+        let server =
+            RestoreLeaseServer::start(OPERATION_ID, lease, Duration::from_secs(30)).unwrap();
+        let short_challenge = URL_SAFE_NO_PAD.encode([9_u8; 16]);
+        let short_proof = lease_proof(
+            "request",
+            OPERATION_ID,
+            &short_challenge,
+            server.expires_at_unix,
+            &server.secret.0,
+        );
+
+        let forged = vec![
+            lease_request(&server, |r| r["proof"] = serde_json::json!("00".repeat(32))),
+            lease_request(&server, |r| r["protocol"] = serde_json::json!("other")),
+            lease_request(&server, |r| r["version"] = serde_json::json!(2)),
+            lease_request(&server, |r| {
+                r["expires_at_unix"] = serde_json::json!(server.expires_at_unix + 1)
+            }),
+            lease_request(&server, |r| {
+                r["operation_id"] = serde_json::json!("8d6708f1-7bb9-43df-abcf-2e1b9fbf2654")
+            }),
+            lease_request(&server, |r| r["extra"] = serde_json::json!(1)),
+            lease_request(&server, |r| {
+                r["challenge"] = serde_json::json!(short_challenge);
+                r["proof"] = serde_json::json!(short_proof);
+            }),
+            lease_request(&server, |_| {}).trim_end().to_owned(),
+            "not json\n".to_owned(),
+            format!("{}\n", "x".repeat(MAXIMUM_PROTOCOL_BYTES + 10)),
+        ];
+        for request in forged {
+            let mut stream = TcpStream::connect((Ipv4Addr::LOCALHOST, server.port)).unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(3)))
+                .unwrap();
+            stream.write_all(request.as_bytes()).unwrap();
+            let _ = stream.shutdown(std::net::Shutdown::Write);
+            let mut response = String::new();
+            let _ = BufReader::new(stream).read_line(&mut response);
+            assert!(response.is_empty(), "answered {request:?}");
+        }
+        assert!(exchange(&server, &lease_request(&server, |_| {})).contains("\"ok\":true"));
+    }
+
+    #[test]
+    fn php_config_validation_requires_real_paths_and_bounded_timeouts() {
+        let root =
+            std::env::temp_dir().join(format!("medismart-restore-config-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let php = root.join("php");
+        let artisan = root.join("artisan");
+        fs::write(&php, b"").unwrap();
+        fs::write(&artisan, b"").unwrap();
+        let valid = || OfflineRestorePhpConfig::new(php.clone(), artisan.clone(), root.clone());
+
+        assert!(valid().validate().is_ok());
+        let mut cases = Vec::new();
+        let mut config = valid();
+        config.php_binary = root.join("missing-php");
+        cases.push(config);
+        let mut config = valid();
+        config.artisan_path = root.clone();
+        cases.push(config);
+        let mut config = valid();
+        config.app_root = artisan.clone();
+        cases.push(config);
+        let mut config = valid();
+        config.command_timeout = Duration::ZERO;
+        cases.push(config);
+        let mut config = valid();
+        config.command_timeout = Duration::from_secs(MAXIMUM_LEASE_SECONDS);
+        cases.push(config);
+        let mut config = valid();
+        config.rollback_grace = Duration::ZERO;
+        cases.push(config);
+        for config in cases {
+            let error = config.validate().unwrap_err();
+            assert_eq!(error.code(), "restore_command_invalid");
+            assert!(!error.keep_runtime_offline());
+        }
+        let mut boundary = valid();
+        boundary.command_timeout = Duration::from_secs(MAXIMUM_LEASE_SECONDS - 1);
+        assert!(boundary.validate().is_ok());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn php_launcher_passes_configured_environment_and_working_directory() {
+        let mut config = OfflineRestorePhpConfig::new(
+            PathBuf::from("php"),
+            PathBuf::from("artisan"),
+            PathBuf::from("app-root"),
+        );
+        config.environment.push((
+            OsString::from("DB_DATABASE"),
+            OsString::from("/data/db.sqlite"),
+        ));
+        config.environment.push((
+            OsString::from("MEDISMART_NATIVE_RESTORE"),
+            OsString::from("0"),
+        ));
+        let command = PhpOfflineRestoreCommandLauncher::new(config).build_command(OPERATION_ID);
+
+        assert_eq!(command.get_current_dir(), Some(Path::new("app-root")));
+        let env = |name: &str| {
+            command
+                .get_envs()
+                .find(|(key, _)| *key == name)
+                .and_then(|(_, value)| value)
+                .map(|value| value.to_string_lossy().into_owned())
+        };
+        assert_eq!(env("DB_DATABASE").as_deref(), Some("/data/db.sqlite"));
+        assert_eq!(env("MEDISMART_NATIVE_RESTORE").as_deref(), Some("1"));
+    }
+
+    #[cfg(unix)]
+    fn scripted_launcher(root: &Path, script: &str) -> PhpOfflineRestoreCommandLauncher {
+        let artisan = root.join("artisan");
+        fs::write(&artisan, script).unwrap();
+        let mut config =
+            OfflineRestorePhpConfig::new(PathBuf::from("/bin/sh"), artisan, root.to_path_buf());
+        config.command_timeout = Duration::from_secs(10);
+        config.rollback_grace = Duration::from_secs(1);
+        PhpOfflineRestoreCommandLauncher::new(config)
+    }
+
+    #[cfg(unix)]
+    fn valid_lease() -> Arc<dyn ExclusiveRestoreProcessLease> {
+        Arc::new(TestLease {
+            valid: AtomicBool::new(true),
+            checks: Arc::new(Mutex::new(Vec::new())),
+        })
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn php_launcher_receives_the_capability_on_stdin_and_parses_the_result() {
+        let root =
+            std::env::temp_dir().join(format!("medismart-restore-launch-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let result_path = root.join("result.json");
+        let capability_path = root.join("capability.json");
+        let arguments_path = root.join("arguments.txt");
+        fs::write(
+            &result_path,
+            format!(
+                "{}\n",
+                result_line(OfflineRestoreStatus::RolledBack, MESSAGE_ROLLED_BACK)
+            ),
+        )
+        .unwrap();
+        let launcher = scripted_launcher(
+            &root,
+            &format!(
+                "IFS= read -r line; printf '%s' \"$line\" > '{}'; printf '%s\\n' \"$@\" > '{}'; cat '{}'; exit 20\n",
+                capability_path.display(),
+                arguments_path.display(),
+                result_path.display()
+            ),
+        );
+
+        let outcome = launcher.launch(OPERATION_ID, valid_lease()).unwrap();
+
+        assert_eq!(outcome.status, OfflineRestoreStatus::RolledBack);
+        let capability: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&capability_path).unwrap()).unwrap();
+        assert_eq!(capability["operation_id"], OPERATION_ID);
+        assert_eq!(capability["protocol"], LEASE_PROTOCOL);
+        let arguments = fs::read_to_string(&arguments_path).unwrap();
+        assert_eq!(
+            arguments.lines().collect::<Vec<_>>(),
+            vec![
+                "medismart:restore:native-apply",
+                OPERATION_ID,
+                "--no-interaction"
+            ]
+        );
+        assert!(!arguments.contains(capability["secret"].as_str().unwrap()));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn php_launcher_treats_oversized_output_as_incomplete() {
+        let root =
+            std::env::temp_dir().join(format!("medismart-restore-launch-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let launcher = scripted_launcher(
+            &root,
+            &format!(
+                "head -c {} /dev/zero >&2; exit 0\n",
+                MAXIMUM_COMMAND_OUTPUT_BYTES + 1
+            ),
+        );
+
+        let error = launcher.launch(OPERATION_ID, valid_lease()).unwrap_err();
+
+        assert_eq!(error.code(), "restore_command_incomplete");
+        assert!(error.keep_runtime_offline());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn php_launcher_forces_termination_after_timeout_and_grace() {
+        let root =
+            std::env::temp_dir().join(format!("medismart-restore-launch-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let mut launcher = scripted_launcher(&root, "exec sleep 30\n");
+        launcher.config.command_timeout = Duration::from_millis(100);
+        launcher.config.rollback_grace = Duration::from_millis(100);
+
+        let started = Instant::now();
+        let error = launcher.launch(OPERATION_ID, valid_lease()).unwrap_err();
+
+        assert_eq!(error.code(), "restore_command_incomplete");
+        assert!(error.keep_runtime_offline());
+        assert!(started.elapsed() < Duration::from_secs(10));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn php_launcher_refuses_to_start_without_an_exclusive_lease() {
+        let root =
+            std::env::temp_dir().join(format!("medismart-restore-launch-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let marker = root.join("ran");
+        let launcher = scripted_launcher(&root, &format!("touch '{}'\n", marker.display()));
+        let lease: Arc<dyn ExclusiveRestoreProcessLease> = Arc::new(TestLease {
+            valid: AtomicBool::new(false),
+            checks: Arc::new(Mutex::new(Vec::new())),
+        });
+
+        assert!(launcher.launch(OPERATION_ID, lease).is_err());
+        assert!(launcher.launch("bad-id", valid_lease()).is_err());
+        assert!(!marker.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
 }

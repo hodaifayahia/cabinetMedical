@@ -98,4 +98,37 @@ mod tests {
 
         assert!(!state.should_hide_on_close("main"));
     }
+
+    #[test]
+    fn window_labels_are_matched_exactly() {
+        let state = DesktopBehaviorState::default();
+
+        assert!(!state.should_hide_on_close("Main"));
+        assert!(!state.should_hide_on_close("main "));
+        assert!(!state.should_hide_on_close(""));
+        assert!(!state.should_hide_on_close("startup"));
+    }
+
+    #[test]
+    fn quit_requests_are_sticky_and_idempotent() {
+        let state = DesktopBehaviorState::default();
+
+        state.request_quit();
+        state.request_quit();
+
+        assert!(!state.should_hide_on_close("main"));
+        assert!(!state.should_hide_on_close("main"));
+    }
+
+    #[test]
+    fn quit_requested_from_another_thread_is_observed() {
+        let state = std::sync::Arc::new(DesktopBehaviorState::default());
+        let remote = std::sync::Arc::clone(&state);
+
+        std::thread::spawn(move || remote.request_quit())
+            .join()
+            .unwrap();
+
+        assert!(!state.should_hide_on_close("main"));
+    }
 }

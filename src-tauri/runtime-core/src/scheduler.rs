@@ -954,4 +954,278 @@ mod tests {
         drop(supervisor);
         fs::remove_dir_all(directory).unwrap();
     }
+
+    fn invalid_config_code(change: impl FnOnce(&mut SchedulerConfig)) -> Option<&'static str> {
+        let mut config = test_config(Path::new("/unused"), PathBuf::from("php"));
+        change(&mut config);
+        validate_config(&config).err().map(|error| error.code())
+    }
+
+    fn read_state(directory: &Path) -> serde_json::Value {
+        serde_json::from_slice(&fs::read(directory.join("runtime/scheduler-state.json")).unwrap())
+            .unwrap()
+    }
+
+    fn env_value(command: &Command, name: &str) -> Option<String> {
+        command
+            .get_envs()
+            .find(|(key, _)| *key == name)
+            .and_then(|(_, value)| value)
+            .map(|value| value.to_string_lossy().into_owned())
+    }
+
+    #[test]
+    fn bounds_at_their_limits_are_accepted() {
+        assert_eq!(
+            invalid_config_code(|config| {
+                config.startup_stability_timeout = Duration::from_secs(10);
+                config.shutdown_timeout = Duration::from_secs(30);
+                config.retry_limit = 2;
+                config.retry_delay = Duration::from_secs(30);
+            }),
+            None
+        );
+        assert_eq!(
+            invalid_config_code(|config| config.retry_delay = Duration::ZERO),
+            None
+        );
+    }
+
+    #[test]
+    fn out_of_range_bounds_are_rejected() {
+        let invalid = Some("scheduler_configuration_invalid");
+        assert_eq!(
+            invalid_config_code(|config| config.application_version = String::new()),
+            invalid
+        );
+        assert_eq!(
+            invalid_config_code(|config| config.application_version = "  \t".to_owned()),
+            invalid
+        );
+        assert_eq!(
+            invalid_config_code(|config| config.startup_stability_timeout = Duration::ZERO),
+            invalid
+        );
+        assert_eq!(
+            invalid_config_code(
+                |config| config.startup_stability_timeout = Duration::from_millis(10_001)
+            ),
+            invalid
+        );
+        assert_eq!(
+            invalid_config_code(|config| config.shutdown_timeout = Duration::ZERO),
+            invalid
+        );
+        assert_eq!(
+            invalid_config_code(|config| config.shutdown_timeout = Duration::from_millis(30_001)),
+            invalid
+        );
+        assert_eq!(
+            invalid_config_code(|config| config.retry_limit = 2 + 1),
+            invalid
+        );
+        assert_eq!(
+            invalid_config_code(|config| config.retry_delay = Duration::from_millis(30_001)),
+            invalid
+        );
+    }
+
+    #[test]
+    fn production_requires_every_installation_input() {
+        let invalid = Some("scheduler_configuration_invalid");
+        let production = |change: fn(&mut SchedulerConfig)| {
+            invalid_config_code(|config| {
+                config.production = true;
+                change(config);
+            })
+        };
+
+        assert_eq!(production(|_| {}), None);
+        assert_eq!(production(|config| config.database_path = None), invalid);
+        assert_eq!(production(|config| config.storage_path = None), invalid);
+        assert_eq!(
+            production(|config| config.app_key = Some(String::new())),
+            invalid
+        );
+        assert_eq!(production(|config| config.installation_id = None), invalid);
+        assert_eq!(
+            production(|config| config.installation_id = Some(String::new())),
+            invalid
+        );
+    }
+
+    #[test]
+    fn development_tolerates_missing_installation_inputs() {
+        assert_eq!(
+            invalid_config_code(|config| {
+                config.database_path = None;
+                config.storage_path = None;
+                config.app_key = None;
+                config.installation_id = None;
+            }),
+            None
+        );
+    }
+
+    #[test]
+    fn optional_inputs_are_omitted_from_the_environment_when_absent() {
+        let directory = test_directory("scheduler-optional-env");
+        let mut config = test_config(&directory, PathBuf::from("php"));
+        config.database_path = None;
+        config.storage_path = None;
+        config.app_key = None;
+        config.installation_id = None;
+
+        let command = build_scheduler_command(&config);
+
+        for name in [
+            "DB_CONNECTION",
+            "DB_DATABASE",
+            "LARAVEL_STORAGE_PATH",
+            "APP_KEY",
+            "MEDISMART_DESKTOP_INSTALLATION_ID",
+            "APP_ENV",
+            "APP_DEBUG",
+        ] {
+            assert_eq!(env_value(&command, name), None, "{name}");
+        }
+        assert_eq!(
+            env_value(&command, "MEDISMART_SCHEDULER_STATUS").as_deref(),
+            Some("active")
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn status_values_match_the_php_environment_contract() {
+        assert_eq!(SchedulerStatus::Active.as_env_value(), "active");
+        assert_eq!(SchedulerStatus::Stopped.as_env_value(), "stopped");
+        assert_eq!(
+            serde_json::to_string(&SchedulerStatus::Active).unwrap(),
+            "\"active\""
+        );
+        assert_eq!(
+            serde_json::from_str::<SchedulerStatus>("\"stopped\"").unwrap(),
+            SchedulerStatus::Stopped
+        );
+        assert!(serde_json::from_str::<SchedulerStatus>("\"Active\"").is_err());
+    }
+
+    #[test]
+    fn new_supervisor_creates_directories_and_reports_stopped() {
+        let directory = test_directory("scheduler-new");
+        let config = test_config(&directory, PathBuf::from("php"));
+        let supervisor = SchedulerSupervisor::new(config, test_logger(&directory)).unwrap();
+
+        assert!(directory.join("runtime").is_dir());
+        assert!(directory.join("tmp").is_dir());
+        assert!(directory.join("cache").is_dir());
+        assert_eq!(supervisor.status_for_php(), SchedulerStatus::Stopped);
+        let state = read_state(&directory);
+        assert_eq!(state["schema_version"], 1);
+        assert_eq!(state["phase"], "stopped");
+        assert_eq!(state["status"], "stopped");
+        assert_eq!(state["retry_count"], 0);
+        assert_eq!(state["process_id"], serde_json::Value::Null);
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn initial_status_wait_times_out_as_stopped_when_never_run() {
+        let directory = test_directory("scheduler-wait");
+        let supervisor = SchedulerSupervisor::new(
+            test_config(&directory, PathBuf::from("php")),
+            test_logger(&directory),
+        )
+        .unwrap();
+
+        let started = Instant::now();
+        let status = supervisor.wait_for_initial_status(Duration::from_millis(30));
+
+        assert_eq!(status, SchedulerStatus::Stopped);
+        assert!(started.elapsed() >= Duration::from_millis(25));
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn missing_binary_exhausts_retries_and_records_failure() {
+        let directory = test_directory("scheduler-missing-binary");
+        let mut config = test_config(&directory, directory.join("no-such-php-binary"));
+        config.retry_limit = 1;
+        config.retry_delay = Duration::from_millis(1);
+        let supervisor =
+            Arc::new(SchedulerSupervisor::new(config, test_logger(&directory)).unwrap());
+
+        Arc::clone(&supervisor).run();
+
+        assert_eq!(
+            supervisor.wait_for_initial_status(Duration::from_millis(1)),
+            SchedulerStatus::Stopped
+        );
+        let state = read_state(&directory);
+        assert_eq!(state["phase"], "failed");
+        assert_eq!(state["retry_count"], 1);
+        assert_eq!(state["last_error_code"], "scheduler_retries_exhausted");
+        let log = fs::read_to_string(directory.join("scheduler-supervisor.log")).unwrap();
+        assert!(log.contains("scheduler_spawn_failed"));
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn shutdown_before_run_prevents_any_launch() {
+        let directory = test_directory("scheduler-early-shutdown");
+        let supervisor = Arc::new(
+            SchedulerSupervisor::new(
+                test_config(&directory, directory.join("no-such-php-binary")),
+                test_logger(&directory),
+            )
+            .unwrap(),
+        );
+
+        supervisor.shutdown();
+        supervisor.shutdown();
+        Arc::clone(&supervisor).run();
+
+        let state = read_state(&directory);
+        assert_eq!(state["phase"], "stopped");
+        assert_eq!(state["last_error_code"], "scheduler_stopped");
+        let log = fs::read_to_string(directory.join("scheduler-supervisor.log")).unwrap();
+        assert!(!log.contains("scheduler_spawn_failed"));
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn run_is_single_shot_per_supervisor() {
+        let directory = test_directory("scheduler-single-run");
+        let attempts = directory.join("attempts");
+        fs::write(
+            directory.join("artisan"),
+            format!("printf x >> '{}'; exit 1\n", attempts.display()),
+        )
+        .unwrap();
+        let mut config = test_config(&directory, PathBuf::from("/bin/sh"));
+        config.retry_limit = 0;
+        let supervisor =
+            Arc::new(SchedulerSupervisor::new(config, test_logger(&directory)).unwrap());
+
+        Arc::clone(&supervisor).run();
+        Arc::clone(&supervisor).run();
+
+        assert_eq!(fs::read(&attempts).unwrap(), b"x");
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn error_display_includes_code_and_detail() {
+        let error = SchedulerError::new("some_code", "detail text");
+
+        assert_eq!(error.to_string(), "some_code: detail text");
+        assert_eq!(error.code(), "some_code");
+    }
 }

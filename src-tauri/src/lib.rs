@@ -559,4 +559,127 @@ mod tests {
         assert_eq!(url.scheme(), "https");
         assert_eq!(url.as_str(), CLOUD_SERVER_URL);
     }
+
+    #[test]
+    fn an_explicit_default_port_matches_the_implicit_one() {
+        let policy = make_policy("https://app.drclick.dz:443/");
+
+        assert!(policy.allows(&Url::parse("https://app.drclick.dz/patients").unwrap()));
+        assert!(policy.allows(&Url::parse("https://app.drclick.dz:443/").unwrap()));
+    }
+
+    #[test]
+    fn queries_and_fragments_on_the_owning_origin_are_allowed() {
+        let policy = make_policy("https://app.drclick.dz");
+
+        assert!(
+            policy.allows(&Url::parse("https://app.drclick.dz/search?q=dupont#results").unwrap())
+        );
+    }
+
+    #[test]
+    fn a_username_alone_is_enough_to_block_navigation() {
+        let policy = make_policy("https://app.drclick.dz");
+
+        assert!(!policy.allows(&Url::parse("https://user@app.drclick.dz/").unwrap()));
+        assert!(policy.is_external_link(&Url::parse("https://user@app.drclick.dz/").unwrap()));
+    }
+
+    #[test]
+    fn dangerous_schemes_are_neither_allowed_nor_opened_externally() {
+        let policy = make_policy("https://app.drclick.dz");
+
+        for blocked in [
+            "javascript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "file:///C:/Windows/System32/cmd.exe",
+            "mailto:support@drclick.dz",
+            "ftp://app.drclick.dz/",
+        ] {
+            let url = Url::parse(blocked).unwrap();
+            assert!(!policy.allows(&url), "{blocked}");
+            assert!(!policy.is_external_link(&url), "{blocked}");
+        }
+    }
+
+    #[test]
+    fn windows_tauri_and_asset_hosts_are_internal() {
+        let policy = NavigationPolicy::default();
+
+        assert!(policy.allows(&Url::parse("http://tauri.localhost/index.html").unwrap()));
+        assert!(policy.allows(&Url::parse("https://asset.localhost/logo.png").unwrap()));
+        assert!(!policy.is_external_link(&Url::parse("https://tauri.localhost/").unwrap()));
+        assert!(!policy.allows(&Url::parse("https://evil.tauri.localhost/").unwrap()));
+    }
+
+    #[test]
+    fn changing_the_server_replaces_the_previous_origin() {
+        let policy = make_policy("https://app.drclick.dz");
+
+        policy.set_server_url(Url::parse("https://192.168.1.20/").unwrap());
+
+        assert!(policy.allows(&Url::parse("https://192.168.1.20/login").unwrap()));
+        assert!(!policy.allows(&Url::parse("https://app.drclick.dz/").unwrap()));
+    }
+
+    #[test]
+    fn cloned_policies_share_the_origin_set_after_cloning() {
+        let guard = NavigationPolicy::default();
+        let commands = guard.clone();
+
+        commands.set_server_url(Url::parse("https://192.168.1.20/").unwrap());
+
+        assert!(guard.allows(&Url::parse("https://192.168.1.20/").unwrap()));
+    }
+
+    #[test]
+    fn without_an_origin_every_https_link_is_external() {
+        let policy = NavigationPolicy::default();
+
+        assert!(policy.is_external_link(&Url::parse("https://app.drclick.dz/").unwrap()));
+        assert!(!policy.is_external_link(&Url::parse("http://127.0.0.1:51234/").unwrap()));
+    }
+
+    #[test]
+    fn shutting_down_without_a_running_runtime_is_a_no_op() {
+        let state = LocalRuntimeState::default();
+
+        state.shutdown();
+        state.shutdown();
+
+        assert!(state.running.lock().unwrap().is_none());
+        assert!(state.failure.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn runtime_mode_status_serialises_for_the_connection_page() {
+        let status = RuntimeModeStatus {
+            mode: "damaged",
+            url: None,
+            local_error: Some(DAMAGED_CONFIGURATION_MESSAGE.to_owned()),
+        };
+
+        let value = serde_json::to_value(&status).unwrap();
+
+        assert_eq!(value["mode"], "damaged");
+        assert_eq!(value["url"], serde_json::Value::Null);
+        assert_eq!(value["local_error"], DAMAGED_CONFIGURATION_MESSAGE);
+    }
+
+    #[test]
+    fn the_damaged_configuration_message_explains_the_risk_in_french() {
+        assert!(DAMAGED_CONFIGURATION_MESSAGE.contains("illisible"));
+        assert!(DAMAGED_CONFIGURATION_MESSAGE.contains("base vide"));
+    }
+
+    #[test]
+    fn the_default_cloud_origin_is_a_bare_https_origin() {
+        let url = Url::parse(DEFAULT_CLOUD_SERVER_URL).unwrap();
+
+        assert_eq!(url.scheme(), "https");
+        assert_eq!(url.path(), "/");
+        assert!(url.query().is_none());
+        assert!(crate::connection::validate_server_url(DEFAULT_CLOUD_SERVER_URL).is_ok());
+        assert!(crate::connection::validate_server_url(CLOUD_SERVER_URL).is_ok());
+    }
 }

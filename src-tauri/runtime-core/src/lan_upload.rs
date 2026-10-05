@@ -3226,4 +3226,955 @@ mod tests {
         assert!(stable_adapter_id(Some("00:00:00:00:00:00")).is_none());
         assert!(stable_adapter_id(None).is_none());
     }
+
+    const SELECTOR: &str = "Abcdefghijklmnopqrstu_";
+    const LAN_HOST: &str = "192.168.1.40:43124";
+
+    fn lan_directory() -> PathBuf {
+        let directory = std::env::temp_dir().join(format!("medismart-lan-x-{}", Uuid::new_v4()));
+        fs::create_dir_all(&directory).unwrap();
+        directory
+    }
+
+    fn settings_json(value: serde_json::Value) -> LanListenerSettings {
+        serde_json::from_value(value).unwrap()
+    }
+
+    fn rejection(raw: &str) -> u16 {
+        parse_raw_request(raw.as_bytes().to_vec())
+            .unwrap_err()
+            .status
+    }
+
+    fn exact_lan_attestation(origin: &str) -> serde_json::Value {
+        serde_json::json!({
+            "schema_version": 1,
+            "status": "ready",
+            "origin": origin,
+            "route_set": "public_upload_v1",
+            "upload_routes_only": true,
+            "exact_origin_enforced": true,
+            "explicit_high_port_enforced": true,
+            "direct_private_peer_enforced": true,
+            "forwarding_headers_rejected": true,
+            "local_tokens_bound_to_lan_origin": true,
+        })
+    }
+
+    fn verify_lan(
+        attestation: &serde_json::Value,
+        origin: &str,
+    ) -> Option<VerifiedLanUploadBoundary> {
+        VerifiedLanUploadBoundary::from_health_response(
+            &serde_json::to_vec(&serde_json::json!({"lan_upload_boundary": attestation})).unwrap(),
+            origin,
+        )
+    }
+
+    fn connected_pair() -> (TcpStream, TcpStream) {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+        let (server, _) = listener.accept().unwrap();
+        (client, server)
+    }
+
+    #[test]
+    fn operator_messages_are_specific_for_known_codes_and_generic_otherwise() {
+        let codes = [
+            "lan_adapter_selection_required",
+            "lan_adapter_unavailable",
+            "lan_port_invalid",
+            "lan_bind_failed",
+            "lan_configuration_invalid",
+            "lan_configuration_write_unavailable",
+            "lan_adapter_discovery_failed",
+            "lan_runtime_stopping",
+        ];
+        let fallback = LanListenerError::new("something_else", "").operator_message_fr();
+        let mut seen = std::collections::HashSet::new();
+        for code in codes {
+            let message = LanListenerError::new(code, "detail").operator_message_fr();
+            assert_ne!(message, fallback, "{code}");
+            assert!(seen.insert(message), "duplicate message for {code}");
+        }
+        assert!(fallback.contains("listener LAN reste fermé"));
+        assert_eq!(
+            LanListenerError::new("lan_port_invalid", "x").to_string(),
+            "lan_port_invalid: x"
+        );
+    }
+
+    #[test]
+    fn stable_adapter_identifiers_are_versioned_lowercase_sha256() {
+        let valid = format!("adapter-v1:{}", "0123456789abcdef".repeat(4));
+        assert!(valid_stable_adapter_id(&valid));
+        assert!(valid_stable_adapter_id(SELECTED_ID));
+        for invalid in [
+            String::new(),
+            "0123456789abcdef".repeat(4),
+            format!("adapter-v2:{}", "a".repeat(64)),
+            format!("adapter-v1:{}", "A".repeat(64)),
+            format!("adapter-v1:{}", "a".repeat(63)),
+            format!("adapter-v1:{}", "a".repeat(65)),
+            format!("adapter-v1:{}g", "a".repeat(63)),
+        ] {
+            assert!(!valid_stable_adapter_id(&invalid), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn enabled_settings_require_a_high_preferred_port() {
+        let low = settings_json(serde_json::json!({
+            "schema_version": 1, "enabled": true,
+            "selected_adapter_id": SELECTED_ID, "preferred_port": 1023,
+        }));
+        assert_eq!(low.validate().unwrap_err().code(), "lan_port_invalid");
+
+        let boundary = settings_json(serde_json::json!({
+            "schema_version": 1, "enabled": true,
+            "selected_adapter_id": SELECTED_ID, "preferred_port": 1024,
+        }));
+        assert!(boundary.validate().is_ok());
+
+        let automatic = settings_json(serde_json::json!({
+            "schema_version": 1, "enabled": true,
+            "selected_adapter_id": SELECTED_ID, "preferred_port": null,
+        }));
+        assert!(automatic.validate().is_ok());
+    }
+
+    #[test]
+    fn disabled_settings_ignore_port_but_still_validate_schema_and_adapter_format() {
+        let disabled_low_port = settings_json(serde_json::json!({
+            "schema_version": 1, "enabled": false,
+            "selected_adapter_id": null, "preferred_port": 80,
+        }));
+        assert!(disabled_low_port.validate().is_ok());
+        assert!(!disabled_low_port.enabled());
+
+        let wrong_schema = settings_json(serde_json::json!({
+            "schema_version": 2, "enabled": false,
+            "selected_adapter_id": null, "preferred_port": null,
+        }));
+        assert_eq!(
+            wrong_schema.validate().unwrap_err().code(),
+            "lan_configuration_invalid"
+        );
+
+        let empty_adapter = settings_json(serde_json::json!({
+            "schema_version": 1, "enabled": true,
+            "selected_adapter_id": "", "preferred_port": null,
+        }));
+        assert_eq!(
+            empty_adapter.validate().unwrap_err().code(),
+            "lan_configuration_invalid"
+        );
+    }
+
+    #[test]
+    fn firewall_diagnostics_default_to_enabled_and_defaults_are_valid() {
+        let parsed = settings_json(serde_json::json!({
+            "schema_version": 1, "enabled": false,
+            "selected_adapter_id": null, "preferred_port": null,
+        }));
+        assert!(parsed.firewall_diagnostics_enabled);
+        assert_eq!(parsed, LanListenerSettings::disabled_defaults());
+        assert!(LanListenerSettings::disabled_defaults().validate().is_ok());
+    }
+
+    #[test]
+    fn settings_loader_rejects_missing_empty_oversized_malformed_and_directory_paths() {
+        let directory = lan_directory();
+        let path = directory.join("lan.json");
+
+        assert_eq!(
+            load_lan_listener_settings(&path).unwrap_err().code(),
+            "lan_configuration_invalid"
+        );
+        for contents in [
+            Vec::new(),
+            vec![b' '; MAX_SETTINGS_BYTES as usize + 1],
+            b"{".to_vec(),
+            br#"{"schema_version":1,"enabled":true,"selected_adapter_id":null,"preferred_port":null}"#.to_vec(),
+        ] {
+            fs::write(&path, &contents).unwrap();
+            assert!(load_lan_listener_settings(&path).is_err());
+        }
+        fs::write(
+            &path,
+            serde_json::to_vec(&LanListenerSettings::disabled_defaults()).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            load_lan_listener_settings(&path).unwrap(),
+            LanListenerSettings::disabled_defaults()
+        );
+        let nested = directory.join("dir.json");
+        fs::create_dir(&nested).unwrap();
+        assert_eq!(
+            load_lan_listener_settings(&nested).unwrap_err().code(),
+            "lan_configuration_invalid"
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn settings_loader_rejects_symlinks() {
+        let directory = lan_directory();
+        let real = directory.join("real.json");
+        fs::write(
+            &real,
+            serde_json::to_vec(&LanListenerSettings::disabled_defaults()).unwrap(),
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(&real, directory.join("link.json")).unwrap();
+
+        assert_eq!(
+            load_lan_listener_settings(&directory.join("link.json"))
+                .unwrap_err()
+                .code(),
+            "lan_configuration_invalid"
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn adapter_ids_require_a_real_nonzero_hardware_address() {
+        assert!(stable_adapter_id(Some("AA:BB:CC:DD:EE")).is_none());
+        assert!(stable_adapter_id(Some("AA:BB:CC:DD:EE:F")).is_none());
+        assert!(stable_adapter_id(Some("")).is_none());
+        assert!(stable_adapter_id(Some("zz:zz:zz:zz:zz:zz")).is_none());
+        assert!(stable_adapter_id(Some("00-00-00-00-00-00-00-00")).is_none());
+        assert!(stable_adapter_id(Some("02:00:00:00:00:01:aa:bb")).is_some());
+        assert_ne!(
+            stable_adapter_id(Some("AA:BB:CC:DD:EE:FF")),
+            stable_adapter_id(Some("AA:BB:CC:DD:EE:FE"))
+        );
+        let id = stable_adapter_id(Some("AA:BB:CC:DD:EE:FF")).unwrap();
+        assert!(valid_stable_adapter_id(&id));
+    }
+
+    #[test]
+    fn adapter_names_must_be_trimmed_bounded_and_control_free() {
+        assert!(!invalid_adapter_identifier("Ethernet 2"));
+        assert!(!invalid_adapter_identifier(&"e".repeat(255)));
+        for invalid in [
+            "",
+            " Ethernet",
+            "Ethernet ",
+            "Eth\nernet",
+            "Eth\u{7f}",
+            &"e".repeat(256),
+        ] {
+            assert!(invalid_adapter_identifier(invalid), "{invalid:?}");
+        }
+    }
+
+    #[test]
+    fn virtual_adapter_heuristics_cover_vpn_and_hypervisor_markers() {
+        for name in [
+            "tun0",
+            "TUN",
+            "tap-windows",
+            "wg-home",
+            "WG",
+            "ZeroTier One",
+            "OpenVPN Data Channel",
+            "Hyper-V Virtual Ethernet",
+            "VMware Network Adapter VMnet8",
+            "VirtualBox Host-Only",
+            "vboxnet0",
+            "WSL",
+            "Teredo Tunneling Pseudo-Interface",
+        ] {
+            assert!(looks_like_tunnel_or_virtual_adapter(name), "{name}");
+        }
+        for name in [
+            "Ethernet 2",
+            "Wi-Fi",
+            "eth0",
+            "enp3s0",
+            "wlan0",
+            "Local Area Connection",
+        ] {
+            assert!(!looks_like_tunnel_or_virtual_adapter(name), "{name}");
+        }
+    }
+
+    #[test]
+    fn disabled_settings_resolve_to_no_listener() {
+        let candidates = vec![candidate(SELECTED_ID, Ipv4Addr::new(192, 168, 1, 44))];
+
+        assert!(LanListenerConfiguration::resolve(
+            &LanListenerSettings::disabled_defaults(),
+            &candidates
+        )
+        .unwrap()
+        .is_none());
+    }
+
+    #[test]
+    fn multiple_addresses_on_the_selected_adapter_pick_the_lowest_deterministically() {
+        let settings = settings_json(serde_json::json!({
+            "schema_version": 1, "enabled": true,
+            "selected_adapter_id": SELECTED_ID, "preferred_port": null,
+        }));
+        let candidates = vec![
+            candidate(SELECTED_ID, Ipv4Addr::new(192, 168, 1, 44)),
+            candidate(SELECTED_ID, Ipv4Addr::new(10, 1, 2, 3)),
+            candidate(SELECTED_ID, Ipv4Addr::new(172, 16, 0, 9)),
+        ];
+
+        let configuration = LanListenerConfiguration::resolve(&settings, &candidates)
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(configuration.bind_address, Ipv4Addr::new(10, 1, 2, 3));
+        assert_eq!(configuration.preferred_port, None);
+        assert_eq!(
+            LanListenerConfiguration::resolve(&settings, &[])
+                .unwrap_err()
+                .code(),
+            "lan_adapter_unavailable"
+        );
+    }
+
+    #[test]
+    fn listener_status_maps_only_one_to_active() {
+        assert_eq!(LanListenerStatus::from_u8(1), LanListenerStatus::Active);
+        for value in [0, LISTENER_STATUS_ACTIVATING, 3, u8::MAX] {
+            assert_eq!(
+                LanListenerStatus::from_u8(value),
+                LanListenerStatus::Stopped,
+                "{value}"
+            );
+        }
+        assert_eq!(LanListenerStatus::Active.as_env_value(), "active");
+        assert_eq!(LanListenerStatus::Stopped.as_env_value(), "stopped");
+    }
+
+    #[test]
+    fn private_ipv4_ranges_are_exactly_rfc1918() {
+        for address in [
+            Ipv4Addr::new(10, 0, 0, 0),
+            Ipv4Addr::new(10, 255, 255, 255),
+            Ipv4Addr::new(172, 16, 0, 1),
+            Ipv4Addr::new(172, 31, 255, 254),
+            Ipv4Addr::new(192, 168, 0, 1),
+        ] {
+            assert!(is_private_non_loopback_ipv4(address), "{address}");
+        }
+        for address in [
+            Ipv4Addr::new(127, 0, 0, 1),
+            Ipv4Addr::new(172, 15, 0, 1),
+            Ipv4Addr::new(172, 32, 0, 1),
+            Ipv4Addr::new(192, 169, 0, 1),
+            Ipv4Addr::new(169, 254, 1, 1),
+            Ipv4Addr::new(100, 64, 0, 1),
+            Ipv4Addr::new(8, 8, 8, 8),
+            Ipv4Addr::new(0, 0, 0, 0),
+        ] {
+            assert!(!is_private_non_loopback_ipv4(address), "{address}");
+        }
+        assert!(peer_is_private_ipv4("192.168.1.5:5000".parse().unwrap()));
+        assert!(!peer_is_private_ipv4("127.0.0.1:5000".parse().unwrap()));
+        assert!(!peer_is_private_ipv4("[fd00::1]:5000".parse().unwrap()));
+    }
+
+    #[test]
+    fn lan_origins_must_be_canonical_private_high_port_http() {
+        let origin = LanOrigin::parse("http://172.20.3.4:43124").unwrap();
+        assert_eq!(origin.authority, "172.20.3.4:43124");
+        assert_eq!(origin.address, Ipv4Addr::new(172, 20, 3, 4));
+        assert_eq!(origin.port, 43124);
+        for invalid in [
+            "http://192.168.1.40:43124/",
+            "http://192.168.1.40",
+            "http://192.168.1.40:1023",
+            "https://192.168.1.40:43124",
+            "http://127.0.0.1:43124",
+            "http://8.8.8.8:43124",
+            "http://host.lan:43124",
+            "http://u:p@192.168.1.40:43124",
+            "http://192.168.1.40:43124/upload",
+            "http://192.168.1.40:43124?x",
+            "garbage",
+        ] {
+            assert_eq!(
+                LanOrigin::parse(invalid).err().map(|error| error.code()),
+                Some("lan_origin_invalid"),
+                "{invalid}"
+            );
+        }
+    }
+
+    #[test]
+    fn php_backend_origin_must_be_canonical_loopback_with_high_port() {
+        assert_eq!(
+            LoopbackOrigin::parse("http://127.0.0.1:8123").unwrap().url,
+            "http://127.0.0.1:8123"
+        );
+        for invalid in [
+            "http://127.0.0.1:8123/",
+            "http://127.0.0.1:80",
+            "http://127.0.0.1",
+            "http://localhost:8123",
+            "https://127.0.0.1:8123",
+            "http://192.168.1.40:8123",
+            "http://127.0.0.1:8123/x",
+        ] {
+            assert_eq!(
+                LoopbackOrigin::parse(invalid)
+                    .err()
+                    .map(|error| error.code()),
+                Some("lan_backend_invalid"),
+                "{invalid}"
+            );
+        }
+    }
+
+    #[test]
+    fn lan_attestation_rejects_each_weakened_or_mismatched_field() {
+        let origin = "http://192.168.1.40:43124";
+        let exact = exact_lan_attestation(origin);
+        let capability = verify_lan(&exact, origin).unwrap();
+        assert!(capability.authorizes(origin));
+        assert!(!capability.authorizes("http://192.168.1.40:43125"));
+        assert!(!format!("{capability:?}").contains("192.168"));
+
+        for flag in [
+            "upload_routes_only",
+            "exact_origin_enforced",
+            "explicit_high_port_enforced",
+            "direct_private_peer_enforced",
+            "local_tokens_bound_to_lan_origin",
+        ] {
+            let mut weakened = exact.clone();
+            weakened[flag] = serde_json::json!(false);
+            assert!(verify_lan(&weakened, origin).is_none(), "{flag}");
+        }
+        for (field, value) in [
+            ("schema_version", serde_json::json!(2)),
+            ("status", serde_json::json!("starting")),
+            ("route_set", serde_json::json!("public_upload_v2")),
+            ("origin", serde_json::json!("http://192.168.1.40:43125")),
+        ] {
+            let mut changed = exact.clone();
+            changed[field] = value;
+            assert!(verify_lan(&changed, origin).is_none(), "{field}");
+        }
+        let mut extra = exact.clone();
+        extra["firewall_open"] = serde_json::json!(true);
+        assert!(verify_lan(&extra, origin).is_none());
+        let mut missing = exact.clone();
+        missing
+            .as_object_mut()
+            .unwrap()
+            .remove("forwarding_headers_rejected");
+        assert!(verify_lan(&missing, origin).is_none());
+
+        let loopback = "http://127.0.0.1:43124";
+        assert!(verify_lan(&exact_lan_attestation(loopback), loopback).is_none());
+        let trailing = "http://192.168.1.40:43124/";
+        assert!(verify_lan(&exact_lan_attestation(trailing), trailing).is_none());
+    }
+
+    #[test]
+    fn upload_routes_cover_every_allowed_method_and_selector_shape() {
+        assert!(matches!(
+            allowed_route("GET", "/health"),
+            Some(AllowedRoute::Health)
+        ));
+        assert!(allowed_route("POST", "/health").is_none());
+        assert!(matches!(
+            allowed_route("POST", &format!("/upload/{SELECTOR}/authorize")),
+            Some(AllowedRoute::Authorize)
+        ));
+        assert!(matches!(
+            allowed_route("POST", &format!("/upload/{SELECTOR}/complete")),
+            Some(AllowedRoute::Complete)
+        ));
+        for (method, path) in [
+            ("GET", format!("/upload/{}", &SELECTOR[1..])),
+            ("GET", format!("/upload/{SELECTOR}x")),
+            ("GET", "/upload/Abcdefghijklmnopqrst.u".to_owned()),
+            ("GET", format!("/upload/{SELECTOR}/")),
+            ("GET", format!("/upload/{SELECTOR}#frag")),
+            ("GET", "/upload/".to_owned()),
+            ("PUT", format!("/upload/{SELECTOR}/files")),
+            ("POST", format!("/upload/{SELECTOR}/delete")),
+            ("GET", "/health/".to_owned()),
+            ("GET", "/".to_owned()),
+        ] {
+            assert!(allowed_route(method, &path).is_none(), "{method} {path}");
+        }
+    }
+
+    #[test]
+    fn only_browser_session_headers_are_forwarded() {
+        for name in [
+            "accept",
+            "accept-language",
+            "content-type",
+            "cookie",
+            "origin",
+            "referer",
+            "user-agent",
+            "x-csrf-token",
+            "x-xsrf-token",
+            "x-inertia",
+            "x-inertia-version",
+            "x-requested-with",
+        ] {
+            assert!(forwarded_request_header(name), "{name}");
+            assert!(!forbidden_request_header(name), "{name}");
+        }
+        for name in [
+            "host",
+            "authorization",
+            "sec-fetch-site",
+            "connection",
+            "content-length",
+            "x-forwarded-for",
+        ] {
+            assert!(!forwarded_request_header(name), "{name}");
+        }
+        for name in [
+            "te",
+            "trailer",
+            "expect",
+            "content-encoding",
+            "proxy-connection",
+            "proxy-authorization",
+            "proxy-authenticate",
+            "x-forwarded-host",
+            "x-forwarded-port",
+        ] {
+            assert!(forbidden_request_header(name), "{name}");
+        }
+    }
+
+    #[test]
+    fn content_length_accepts_only_plain_decimal_digits() {
+        assert_eq!(parse_content_length(b"0").unwrap(), 0);
+        assert_eq!(parse_content_length(b"00042").unwrap(), 42);
+        assert_eq!(
+            parse_content_length(b"18446744073709551615").unwrap(),
+            u64::MAX
+        );
+        for invalid in [
+            &b""[..],
+            b"+1",
+            b"-1",
+            b" 1",
+            b"1 ",
+            b"0x10",
+            b"1e3",
+            b"18446744073709551616",
+        ] {
+            assert_eq!(
+                parse_content_length(invalid).unwrap_err().status,
+                400,
+                "{invalid:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn multipart_content_type_requires_a_bounded_rfc2046_boundary() {
+        assert!(is_multipart_content_type(
+            b"multipart/form-data; boundary=----WebKitFormBoundaryX1"
+        ));
+        assert!(is_multipart_content_type(
+            b"Multipart/Form-Data; Boundary=abc'()+_,-./:=?"
+        ));
+        assert!(is_multipart_content_type(
+            format!("multipart/form-data; boundary={}", "a".repeat(70)).as_bytes()
+        ));
+        for invalid in [
+            format!("multipart/form-data; boundary={}", "a".repeat(71)),
+            "multipart/form-data; boundary=".to_owned(),
+            "multipart/form-data;boundary=abc".to_owned(),
+            "multipart/form-data".to_owned(),
+            "multipart/form-data; boundary=\"quoted\"".to_owned(),
+            "multipart/form-data; boundary=has space".to_owned(),
+            "multipart/mixed; boundary=abc".to_owned(),
+        ] {
+            assert!(!is_multipart_content_type(invalid.as_bytes()), "{invalid}");
+        }
+        assert!(!is_multipart_content_type(
+            b"multipart/form-data; boundary=\xff"
+        ));
+    }
+
+    #[test]
+    fn form_content_types_accept_json_urlencoded_and_multipart_only() {
+        for valid in [
+            "application/json",
+            "Application/JSON; charset=utf-8",
+            "application/x-www-form-urlencoded",
+            "application/x-www-form-urlencoded; charset=UTF-8",
+            "multipart/form-data; boundary=abc",
+        ] {
+            assert!(is_form_content_type(valid.as_bytes()), "{valid}");
+        }
+        for invalid in [
+            "text/plain",
+            "application/jsonp",
+            "application/json-patch+json",
+            "",
+            "application/xml",
+        ] {
+            assert!(!is_form_content_type(invalid.as_bytes()), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn header_terminator_is_found_at_its_first_occurrence() {
+        assert_eq!(
+            find_header_end(b"GET / HTTP/1.1\r\n\r\nbody\r\n\r\n"),
+            Some(14)
+        );
+        assert_eq!(find_header_end(b"\r\n\r\n"), Some(0));
+        assert_eq!(find_header_end(b"GET / HTTP/1.1\r\n"), None);
+        assert_eq!(find_header_end(b"\n\n"), None);
+        assert_eq!(find_header_end(b""), None);
+    }
+
+    #[test]
+    fn health_requests_parse_and_header_names_are_case_insensitive() {
+        let parsed = parse_raw_request(
+            format!("GET /health HTTP/1.1\r\nHOST: {LAN_HOST}\r\nUser-Agent: test\r\n\r\n")
+                .into_bytes(),
+        )
+        .unwrap();
+
+        assert_eq!(parsed.path, "/health");
+        assert_eq!(parsed.content_length, 0);
+        assert!(parsed.body_prefix.is_empty());
+        assert!(parsed.forwarded_headers.get(CONTENT_LENGTH).is_none());
+        assert_eq!(parsed.forwarded_headers.get("user-agent").unwrap(), "test");
+    }
+
+    #[test]
+    fn form_posts_forward_length_and_keep_body_prefix() {
+        let body = r#"{"code":"1234"}"#;
+        let raw = format!(
+            "POST /upload/{SELECTOR}/authorize HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nOrigin: http://{LAN_HOST}\r\nReferer: http://{LAN_HOST}/upload/{SELECTOR}\r\n\r\n{body}",
+            body.len()
+        );
+
+        let parsed = parse_raw_request(raw.into_bytes()).unwrap();
+
+        assert_eq!(parsed.method, "POST");
+        assert_eq!(parsed.content_length, body.len() as u64);
+        assert_eq!(parsed.body_prefix, body.as_bytes());
+        assert_eq!(
+            parsed.forwarded_headers.get(CONTENT_LENGTH).unwrap(),
+            body.len().to_string().as_str()
+        );
+        assert_eq!(
+            parsed.forwarded_headers.get("origin").unwrap(),
+            format!("http://{LAN_HOST}").as_str()
+        );
+    }
+
+    #[test]
+    fn request_parser_rejects_missing_or_duplicate_framing_headers() {
+        assert_eq!(
+            rejection(&format!("GET /upload/{SELECTOR} HTTP/1.1\r\n\r\n")),
+            404
+        );
+        assert_eq!(
+            rejection(&format!(
+                "GET /upload/{SELECTOR} HTTP/1.1\r\nHost: {LAN_HOST}\r\nHost: {LAN_HOST}\r\n\r\n"
+            )),
+            400
+        );
+        assert_eq!(
+            rejection(&format!(
+                "POST /upload/{SELECTOR}/authorize HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: application/json\r\nContent-Length: 2\r\nContent-Length: 2\r\n\r\n{{}}"
+            )),
+            400
+        );
+        assert_eq!(
+            rejection(&format!(
+                "POST /upload/{SELECTOR}/authorize HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: application/json\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n{{}}"
+            )),
+            400
+        );
+        assert_eq!(
+            rejection(&format!(
+                "GET /upload/{SELECTOR} HTTP/1.0\r\nHost: {LAN_HOST}\r\n\r\n"
+            )),
+            400
+        );
+        assert_eq!(rejection("not an http request\r\n\r\n"), 400);
+        assert_eq!(
+            rejection(&format!(
+                "GET /upload/{SELECTOR} HTTP/1.1\r\nHost: {LAN_HOST}\r\n"
+            )),
+            400
+        );
+    }
+
+    #[test]
+    fn request_parser_enforces_route_specific_body_rules() {
+        assert_eq!(
+            rejection(&format!("GET /admin HTTP/1.1\r\nHost: {LAN_HOST}\r\n\r\n")),
+            404
+        );
+        assert_eq!(
+            rejection(&format!(
+                "GET /health HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Length: 1\r\n\r\nx"
+            )),
+            413
+        );
+        assert_eq!(
+            rejection(&format!(
+                "POST /upload/{SELECTOR}/authorize HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: application/json\r\n\r\n"
+            )),
+            411
+        );
+        assert_eq!(
+            rejection(&format!(
+                "POST /upload/{SELECTOR}/complete HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: text/plain\r\nContent-Length: 1\r\n\r\nx"
+            )),
+            415
+        );
+        assert_eq!(
+            rejection(&format!(
+                "POST /upload/{SELECTOR}/files HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n{{}}"
+            )),
+            415
+        );
+        assert_eq!(
+            rejection(&format!(
+                "POST /upload/{SELECTOR}/files HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: multipart/form-data; boundary=abc\r\nContent-Length: {}\r\n\r\n",
+                MAX_UPLOAD_REQUEST_BYTES + 1
+            )),
+            413
+        );
+        assert_eq!(
+            rejection(&format!(
+                "POST /upload/{SELECTOR}/authorize HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: application/json\r\nContent-Length: 1\r\n\r\n{{}}"
+            )),
+            400
+        );
+    }
+
+    #[test]
+    fn large_file_uploads_within_the_limit_are_accepted_without_reading_the_body() {
+        let parsed = parse_raw_request(
+            format!(
+                "POST /upload/{SELECTOR}/files HTTP/1.1\r\nHost: {LAN_HOST}\r\nContent-Type: multipart/form-data; boundary=abc\r\nContent-Length: {MAX_UPLOAD_REQUEST_BYTES}\r\n\r\n--abc"
+            )
+            .into_bytes(),
+        )
+        .unwrap();
+
+        assert_eq!(parsed.content_length, MAX_UPLOAD_REQUEST_BYTES);
+        assert_eq!(parsed.body_prefix, b"--abc");
+    }
+
+    #[test]
+    fn cross_origin_and_foreign_referer_requests_are_forbidden() {
+        assert_eq!(
+            rejection(&format!(
+                "GET /upload/{SELECTOR} HTTP/1.1\r\nHost: {LAN_HOST}\r\nOrigin: http://evil.example\r\n\r\n"
+            )),
+            403
+        );
+        assert_eq!(
+            rejection(&format!(
+                "GET /upload/{SELECTOR} HTTP/1.1\r\nHost: {LAN_HOST}\r\nReferer: http://{LAN_HOST}/admin\r\n\r\n"
+            )),
+            403
+        );
+        assert_eq!(
+            rejection(&format!(
+                "GET /upload/{SELECTOR} HTTP/1.1\r\nHost: {LAN_HOST}\r\nReferer: http://192.168.1.40:43125/upload/{SELECTOR}\r\n\r\n"
+            )),
+            403
+        );
+    }
+
+    #[test]
+    fn oversized_request_heads_are_rejected_with_431() {
+        let raw = format!(
+            "GET /upload/{SELECTOR} HTTP/1.1\r\nHost: {LAN_HOST}\r\nX-Pad: {}\r\n\r\n",
+            "a".repeat(MAX_REQUEST_HEAD_BYTES)
+        );
+
+        assert_eq!(rejection(&raw), 431);
+    }
+
+    #[test]
+    fn too_many_headers_are_rejected() {
+        let mut raw = format!("GET /upload/{SELECTOR} HTTP/1.1\r\nHost: {LAN_HOST}\r\n");
+        for index in 0..MAX_REQUEST_HEADERS {
+            raw.push_str(&format!("X-H{index}: v\r\n"));
+        }
+        raw.push_str("\r\n");
+
+        assert_eq!(rejection(&raw), 400);
+    }
+
+    #[test]
+    fn fixed_body_reader_serves_prefix_then_stream_up_to_declared_length() {
+        let (mut client, server) = connected_pair();
+        client.write_all(b"defXYZ").unwrap();
+        let mut reader = FixedBodyReader::new(
+            b"abc".to_vec(),
+            server,
+            6,
+            Instant::now() + Duration::from_secs(5),
+        )
+        .unwrap();
+
+        let mut body = Vec::new();
+        reader.read_to_end(&mut body).unwrap();
+
+        assert_eq!(body, b"abcdef");
+        assert_eq!(reader.read(&mut [0_u8; 4]).unwrap(), 0);
+    }
+
+    #[test]
+    fn fixed_body_reader_rejects_oversized_prefix_and_truncated_bodies() {
+        let (_client, server) = connected_pair();
+        assert_eq!(
+            FixedBodyReader::new(b"toolong".to_vec(), server, 3, Instant::now())
+                .err()
+                .unwrap()
+                .code(),
+            "lan_request_rejected"
+        );
+
+        let (client, server) = connected_pair();
+        drop(client);
+        let mut reader = FixedBodyReader::new(
+            b"ab".to_vec(),
+            server,
+            5,
+            Instant::now() + Duration::from_secs(5),
+        )
+        .unwrap();
+        let mut body = Vec::new();
+        let error = reader.read_to_end(&mut body).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::UnexpectedEof);
+        assert_eq!(body, b"ab");
+    }
+
+    #[test]
+    fn fixed_body_reader_honours_an_expired_absolute_deadline() {
+        let (_client, server) = connected_pair();
+        let mut reader = FixedBodyReader::new(Vec::new(), server, 5, Instant::now()).unwrap();
+
+        let error = reader.read(&mut [0_u8; 8]).unwrap_err();
+
+        assert_eq!(error.kind(), io::ErrorKind::TimedOut);
+    }
+
+    #[test]
+    fn simple_responses_are_closed_uncacheable_and_length_framed() {
+        let (mut client, mut server) = connected_pair();
+
+        write_simple_response(&mut server, 404, b"nope").unwrap();
+        drop(server);
+        let mut response = String::new();
+        client.read_to_string(&mut response).unwrap();
+
+        assert_eq!(
+            response,
+            "HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Length: 4\r\nCache-Control: no-store, private, max-age=0\r\nX-Content-Type-Options: nosniff\r\n\r\nnope"
+        );
+    }
+
+    #[test]
+    fn write_all_until_fails_once_the_deadline_has_passed() {
+        let (_client, mut server) = connected_pair();
+
+        let error = write_all_until(&mut server, b"data", Instant::now()).unwrap_err();
+
+        assert_eq!(error.code(), "lan_connection_deadline_exceeded");
+        assert!(write_all_until(&mut server, b"", Instant::now()).is_ok());
+    }
+
+    #[test]
+    fn disabled_supervisor_is_stopped_unattested_and_records_its_reason() {
+        let directory = lan_directory();
+        let supervisor =
+            LanUploadSupervisor::disabled(&directory, test_logger(&directory, "lan-x.log"))
+                .unwrap();
+
+        assert_eq!(supervisor.status_for_php(), LanListenerStatus::Stopped);
+        assert_eq!(supervisor.required_attestation_origin(), None);
+        assert_eq!(supervisor.contract_generation(), 0);
+        assert_eq!(
+            supervisor.adapter_inventory_path(),
+            directory.join("lan-adapters.json")
+        );
+        let snapshot: serde_json::Value =
+            serde_json::from_slice(&fs::read(directory.join("lan-listener-state.json")).unwrap())
+                .unwrap();
+        assert_eq!(snapshot["phase"], "unavailable");
+        assert_eq!(snapshot["error_code"], "lan_disabled");
+        assert_eq!(snapshot["origin"], serde_json::Value::Null);
+
+        let state = supervisor.provisioning_state();
+        assert!(!state.requested_enabled);
+        assert!(!state.verified);
+        assert_eq!(state.verified_origin, None);
+        assert_eq!(state.phase, "unavailable");
+        assert_eq!(state.error_code, Some("lan_disabled"));
+        assert_eq!(state.firewall_assessment, "not_determined");
+        assert!(!state.firewall_rules_modified);
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn unavailable_supervisor_publishes_the_given_code() {
+        let directory = lan_directory();
+        let supervisor = LanUploadSupervisor::unavailable(
+            &directory,
+            test_logger(&directory, "lan-x.log"),
+            "lan_adapter_unavailable",
+        )
+        .unwrap();
+
+        let snapshot: serde_json::Value =
+            serde_json::from_slice(&fs::read(directory.join("lan-listener-state.json")).unwrap())
+                .unwrap();
+        assert_eq!(snapshot["error_code"], "lan_adapter_unavailable");
+        assert_eq!(
+            supervisor.provisioning_state().error_code,
+            Some("lan_adapter_unavailable")
+        );
+        drop(supervisor);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn managed_supervisor_rejects_invalid_settings_up_front() {
+        let directory = lan_directory();
+        let invalid = settings_json(serde_json::json!({
+            "schema_version": 1, "enabled": true,
+            "selected_adapter_id": null, "preferred_port": null,
+        }));
+
+        let error = LanUploadSupervisor::managed(
+            invalid,
+            &directory.join("lan.json"),
+            &directory.join("runtime"),
+            test_logger(&directory, "lan-x.log"),
+        )
+        .err()
+        .unwrap();
+
+        assert_eq!(error.code(), "lan_adapter_selection_required");
+        assert!(!directory.join("runtime").exists());
+        fs::remove_dir_all(directory).unwrap();
+    }
 }
