@@ -5,15 +5,18 @@ use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetLifecycleController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetListingController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCabinetStaffController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminCoverageController;
+use App\Http\Controllers\Api\V1\Mobile\Admin\AdminFacilityTypeController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminOverviewController;
 use App\Http\Controllers\Api\V1\Mobile\Admin\AdminSpecialtyController;
 use App\Http\Controllers\Api\V1\Mobile\AuthController;
 use App\Http\Controllers\Api\V1\Mobile\AvailabilityController;
+use App\Http\Controllers\Api\V1\Mobile\ClinicPhotoController;
 use App\Http\Controllers\Api\V1\Mobile\ClinicProfileController;
 use App\Http\Controllers\Api\V1\Mobile\DeviceController;
 use App\Http\Controllers\Api\V1\Mobile\DoctorDirectoryController;
 use App\Http\Controllers\Api\V1\Mobile\FamilyMemberController;
 use App\Http\Controllers\Api\V1\Mobile\NotificationController;
+use App\Http\Controllers\Api\V1\Mobile\PasswordResetController;
 use App\Http\Controllers\Api\V1\Mobile\PatientAppointmentController;
 use App\Http\Controllers\Api\V1\Mobile\PatientPrescriptionController;
 use App\Http\Controllers\Api\V1\Mobile\ProfileController;
@@ -42,6 +45,7 @@ Route::middleware('throttle:mobile-public')->group(function (): void {
     Route::get('wilayas/{wilaya}/baladiyas', [ReferenceController::class, 'baladiyas'])
         ->whereNumber('wilaya');
     Route::get('specialties', [ReferenceController::class, 'specialties']);
+    Route::get('facility-types', [ReferenceController::class, 'facilityTypes']);
 
     Route::get('doctors', [DoctorDirectoryController::class, 'index']);
     Route::get('clinics/{cabinet}', [DoctorDirectoryController::class, 'show'])
@@ -57,6 +61,10 @@ Route::post('auth/register', [AuthController::class, 'register'])
     ->middleware('throttle:mobile-register');
 Route::post('auth/login', [AuthController::class, 'login'])
     ->middleware('throttle:mobile-login');
+Route::post('auth/password/forgot', [PasswordResetController::class, 'forgot'])
+    ->middleware('throttle:mobile-password-forgot');
+Route::post('auth/password/reset', [PasswordResetController::class, 'reset'])
+    ->middleware('throttle:mobile-password-reset');
 
 // --- Authenticated, any mobile role --------------------------------------
 Route::middleware('auth:sanctum')->group(function (): void {
@@ -105,6 +113,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('mobile/clinic-profile', [ClinicProfileController::class, 'show']);
         Route::put('mobile/clinic-profile', [ClinicProfileController::class, 'update'])
             ->middleware('permission:configuration.branding.manage');
+        Route::middleware('permission:configuration.branding.manage')->group(function (): void {
+            Route::post('mobile/clinic-profile/photos', [ClinicPhotoController::class, 'store']);
+            Route::delete('mobile/clinic-profile/photos/{index}', [ClinicPhotoController::class, 'destroy'])
+                ->whereNumber('index');
+            Route::post('mobile/clinic-profile/photos/{index}/cover', [ClinicPhotoController::class, 'cover'])
+                ->whereNumber('index');
+        });
     });
 });
 
@@ -134,6 +149,7 @@ Route::middleware(['auth:sanctum', 'mobile.admin', 'throttle:mobile-admin'])
 
         // Coverage: which wilayas/baladiyas the patient app offers at all.
         Route::get('coverage/wilayas', [AdminCoverageController::class, 'wilayas']);
+        Route::post('coverage/wilayas', [AdminCoverageController::class, 'storeWilaya']);
         Route::patch('coverage/wilayas/{wilaya}', [AdminCoverageController::class, 'updateWilaya'])
             ->whereNumber('wilaya');
         Route::get('coverage/wilayas/{wilaya}/baladiyas', [AdminCoverageController::class, 'baladiyas'])
@@ -146,6 +162,11 @@ Route::middleware(['auth:sanctum', 'mobile.admin', 'throttle:mobile-admin'])
         Route::post('specialties', [AdminSpecialtyController::class, 'store']);
         Route::patch('specialties/{specialty}', [AdminSpecialtyController::class, 'update'])
             ->whereNumber('specialty');
+
+        // Facility types: which search tabs (doctor / clinic / imaging) exist.
+        Route::get('facility-types', [AdminFacilityTypeController::class, 'index']);
+        Route::patch('facility-types/{type}', [AdminFacilityTypeController::class, 'update'])
+            ->whereAlpha('type');
 
         Route::patch('cabinets/{cabinet}/facility-type', [AdminCabinetListingController::class, 'updateFacilityType'])
             ->whereNumber('cabinet');

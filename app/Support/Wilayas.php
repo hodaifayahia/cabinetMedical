@@ -13,6 +13,14 @@ final class Wilayas
     public const MAX = 58;
 
     /**
+     * Highest code the `wilayas` table may hold. The platform admin can add
+     * wilayas beyond the 58 of config/wilayas.php (the 2025 reform created
+     * new ones), so mobile validation checks this bound plus the table, never
+     * the config catalogue.
+     */
+    public const CODE_MAX = 99;
+
+    /**
      * The wilaya catalogue keyed by integer code.
      *
      * @return array<int, string>

@@ -19,7 +19,7 @@ class IndexAdminCabinetsRequest extends AdminFormRequest
     {
         return [
             'status' => ['sometimes', 'string', Rule::in(CabinetStatus::values())],
-            'wilaya_code' => ['sometimes', 'integer', 'between:'.Wilayas::MIN.','.Wilayas::MAX],
+            'wilaya_code' => ['sometimes', 'integer', 'between:'.Wilayas::MIN.','.Wilayas::CODE_MAX],
             'q' => ['sometimes', 'string', 'max:120'],
             'per_page' => ['sometimes', 'integer', 'between:1,50'],
         ];

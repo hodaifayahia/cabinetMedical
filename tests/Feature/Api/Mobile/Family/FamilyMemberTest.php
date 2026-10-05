@@ -9,6 +9,7 @@ use App\Models\Appointment;
 use App\Models\FamilyMember;
 use App\Models\Patient;
 use App\Models\User;
+use App\Models\Wilaya;
 use App\Notifications\Mobile\FamilyLinkRequested;
 use App\Notifications\Mobile\FamilyLinkResponded;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -37,6 +38,7 @@ class FamilyMemberTest extends TestCase
     {
         $owner = $this->makePatientUser();
         Sanctum::actingAs($owner);
+        Wilaya::query()->firstOrCreate(['code' => 16], ['name_fr' => 'Alger', 'name_ar' => 'الجزائر']);
 
         $response = $this->postJson('/api/v1/family-members', [
             'relation' => FamilyRelation::SON->value,

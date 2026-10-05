@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api\V1\Mobile\Admin;
 use App\Models\AuditLog;
 use App\Models\Baladiya;
 use App\Models\Wilaya;
+use App\Support\Wilayas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Platform back office: which parts of the country the mobile app covers.
@@ -54,6 +58,60 @@ class AdminCoverageController extends AdminController
                 'clinics' => (int) ($clinicCounts[$wilaya->code] ?? 0),
             ])->all(),
         ]);
+    }
+
+    /**
+     * Add a wilaya the seed does not know (the 2025 reform created new ones).
+     * It ships active, like every seeded wilaya, with no communes yet.
+     */
+    public function storeWilaya(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'code' => [
+                'required',
+                'integer',
+                'between:'.Wilayas::MIN.','.Wilayas::CODE_MAX,
+                Rule::unique('wilayas', 'code'),
+            ],
+            'name_fr' => ['required', 'string', 'min:2', 'max:100'],
+            'name_ar' => ['required', 'string', 'min:2', 'max:100'],
+            'is_active' => ['sometimes', 'boolean'],
+        ], [
+            'code.unique' => 'Une wilaya porte déjà ce code.',
+        ]);
+
+        $nameFr = (string) Str::of($data['name_fr'])->squish();
+
+        // Case-insensitive, compared in PHP: SQLite's lower() only folds ASCII.
+        $needle = Str::lower($nameFr);
+        if (Wilaya::query()->pluck('name_fr')->contains(static fn (string $name): bool => Str::lower($name) === $needle)) {
+            throw ValidationException::withMessages(['name_fr' => 'Une wilaya porte déjà ce nom.']);
+        }
+
+        $wilaya = Wilaya::query()->create([
+            'code' => (int) $data['code'],
+            'name_fr' => $nameFr,
+            'name_ar' => (string) Str::of($data['name_ar'])->squish(),
+            'is_active' => (bool) ($data['is_active'] ?? true),
+        ]);
+
+        AuditLog::record('admin.coverage_wilaya_created', $wilaya, [
+            'wilaya_code' => $wilaya->code,
+            'name_fr' => $wilaya->name_fr,
+            'is_active' => $wilaya->is_active,
+        ], $request->user()?->getKey());
+
+        return response()->json([
+            'data' => [
+                'code' => $wilaya->code,
+                'name_fr' => $wilaya->name_fr,
+                'name_ar' => $wilaya->name_ar,
+                'is_active' => $wilaya->is_active,
+                'baladiyas_total' => 0,
+                'baladiyas_active' => 0,
+                'clinics' => 0,
+            ],
+        ], 201);
     }
 
     /** Switch a whole wilaya on or off. */

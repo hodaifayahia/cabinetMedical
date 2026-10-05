@@ -173,6 +173,41 @@ const mobileAppPointIcons = [
     '/icons/clinic.svg',
 ] as const;
 
+// Supporting illustrations for the patient booking journey. The images are
+// decorative; the adjacent translated copy carries the feature descriptions.
+const patientJourneyArtwork = [
+    {
+        src: '/brands/Appointment%20calendar%20with%20checkmark%20confirmation-2.png',
+        width: 1024,
+        height: 1536,
+    },
+    {
+        src: '/brands/Floating%20healthcare%20booking%20essentials-4.png',
+        width: 1672,
+        height: 941,
+    },
+    {
+        src: '/brands/Smartphone%20clinic%20finder-1.png',
+        width: 1024,
+        height: 1536,
+    },
+    {
+        src: '/brands/Empty%20Calendar%20with%20Clock%20and%20Teal%20Plus-5.png',
+        width: 1254,
+        height: 1254,
+    },
+    {
+        src: '/brands/Bell%2C%20calendar%2C%20and%20phone%20reminders-3.png',
+        width: 1199,
+        height: 1312,
+    },
+    {
+        src: '/brands/Appointment%20confirmed%20with%20a%20teal%20checkmark-6.png',
+        width: 1254,
+        height: 1254,
+    },
+] as const;
+
 // Hero reassurances, in copy order: instant activation, single install, team.
 const assuranceIcons: Component[] = [Zap, MonitorDown, Users];
 
@@ -1139,6 +1174,27 @@ onUnmounted(() => {
                                 aria-hidden="true"
                             ></div>
                             <PhoneScreens :screens="copy.mobileApp.screens" />
+                        </div>
+                    </div>
+
+                    <div
+                        class="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:mt-16"
+                        aria-hidden="true"
+                    >
+                        <div
+                            v-for="artwork in patientJourneyArtwork"
+                            :key="artwork.src"
+                            class="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-brand-soft/50 via-background to-accent/30 p-3 sm:rounded-3xl sm:p-5"
+                        >
+                            <img
+                                :src="artwork.src"
+                                alt=""
+                                :width="artwork.width"
+                                :height="artwork.height"
+                                loading="lazy"
+                                decoding="async"
+                                class="h-full w-full object-contain"
+                            />
                         </div>
                     </div>
                 </div>

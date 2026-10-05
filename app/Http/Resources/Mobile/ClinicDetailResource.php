@@ -9,6 +9,7 @@ use App\Models\CabinetPublicProfile;
 use App\Models\DoctorProfile;
 use App\Models\DoctorSchedule;
 use App\Models\Wilaya;
+use App\Support\ClinicPhotos;
 use App\Support\MedicalSpecialtyCatalog;
 use App\Support\SpecialtyArabicLabels;
 use DateTimeInterface;
@@ -62,7 +63,7 @@ class ClinicDetailResource extends JsonResource
             'phones' => $this->profile->phones ?? [],
             'latitude' => $this->profile->latitude === null ? null : (float) $this->profile->latitude,
             'longitude' => $this->profile->longitude === null ? null : (float) $this->profile->longitude,
-            'photos' => $this->profile->photos ?? [],
+            'photos' => ClinicPhotos::urls($this->profile->photos),
             'specialties' => $this->specialties(),
             'doctor' => $this->doctorPayload(),
             'working_hours' => $this->workingHours(),

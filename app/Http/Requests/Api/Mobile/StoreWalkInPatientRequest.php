@@ -25,7 +25,7 @@ class StoreWalkInPatientRequest extends FormRequest
             'phone' => ['required', 'string', 'regex:/^0[567][0-9]{8}$/'],
             'gender' => ['nullable', 'string', Rule::in(Gender::values())],
             'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
-            'wilaya_code' => ['nullable', 'integer', 'between:1,58'],
+            'wilaya_code' => ['nullable', 'integer', 'between:1,99', 'exists:wilayas,code'],
             'baladiya_id' => ['nullable', 'integer', Rule::exists('baladiyas', 'id')],
             'address' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:120'],

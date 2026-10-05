@@ -203,4 +203,76 @@ class AdminCoverageTest extends TestCase
 
         $this->getJson('/api/v1/doctors?facility_type=pharmacy')->assertStatus(422);
     }
+
+    #[Test]
+    public function only_a_platform_admin_may_add_a_wilaya(): void
+    {
+        $payload = ['code' => 59, 'name_fr' => 'Timimoun', 'name_ar' => 'تيميمون'];
+
+        $this->postJson('/api/v1/admin/coverage/wilayas', $payload)->assertUnauthorized();
+
+        $this->actingAs($this->makeListedClinic()['doctorUser'])
+            ->postJson('/api/v1/admin/coverage/wilayas', $payload)
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('wilayas', ['code' => 59]);
+    }
+
+    #[Test]
+    public function a_new_wilaya_is_offered_to_patients_and_can_hold_a_new_clinic(): void
+    {
+        $admin = $this->makePlatformAdmin();
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/coverage/wilayas', [
+                'code' => 59,
+                'name_fr' => '  Timimoun ',
+                'name_ar' => 'تيميمون',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.code', 59)
+            ->assertJsonPath('data.name_fr', 'Timimoun')
+            ->assertJsonPath('data.is_active', true)
+            ->assertJsonPath('data.baladiyas_total', 0);
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'admin.coverage_wilaya_created']);
+        $this->assertContains(59, collect($this->getJson('/api/v1/wilayas')->json('data'))->pluck('code'));
+
+        // Past the 58 of the seed catalogue, and an imaging centre at that.
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/cabinets', [
+                'cabinet_name' => 'Centre Imagerie Timimoun',
+                'specialization' => 'Radiologie',
+                'wilaya_code' => 59,
+                'doctor_name' => 'Dr Amina Bensaid',
+                'email' => 'imagerie@timimoun.dz',
+                'phone' => '0661223344',
+                'facility_type' => FacilityType::RADIOLOGY->value,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.wilaya.code', 59)
+            ->assertJsonPath('data.facility_type', 'radiology');
+    }
+
+    #[Test]
+    public function a_wilaya_code_or_name_already_in_use_is_rejected(): void
+    {
+        Wilaya::factory()->create(['code' => 16, 'name_fr' => 'Alger', 'name_ar' => 'الجزائر']);
+        $admin = $this->makePlatformAdmin();
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/coverage/wilayas', ['code' => 16, 'name_fr' => 'Autre', 'name_ar' => 'أخرى'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('code');
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/coverage/wilayas', ['code' => 60, 'name_fr' => 'ALGER', 'name_ar' => 'الجزائر'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('name_fr');
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/coverage/wilayas', ['code' => 100, 'name_fr' => 'Trop', 'name_ar' => 'كثير'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('code');
+    }
 }
