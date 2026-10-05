@@ -61,6 +61,9 @@ jobs:
       - name: Install locked JavaScript dependencies
         run: npm ci
 
+      - name: Run desktop offline and download regression contracts
+        run: npm run test -- resources/js/pages/welcomeDesktopDownloadContract.spec.ts resources/js/test/desktopConnectionSetup.spec.ts
+
       - name: Test release-resource fail-closed cases
         run: npm run desktop:resources:test
 

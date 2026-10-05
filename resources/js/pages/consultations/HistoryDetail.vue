@@ -61,6 +61,11 @@ const props = defineProps<{
         id: number;
         patient_number: string | null;
         full_name: string | null;
+        allergies: string | null;
+        antecedents_medical: string | null;
+        antecedents_surgical: string | null;
+        antecedents_family: string | null;
+        antecedents_other: string | null;
     };
     consultation: {
         id: number;
@@ -140,6 +145,31 @@ const measurements = computed(() =>
     ].filter(
         (measurement) => measurement.value !== null && measurement.value !== '',
     ),
+);
+
+const patientHistoryFields = computed(() =>
+    [
+        {
+            label: 'Allergies',
+            value: props.patient.allergies,
+        },
+        {
+            label: 'Maladies chroniques',
+            value: props.patient.antecedents_medical,
+        },
+        {
+            label: 'Antécédents chirurgicaux',
+            value: props.patient.antecedents_surgical,
+        },
+        {
+            label: 'Antécédents familiaux',
+            value: props.patient.antecedents_family,
+        },
+        {
+            label: 'Autres antécédents',
+            value: props.patient.antecedents_other,
+        },
+    ].filter((field) => field.value !== null && field.value.trim() !== ''),
 );
 
 const generatedDocuments = computed(() =>
@@ -474,6 +504,33 @@ const categoryLabel = (category: string | null): string =>
                 </div>
 
                 <div class="space-y-6">
+                    <Card v-if="patientHistoryFields.length">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <HeartPulse class="size-4 text-brand" />
+                                Antécédents du patient
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="space-y-3">
+                            <div
+                                v-for="field in patientHistoryFields"
+                                :key="field.label"
+                                class="rounded-lg bg-muted/40 px-3 py-2"
+                            >
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
+                                    {{ field.label }}
+                                </p>
+                                <p
+                                    class="mt-1 text-sm whitespace-pre-line text-foreground"
+                                >
+                                    {{ field.value }}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <!-- Measurements -->
                     <Card v-if="measurements.length">
                         <CardHeader>

@@ -276,8 +276,7 @@ function submit(): void {
                         <p class="min-w-0">
                             Ces coordonnées créent un dossier de cabinet. Gardez
                             cette adresse e-mail : elle servira à créer votre
-                            compte et à associer le code d’activation. Le lien
-                            de téléchargement est personnel et temporaire.
+                            compte et à associer le code d’activation. Le lien de téléchargement est personnel et temporaire et valable uniquement dans cette session.
                         </p>
                     </div>
                 </div>

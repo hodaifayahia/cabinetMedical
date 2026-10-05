@@ -29,6 +29,11 @@ trait PatientValidationRules
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
             'blood_group' => ['nullable', Rule::enum(BloodGroup::class)],
+            'allergies' => ['nullable', 'string', 'max:5000'],
+            'antecedents_medical' => ['nullable', 'string', 'max:5000'],
+            'antecedents_surgical' => ['nullable', 'string', 'max:5000'],
+            'antecedents_family' => ['nullable', 'string', 'max:5000'],
+            'antecedents_other' => ['nullable', 'string', 'max:5000'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
     }
