@@ -136,6 +136,31 @@ const details = computed(() =>
     ].filter((detail) => detail.value),
 );
 
+const medicalHistory = computed(() =>
+    [
+        {
+            label: 'Allergies',
+            value: props.patient.allergies,
+        },
+        {
+            label: 'Maladies chroniques',
+            value: props.patient.antecedents_medical,
+        },
+        {
+            label: 'Antécédents chirurgicaux',
+            value: props.patient.antecedents_surgical,
+        },
+        {
+            label: 'Antécédents familiaux',
+            value: props.patient.antecedents_family,
+        },
+        {
+            label: 'Autres antécédents',
+            value: props.patient.antecedents_other,
+        },
+    ].filter((item) => Boolean(item.value && item.value.trim().length > 0)),
+);
+
 const lastVisit = computed(
     () => props.overview.recent_consultations[0] ?? null,
 );
@@ -449,6 +474,32 @@ const lastVisit = computed(
                         <p class="mt-1 text-sm whitespace-pre-line">
                             {{ props.patient.notes }}
                         </p>
+                    </div>
+                    <div
+                        v-if="medicalHistory.length"
+                        class="mt-4 border-t pt-3"
+                    >
+                        <p
+                            class="flex items-center gap-1.5 text-xs text-muted-foreground"
+                        >
+                            <HeartPulse class="size-3.5" /> Antécédents médicaux
+                        </p>
+                        <dl class="mt-2 grid gap-2">
+                            <div
+                                v-for="item in medicalHistory"
+                                :key="item.label"
+                                class="grid gap-0.5"
+                            >
+                                <dt class="text-xs text-muted-foreground">
+                                    {{ item.label }}
+                                </dt>
+                                <dd
+                                    class="text-sm font-medium whitespace-pre-line"
+                                >
+                                    {{ item.value }}
+                                </dd>
+                            </div>
+                        </dl>
                     </div>
                     <div
                         v-if="overview.merged.length"

@@ -112,7 +112,12 @@ class ConsultationHistoryControllerTest extends TestCase
     public function test_detail_includes_clinical_fields_prescriptions_documents_and_pricing(): void
     {
         $doctor = $this->doctor();
-        $patient = Patient::factory()->create();
+        $patient = Patient::factory()->create([
+            'allergies' => 'Aspirine',
+            'antecedents_medical' => 'Diabète',
+            'antecedents_surgical' => 'Appendicectomie',
+            'antecedents_family' => 'Frère hypertendu',
+        ]);
 
         $consultation = Consultation::query()->create([
             'patient_id' => $patient->id,
@@ -168,6 +173,10 @@ class ConsultationHistoryControllerTest extends TestCase
                 ->where('consultation.payment_amount', 2500)
                 ->where('consultation.is_paid', true)
                 ->where('consultation.payment_method', 'Espèces')
+                ->where('patient.allergies', 'Aspirine')
+                ->where('patient.antecedents_medical', 'Diabète')
+                ->where('patient.antecedents_surgical', 'Appendicectomie')
+                ->where('patient.antecedents_family', 'Frère hypertendu')
                 ->has('prescriptions', 1)
                 ->where('prescriptions.0.id', $prescription->id)
                 ->where('prescriptions.0.document_id', $ordonnance->id)

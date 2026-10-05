@@ -133,6 +133,10 @@ class PatientControllerTest extends TestCase
             'last_name' => 'Lovelace',
             'gender' => 'female',
             'phone' => '0555123456',
+            'allergies' => 'Pénicilline',
+            'antecedents_medical' => 'Diabète',
+            'antecedents_surgical' => 'Appendicectomie',
+            'antecedents_family' => 'Frère hypertendu',
         ]);
 
         $response->assertSessionHasNoErrors()->assertRedirect();
@@ -142,6 +146,10 @@ class PatientControllerTest extends TestCase
             'last_name' => 'Lovelace',
             'gender' => 'female',
             'created_by' => $user->id,
+            'allergies' => 'Pénicilline',
+            'antecedents_medical' => 'Diabète',
+            'antecedents_surgical' => 'Appendicectomie',
+            'antecedents_family' => 'Frère hypertendu',
         ]);
     }
 
@@ -173,14 +181,23 @@ class PatientControllerTest extends TestCase
     public function test_authorized_user_can_view_a_patient(): void
     {
         $user = $this->userWithRole(RoleName::RECEPTIONIST);
-        $patient = Patient::factory()->create();
+        $patient = Patient::factory()->create([
+            'allergies' => 'Aspirine',
+            'antecedents_medical' => 'Asthme',
+            'antecedents_surgical' => 'Aucun',
+            'antecedents_family' => 'Sœur diabétique',
+        ]);
 
         $this->actingAs($user)
             ->get(route('app.patients.show', $patient))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('patients/Show')
-                ->where('patient.id', $patient->id),
+                ->where('patient.id', $patient->id)
+                ->where('patient.allergies', 'Aspirine')
+                ->where('patient.antecedents_medical', 'Asthme')
+                ->where('patient.antecedents_surgical', 'Aucun')
+                ->where('patient.antecedents_family', 'Sœur diabétique'),
             );
     }
 

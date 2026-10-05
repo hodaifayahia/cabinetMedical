@@ -91,6 +91,11 @@ export type PatientDetail = {
     emergency_contact_name: string | null;
     emergency_contact_phone: string | null;
     blood_group: string | null;
+    allergies: string | null;
+    antecedents_medical: string | null;
+    antecedents_surgical: string | null;
+    antecedents_family: string | null;
+    antecedents_other: string | null;
     notes: string | null;
     created_at: string | null;
     updated_at: string | null;

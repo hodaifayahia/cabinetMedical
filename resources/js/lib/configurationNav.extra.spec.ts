@@ -75,7 +75,7 @@ describe('configuration navigation (extended)', () => {
             'Catalogues',
             'Finance',
         ]);
-        expect(groups.flatMap((group) => group.links)).toHaveLength(7);
+        expect(groups.flatMap((group) => group.links)).toHaveLength(8);
     });
 
     it('drops a group entirely when none of its links are visible', () => {

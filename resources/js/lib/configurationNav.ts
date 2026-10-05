@@ -70,6 +70,11 @@ export const configurationNav: ConfigGroup[] = [
                 href: '/app/configuration/ref/exams',
                 permissions: ['configuration.manage'],
             },
+            {
+                title: 'Modèles de documents',
+                href: '/app/configuration/document-templates',
+                permissions: ['configuration.manage'],
+            },
         ],
     },
     {

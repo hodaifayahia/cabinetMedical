@@ -53,6 +53,11 @@ const form = useForm({
     emergency_contact_name: props.patient?.emergency_contact_name ?? '',
     emergency_contact_phone: props.patient?.emergency_contact_phone ?? '',
     blood_group: props.patient?.blood_group ?? '',
+    allergies: props.patient?.allergies ?? '',
+    antecedents_medical: props.patient?.antecedents_medical ?? '',
+    antecedents_surgical: props.patient?.antecedents_surgical ?? '',
+    antecedents_family: props.patient?.antecedents_family ?? '',
+    antecedents_other: props.patient?.antecedents_other ?? '',
     notes: props.patient?.notes ?? '',
 });
 
@@ -70,6 +75,11 @@ const tabFields: Record<TabKey, FormField[]> = {
         'blood_group',
         'emergency_contact_name',
         'emergency_contact_phone',
+        'allergies',
+        'antecedents_medical',
+        'antecedents_surgical',
+        'antecedents_family',
+        'antecedents_other',
         'notes',
     ],
 };
@@ -363,6 +373,74 @@ const submit = () => {
                                 />
                             </div>
                         </div>
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="allergies">
+                            Allergies et réactions connues
+                        </Label>
+                        <Textarea
+                            id="allergies"
+                            v-model="form.allergies"
+                            rows="3"
+                            placeholder="Ex. pénicilline, latex, iode"
+                        />
+                        <InputError :message="form.errors.allergies" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="antecedents_medical">
+                            Maladies chroniques et antécédents médicaux
+                        </Label>
+                        <Textarea
+                            id="antecedents_medical"
+                            v-model="form.antecedents_medical"
+                            rows="3"
+                            placeholder="Ex. diabète, HTA, asthme"
+                        />
+                        <InputError
+                            :message="form.errors.antecedents_medical"
+                        />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="antecedents_surgical">
+                            Antécédents chirurgicaux
+                        </Label>
+                        <Textarea
+                            id="antecedents_surgical"
+                            v-model="form.antecedents_surgical"
+                            rows="3"
+                            placeholder="Ex. appendicectomie en 2020"
+                        />
+                        <InputError
+                            :message="form.errors.antecedents_surgical"
+                        />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="antecedents_family">
+                            Antécédents familiaux
+                        </Label>
+                        <Textarea
+                            id="antecedents_family"
+                            v-model="form.antecedents_family"
+                            rows="3"
+                            placeholder="Ex. frère diabétique, sœur hypertendue"
+                        />
+                        <InputError :message="form.errors.antecedents_family" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="antecedents_other">
+                            Autres antécédents utiles
+                        </Label>
+                        <Textarea
+                            id="antecedents_other"
+                            v-model="form.antecedents_other"
+                            rows="3"
+                        />
+                        <InputError :message="form.errors.antecedents_other" />
                     </div>
 
                     <div class="grid gap-2">
