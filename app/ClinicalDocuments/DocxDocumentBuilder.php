@@ -2,6 +2,8 @@
 
 namespace App\ClinicalDocuments;
 
+use DOMElement;
+use DOMNode;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
@@ -18,6 +20,7 @@ final class DocxDocumentBuilder
         string $body,
         array $variables,
         string $paperSize,
+        string $bodyFormat = 'text',
     ): int {
         $zip = new ZipArchive;
         $result = $zip->open($absolutePath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
@@ -29,10 +32,11 @@ final class DocxDocumentBuilder
         $logo = $this->resolveLogo($variables['cabinet.logo_path'] ?? null);
         $documentXml = $this->documentXml(
             $title,
-            $this->replaceVariables($body, $variables),
+            $bodyFormat === 'html' ? $body : $this->replaceVariables($body, $variables),
             $variables,
             $paperSize,
             $logo,
+            $bodyFormat,
         );
 
         $zip->addFromString('[Content_Types].xml', $this->contentTypesXml($logo));
@@ -71,6 +75,7 @@ final class DocxDocumentBuilder
         array $variables,
         string $paperSize,
         ?array $logo,
+        string $bodyFormat,
     ): string {
         [$width, $height, $margin] = strtoupper($paperSize) === 'A5'
             ? [8391, 11906, 720]
@@ -106,10 +111,14 @@ final class DocxDocumentBuilder
             $this->paragraph(''),
         );
 
-        foreach (preg_split('/\R/u', $body) ?: [] as $line) {
-            $heading = str_starts_with($line, '## ');
-            $text = $heading ? substr($line, 3) : $line;
-            $paragraphs[] = $this->paragraph($text, bold: $heading, fontSize: $heading ? 23 : 22);
+        if ($bodyFormat === 'html') {
+            array_push($paragraphs, ...$this->richParagraphs($body, $variables));
+        } else {
+            foreach (preg_split('/\R/u', $body) ?: [] as $line) {
+                $heading = str_starts_with($line, '## ');
+                $text = $heading ? substr($line, 3) : $line;
+                $paragraphs[] = $this->paragraph($text, bold: $heading, fontSize: $heading ? 23 : 22);
+            }
         }
 
         $bodyXml = implode('', $paragraphs);
@@ -156,6 +165,120 @@ final class DocxDocumentBuilder
 
         return '<w:p>'.$paragraphProperties.'<w:r>'.$runProperties
             .'<w:t xml:space="preserve">'.$this->xml($text).'</w:t></w:r></w:p>';
+    }
+
+    /** @param array<string, string> $variables
+     *  @return list<string>
+     */
+    private function richParagraphs(string $html, array $variables): array
+    {
+        $body = app(DocumentTemplateContent::class)->body($html);
+        $paragraphs = [];
+
+        foreach ($body->childNodes as $node) {
+            if ($node instanceof DOMElement && in_array($node->tagName, ['ul', 'ol'], true)) {
+                $index = 1;
+
+                foreach ($node->childNodes as $item) {
+                    if ($item instanceof DOMElement && $item->tagName === 'li') {
+                        $prefix = $node->tagName === 'ol' ? $index++.'. ' : '• ';
+                        $paragraphs[] = $this->richParagraph($item, $variables, 'li', $prefix);
+                    }
+                }
+            } elseif ($node instanceof DOMElement && in_array($node->tagName, ['p', 'h2', 'h3', 'li'], true)) {
+                $paragraphs[] = $this->richParagraph($node, $variables, $node->tagName);
+            } elseif (trim($node->textContent ?? '') !== '') {
+                $paragraphs[] = '<w:p>'.$this->richRuns($node, $variables).'</w:p>';
+            }
+        }
+
+        return $paragraphs;
+    }
+
+    /** @param array<string, string> $variables */
+    private function richParagraph(DOMElement $node, array $variables, string $tag, string $prefix = ''): string
+    {
+        $heading = in_array($tag, ['h2', 'h3'], true);
+        $size = $tag === 'h2' ? 26 : ($tag === 'h3' ? 23 : 22);
+        $properties = $tag === 'li'
+            ? '<w:pPr><w:ind w:left="540" w:hanging="260"/></w:pPr>'
+            : ($heading ? '<w:pPr><w:spacing w:before="180" w:after="100"/></w:pPr>' : '');
+        $content = $prefix !== '' ? $this->richTextRun($prefix, $variables, false, false, false, $size) : '';
+
+        foreach ($node->childNodes as $child) {
+            $content .= $this->richRuns($child, $variables, $heading, false, false, $size);
+        }
+
+        return '<w:p>'.$properties.$content.'</w:p>';
+    }
+
+    /** @param array<string, string> $variables */
+    private function richRuns(
+        DOMNode $node,
+        array $variables,
+        bool $bold = false,
+        bool $italic = false,
+        bool $underline = false,
+        int $size = 22,
+    ): string {
+        if ($node->nodeType === XML_TEXT_NODE) {
+            return $this->richTextRun($node->nodeValue ?? '', $variables, $bold, $italic, $underline, $size);
+        }
+
+        if (! $node instanceof DOMElement) {
+            return '';
+        }
+
+        if ($node->tagName === 'br') {
+            return '<w:r><w:br/></w:r>';
+        }
+
+        $bold = $bold || in_array($node->tagName, ['strong', 'b'], true);
+        $italic = $italic || in_array($node->tagName, ['em', 'i'], true);
+        $underline = $underline || $node->tagName === 'u';
+        $xml = '';
+
+        foreach ($node->childNodes as $child) {
+            $xml .= $this->richRuns($child, $variables, $bold, $italic, $underline, $size);
+        }
+
+        return $xml;
+    }
+
+    /** @param array<string, string> $variables */
+    private function richTextRun(
+        string $text,
+        array $variables,
+        bool $bold,
+        bool $italic,
+        bool $underline,
+        int $size,
+    ): string {
+        $text = $this->replaceVariables($text, $variables);
+
+        if ($text === '') {
+            return '';
+        }
+
+        $properties = '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>'
+            .($bold ? '<w:b/>' : '')
+            .($italic ? '<w:i/>' : '')
+            .($underline ? '<w:u w:val="single"/>' : '')
+            .'<w:sz w:val="'.$size.'"/></w:rPr>';
+        $parts = preg_split('/\R/u', $text) ?: [$text];
+        $xml = '';
+
+        foreach ($parts as $index => $part) {
+            if ($index > 0) {
+                $xml .= '<w:r><w:br/></w:r>';
+            }
+
+            if ($part !== '') {
+                $xml .= '<w:r>'.$properties.'<w:t xml:space="preserve">'.$this->xml($part).'</w:t></w:r>';
+            }
+        }
+
+        return $xml;
     }
 
     /**

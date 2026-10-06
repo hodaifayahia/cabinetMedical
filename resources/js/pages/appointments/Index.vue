@@ -26,7 +26,8 @@ import {
     UserCheck,
     X,
 } from '@lucide/vue';
-import { computed, ref, shallowRef, watch } from 'vue';
+import { isTauri } from '@tauri-apps/api/core';
+import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import AvailabilityCalendar from '@/components/appointments/AvailabilityCalendar.vue';
 import Heading from '@/components/Heading.vue';
@@ -105,6 +106,12 @@ const props = defineProps<{
 }>();
 
 usePage();
+
+const desktopRuntime = ref(false);
+
+onMounted(() => {
+    desktopRuntime.value = isTauri();
+});
 
 // ----- Filters -----
 const dateFormatter = new DateFormatter('fr-FR', {
@@ -359,6 +366,13 @@ const bookingProvenance = computed(() => {
     return labels;
 });
 
+const familyBookingCount = computed(
+    () =>
+        props.appointments.data.filter(
+            (appointment) => appointment.booking?.booked_for?.type === 'family',
+        ).length,
+);
+
 const waitingAppointments = computed(() =>
     props.appointments.data.filter(
         (appointment) =>
@@ -421,6 +435,9 @@ const syncMobileAppointments = () => {
 
 // Start (or resume) a consultation from the expanded waiting-room card only.
 // Confirm/check-in controls remain on the appointment list.
+const consultationStartTarget = ref<AppointmentListItem | null>(null);
+const startingConsultation = ref(false);
+
 const startConsultation = (appointment: AppointmentListItem) => {
     if (appointment.consultation_id) {
         router.visit(`/app/consultations/${appointment.consultation_id}`);
@@ -428,8 +445,17 @@ const startConsultation = (appointment: AppointmentListItem) => {
         return;
     }
 
+    consultationStartTarget.value = appointment;
+};
+
+const confirmStartConsultation = () => {
+    if (!consultationStartTarget.value || startingConsultation.value) {
+        return;
+    }
+
+    startingConsultation.value = true;
     router.post(
-        `/app/consultations/${appointment.id}/start`,
+        `/app/consultations/${consultationStartTarget.value.id}/start`,
         {},
         {
             preserveScroll: true,
@@ -438,6 +464,12 @@ const startConsultation = (appointment: AppointmentListItem) => {
                     Object.values(errors)[0] ??
                         'Impossible de commencer la consultation.',
                 ),
+            onSuccess: () => {
+                consultationStartTarget.value = null;
+            },
+            onFinish: () => {
+                startingConsultation.value = false;
+            },
         },
     );
 };
@@ -506,8 +538,10 @@ const availablePrestations = ref<AppointmentPrestationOption[]>([
 const prestationSearch = ref('');
 const prestationOpen = ref(false);
 const prestationEditorMode = ref<'create' | 'edit' | null>(null);
+const prestationDialogOpen = ref(false);
 const prestationEditingOption = ref<AppointmentPrestationOption | null>(null);
 const prestationEditorValue = ref('');
+const prestationEditorPrice = ref('');
 const prestationEditorError = ref('');
 const prestationProcessing = ref(false);
 
@@ -754,24 +788,40 @@ const handlePatientSaved = (patient?: AppointmentPatientOption) => {
 };
 
 const startPrestationCreate = () => {
+    prestationOpen.value = false;
     prestationEditorMode.value = 'create';
     prestationEditingOption.value = null;
     prestationEditorValue.value = '';
+    prestationEditorPrice.value = '';
     prestationEditorError.value = '';
+    prestationDialogOpen.value = true;
 };
 
 const startPrestationEdit = (prestation: AppointmentPrestationOption) => {
+    prestationOpen.value = false;
     prestationEditorMode.value = 'edit';
     prestationEditingOption.value = prestation;
     prestationEditorValue.value = prestation.label;
+    prestationEditorPrice.value = '';
     prestationEditorError.value = '';
+    prestationDialogOpen.value = true;
 };
 
 const cancelPrestationEditor = () => {
+    prestationDialogOpen.value = false;
     prestationEditorMode.value = null;
     prestationEditingOption.value = null;
     prestationEditorValue.value = '';
+    prestationEditorPrice.value = '';
     prestationEditorError.value = '';
+};
+
+const updatePrestationDialogOpen = (open: boolean) => {
+    prestationDialogOpen.value = open;
+
+    if (!open) {
+        cancelPrestationEditor();
+    }
 };
 
 const selectPrestation = (prestation: AppointmentPrestationOption) => {
@@ -786,13 +836,15 @@ const hasSlots = computed(() => (dayData.value?.slots.length ?? 0) > 0);
 const filteredPatients = computed(() => {
     const query = patientSearch.value.trim().toLowerCase();
 
-    const matches = query
-        ? patientOptions.value.filter(
-              (patient) =>
-                  patient.full_name.toLowerCase().includes(query) ||
-                  patient.patient_number.toLowerCase().includes(query),
-          )
-        : patientOptions.value;
+    if (!query) {
+        return [];
+    }
+
+    const matches = patientOptions.value.filter(
+        (patient) =>
+            patient.full_name.toLowerCase().includes(query) ||
+            patient.patient_number.toLowerCase().includes(query),
+    );
 
     return matches.slice(0, 50);
 });
@@ -816,7 +868,27 @@ const savePrestation = async () => {
     prestationProcessing.value = true;
     prestationEditorError.value = '';
 
+    const trimmedPrice = prestationEditorPrice.value.trim();
+
+    if (prestationEditorMode.value === 'create' && trimmedPrice === '') {
+        prestationEditorError.value = 'Saisissez le prix de l’acte.';
+        prestationProcessing.value = false;
+
+        return;
+    }
+
+    const price =
+        trimmedPrice === '' ? null : Number(trimmedPrice.replace(',', '.'));
+
+    if (price !== null && (Number.isNaN(price) || price < 0)) {
+        prestationEditorError.value = 'Saisissez un prix valide.';
+        prestationProcessing.value = false;
+
+        return;
+    }
+
     try {
+        const editing = prestationEditingOption.value !== null;
         const response = prestationEditingOption.value
             ? await putJson<{ prestation: AppointmentPrestationOption }>(
                   '/app/appointments/prestations/' +
@@ -827,7 +899,7 @@ const savePrestation = async () => {
               )
             : await postJson<{ prestation: AppointmentPrestationOption }>(
                   '/app/appointments/prestations',
-                  { name },
+                  { name, price },
               );
         const saved = response.prestation;
 
@@ -846,13 +918,13 @@ const savePrestation = async () => {
         form.prestation = saved.label;
         prestationSearch.value = '';
         cancelPrestationEditor();
-        toast.success(
-            prestationEditingOption.value ? 'Acte mis à jour.' : 'Acte ajouté.',
-        );
+        toast.success(editing ? 'Acte mis à jour.' : 'Acte ajouté.');
     } catch (error) {
         if (isValidationError(error)) {
             prestationEditorError.value =
-                error.errors.name?.[0] ?? 'Saisissez un nom d’acte valide.';
+                error.errors.name?.[0] ??
+                error.errors.price?.[0] ??
+                'Vérifiez le nom et le prix de l’acte.';
         } else {
             toast.error(
                 'Impossible d’enregistrer cet acte. Veuillez réessayer.',
@@ -1065,6 +1137,32 @@ const printAppointments = () => {
                 </div>
             </div>
 
+            <aside
+                v-if="desktopRuntime && familyBookingCount > 0"
+                class="mt-5 flex items-center gap-4 rounded-2xl border border-brand/15 bg-white px-4 py-3 shadow-[0_4px_18px_rgba(38,70,91,0.05)]"
+                aria-label="Réservations pour un membre de la famille"
+            >
+                <img
+                    src="/brands/Smartphone%20clinic%20finder-1.png"
+                    alt=""
+                    class="size-16 shrink-0 object-contain"
+                    loading="lazy"
+                />
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-800">
+                        Réservations pour un proche
+                        <span
+                            class="ml-1 inline-flex rounded-full bg-brand-soft px-2 py-0.5 text-xs font-bold text-brand"
+                            >{{ familyBookingCount }}</span
+                        >
+                    </p>
+                    <p class="mt-0.5 text-xs leading-5 text-slate-500">
+                        Le nom du proche et le lien familial apparaissent sous
+                        le nom du patient.
+                    </p>
+                </div>
+            </aside>
+
             <div
                 class="mt-7 grid gap-5 xl:grid-cols-[minmax(0,1.72fr)_minmax(320px,0.82fr)]"
             >
@@ -1122,7 +1220,15 @@ const printAppointments = () => {
                             v-if="appointments.data.length === 0"
                             class="rounded-2xl border border-white/80 bg-white px-5 py-12 text-center shadow-[0_4px_18px_rgba(38,70,91,0.06)]"
                         >
+                            <img
+                                v-if="desktopRuntime"
+                                src="/brands/Empty%20Calendar%20with%20Clock%20and%20Teal%20Plus-5.png"
+                                alt=""
+                                class="mx-auto size-28 object-contain"
+                                loading="lazy"
+                            />
                             <CalendarDays
+                                v-else
                                 class="mx-auto size-8 text-slate-300"
                             />
                             <p
@@ -1835,18 +1941,29 @@ const printAppointments = () => {
         <!-- Booking modal: patient search on top, calendar left, slots right -->
         <Dialog v-model:open="showBooking">
             <DialogScrollContent
-                class="max-h-[calc(100vh-2rem)] sm:max-w-6xl xl:max-w-7xl"
+                class="flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl"
             >
-                <DialogHeader>
-                    <DialogTitle>Prendre un rendez-vous</DialogTitle>
-                    <DialogDescription>
-                        Recherchez un patient, choisissez une journée, puis un
-                        créneau disponible.
-                    </DialogDescription>
+                <DialogHeader class="shrink-0 border-b px-5 py-4 pr-14">
+                    <div class="flex items-center gap-3">
+                        <img
+                            v-if="desktopRuntime"
+                            src="/brands/Appointment%20calendar%20with%20checkmark%20confirmation-2.png"
+                            alt=""
+                            class="size-12 object-contain"
+                            loading="lazy"
+                        />
+                        <div class="min-w-0">
+                            <DialogTitle>Prendre un rendez-vous</DialogTitle>
+                            <DialogDescription>
+                                Recherchez un patient, choisissez une journée,
+                                puis un créneau disponible.
+                            </DialogDescription>
+                        </div>
+                    </div>
                 </DialogHeader>
 
                 <div
-                    class="grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]"
+                    class="grid min-h-0 flex-1 gap-5 overflow-y-auto overscroll-contain px-5 py-4 xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]"
                 >
                     <!-- Left column: patient, prestation, reason -->
                     <div class="space-y-5">
@@ -1917,34 +2034,40 @@ const printAppointments = () => {
                                         class="pl-8"
                                         placeholder="Rechercher par nom ou numéro de dossier"
                                         autocomplete="off"
+                                        @keydown.esc="patientSearch = ''"
                                     />
-                                </div>
-                                <div
-                                    class="max-h-56 overflow-y-auto rounded-md border border-sidebar-border/70 dark:border-sidebar-border"
-                                >
-                                    <p
-                                        v-if="filteredPatients.length === 0"
-                                        class="px-3 py-4 text-center text-sm text-muted-foreground"
+                                    <div
+                                        v-if="patientSearch.trim()"
+                                        class="absolute top-full right-0 left-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-md border border-sidebar-border/70 bg-popover shadow-lg dark:border-sidebar-border"
+                                        role="listbox"
+                                        aria-label="Résultats des patients"
                                     >
-                                        Aucun patient trouvé.
-                                    </p>
-                                    <button
-                                        v-for="patient in filteredPatients"
-                                        :key="patient.id"
-                                        type="button"
-                                        class="flex w-full items-center justify-between gap-2 border-b border-sidebar-border/40 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-accent"
-                                        @click="choosePatient(patient)"
-                                    >
-                                        <span
-                                            class="font-medium text-foreground"
-                                            >{{ patient.full_name }}</span
+                                        <p
+                                            v-if="filteredPatients.length === 0"
+                                            class="px-3 py-4 text-center text-sm text-muted-foreground"
                                         >
-                                        <span
-                                            class="font-mono text-xs text-muted-foreground"
+                                            Aucun patient trouvé.
+                                        </p>
+                                        <button
+                                            v-for="patient in filteredPatients"
+                                            :key="patient.id"
+                                            type="button"
+                                            role="option"
+                                            :aria-selected="false"
+                                            class="flex w-full items-center justify-between gap-2 border-b border-sidebar-border/40 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-accent"
+                                            @click="choosePatient(patient)"
                                         >
-                                            {{ patient.patient_number }}
-                                        </span>
-                                    </button>
+                                            <span
+                                                class="font-medium text-foreground"
+                                                >{{ patient.full_name }}</span
+                                            >
+                                            <span
+                                                class="font-mono text-xs text-muted-foreground"
+                                            >
+                                                {{ patient.patient_number }}
+                                            </span>
+                                        </button>
+                                    </div>
                                 </div>
                             </template>
                             <InputError :message="form.errors.patient_id" />
@@ -2084,61 +2207,7 @@ const printAppointments = () => {
                                         v-if="permissions.manageActs"
                                         class="border-t border-sidebar-border/70 p-2 dark:border-sidebar-border"
                                     >
-                                        <template v-if="prestationEditorMode">
-                                            <Label
-                                                class="text-xs text-muted-foreground"
-                                            >
-                                                {{
-                                                    prestationEditorMode ===
-                                                    'edit'
-                                                        ? 'Renommer l’acte'
-                                                        : 'Nouvel acte'
-                                                }}
-                                            </Label>
-                                            <div
-                                                class="mt-1 flex items-center gap-2"
-                                            >
-                                                <Input
-                                                    v-model="
-                                                        prestationEditorValue
-                                                    "
-                                                    class="h-8"
-                                                    placeholder="Nom de l’acte"
-                                                    autocomplete="off"
-                                                    @keydown.enter.prevent="
-                                                        savePrestation
-                                                    "
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    :disabled="
-                                                        prestationProcessing
-                                                    "
-                                                    @click="savePrestation"
-                                                >
-                                                    Enregistrer
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    @click="
-                                                        cancelPrestationEditor
-                                                    "
-                                                >
-                                                    Annuler
-                                                </Button>
-                                            </div>
-                                            <p
-                                                v-if="prestationEditorError"
-                                                class="mt-1 text-xs text-destructive"
-                                            >
-                                                {{ prestationEditorError }}
-                                            </p>
-                                        </template>
                                         <Button
-                                            v-else
                                             type="button"
                                             variant="ghost"
                                             size="sm"
@@ -2329,7 +2398,7 @@ const printAppointments = () => {
                     </div>
                 </div>
 
-                <DialogFooter>
+                <DialogFooter class="shrink-0 border-t px-5 py-3">
                     <Button
                         type="button"
                         variant="outline"
@@ -2344,6 +2413,87 @@ const printAppointments = () => {
                     >
                 </DialogFooter>
             </DialogScrollContent>
+        </Dialog>
+
+        <!-- Keep prestation creation in a focused dialog, outside the search popover. -->
+        <Dialog
+            :open="prestationDialogOpen"
+            @update:open="updatePrestationDialogOpen"
+        >
+            <DialogContent class="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>
+                        {{
+                            prestationEditorMode === 'edit'
+                                ? 'Renommer la prestation'
+                                : 'Ajouter une prestation'
+                        }}
+                    </DialogTitle>
+                    <DialogDescription>
+                        Saisissez le nom et le prix de l’acte. Il sera proposé
+                        dans les prochains rendez-vous.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form class="grid gap-4" @submit.prevent="savePrestation">
+                    <div class="grid gap-2">
+                        <Label for="booking-prestation-name"
+                            >Nom de la prestation</Label
+                        >
+                        <Input
+                            id="booking-prestation-name"
+                            v-model="prestationEditorValue"
+                            autofocus
+                            maxlength="150"
+                            placeholder="Ex. Consultation générale"
+                            autocomplete="off"
+                        />
+                    </div>
+                    <div
+                        v-if="prestationEditorMode === 'create'"
+                        class="grid gap-2"
+                    >
+                        <Label for="booking-prestation-price">Prix (DA)</Label>
+                        <Input
+                            id="booking-prestation-price"
+                            v-model="prestationEditorPrice"
+                            type="number"
+                            min="0"
+                            max="9999999"
+                            step="0.01"
+                            placeholder="Ex. 2000"
+                            inputmode="decimal"
+                        />
+                    </div>
+                    <p
+                        v-if="prestationEditorError"
+                        class="text-sm text-destructive"
+                    >
+                        {{ prestationEditorError }}
+                    </p>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            :disabled="prestationProcessing"
+                            @click="cancelPrestationEditor"
+                        >
+                            Annuler
+                        </Button>
+                        <Button type="submit" :disabled="prestationProcessing">
+                            <LoaderCircle
+                                v-if="prestationProcessing"
+                                class="size-4 animate-spin"
+                            />
+                            {{
+                                prestationProcessing
+                                    ? 'Enregistrement…'
+                                    : 'Enregistrer'
+                            }}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
         </Dialog>
 
         <!-- Patient create / edit dialog -->
@@ -2394,6 +2544,50 @@ const printAppointments = () => {
                     @cancel="patientFormOpen = false"
                 />
             </DialogScrollContent>
+        </Dialog>
+
+        <!-- Start consultation dialog -->
+        <Dialog
+            :open="consultationStartTarget !== null"
+            @update:open="
+                (open) => {
+                    if (!open && !startingConsultation)
+                        consultationStartTarget = null;
+                }
+            "
+        >
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Démarrer la consultation</DialogTitle>
+                    <DialogDescription>
+                        Ouvrir une consultation pour
+                        <strong>{{
+                            consultationStartTarget?.patient_name
+                        }}</strong>
+                        <template v-if="consultationStartTarget?.time_label">
+                            à {{ consultationStartTarget.time_label }}</template
+                        >
+                        ?
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        :disabled="startingConsultation"
+                        @click="consultationStartTarget = null"
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        type="button"
+                        :disabled="startingConsultation"
+                        @click="confirmStartConsultation"
+                    >
+                        {{ startingConsultation ? 'Ouverture…' : 'Démarrer' }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
         </Dialog>
 
         <!-- Cancel appointment dialog -->

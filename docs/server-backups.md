@@ -1,9 +1,10 @@
 # Online service backups
 
 The online service's database holds every clinic's data (accounts, patient
-bookings, synced appointments, AI usage). Every night one encrypted copy of it
-leaves the hosting twice: to the platform's Google Drive and to the operator's
-Windows PC. The admin panel page **Paramètres › Sauvegardes serveur**
+bookings, synced appointments, AI usage). Encrypted copies can be created by
+the hPanel nightly cron or, while the operator's PC is running, by its scheduled
+pull task. Google Drive is a separate destination that starts working after
+OAuth is configured and connected. The admin panel page **Paramètres › Sauvegardes serveur**
 (`/admin/server-backups`) shows the last copy in each place and flags what is
 missing with a red **Requis** badge.
 
@@ -38,7 +39,8 @@ the page turns red when the PC has taken no copy for a week.
 
 | Problem | Level |
 |---|---|
-| Google not configured, or no Drive account connected | Requis |
+| Google not configured, or no Drive account connected while the PC copy is recent | À compléter |
+| Google not configured, or no Drive account connected and the PC copy is stale | Requis |
 | The last backup failed to reach Drive, was made while no Drive was connected, or is still « En attente » an hour later (the upload was cut off) | Requis |
 | No backup for 30 hours | Requis |
 | No PC copy for 72 hours (or none yet) | À vérifier |
@@ -116,6 +118,7 @@ DRCLICK_SSH_PORT=65002
 DRCLICK_SSH_KEY=~/.ssh/clickdz_hostinger_deploy
 DRCLICK_REMOTE_APP_DIR=domains/drclickdz.com/backend-laravel
 DRCLICK_PC_BACKUP_DIR="/mnt/c/Users/<you>/Documents/Drclick Backups/Serveur"
+DRCLICK_ENSURE_REMOTE_BACKUP=1
 ENV
 # Save the server's host key once: the task runs with BatchMode, so an
 # unknown or changed host key makes every run fail.
@@ -131,6 +134,10 @@ powershell -ExecutionPolicy Bypass -File scripts\server\install-pc-pull-task.ps1
 
 The task runs daily at 09:00 and ten minutes after logon, and catches up when
 the PC was off. Its log is `~/.local/state/drclick-backup/pull.log` in WSL.
+With `DRCLICK_ENSURE_REMOTE_BACKUP=1`, the PC first creates a new encrypted
+server archive if the latest one is older than 18 hours. A recent hPanel cron
+archive is reused. Keep the hPanel cron as well so backups continue while the
+PC is turned off.
 
 ## When the domain or the hosting account changes
 

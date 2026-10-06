@@ -72,6 +72,7 @@ final class ClinicalDocumentManager
                 $body,
                 $variables,
                 $paperSize,
+                $template['body_format'] ?? 'text',
             );
 
             return Document::query()->create([
@@ -192,6 +193,11 @@ final class ClinicalDocumentManager
             'patient.city' => (string) ($patient->city ?? ''),
             'patient.blood_group' => $patient->blood_group->value ?? '',
             'patient.allergies' => (string) ($patient->allergies ?? ''),
+            'patient.antecedents_medical' => (string) ($patient->antecedents_medical ?? ''),
+            'patient.antecedents_surgical' => (string) ($patient->antecedents_surgical ?? ''),
+            'patient.antecedents_family' => (string) ($patient->antecedents_family ?? ''),
+            'patient.antecedents_gyneco' => (string) ($patient->antecedents_gyneco ?? ''),
+            'patient.antecedents_other' => (string) ($patient->antecedents_other ?? ''),
             'patient.notes' => (string) ($patient->notes ?? ''),
             'cabinet.name' => $branding['clinic_name'],
             'cabinet.address' => $branding['full_address'],

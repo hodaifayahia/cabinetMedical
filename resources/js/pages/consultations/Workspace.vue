@@ -38,6 +38,7 @@ import BilansPanel from '@/components/consultations/BilansPanel.vue';
 import CourbesPanel from '@/components/consultations/CourbesPanel.vue';
 import CourriersPanel from '@/components/consultations/CourriersPanel.vue';
 import DiagnosisCodes from '@/components/consultations/DiagnosisCodes.vue';
+import { familyRelationLabel } from '@/components/consultations/display';
 import DocumentsPanel from '@/components/consultations/DocumentsPanel.vue';
 import OrdonnancesPanel from '@/components/consultations/OrdonnancesPanel.vue';
 import type { PrescriptionProtocol } from '@/components/consultations/PrescriptionProtocols.vue';
@@ -64,6 +65,7 @@ import type {
 } from '@/lib/ai';
 import { consultationAiUrl, runAi } from '@/lib/ai';
 import { bindAiWorkspace } from '@/lib/aiWorkspace';
+import { isValidationError, postJson } from '@/lib/http';
 import type {
     BilanTemplate,
     ClinicalDocument,
@@ -174,10 +176,24 @@ type ConsultationData = {
         received_by: string | null;
     }[];
 };
+type FamilyConsultation = {
+    id: number;
+    patient_name: string | null;
+    relation: string | null;
+    consulted_at: string | null;
+    motif: string | null;
+    diagnostic: string | null;
+    traitement: string | null;
+};
 
 const props = defineProps<{
     consultation: ConsultationData;
     patient: PatientInfo;
+    familyContext: {
+        relation: string | null;
+        contact_name: string | null;
+    };
+    familyHistory: FamilyConsultation[];
     patientDebt: {
         total: number;
         consultations: {
@@ -224,6 +240,7 @@ const props = defineProps<{
     stats: { consultations: number; appointments: number };
     canEdit: boolean;
     canCollectPayment: boolean;
+    canManageActs: boolean;
     safety: PatientSafetySummary;
     canEditSafety: boolean;
     protocols: PrescriptionProtocol[];
@@ -714,14 +731,79 @@ const confirmConsultation = () => {
     }
 };
 
+const availablePrestations = ref([...props.prestations]);
+const prestationCreating = ref(false);
+const newPrestationName = ref('');
+const newPrestationPrice = ref('');
+const prestationError = ref('');
+const prestationSaving = ref(false);
+
 const selectPaymentService = (value: string) => {
     consultationForm.payment_service = value;
     paymentForm.service = value;
-    const prestation = props.prestations.find((item) => item.label === value);
+    const prestation = availablePrestations.value.find(
+        (item) => item.label === value,
+    );
 
     if (prestation?.amount != null) {
         consultationForm.payment_amount = String(prestation.amount);
         paymentForm.amount = String(prestation.amount);
+    }
+};
+
+const openPrestationCreator = () => {
+    prestationCreating.value = true;
+    newPrestationName.value = '';
+    newPrestationPrice.value = '';
+    prestationError.value = '';
+};
+
+const cancelPrestationCreator = () => {
+    prestationCreating.value = false;
+    newPrestationName.value = '';
+    newPrestationPrice.value = '';
+    prestationError.value = '';
+};
+
+const createPrestation = async () => {
+    const name = newPrestationName.value.trim();
+
+    if (!name) {
+        prestationError.value = 'Saisissez le nom de la prestation.';
+
+        return;
+    }
+
+    const trimmedPrice = newPrestationPrice.value.trim();
+    const price =
+        trimmedPrice === '' ? null : Number(trimmedPrice.replace(',', '.'));
+
+    if (price !== null && (Number.isNaN(price) || price < 0)) {
+        prestationError.value = 'Saisissez un prix valide.';
+
+        return;
+    }
+
+    prestationSaving.value = true;
+    prestationError.value = '';
+
+    try {
+        const response = await postJson<{
+            prestation: { label: string; amount: number | null };
+        }>('/app/consultations/prestations', { name, price });
+        const saved = response.prestation;
+
+        availablePrestations.value = [saved, ...availablePrestations.value];
+        selectPaymentService(saved.label);
+        cancelPrestationCreator();
+    } catch (error) {
+        prestationError.value = isValidationError(error)
+            ? (error.errors.name?.[0] ??
+              error.errors.price?.[0] ??
+              'Enregistrement impossible.')
+            : 'Impossible d’enregistrer la prestation. Veuillez réessayer.';
+    } finally {
+        prestationSaving.value = false;
     }
 };
 
@@ -848,10 +930,10 @@ const dictationOpen = ref(false);
 const toggleDictation = () => {
     dictationOpen.value = true;
 
-    if (dictation.listening.value) {
+    if (dictation.listening.value || dictation.starting.value) {
         dictation.stop();
     } else {
-        dictation.start();
+        void dictation.start();
     }
 };
 
@@ -1123,6 +1205,15 @@ const tabClass = (activeTab: boolean): string =>
                         <template v-if="patient.blood_group">
                             · {{ patient.blood_group }}</template
                         >
+                    </p>
+                    <p
+                        v-if="
+                            familyContext.relation && familyContext.contact_name
+                        "
+                        class="mt-1 truncate text-xs text-muted-foreground"
+                    >
+                        {{ familyRelationLabel(familyContext.relation) }} de
+                        {{ familyContext.contact_name }}
                     </p>
                 </div>
                 <div
@@ -1644,7 +1735,9 @@ const tabClass = (activeTab: boolean): string =>
                                     {{
                                         dictation.listening.value
                                             ? 'Arrêter'
-                                            : 'Dicter'
+                                            : dictation.starting.value
+                                              ? 'Activation…'
+                                              : 'Dicter'
                                     }}
                                 </button>
                                 <AiActionButton
@@ -1674,9 +1767,11 @@ const tabClass = (activeTab: boolean): string =>
                                         {{
                                             dictation.listening.value
                                                 ? 'J’écoute… parlez naturellement'
-                                                : dictation.supported
-                                                  ? 'Dictée'
-                                                  : 'Vos notes en vrac'
+                                                : dictation.starting.value
+                                                  ? 'Autorisation du microphone…'
+                                                  : dictation.supported
+                                                    ? 'Dictée'
+                                                    : 'Vos notes en vrac'
                                         }}
                                     </p>
                                     <button
@@ -1925,6 +2020,7 @@ const tabClass = (activeTab: boolean): string =>
                     :can-edit="canEdit"
                     :ai-draft="aiDraft"
                     :protocols="protocols"
+                    :long-term-treatments="safety.treatments"
                 />
 
                 <BilansPanel
@@ -2117,7 +2213,7 @@ const tabClass = (activeTab: boolean): string =>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
-                                            v-for="prestation in prestations"
+                                            v-for="prestation in availablePrestations"
                                             :key="prestation.label"
                                             :value="prestation.label"
                                         >
@@ -2138,6 +2234,71 @@ const tabClass = (activeTab: boolean): string =>
                                 <InputError
                                     :message="paymentForm.errors.service"
                                 />
+                                <div v-if="canManageActs" class="mt-1">
+                                    <Button
+                                        v-if="!prestationCreating"
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 justify-start gap-1.5 px-1 text-brand hover:text-brand"
+                                        @click="openPrestationCreator"
+                                    >
+                                        <Plus class="size-4" />
+                                        Nouvelle prestation
+                                    </Button>
+                                    <div
+                                        v-else
+                                        class="space-y-2 rounded-lg border border-sidebar-border/70 p-2 dark:border-sidebar-border"
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            <Input
+                                                v-model="newPrestationName"
+                                                class="h-8"
+                                                placeholder="Nom de la prestation"
+                                                autocomplete="off"
+                                                @keydown.enter.prevent="
+                                                    createPrestation
+                                                "
+                                            />
+                                            <Input
+                                                v-model="newPrestationPrice"
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                class="h-8 w-28"
+                                                placeholder="Prix (DA)"
+                                                autocomplete="off"
+                                                @keydown.enter.prevent="
+                                                    createPrestation
+                                                "
+                                            />
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                :disabled="prestationSaving"
+                                                @click="createPrestation"
+                                            >
+                                                Enregistrer
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                @click="cancelPrestationCreator"
+                                            >
+                                                Annuler
+                                            </Button>
+                                        </div>
+                                        <p
+                                            v-if="prestationError"
+                                            class="text-xs text-destructive"
+                                        >
+                                            {{ prestationError }}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                             <div class="grid gap-1.5">
                                 <Label for="c-amount">Prix total (DA)</Label>
@@ -2543,6 +2704,81 @@ const tabClass = (activeTab: boolean): string =>
                         >
                             Aucune consultation précédente pour ce patient.
                         </p>
+                    </article>
+
+                    <article
+                        v-if="familyHistory.length"
+                        class="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
+                    >
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <h4
+                                    class="text-sm font-semibold text-foreground"
+                                >
+                                    Antécédents des proches
+                                </h4>
+                                <p class="mt-1 text-xs text-muted-foreground">
+                                    Consultations des patients liés au même
+                                    compte mobile.
+                                </p>
+                            </div>
+                            <HeartPulse class="size-4 text-rose-600" />
+                        </div>
+                        <ul class="mt-4 grid gap-2 lg:grid-cols-2">
+                            <li
+                                v-for="item in familyHistory"
+                                :key="item.id"
+                                class="rounded-lg border border-sidebar-border/70 bg-muted/20 px-4 py-3 text-sm dark:border-sidebar-border"
+                            >
+                                <div
+                                    class="flex flex-wrap items-center justify-between gap-2"
+                                >
+                                    <span class="font-semibold text-foreground">
+                                        {{ item.patient_name || 'Patient' }}
+                                        <span
+                                            class="font-normal text-muted-foreground"
+                                        >
+                                            ·
+                                            {{
+                                                familyRelationLabel(
+                                                    item.relation,
+                                                )
+                                            }}
+                                        </span>
+                                    </span>
+                                    <span class="text-xs text-muted-foreground">
+                                        {{ displayDate(item.consulted_at) }}
+                                    </span>
+                                </div>
+                                <p
+                                    v-if="item.motif"
+                                    class="mt-2 text-muted-foreground"
+                                >
+                                    <span class="font-medium"
+                                        >Motif / symptômes :</span
+                                    >
+                                    {{ item.motif }}
+                                </p>
+                                <p
+                                    v-if="item.diagnostic"
+                                    class="mt-1 text-muted-foreground"
+                                >
+                                    <span class="font-medium"
+                                        >Diagnostic :</span
+                                    >
+                                    {{ item.diagnostic }}
+                                </p>
+                                <p
+                                    v-if="item.traitement"
+                                    class="mt-1 text-muted-foreground"
+                                >
+                                    <span class="font-medium"
+                                        >Traitement :</span
+                                    >
+                                    {{ item.traitement }}
+                                </p>
+                            </li>
+                        </ul>
                     </article>
                 </section>
 

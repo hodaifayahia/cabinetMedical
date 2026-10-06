@@ -35,11 +35,23 @@ final class ServerBackupStatus
     {
         $problems = [];
         $lastRun = $this->lastRun();
+        $lastPcCopy = $this->lastPcCopyAt();
+        $pcCopyRecent = $lastPcCopy?->gte(now()->subHours(self::PC_STALE_AFTER_HOURS)) ?? false;
 
         if (! $this->drive->isConfigured()) {
-            $problems[] = ['level' => 'danger', 'message' => 'Google Drive est requis, mais la configuration Google (GOOGLE_CLIENT_ID) manque sur ce serveur.'];
+            $problems[] = [
+                'level' => $pcCopyRecent ? 'warning' : 'danger',
+                'message' => $pcCopyRecent
+                    ? 'La copie chiffrée sur le PC a été vérifiée. Google Drive n’est pas configuré (GOOGLE_CLIENT_ID manque) : activez cette seconde destination.'
+                    : 'Google Drive est requis, mais la configuration Google (GOOGLE_CLIENT_ID) manque sur ce serveur.',
+            ];
         } elseif (! $this->drive->isConnected()) {
-            $problems[] = ['level' => 'danger', 'message' => 'Google Drive est requis : connectez le compte Google qui recevra les sauvegardes.'];
+            $problems[] = [
+                'level' => $pcCopyRecent ? 'warning' : 'danger',
+                'message' => $pcCopyRecent
+                    ? 'La copie chiffrée sur le PC a été vérifiée. Connectez Google Drive pour disposer d’une seconde destination.'
+                    : 'Google Drive est requis : connectez le compte Google qui recevra les sauvegardes.',
+            ];
         } elseif ($lastRun?->drive_status === ServerBackupDriveStatus::FAILED) {
             $problems[] = ['level' => 'danger', 'message' => 'La dernière sauvegarde n’a pas été envoyée sur Google Drive : '.$lastRun->drive_error];
         } elseif ($lastRun !== null && $this->neverReachedDrive($lastRun)) {
@@ -51,8 +63,6 @@ final class ServerBackupStatus
         } elseif ($lastRun->created_at?->lt(now()->subHours(self::BACKUP_STALE_AFTER_HOURS))) {
             $problems[] = ['level' => 'danger', 'message' => 'La sauvegarde de la nuit n’a pas eu lieu (dernière : '.$lastRun->created_at->diffForHumans().'). Vérifiez la tâche cron dans hPanel.'];
         }
-
-        $lastPcCopy = $this->lastPcCopyAt();
 
         if ($lastRun !== null && ($lastPcCopy === null || $lastPcCopy->lt(now()->subHours(self::PC_STALE_AFTER_HOURS)))) {
             // A PC that never took a copy counts from the first backup.

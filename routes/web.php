@@ -24,6 +24,7 @@ use App\Http\Controllers\Configuration\AccountingController;
 use App\Http\Controllers\Configuration\BackupController;
 use App\Http\Controllers\Configuration\ClinicIdentityController;
 use App\Http\Controllers\Configuration\ConnectivityAndBackupController;
+use App\Http\Controllers\Configuration\DocumentTemplateController;
 use App\Http\Controllers\Configuration\LicenseController;
 use App\Http\Controllers\Configuration\MedicationController;
 use App\Http\Controllers\Configuration\OnlineServiceController;
@@ -335,6 +336,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('consultations/{consultation}/word-documents/{document}/convert', [ClinicalDocumentController::class, 'convert'])
             ->middleware('permission:consultations.update')->name('consultations.word-documents.convert');
 
+        // New prestation (name + price) added straight from the payment panel.
+        // Doctor-only: configuration.manage is not granted to the assistant.
+        Route::post('consultations/prestations', [ConsultationController::class, 'storePrestation'])
+            ->middleware('permission:configuration.manage')->name('consultations.prestations.store');
+
         // Reusable exam selections saved from the bilan editor. They belong to
         // the cabinet rather than to one consultation, hence no {consultation}.
         Route::post('bilan-templates', [BilanTemplateController::class, 'store'])
@@ -482,6 +488,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('ref/{referential}', [ReferentialController::class, 'store'])->name('referentials.store');
                 Route::put('ref/{referential}/{id}', [ReferentialController::class, 'update'])->name('referentials.update');
                 Route::delete('ref/{referential}/{id}', [ReferentialController::class, 'destroy'])->name('referentials.destroy');
+
+                // Cabinet-authored consultation document templates ("modèles").
+                Route::get('document-templates', [DocumentTemplateController::class, 'index'])->name('document-templates.index');
+                Route::post('document-templates/import', [DocumentTemplateController::class, 'import'])->name('document-templates.import');
+                Route::post('document-templates', [DocumentTemplateController::class, 'store'])->name('document-templates.store');
+                Route::put('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'update'])->name('document-templates.update');
+                Route::delete('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
             });
 
             Route::middleware('permission:configuration.branding.manage')->group(function (): void {
@@ -576,10 +589,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('license.destroy');
             });
 
+            // Every approved account on a single-cabinet supervised desktop
+            // may start the signed update from the in-app release notice. The
+            // controller enforces that installation boundary; recent password
+            // confirmation, a verified backup and the native signature check
+            // remain required.
+            Route::post('updates/prepare-install', PrepareUpdateInstallController::class)
+                ->middleware(['password.confirm', 'throttle:update-install-prepare'])
+                ->name('updates.prepare-install');
+
             Route::middleware('permission:configuration.connectivity.manage')->group(function (): void {
-                Route::post('updates/prepare-install', PrepareUpdateInstallController::class)
-                    ->middleware(['password.confirm', 'throttle:update-install-prepare'])
-                    ->name('updates.prepare-install');
                 Route::post('connectivity-backup/upload-sessions', [UploadSessionController::class, 'store'])
                     ->name('connectivity-backup.upload-sessions.store');
                 Route::post('connectivity-backup/upload-sessions/{uploadSession}/test', [UploadSessionController::class, 'test'])

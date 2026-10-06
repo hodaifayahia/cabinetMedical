@@ -3,6 +3,7 @@
 namespace App\ClinicalDocuments;
 
 use App\Models\BilanType;
+use App\Models\DocumentTemplate;
 use App\Models\Exam;
 
 final class ClinicalDocumentTemplateCatalog
@@ -19,7 +20,7 @@ final class ClinicalDocumentTemplateCatalog
      */
     public function templates(?string $category = null): array
     {
-        $templates = [...$this->builtIns(), ...$this->configuredBilans()];
+        $templates = [...$this->builtIns(), ...$this->configuredBilans(), ...$this->configuredDocumentTemplates()];
 
         if ($category === null) {
             return $templates;
@@ -390,6 +391,41 @@ TEXT,
     }
 
     /**
+     * Cabinet-authored templates managed from Configuration. Active rows only,
+     * mapped into the exact catalogue shape so the document picker and the
+     * document manager treat them like any other built-in entry.
+     *
+     * @return list<array{
+     *     key: string,
+     *     category: string,
+     *     group: string,
+     *     title: string,
+     *     body: string,
+     *     default_paper_size: string
+     * }>
+     */
+    private function configuredDocumentTemplates(): array
+    {
+        $templates = DocumentTemplate::query()
+            ->where('is_active', true)
+            ->orderBy('category')
+            ->orderBy('title')
+            ->get()
+            ->map(fn (DocumentTemplate $template): array => $this->template(
+                $template->template_key,
+                $template->category,
+                $template->group ?: 'Mes modèles',
+                $template->title,
+                (string) $template->body,
+                strtoupper((string) $template->paper_size) === 'A5' ? 'A5' : 'A4',
+                $template->body_format === 'html' ? 'html' : 'text',
+            ))
+            ->all();
+
+        return array_values($templates);
+    }
+
+    /**
      * @return array{
      *     key: string,
      *     category: string,
@@ -406,6 +442,7 @@ TEXT,
         string $title,
         string $body,
         string $paperSize = 'A4',
+        string $bodyFormat = 'text',
     ): array {
         return [
             'key' => $key,
@@ -413,6 +450,7 @@ TEXT,
             'group' => $group,
             'title' => $title,
             'body' => $body,
+            'body_format' => $bodyFormat,
             'default_paper_size' => $paperSize,
         ];
     }

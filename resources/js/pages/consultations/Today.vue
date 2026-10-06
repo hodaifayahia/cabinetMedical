@@ -20,6 +20,14 @@ import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
 defineOptions({
@@ -195,11 +203,32 @@ const checkIn = (appointmentId: number) => {
     );
 };
 
-const start = (appointmentId: number) => {
+const startTarget = ref<TodayAppointment | null>(null);
+const starting = ref(false);
+
+const start = (appointment: TodayAppointment) => {
+    startTarget.value = appointment;
+};
+
+const confirmStart = () => {
+    if (!startTarget.value || starting.value) {
+        return;
+    }
+
+    starting.value = true;
     router.post(
-        `/app/consultations/${appointmentId}/start`,
+        `/app/consultations/${startTarget.value.id}/start`,
         {},
-        { preserveScroll: true, onError: showFirstError },
+        {
+            preserveScroll: true,
+            onError: showFirstError,
+            onSuccess: () => {
+                startTarget.value = null;
+            },
+            onFinish: () => {
+                starting.value = false;
+            },
+        },
     );
 };
 
@@ -555,7 +584,7 @@ const isCompleted = (appointment: TodayAppointment): boolean =>
                                                     'checked_in' && canStart
                                             "
                                             size="sm"
-                                            @click="start(appointment.id)"
+                                            @click="start(appointment)"
                                         >
                                             <Play class="size-4" />
                                             Commencer
@@ -568,5 +597,45 @@ const isCompleted = (appointment: TodayAppointment): boolean =>
                 </div>
             </div>
         </section>
+
+        <Dialog
+            :open="startTarget !== null"
+            @update:open="
+                (open) => {
+                    if (!open && !starting) startTarget = null;
+                }
+            "
+        >
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Démarrer la consultation</DialogTitle>
+                    <DialogDescription>
+                        Ouvrir une consultation pour
+                        <strong>{{ startTarget?.patient_name }}</strong>
+                        <template v-if="startTarget?.time">
+                            à {{ startTarget.time }}</template
+                        >
+                        ?
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        :disabled="starting"
+                        @click="startTarget = null"
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        type="button"
+                        :disabled="starting"
+                        @click="confirmStart"
+                    >
+                        {{ starting ? 'Ouverture…' : 'Démarrer' }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>
