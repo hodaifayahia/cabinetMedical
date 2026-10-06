@@ -62,6 +62,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('ai/status', [AiRelayController::class, 'status']);
             Route::post('ai/complete', [AiRelayController::class, 'complete'])
                 ->middleware('throttle:30,1');
+            Route::post('ai/transcribe', [AiRelayController::class, 'transcribe'])
+                ->middleware('throttle:60,1');
 
             Route::get('patients', [PatientController::class, 'index']);
             Route::get('patients/{patient}', [PatientController::class, 'show']);
@@ -69,6 +71,4 @@ Route::prefix('v1')->group(function (): void {
     });
 
     require __DIR__.'/api_mobile.php';
-            Route::post('ai/transcribe', [AiRelayController::class, 'transcribe'])
-                ->middleware('throttle:60,1');
 });

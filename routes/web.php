@@ -160,9 +160,6 @@ Route::middleware('guest')->group(function (): void {
         ->name('desktop.cabinet-login.store');
 });
 
-// Desktop PIN authentication is separate from Fortify's email/password flow.
-Route::post('desktop/pin/login', DesktopPinLoginController::class)
-    ->middleware('throttle:desktop-pin-login')
 // Forgotten password and PIN without e-mail: recovery codes, the poste
 // principal key file, or a cabinet manager (see AccountRecoveryService).
 Route::middleware('guest')->group(function (): void {
@@ -179,6 +176,9 @@ Route::middleware('guest')->group(function (): void {
         ->name('account-recovery.device');
 });
 
+// Desktop PIN authentication is separate from Fortify's email/password flow.
+Route::post('desktop/pin/login', DesktopPinLoginController::class)
+    ->middleware('throttle:desktop-pin-login')
     ->name('desktop.pin.login');
 
 Route::post('desktop/pin/enroll', DesktopPinEnrollmentController::class)
@@ -643,6 +643,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('staff.seats.refresh');
             Route::put('staff/{user}', [StaffIndexController::class, 'update'])->name('staff.update');
             Route::delete('staff/{user}', [StaffIndexController::class, 'destroy'])->name('staff.destroy');
+            Route::delete('staff/{user}/pins', [StaffIndexController::class, 'resetPins'])->name('staff.pins.reset');
 
             Route::get('staff/pending', [PendingMemberController::class, 'index'])->name('staff.pending.index');
             Route::post('staff/pending/{user}/approve', [PendingMemberController::class, 'approve'])
@@ -673,4 +674,3 @@ Route::get('app/clinical-documents/{document}/file', [ClinicalDocumentController
 Route::post('app/clinical-documents/{document}/callback', [ClinicalDocumentController::class, 'callback'])->name('clinical-documents.callback');
 
 require __DIR__.'/settings.php';
-            Route::delete('staff/{user}/pins', [StaffIndexController::class, 'resetPins'])->name('staff.pins.reset');
