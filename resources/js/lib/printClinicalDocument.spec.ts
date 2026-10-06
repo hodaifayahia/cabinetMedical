@@ -89,4 +89,19 @@ describe('printClinicalDocument', () => {
         expect(unrelated.isConnected).toBe(true);
         unrelated.remove();
     });
+
+    it('carries the page CSP nonce so the print rules are not blocked', () => {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', 'csp-nonce');
+        meta.nonce = 'test-nonce';
+        document.head.appendChild(meta);
+
+        try {
+            printClinicalDocument('A5');
+
+            expect(printStyles()[0]?.nonce).toBe('test-nonce');
+        } finally {
+            meta.remove();
+        }
+    });
 });

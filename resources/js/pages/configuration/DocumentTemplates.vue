@@ -1,8 +1,19 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { Copy, FileText, Pencil, Plus, Search, Trash2 } from '@lucide/vue';
-import { computed, nextTick, ref } from 'vue';
+import {
+    Eye,
+    FileDown,
+    FileText,
+    FileUp,
+    Pencil,
+    Plus,
+    Search,
+    Trash2,
+} from '@lucide/vue';
+import { computed, ref } from 'vue';
+import { toast } from 'vue-sonner';
 import ConfigurationTabs from '@/components/configuration/ConfigurationTabs.vue';
+import RichDocumentEditor from '@/components/documents/RichDocumentEditor.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PageBackButton from '@/components/PageBackButton.vue';
@@ -17,6 +28,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    SAMPLE_TEMPLATE_VALUES,
+    htmlIsEffectivelyEmpty,
+    renderTemplateHtml,
+    templateBodyToHtml,
+} from '@/lib/documentTemplateBody';
+import { importDocxFile } from '@/lib/docxImport';
+import { downloadTemplateDocx } from '@/lib/templateDocxExport';
 
 defineOptions({
     layout: {
@@ -35,6 +54,7 @@ type DocumentTemplateRow = {
     group: string | null;
     paper_size: string;
     body: string;
+    body_format?: 'text' | 'html';
     is_active: boolean;
     updated_at: string | null;
 };
@@ -55,7 +75,12 @@ const search = ref(props.filters.search ?? '');
 const showForm = ref(false);
 const editing = ref<DocumentTemplateRow | null>(null);
 const deleting = ref<DocumentTemplateRow | null>(null);
-const bodyField = ref<HTMLTextAreaElement | null>(null);
+const view = ref<'edit' | 'preview'>('edit');
+const importInput = ref<HTMLInputElement | null>(null);
+const importing = ref(false);
+const exporting = ref(false);
+const editorFullscreen = ref(false);
+let fullscreenExitedAt = 0;
 
 const form = useForm({
     title: '',
@@ -63,8 +88,19 @@ const form = useForm({
     group: '',
     paper_size: props.options.paperSizes[0]?.value ?? 'A4',
     body: '',
+    body_format: 'html' as 'text' | 'html',
     is_active: true,
 });
+
+const paperSize = computed<'A4' | 'A5'>(() =>
+    form.paper_size === 'A5' ? 'A5' : 'A4',
+);
+
+const preview = computed(() =>
+    renderTemplateHtml(form.body, 'html', SAMPLE_TEMPLATE_VALUES, {
+        keepUnknown: true,
+    }),
+);
 
 const categoryLabel = (value: string): string =>
     props.options.categories.find((option) => option.value === value)?.label ??
@@ -96,6 +132,7 @@ const blank = () => {
         group: '',
         paper_size: props.options.paperSizes[0]?.value ?? 'A4',
         body: '',
+        body_format: 'html',
         is_active: true,
     });
     form.reset();
@@ -103,23 +140,40 @@ const blank = () => {
 
 const openCreate = () => {
     editing.value = null;
+    view.value = 'edit';
     blank();
     showForm.value = true;
 };
 
 const openEdit = (row: DocumentTemplateRow) => {
     editing.value = row;
+    view.value = 'edit';
     form.clearErrors();
-    form.title = row.title;
-    form.category = row.category;
-    form.group = row.group ?? '';
-    form.paper_size = row.paper_size;
-    form.body = row.body;
-    form.is_active = row.is_active;
+    form.defaults({
+        title: row.title,
+        category: row.category,
+        group: row.group ?? '',
+        paper_size: row.paper_size,
+        // Legacy line-based bodies ("## " headings) open as rich text and are
+        // saved back as HTML.
+        body: templateBodyToHtml(row.body, row.body_format ?? 'text'),
+        body_format: 'html',
+        is_active: row.is_active,
+    });
+    form.reset();
     showForm.value = true;
 };
 
 const submit = () => {
+    form.body_format = 'html';
+
+    if (htmlIsEffectivelyEmpty(form.body)) {
+        form.setError('body', 'Le contenu du modèle ne peut pas être vide.');
+        view.value = 'edit';
+
+        return;
+    }
+
     const options = {
         preserveScroll: true,
         onSuccess: () => {
@@ -134,6 +188,120 @@ const submit = () => {
     }
 };
 
+const closeForm = () => {
+    if (
+        form.isDirty &&
+        !window.confirm(
+            'Fermer l’éditeur ? Les modifications non enregistrées seront perdues.',
+        )
+    ) {
+        return;
+    }
+
+    showForm.value = false;
+};
+
+const onFullscreenChange = (value: boolean) => {
+    editorFullscreen.value = value;
+
+    if (!value) {
+        fullscreenExitedAt = Date.now();
+    }
+};
+
+const onDialogEscape = (event: KeyboardEvent) => {
+    // Escape first leaves the editor's full screen; it must not also close
+    // the dialog (and lose the template being written).
+    if (editorFullscreen.value || Date.now() - fullscreenExitedAt < 600) {
+        event.preventDefault();
+
+        return;
+    }
+
+    if (
+        form.isDirty &&
+        !window.confirm(
+            'Fermer l’éditeur ? Les modifications non enregistrées seront perdues.',
+        )
+    ) {
+        event.preventDefault();
+    }
+};
+
+const pickWordFile = () => importInput.value?.click();
+
+const onWordFilePicked = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+
+    if (!file) {
+        return;
+    }
+
+    if (
+        !htmlIsEffectivelyEmpty(form.body) &&
+        !window.confirm(
+            'Remplacer le contenu actuel du modèle par celui du fichier Word ?',
+        )
+    ) {
+        return;
+    }
+
+    importing.value = true;
+
+    try {
+        const { html, warnings } = await importDocxFile(file);
+        form.body = html;
+        form.clearErrors('body');
+        view.value = 'edit';
+
+        if (form.title.trim() === '') {
+            form.title = file.name.replace(/\.docx$/i, '').slice(0, 200);
+        }
+
+        toast.success(
+            'Document Word importé. Vous pouvez maintenant le modifier comme dans Word.',
+        );
+        warnings.forEach((warning) => toast.warning(warning));
+    } catch (error) {
+        toast.error(
+            error instanceof Error
+                ? error.message
+                : 'Impossible d’importer ce fichier Word.',
+        );
+    } finally {
+        importing.value = false;
+    }
+};
+
+const exportWord = async () => {
+    if (htmlIsEffectivelyEmpty(form.body)) {
+        toast.error('Le modèle est vide : rien à exporter.');
+
+        return;
+    }
+
+    exporting.value = true;
+
+    try {
+        await downloadTemplateDocx(`${routeBase}/export-docx`, {
+            title: form.title,
+            body: form.body,
+            body_format: 'html',
+            paper_size: form.paper_size,
+        });
+    } catch (error) {
+        toast.error(
+            error instanceof Error
+                ? error.message
+                : 'Le fichier Word n’a pas pu être généré.',
+        );
+    } finally {
+        exporting.value = false;
+    }
+};
+
 const doDelete = () => {
     if (!deleting.value) {
         return;
@@ -144,28 +312,6 @@ const doDelete = () => {
         onSuccess: () => {
             deleting.value = null;
         },
-    });
-};
-
-const insertToken = (token: string) => {
-    const el = bodyField.value;
-
-    if (!el) {
-        const separator =
-            form.body === '' || form.body.endsWith('\n') ? '' : ' ';
-        form.body = `${form.body}${separator}${token}`;
-
-        return;
-    }
-
-    const start = el.selectionStart ?? form.body.length;
-    const end = el.selectionEnd ?? form.body.length;
-    form.body = form.body.slice(0, start) + token + form.body.slice(end);
-
-    void nextTick(() => {
-        el.focus();
-        const caret = start + token.length;
-        el.setSelectionRange(caret, caret);
     });
 };
 </script>
@@ -229,8 +375,8 @@ const insertToken = (token: string) => {
                                 class="px-4 py-8 text-center text-muted-foreground"
                                 colspan="6"
                             >
-                                Aucun modèle pour le moment. Cliquez sur
-                                « Nouveau modèle » pour en créer un.
+                                Aucun modèle pour le moment. Cliquez sur «
+                                Nouveau modèle » pour en créer un.
                             </td>
                         </tr>
                         <tr
@@ -238,9 +384,7 @@ const insertToken = (token: string) => {
                             :key="row.id"
                             class="bg-background"
                         >
-                            <td
-                                class="px-4 py-3 font-medium text-foreground"
-                            >
+                            <td class="px-4 py-3 font-medium text-foreground">
                                 <span class="inline-flex items-center gap-2">
                                     <FileText
                                         class="size-4 shrink-0 text-brand"
@@ -299,9 +443,20 @@ const insertToken = (token: string) => {
             </div>
         </section>
 
-        <Dialog v-model:open="showForm">
-            <DialogContent class="sm:max-w-3xl">
-                <DialogHeader>
+        <Dialog
+            :open="showForm"
+            @update:open="
+                (value) => {
+                    if (!value) closeForm();
+                }
+            "
+        >
+            <DialogContent
+                class="flex h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-none flex-col gap-3 p-4 sm:max-w-none sm:p-5"
+                @escape-key-down="onDialogEscape"
+                @interact-outside="(event) => event.preventDefault()"
+            >
+                <DialogHeader class="pr-8">
                     <DialogTitle>
                         {{
                             editing
@@ -310,16 +465,21 @@ const insertToken = (token: string) => {
                         }}
                     </DialogTitle>
                     <DialogDescription>
-                        Choisissez le type et le format, puis rédigez le
-                        contenu. Utilisez les variables pour insérer
-                        automatiquement les informations du patient et de la
-                        consultation.
+                        Rédigez et mettez en forme le document comme dans Word,
+                        ou importez un fichier Word (.docx) existant. Les
+                        variables sont remplacées automatiquement par les
+                        informations du patient et de la consultation.
                     </DialogDescription>
                 </DialogHeader>
 
-                <form class="space-y-5" @submit.prevent="submit">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="grid gap-2 sm:col-span-2">
+                <form
+                    class="flex min-h-0 flex-1 flex-col gap-3"
+                    @submit.prevent="submit"
+                >
+                    <div
+                        class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto] lg:items-end"
+                    >
+                        <div class="grid gap-1.5">
                             <Label for="template-title">
                                 Nom du modèle
                                 <span class="text-destructive">*</span>
@@ -333,7 +493,7 @@ const insertToken = (token: string) => {
                             <InputError :message="form.errors.title" />
                         </div>
 
-                        <div class="grid gap-2">
+                        <div class="grid gap-1.5">
                             <Label for="template-category">
                                 Type de document
                                 <span class="text-destructive">*</span>
@@ -354,7 +514,7 @@ const insertToken = (token: string) => {
                             <InputError :message="form.errors.category" />
                         </div>
 
-                        <div class="grid gap-2">
+                        <div class="grid gap-1.5">
                             <Label for="template-paper">
                                 Format de page
                                 <span class="text-destructive">*</span>
@@ -375,7 +535,7 @@ const insertToken = (token: string) => {
                             <InputError :message="form.errors.paper_size" />
                         </div>
 
-                        <div class="grid gap-2 sm:col-span-2">
+                        <div class="grid gap-1.5">
                             <Label for="template-group">
                                 Groupe (facultatif)
                             </Label>
@@ -387,63 +547,122 @@ const insertToken = (token: string) => {
                             />
                             <InputError :message="form.errors.group" />
                         </div>
-                    </div>
 
-                    <div class="grid gap-2">
-                        <Label for="template-body">
-                            Contenu du document
-                            <span class="text-destructive">*</span>
-                        </Label>
-                        <textarea
-                            id="template-body"
-                            ref="bodyField"
-                            v-model="form.body"
-                            rows="10"
-                            class="med-native-control min-h-48 w-full font-mono text-sm leading-6"
-                            placeholder="Rédigez le document ici. Les lignes commençant par ## deviennent des titres."
-                        />
-                        <InputError :message="form.errors.body" />
-                    </div>
-
-                    <div
-                        class="rounded-xl border border-sidebar-border/70 bg-muted/30 p-4 dark:border-sidebar-border"
-                    >
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        <label
+                            class="flex h-9 items-center gap-2 text-sm text-foreground lg:pb-0.5"
                         >
-                            Variables disponibles — cliquez pour insérer
-                        </p>
-                        <div class="mt-3 flex flex-wrap gap-2">
+                            <input
+                                v-model="form.is_active"
+                                type="checkbox"
+                                class="size-4 rounded border-input"
+                            />
+                            Modèle actif
+                        </label>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div
+                            class="inline-flex rounded-lg border border-sidebar-border/70 p-0.5 dark:border-sidebar-border"
+                            role="tablist"
+                        >
                             <button
-                                v-for="placeholder in options.placeholders"
-                                :key="placeholder.token"
                                 type="button"
-                                class="inline-flex items-center gap-1 rounded-lg border border-sidebar-border/70 bg-background px-2 py-1 text-xs text-muted-foreground transition hover:border-brand hover:text-brand dark:border-sidebar-border"
-                                :title="placeholder.label"
-                                @click="insertToken(placeholder.token)"
+                                role="tab"
+                                :aria-selected="view === 'edit'"
+                                class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition"
+                                :class="
+                                    view === 'edit'
+                                        ? 'bg-brand text-white'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                "
+                                @click="view = 'edit'"
                             >
-                                <Copy class="size-3" />
-                                {{ placeholder.label }}
+                                <Pencil class="size-3.5" />
+                                Édition
                             </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                :aria-selected="view === 'preview'"
+                                class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition"
+                                :class="
+                                    view === 'preview'
+                                        ? 'bg-brand text-white'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                "
+                                @click="view = 'preview'"
+                            >
+                                <Eye class="size-3.5" />
+                                Aperçu avec un patient fictif
+                            </button>
+                        </div>
+
+                        <div class="ml-auto flex flex-wrap items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                :disabled="importing"
+                                @click="pickWordFile"
+                            >
+                                <FileUp class="size-4" />
+                                {{
+                                    importing
+                                        ? 'Import en cours…'
+                                        : 'Importer un fichier Word (.docx)'
+                                }}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                :disabled="exporting"
+                                @click="exportWord"
+                            >
+                                <FileDown class="size-4" />
+                                Télécharger en Word (.docx)
+                            </Button>
+                            <input
+                                ref="importInput"
+                                type="file"
+                                class="hidden"
+                                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                aria-label="Fichier Word à importer"
+                                @change="onWordFilePicked"
+                            />
                         </div>
                     </div>
 
-                    <label
-                        class="flex items-center gap-2 text-sm text-foreground"
-                    >
-                        <input
-                            v-model="form.is_active"
-                            type="checkbox"
-                            class="size-4 rounded border-input"
+                    <div class="flex min-h-0 flex-1 flex-col">
+                        <RichDocumentEditor
+                            v-show="view === 'edit'"
+                            v-model="form.body"
+                            class="min-h-0 flex-1"
+                            :paper-size="paperSize"
+                            :placeholders="options.placeholders"
+                            placeholder="Rédigez le document ici, ou importez un fichier Word (.docx)…"
+                            label="Contenu du modèle"
+                            @fullscreen-change="onFullscreenChange"
                         />
-                        Modèle actif (visible pendant la consultation)
-                    </label>
+                        <div
+                            v-if="view === 'preview'"
+                            class="rde-canvas min-h-0 flex-1 overflow-auto rounded-xl border border-sidebar-border/70 px-3 py-6 sm:px-8 dark:border-sidebar-border"
+                        >
+                            <div class="rde-paper" :data-paper="paperSize">
+                                <!-- Rendered from the editor's own schema-bound HTML. -->
+                                <div class="rde-content" v-html="preview" />
+                            </div>
+                        </div>
+                        <InputError class="mt-1" :message="form.errors.body" />
+                    </div>
 
-                    <DialogFooter>
+                    <div
+                        class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end"
+                    >
                         <Button
                             type="button"
                             variant="outline"
-                            @click="showForm = false"
+                            @click="closeForm"
                         >
                             Annuler
                         </Button>
@@ -454,7 +673,7 @@ const insertToken = (token: string) => {
                                     : 'Créer le modèle'
                             }}
                         </Button>
-                    </DialogFooter>
+                    </div>
                 </form>
             </DialogContent>
         </Dialog>

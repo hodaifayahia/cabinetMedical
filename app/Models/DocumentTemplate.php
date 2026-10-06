@@ -24,6 +24,7 @@ use Illuminate\Support\Str;
  * @property string|null $group
  * @property string $title
  * @property string $body
+ * @property string $body_format 'text' (legacy line-based body) | 'html' (rich editor)
  * @property string $paper_size
  * @property bool $is_active
  */
@@ -33,6 +34,7 @@ use Illuminate\Support\Str;
     'group',
     'title',
     'body',
+    'body_format',
     'paper_size',
     'is_active',
     'created_by',
@@ -57,6 +59,10 @@ class DocumentTemplate extends Model
 
             if (blank($template->paper_size)) {
                 $template->paper_size = 'A4';
+            }
+
+            if (blank($template->body_format)) {
+                $template->body_format = 'text';
             }
         });
     }

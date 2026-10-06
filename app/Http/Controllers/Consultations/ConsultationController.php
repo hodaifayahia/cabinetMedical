@@ -7,6 +7,7 @@ use App\ClinicalDocuments\ClinicalDocumentManager;
 use App\ClinicalDocuments\ClinicalDocumentOnlyOffice;
 use App\ClinicalDocuments\ClinicalDocumentTemplateCatalog;
 use App\ClinicalDocuments\ClinicalHtmlSanitizer;
+use App\ClinicalDocuments\TemplateBody;
 use App\Concerns\PatientValidationRules;
 use App\Enums\AppointmentStatus;
 use App\Enums\BloodGroup;
@@ -267,6 +268,7 @@ class ConsultationController extends Controller
                 'title' => $template['title'],
                 'description' => null,
                 'body' => $template['body'],
+                'body_format' => $template['body_format'],
                 'default_paper_size' => $template['default_paper_size'],
             ]);
         $bilanCategories = BilanType::query()
@@ -825,7 +827,8 @@ class ConsultationController extends Controller
         $data = $request->validate([
             'category' => ['required', 'string', 'max:40'],
             'title' => ['required', 'string', 'max:200'],
-            'content' => ['nullable', 'string', 'max:60000'],
+            // Courriers written from rich templates may carry inline images.
+            'content' => ['nullable', 'string', 'max:'.TemplateBody::MAX_LENGTH],
         ]);
         $originalContent = $data['content'] ?? null;
         $content = $sanitizer->sanitize($originalContent);

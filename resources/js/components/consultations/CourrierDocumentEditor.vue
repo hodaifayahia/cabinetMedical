@@ -1,31 +1,10 @@
 <script setup lang="ts">
-import {
-    AlignCenter,
-    AlignJustify,
-    AlignLeft,
-    AlignRight,
-    Bold,
-    FileText,
-    Heading1,
-    Heading2,
-    Highlighter,
-    Italic,
-    Link,
-    List,
-    ListOrdered,
-    Minus,
-    Palette,
-    Printer,
-    Redo2,
-    Save,
-    Sparkles,
-    Strikethrough,
-    Table2,
-    Type,
-    Underline,
-    Undo2,
-} from '@lucide/vue';
+import { FileText, Printer, Save } from '@lucide/vue';
+import { EditorContent } from '@tiptap/vue-3';
 import { computed, ref } from 'vue';
+import RichDocumentToolbar from '@/components/documents/RichDocumentToolbar.vue';
+import { useDocumentFullscreen } from '@/components/documents/useDocumentFullscreen';
+import { useRichDocumentEditor } from '@/components/documents/useRichDocumentEditor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { printClinicalDocument } from '@/lib/printClinicalDocument';
@@ -60,80 +39,18 @@ const emit = defineEmits<{
     updateContent: [value: string];
 }>();
 
-const pageEditor = ref<HTMLElement | null>(null);
-const fontFamily = ref('Times New Roman');
-const fontSize = ref('12pt');
-const variable = ref('');
+const root = ref<HTMLElement | null>(null);
+const { isFullscreen, toggle: toggleFullscreen } = useDocumentFullscreen(root);
 
-const execute = (command: string, value?: string) => {
-    pageEditor.value?.focus();
-    window.document.execCommand(command, false, value);
-};
-
-const updateContent = () => {
-    const contentEditor =
-        pageEditor.value?.querySelector<HTMLElement>('.courrier-content');
-
-    if (contentEditor) {
-        emit('updateContent', contentEditor.innerHTML);
-    }
-};
-
-const insertVariable = () => {
-    if (variable.value) {
-        execute('insertText', '{{' + variable.value + '}}');
-        variable.value = '';
-    }
-};
-
-const insertTable = () => {
-    execute(
-        'insertHTML',
-        '<table style="width:100%;border-collapse:collapse"><tbody><tr><td style="border:1px solid #333;padding:6px">Objet</td><td style="border:1px solid #333;padding:6px">Détail</td></tr><tr><td style="border:1px solid #333;padding:6px"> </td><td style="border:1px solid #333;padding:6px"> </td></tr></tbody></table><p><br></p>',
-    );
-};
-
-const insertLink = () => {
-    const value = window.prompt(
-        'Adresse HTTPS ou e-mail (les autres protocoles sont refusés)',
-    );
-
-    if (!value) {
-        return;
-    }
-
-    try {
-        const url = new URL(value);
-        const safeHttps =
-            url.protocol === 'https:' &&
-            !url.username &&
-            !url.password &&
-            (!url.port || url.port === '443');
-        const safeEmail =
-            url.protocol === 'mailto:' &&
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(url.pathname);
-
-        if (!safeHttps && !safeEmail) {
-            throw new Error('unsafe-link');
-        }
-
-        execute('createLink', url.toString());
-    } catch {
-        window.alert(
-            'Lien refusé. Utilisez une adresse HTTPS sans identifiants ou une adresse e-mail valide.',
-        );
-    }
-};
-
-const pastePlainText = (event: ClipboardEvent) => {
-    event.preventDefault();
-    execute('insertText', event.clipboardData?.getData('text/plain') ?? '');
-};
-
-const dropPlainText = (event: DragEvent) => {
-    event.preventDefault();
-    execute('insertText', event.dataTransfer?.getData('text/plain') ?? '');
-};
+// The courrier body is edited with the same Word-like editor as the
+// templates (Configuration › Modèles de documents). Only the body is
+// editable: the letterhead, title and footer come from the cabinet identity.
+const { editor } = useRichDocumentEditor({
+    content: () => props.content,
+    editable: () => props.canEdit,
+    placeholder: 'Choisissez un modèle à gauche ou rédigez le courrier ici…',
+    onUpdate: (html) => emit('updateContent', html),
+});
 
 const displayDate = (date: string): string => {
     if (!date) {
@@ -168,7 +85,13 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
 
 <template>
     <section
-        class="overflow-hidden rounded-xl border border-sidebar-border/70 bg-background dark:border-sidebar-border"
+        ref="root"
+        class="flex flex-col overflow-hidden bg-background"
+        :class="
+            isFullscreen
+                ? 'fixed inset-0 z-[200] h-dvh w-screen'
+                : 'rounded-xl border border-sidebar-border/70 dark:border-sidebar-border'
+        "
     >
         <div
             class="border-b border-sidebar-border/70 bg-background dark:border-sidebar-border"
@@ -238,301 +161,22 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                 </div>
             </div>
 
-            <div
-                class="flex flex-wrap items-center gap-1 border-b bg-slate-50/80 px-3 py-2 dark:bg-slate-950/30"
-            >
-                <select
-                    v-model="fontFamily"
-                    aria-label="Police"
-                    class="h-8 w-36 rounded-md border bg-background px-2 text-xs"
-                    title="Police"
-                    @change="execute('fontName', fontFamily)"
-                >
-                    <option>Times New Roman</option>
-                    <option>Arial</option>
-                    <option>Calibri</option>
-                    <option>Georgia</option>
-                </select>
-                <select
-                    v-model="fontSize"
-                    aria-label="Taille"
-                    class="h-8 w-16 rounded-md border bg-background px-2 text-xs"
-                    title="Taille"
-                    @change="
-                        execute(
-                            'fontSize',
-                            fontSize === '10pt'
-                                ? '2'
-                                : fontSize === '14pt'
-                                  ? '5'
-                                  : '3',
-                        )
-                    "
-                >
-                    <option value="10pt">10pt</option>
-                    <option value="12pt">12pt</option>
-                    <option value="14pt">14pt</option>
-                    <option value="16pt">16pt</option>
-                </select>
-                <span class="mx-1 h-5 w-px bg-border" />
-                <Button
-                    v-for="action in [
-                        { command: 'bold', label: 'Gras', icon: Bold },
-                        { command: 'italic', label: 'Italique', icon: Italic },
-                        {
-                            command: 'underline',
-                            label: 'Souligné',
-                            icon: Underline,
-                        },
-                        {
-                            command: 'strikeThrough',
-                            label: 'Barré',
-                            icon: Strikethrough,
-                        },
-                    ]"
-                    :key="action.command"
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    :class="
-                        action.command === 'italic'
-                            ? 'italic'
-                            : action.command === 'underline'
-                              ? 'underline'
-                              : ''
-                    "
-                    :title="action.label"
-                    :aria-label="action.label"
-                    @mousedown.prevent
-                    @click="execute(action.command)"
-                >
-                    <component :is="action.icon" class="size-4" />
-                </Button>
-                <label
-                    class="relative flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-muted"
-                    title="Couleur du texte"
-                >
-                    <Palette class="size-4" />
-                    <input
-                        class="absolute inset-0 cursor-pointer opacity-0"
-                        type="color"
-                        aria-label="Couleur du texte"
-                        @change="
-                            execute(
-                                'foreColor',
-                                ($event.target as HTMLInputElement).value,
-                            )
-                        "
-                    />
-                </label>
-                <label
-                    class="relative flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-muted"
-                    title="Surlignage"
-                >
-                    <Highlighter class="size-4" />
-                    <input
-                        class="absolute inset-0 cursor-pointer opacity-0"
-                        type="color"
-                        aria-label="Surlignage"
-                        value="#fff2a8"
-                        @change="
-                            execute(
-                                'hiliteColor',
-                                ($event.target as HTMLInputElement).value,
-                            )
-                        "
-                    />
-                </label>
-                <span class="mx-1 h-5 w-px bg-border" />
-                <Button
-                    v-for="action in [
-                        {
-                            command: 'formatBlock',
-                            value: 'h1',
-                            icon: Heading1,
-                            label: 'Titre 1',
-                        },
-                        {
-                            command: 'formatBlock',
-                            value: 'h2',
-                            icon: Heading2,
-                            label: 'Titre 2',
-                        },
-                        {
-                            command: 'formatBlock',
-                            value: 'p',
-                            icon: Type,
-                            label: 'Texte normal',
-                        },
-                    ]"
-                    :key="action.value"
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    :aria-label="action.label"
-                    :title="action.label"
-                    @mousedown.prevent
-                    @click="execute(action.command, action.value)"
-                >
-                    <component :is="action.icon" class="size-4" />
-                </Button>
-                <span class="mx-1 h-5 w-px bg-border" />
-                <Button
-                    v-for="action in [
-                        {
-                            command: 'justifyLeft',
-                            icon: AlignLeft,
-                            label: 'Aligner à gauche',
-                        },
-                        {
-                            command: 'justifyCenter',
-                            icon: AlignCenter,
-                            label: 'Centrer',
-                        },
-                        {
-                            command: 'justifyRight',
-                            icon: AlignRight,
-                            label: 'Aligner à droite',
-                        },
-                        {
-                            command: 'justifyFull',
-                            icon: AlignJustify,
-                            label: 'Justifier',
-                        },
-                    ]"
-                    :key="action.command"
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    :aria-label="action.label"
-                    :title="action.label"
-                    @mousedown.prevent
-                    @click="execute(action.command)"
-                >
-                    <component :is="action.icon" class="size-4" />
-                </Button>
-            </div>
-
-            <div
-                class="flex flex-wrap items-center gap-1 bg-slate-50/80 px-3 pb-2 dark:bg-slate-950/30"
-            >
-                <Button
-                    v-for="action in [
-                        {
-                            command: 'insertUnorderedList',
-                            icon: List,
-                            label: 'Liste à puces',
-                        },
-                        {
-                            command: 'insertOrderedList',
-                            icon: ListOrdered,
-                            label: 'Liste numérotée',
-                        },
-                        {
-                            command: 'insertHorizontalRule',
-                            icon: Minus,
-                            label: 'Ligne horizontale',
-                        },
-                    ]"
-                    :key="action.command"
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    :aria-label="action.label"
-                    :title="action.label"
-                    @mousedown.prevent
-                    @click="execute(action.command)"
-                >
-                    <component :is="action.icon" class="size-4" />
-                </Button>
-                <span class="mx-1 h-5 w-px bg-border" />
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    aria-label="Insérer un tableau"
-                    title="Insérer un tableau"
-                    @mousedown.prevent
-                    @click="insertTable"
-                    ><Table2 class="size-4"
-                /></Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    aria-label="Insérer un lien"
-                    title="Insérer un lien"
-                    @mousedown.prevent
-                    @click="insertLink"
-                    ><Link class="size-4"
-                /></Button>
-                <select
-                    v-model="variable"
-                    aria-label="Insérer une variable"
-                    class="ml-1 h-8 min-w-32 rounded-md border bg-background px-2 text-xs"
-                    title="Insérer une variable"
-                    @change="insertVariable"
-                >
-                    <option value="">Variable</option>
-                    <option value="patient.full_name">Patient · Nom</option>
-                    <option value="patient.date_of_birth">
-                        Patient · Date de naissance
-                    </option>
-                    <option value="patient.age">Patient · Âge</option>
-                    <option value="doctor.name">Médecin · Nom</option>
-                    <option value="doctor.specialty">
-                        Médecin · Spécialité
-                    </option>
-                    <option value="document.date">Document · Date</option>
-                </select>
-                <span class="mx-1 h-5 w-px bg-border" />
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    aria-label="Annuler"
-                    title="Annuler"
-                    @mousedown.prevent
-                    @click="execute('undo')"
-                    ><Undo2 class="size-4"
-                /></Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    aria-label="Rétablir"
-                    title="Rétablir"
-                    @mousedown.prevent
-                    @click="execute('redo')"
-                    ><Redo2 class="size-4"
-                /></Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    class="ml-1 h-8 gap-1.5 px-3 text-xs text-primary"
-                    aria-label="Assistant IA"
-                    title="Assistant IA"
-                >
-                    <Sparkles class="size-3.5" />
-                    IA
-                </Button>
-            </div>
+            <RichDocumentToolbar
+                :editor="editor"
+                :fullscreen="isFullscreen"
+                :disabled="!canEdit"
+                @toggle-fullscreen="toggleFullscreen"
+            />
         </div>
 
         <div
-            class="min-h-0 overflow-auto bg-slate-100 p-4 sm:p-7 dark:bg-slate-900/50"
+            class="min-h-0 flex-1 overflow-auto bg-slate-100 p-4 sm:p-7 dark:bg-slate-900/50"
         >
             <article
-                ref="pageEditor"
                 data-clinical-print-page
-                :contenteditable="canEdit"
-                aria-label="Contenu du courrier médical"
-                spellcheck="false"
+                aria-label="Courrier médical"
                 class="mx-auto min-h-[720px] w-full max-w-[700px] bg-white px-8 py-7 text-[13px] leading-relaxed text-slate-900 shadow-[0_8px_30px_rgba(15,23,42,0.15)] outline-none sm:px-10 sm:py-8"
                 :class="paperSize === 'A4' ? 'min-h-[920px]' : 'min-h-[720px]'"
-                @input="updateContent"
-                @paste="pastePlainText"
-                @drop="dropPlainText"
             >
                 <div class="relative">
                     <div
@@ -655,12 +299,10 @@ const printDocument = (paperSize: 'A4' | 'A5') => {
                         aria-hidden="true"
                         contenteditable="false"
                     />
-                    <div
+                    <EditorContent
+                        :editor="editor"
                         class="courrier-content relative z-[1] min-h-80 text-[13px] leading-7"
-                        v-html="
-                            content ||
-                            '<p>Choisissez un modèle à gauche pour commencer.</p>'
-                        "
+                        aria-label="Contenu du courrier médical"
                     />
                 </div>
 

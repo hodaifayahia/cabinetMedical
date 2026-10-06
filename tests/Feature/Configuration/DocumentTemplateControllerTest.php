@@ -201,6 +201,219 @@ class DocumentTemplateControllerTest extends TestCase
         $this->assertStringContainsString('Frère diabétique', $xml);
     }
 
+    public function test_rich_html_templates_are_sanitized_and_stored_as_html(): void
+    {
+        $manager = $this->manager();
+
+        $this->actingAs($manager)
+            ->post(route('app.configuration.document-templates.store'), [
+                'title' => 'Certificat mis en forme',
+                'category' => 'courrier',
+                'paper_size' => 'A4',
+                'body_format' => 'html',
+                'body' => '<h1 style="text-align: center">CERTIFICAT</h1>'
+                    .'<p onclick="steal()">Je soussigné <strong>{{doctor.name}}</strong>'
+                    .'<script>alert(1)</script></p>'
+                    .'<table><tbody><tr><td colwidth="120">A</td><td>B</td></tr></tbody></table>'
+                    .'<div class="page-break evil"></div>',
+                'is_active' => true,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $template = DocumentTemplate::query()->sole();
+        $this->assertSame('html', $template->body_format);
+        $this->assertStringContainsString('<h1 style="text-align: center">CERTIFICAT</h1>', $template->body);
+        $this->assertStringContainsString('<strong>{{doctor.name}}</strong>', $template->body);
+        $this->assertStringContainsString('colwidth="120"', $template->body);
+        $this->assertStringContainsString('<div class="page-break"></div>', $template->body);
+        $this->assertStringNotContainsString('<script', $template->body);
+        $this->assertStringNotContainsString('onclick', $template->body);
+        $this->assertStringNotContainsString('evil', $template->body);
+
+        $this->actingAs($manager)
+            ->get(route('app.configuration.document-templates.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('templates.0.body_format', 'html'),
+            );
+
+        $this->actingAs($manager);
+        $entry = app(ClinicalDocumentTemplateCatalog::class)->find($template->template_key);
+        $this->assertNotNull($entry);
+        $this->assertSame('html', $entry['body_format']);
+    }
+
+    public function test_a_rich_body_that_sanitizes_to_nothing_is_rejected(): void
+    {
+        $this->actingAs($this->manager())
+            ->from(route('app.configuration.document-templates.index'))
+            ->post(route('app.configuration.document-templates.store'), [
+                'title' => 'Vide',
+                'category' => 'courrier',
+                'paper_size' => 'A4',
+                'body_format' => 'html',
+                'body' => '<script>alert(1)</script><p>   </p>',
+            ])
+            ->assertSessionHasErrors(['body']);
+
+        $this->assertDatabaseCount('document_templates', 0);
+    }
+
+    public function test_legacy_text_templates_keep_the_text_format(): void
+    {
+        $this->actingAs($this->manager())
+            ->post(route('app.configuration.document-templates.store'), [
+                'title' => 'Ancien format',
+                'category' => 'bilan',
+                'paper_size' => 'A4',
+                'body' => "## Examens\n{{consultation.examens}}",
+            ])
+            ->assertSessionHasNoErrors();
+
+        $template = DocumentTemplate::query()->sole();
+        $this->assertSame('text', $template->body_format);
+        $this->assertSame("## Examens\n{{consultation.examens}}", $template->body);
+    }
+
+    public function test_large_bodies_with_inline_images_are_accepted(): void
+    {
+        $png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z9mAAAAAASUVORK5CYII=';
+        $body = '<p><img src="data:image/png;base64,'.$png.'" alt="Logo"></p>'
+            .str_repeat('<p>'.str_repeat('Texte du modèle. ', 40).'</p>', 60);
+        $this->assertGreaterThan(20000, strlen($body));
+
+        $this->actingAs($this->manager())
+            ->post(route('app.configuration.document-templates.store'), [
+                'title' => 'Long modèle',
+                'category' => 'courrier',
+                'paper_size' => 'A4',
+                'body_format' => 'html',
+                'body' => $body,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertStringContainsString('data:image/png;base64,', DocumentTemplate::query()->sole()->body);
+    }
+
+    public function test_the_template_being_edited_can_be_downloaded_as_word(): void
+    {
+        $png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z9mAAAAAASUVORK5CYII=';
+
+        $response = $this->actingAs($this->manager())
+            ->post(route('app.configuration.document-templates.export-docx'), [
+                'title' => 'Certificat médical',
+                'paper_size' => 'A5',
+                'body_format' => 'html',
+                'body' => '<h2 style="text-align: center">Certificat</h2>'
+                    .'<p>Patient : <strong>{{patient.full_name}}</strong> <u>souligné</u></p>'
+                    .'<ul><li><p>Premier point</p></li><li><p>Second point</p></li></ul>'
+                    .'<table><tbody><tr><th>Examen</th><th>Résultat</th></tr><tr><td>ECG</td><td>Normal</td></tr></tbody></table>'
+                    .'<div class="page-break"></div>'
+                    .'<p><img src="data:image/png;base64,'.$png.'" alt="Logo"></p>'
+                    .'<script>alert(1)</script>',
+            ]);
+
+        $response->assertOk();
+        $this->assertStringContainsString('certificat-medical.docx', (string) $response->headers->get('Content-Disposition'));
+
+        $file = $response->baseResponse->getFile()->getPathname();
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($file) === true);
+        $document = (string) $zip->getFromName('word/document.xml');
+        $numbering = $zip->getFromName('word/numbering.xml');
+        $relationships = (string) $zip->getFromName('word/_rels/document.xml.rels');
+        $contentTypes = (string) $zip->getFromName('[Content_Types].xml');
+        $media = $zip->getFromName('word/media/image1.png');
+        $footer = $zip->getFromName('word/footer1.xml');
+        $zip->close();
+
+        // Tokens stay in place so the file can be edited and re-imported.
+        $this->assertStringContainsString('{{patient.full_name}}', $document);
+        $this->assertStringContainsString('<w:pStyle w:val="Heading2"/>', $document);
+        $this->assertStringContainsString('<w:jc w:val="center"/>', $document);
+        $this->assertStringContainsString('<w:u w:val="single"/>', $document);
+        $this->assertStringContainsString('<w:numPr>', $document);
+        $this->assertStringContainsString('<w:tbl>', $document);
+        $this->assertStringContainsString('<w:br w:type="page"/>', $document);
+        $this->assertStringContainsString('r:embed="rIdImg1"', $document);
+        $this->assertStringContainsString('w:w="8391"', $document);
+        $this->assertStringNotContainsString('alert(1)', $document);
+        $this->assertIsString($numbering);
+        $this->assertIsString($media);
+        $this->assertFalse($footer);
+        $this->assertStringContainsString('Target="media/image1.png"', $relationships);
+        $this->assertStringContainsString('numbering.xml', $relationships);
+        $this->assertStringContainsString('Extension="png"', $contentTypes);
+        $this->assertSame(1, substr_count($contentTypes, 'Extension="png"'));
+        $this->assertNotFalse(simplexml_load_string($document));
+    }
+
+    public function test_word_export_requires_a_body_and_configuration_access(): void
+    {
+        $this->actingAs($this->manager())
+            ->postJson(route('app.configuration.document-templates.export-docx'), [
+                'paper_size' => 'A4',
+                'body' => '',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['body']);
+
+        $this->actingAs(User::factory()->create())
+            ->postJson(route('app.configuration.document-templates.export-docx'), [
+                'paper_size' => 'A4',
+                'body' => '<p>x</p>',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_a_rich_template_builds_a_consultation_document_with_escaped_variables(): void
+    {
+        Storage::fake('local');
+        config()->set('onlyoffice.url', 'http://onlyoffice.test');
+        config()->set('onlyoffice.jwt_secret', 'test-secret');
+
+        $manager = $this->manager();
+        $patient = Patient::factory()->create([
+            'first_name' => 'Amine',
+            'last_name' => 'Bensalem',
+            'allergies' => 'Pénicilline <grave> & iode',
+            'antecedents_surgical' => 'Appendicectomie',
+        ]);
+        $consultation = Consultation::query()->create([
+            'patient_id' => $patient->getKey(),
+            'consulted_at' => now(),
+            'status' => 'in_progress',
+            'created_by' => $manager->getKey(),
+        ]);
+
+        $template = DocumentTemplate::factory()->create([
+            'title' => 'Courrier riche',
+            'category' => 'courrier',
+            'paper_size' => 'A4',
+            'body_format' => 'html',
+            'body' => '<h2>Allergies</h2><p><strong>{{patient.allergies}}</strong></p>'
+                .'<ol><li><p>{{patient.antecedents_surgical}}</p></li></ol>',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($manager)
+            ->post(route('app.consultations.word-documents.store', $consultation), [
+                'source' => 'built_in',
+                'category' => 'courrier',
+                'template_key' => $template->template_key,
+                'paper_size' => 'A4',
+            ])
+            ->assertRedirect();
+
+        $xml = $this->documentXml(Document::query()->sole()->file_path);
+        $this->assertStringContainsString('Pénicilline &lt;grave&gt; &amp; iode', $xml);
+        $this->assertStringContainsString('Appendicectomie', $xml);
+        $this->assertStringContainsString('<w:numPr>', $xml);
+        $this->assertStringContainsString('Amine Bensalem', $xml);
+        $this->assertStringNotContainsString('{{patient.allergies}}', $xml);
+        $this->assertNotFalse(simplexml_load_string($xml));
+    }
+
     private function documentXml(string $path): string
     {
         $zip = new ZipArchive;

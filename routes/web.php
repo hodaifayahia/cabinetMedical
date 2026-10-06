@@ -519,6 +519,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 // Cabinet-authored consultation document templates ("modèles").
                 Route::get('document-templates', [DocumentTemplateController::class, 'index'])->name('document-templates.index');
                 Route::post('document-templates', [DocumentTemplateController::class, 'store'])->name('document-templates.store');
+                Route::post('document-templates/export-docx', [DocumentTemplateController::class, 'exportDocx'])->name('document-templates.export-docx');
                 Route::put('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'update'])->name('document-templates.update');
                 Route::delete('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
             });
