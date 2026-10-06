@@ -399,7 +399,9 @@ final class ServerBackupTest extends TestCase
         $latest->update(['pc_copied_at' => now()->subDays(4)]);
 
         $this->assertSame([['level' => 'warning', 'message' => 'Le PC Windows n’a pas récupéré de copie depuis 4 jours.']], $status->problems());
-        $this->assertNull(ServerBackups::getNavigationBadge());
+        // A warning alone shows an amber badge; only danger is « Requis ».
+        $this->assertSame('À compléter', ServerBackups::getNavigationBadge());
+        $this->assertSame('warning', ServerBackups::getNavigationBadgeColor());
 
         $latest->update(['pc_copied_at' => now()->subDays(8)]);
 

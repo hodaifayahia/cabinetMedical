@@ -95,6 +95,7 @@ const props = withDefaults(defineProps<ConnectivityBackupPageProps>(), {
     patients: () => [],
     qrDataUrl: null,
 });
+const hostedServerBackup = computed(() => props.hostedServerBackup);
 const page = usePage();
 const licenseNow = ref(Date.now());
 const hostedRemainingDays = computed(() => {
@@ -1584,7 +1585,11 @@ const testDriveConnection = () => {
         >
             <Heading
                 title="Connexion & sauvegardes"
-                description="Configurez les transferts par QR code, le réseau local, les sauvegardes et les mises à jour depuis un seul écran."
+                :description="
+                    hostedServerBackup
+                        ? 'Consultez les sauvegardes de vos données hébergées et l’état de votre licence.'
+                        : 'Configurez les transferts par QR code, le réseau local, les sauvegardes et les mises à jour depuis un seul écran.'
+                "
             />
             <Button
                 v-if="permissions.manage_settings || permissions.manage_backups"
@@ -1606,8 +1611,15 @@ const testDriveConnection = () => {
             class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
         >
             <ShieldCheck class="mt-0.5 size-4 shrink-0" />
-            Ces réglages sont en lecture seule. Une autorisation
-            d’administration est nécessaire pour les modifier.
+            <span v-if="hostedServerBackup">
+                Les réglages techniques du serveur sont gérés par
+                l’administration Drclick. L’état de ses sauvegardes est affiché
+                ci-dessous.
+            </span>
+            <span v-else>
+                Ces réglages sont en lecture seule. Une autorisation
+                d’administration est nécessaire pour les modifier.
+            </span>
         </div>
 
         <div
@@ -1637,7 +1649,118 @@ const testDriveConnection = () => {
             </Button>
         </div>
 
-        <section class="med-panel p-6">
+        <section v-if="hostedServerBackup" class="med-panel p-6">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2
+                        class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
+                    >
+                        <DatabaseBackup class="size-5 text-emerald-600" />
+                        Sauvegardes des données hébergées
+                    </h2>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        Ce cabinet utilise les données du serveur Drclick. Les
+                        sauvegardes locales de l’application Windows concernent
+                        uniquement un cabinet utilisé hors ligne.
+                    </p>
+                </div>
+            </div>
+
+            <p
+                v-if="!hostedServerBackup.tracking_available"
+                class="mt-5 rounded-lg bg-amber-50 p-4 text-sm text-amber-800"
+            >
+                Le suivi des sauvegardes serveur est indisponible. Contactez
+                l’administration Drclick.
+            </p>
+            <div v-else class="mt-5 grid gap-4 md:grid-cols-3">
+                <article
+                    class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+                >
+                    <span
+                        class="rounded-full border px-2.5 py-1 text-[11px] font-bold"
+                        :class="
+                            stateClass(
+                                hostedServerBackup.server_recent
+                                    ? 'ready'
+                                    : 'degraded',
+                            )
+                        "
+                    >
+                        {{
+                            hostedServerBackup.server_recent
+                                ? 'À jour'
+                                : 'À vérifier'
+                        }}
+                    </span>
+                    <h3 class="mt-3 font-semibold">
+                        Archive chiffrée sur le serveur
+                    </h3>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        Dernière sauvegarde :
+                        {{ formatDate(hostedServerBackup.last_run_at) }}
+                    </p>
+                </article>
+                <article
+                    class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+                >
+                    <span
+                        class="rounded-full border px-2.5 py-1 text-[11px] font-bold"
+                        :class="
+                            stateClass(
+                                hostedServerBackup.pc_recent
+                                    ? 'ready'
+                                    : 'degraded',
+                            )
+                        "
+                    >
+                        {{
+                            hostedServerBackup.pc_recent
+                                ? 'Copie récente'
+                                : 'À vérifier'
+                        }}
+                    </span>
+                    <h3 class="mt-3 font-semibold">
+                        Copie sur le PC de sauvegarde
+                    </h3>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        Dernière copie vérifiée :
+                        {{ formatDate(hostedServerBackup.last_pc_copied_at) }}
+                    </p>
+                </article>
+                <article
+                    class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+                >
+                    <span
+                        class="rounded-full border px-2.5 py-1 text-[11px] font-bold"
+                        :class="
+                            stateClass(
+                                hostedServerBackup.drive_connected
+                                    ? 'ready'
+                                    : 'degraded',
+                            )
+                        "
+                    >
+                        {{
+                            hostedServerBackup.drive_connected
+                                ? 'Connecté'
+                                : 'Non connecté'
+                        }}
+                    </span>
+                    <h3 class="mt-3 font-semibold">Google Drive du serveur</h3>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        Dernier envoi :
+                        {{
+                            formatDate(
+                                hostedServerBackup.last_drive_uploaded_at,
+                            )
+                        }}
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section v-else class="med-panel p-6">
             <div
                 class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
             >
@@ -2102,7 +2225,7 @@ const testDriveConnection = () => {
             </section>
 
             <section
-                v-if="permissions.manage_backups"
+                v-if="!hostedServerBackup && permissions.manage_backups"
                 id="backup-schedule"
                 class="med-panel scroll-mt-24 p-6"
             >
@@ -2615,7 +2738,7 @@ const testDriveConnection = () => {
         </form>
 
         <section
-            v-if="permissions.manage_upload_sessions"
+            v-if="!hostedServerBackup && permissions.manage_upload_sessions"
             class="med-panel p-6"
         >
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -3332,7 +3455,10 @@ const testDriveConnection = () => {
         </section>
 
         <section
-            v-if="permissions.manage_backups || permissions.manage_drive"
+            v-if="
+                !hostedServerBackup &&
+                (permissions.manage_backups || permissions.manage_drive)
+            "
             id="backup-now"
             class="med-panel scroll-mt-24 p-6"
         >
@@ -4316,7 +4442,10 @@ const testDriveConnection = () => {
         />
 
         <section
-            v-if="permissions.manage_backups || permissions.manage_drive"
+            v-if="
+                !hostedServerBackup &&
+                (permissions.manage_backups || permissions.manage_drive)
+            "
             class="med-panel overflow-hidden"
         >
             <div class="border-b border-sidebar-border/70 px-6 py-5">

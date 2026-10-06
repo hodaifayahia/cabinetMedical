@@ -435,6 +435,11 @@ const syncMobileAppointments = () => {
 
 // Start (or resume) a consultation from the expanded waiting-room card only.
 // Confirm/check-in controls remain on the appointment list.
+// Resuming an open consultation is immediate; opening a new one is confirmed
+// first, so a mis-click on a waiting patient does not start a visit.
+const consultationStartTarget = ref<AppointmentListItem | null>(null);
+const startingConsultation = ref(false);
+
 const startConsultation = (appointment: AppointmentListItem) => {
     if (appointment.consultation_id) {
         router.visit(`/app/consultations/${appointment.consultation_id}`);
@@ -442,16 +447,31 @@ const startConsultation = (appointment: AppointmentListItem) => {
         return;
     }
 
+    consultationStartTarget.value = appointment;
+};
+
+const confirmStartConsultation = () => {
+    if (!consultationStartTarget.value || startingConsultation.value) {
+        return;
+    }
+
+    startingConsultation.value = true;
     router.post(
-        `/app/consultations/${appointment.id}/start`,
+        `/app/consultations/${consultationStartTarget.value.id}/start`,
         {},
         {
             preserveScroll: true,
+            onSuccess: () => {
+                consultationStartTarget.value = null;
+            },
             onError: (errors) =>
                 toast.error(
                     Object.values(errors)[0] ??
                         'Impossible de commencer la consultation.',
                 ),
+            onFinish: () => {
+                startingConsultation.value = false;
+            },
         },
     );
 };
@@ -2538,6 +2558,50 @@ const printAppointments = () => {
                         </Button>
                     </DialogFooter>
                 </form>
+            </DialogContent>
+        </Dialog>
+
+        <!-- Start consultation confirmation -->
+        <Dialog
+            :open="consultationStartTarget !== null"
+            @update:open="
+                (value) => {
+                    if (!value && !startingConsultation)
+                        consultationStartTarget = null;
+                }
+            "
+        >
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Démarrer la consultation</DialogTitle>
+                    <DialogDescription>
+                        <template v-if="consultationStartTarget">
+                            Ouvrir une consultation pour
+                            <strong>{{
+                                consultationStartTarget.patient_name
+                            }}</strong>
+                            à {{ consultationStartTarget.time_label }} ?
+                        </template>
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        :disabled="startingConsultation"
+                        @click="consultationStartTarget = null"
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        type="button"
+                        :disabled="startingConsultation"
+                        data-test="confirm-start-consultation"
+                        @click="confirmStartConsultation"
+                    >
+                        {{ startingConsultation ? 'Ouverture…' : 'Démarrer' }}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     </div>

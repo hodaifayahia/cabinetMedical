@@ -25,6 +25,8 @@ use App\Services\ApplicationSettingService;
 use App\Services\Backups\DriveBackupAuthority;
 use App\Services\Backups\DriveBackupEntitlement;
 use App\Services\Backups\LocalBackupAuthority;
+use App\Services\Backups\ServerBackupDrive;
+use App\Services\Backups\ServerBackupStatus;
 use App\Services\Cabinet\CabinetEntitlementService;
 use App\Services\DesktopUpdateInstallAuthority;
 use App\Services\GoogleDriveService;
@@ -95,14 +97,16 @@ final class ConnectivityAndBackupController extends Controller
         $canManageUploadSessions = $actor?->can(
             PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value,
         ) ?? false;
-        $foundationReady = $maintenanceAllowed && $this->foundationReady();
+        $desktopSupervised = (bool) config('medismart.runtime.desktop_supervised', false);
+        $schemaReady = $this->foundationReady();
+        $foundationReady = $maintenanceAllowed && $schemaReady;
         $status = $maintenanceAllowed
             ? $health->status()
             : $this->hiddenInstallationStatus();
         // Identical to the values above for installation maintainers; for the
         // desktop's doctor they carry only what the backup blocks need.
         $driveFoundationReady = ($maintenanceAllowed || $canManageDrive || $canManageBackups)
-            && $this->foundationReady();
+            && $schemaReady;
         $driveRuntimeStatus = ! $maintenanceAllowed && ($canManageDrive || $canManageBackups)
             ? $health->status()
             : $status;
@@ -300,14 +304,18 @@ final class ConnectivityAndBackupController extends Controller
                         : null,
                 ],
                 'backups' => [
-                    'state' => $lastBackup?->status === 'failed'
+                    'state' => ! $desktopSupervised
+                        ? 'unknown'
+                        : ($lastBackup?->status === 'failed'
                         ? 'degraded'
-                        : ($foundationReady ? 'ready' : 'unavailable'),
-                    'message' => $foundationReady
-                        ? 'Les archives .msbackup locales incluent une copie SQLite cohérente et les fichiers gérés, puis sont vérifiées avant publication.'
-                        : 'Les tables de suivi des sauvegardes ne sont pas disponibles.',
-                    'last_completed_at' => $lastBackup?->completed_at?->toIso8601String(),
-                    'last_filename' => $lastBackup?->filename,
+                        : ($driveFoundationReady ? 'ready' : 'unavailable')),
+                    'message' => ! $desktopSupervised
+                        ? 'Les données de cette session sont hébergées sur le serveur Drclick. Voir l’état des sauvegardes serveur ci-dessous.'
+                        : ($driveFoundationReady
+                            ? 'Les archives .msbackup locales incluent une copie SQLite cohérente et les fichiers gérés, puis sont vérifiées avant publication.'
+                            : 'Les tables de suivi des sauvegardes locales ne sont pas disponibles.'),
+                    'last_completed_at' => $desktopSupervised ? $lastBackup?->completed_at?->toIso8601String() : null,
+                    'last_filename' => $desktopSupervised ? $lastBackup?->filename : null,
                     'last_verified_at' => null,
                 ],
                 'updates' => [
@@ -448,6 +456,7 @@ final class ConnectivityAndBackupController extends Controller
                 $canManageBackups && $driveFoundationReady,
             ),
             'backupHistory' => array_values($backupHistory),
+            'hostedServerBackup' => $desktopSupervised ? null : $this->hostedServerBackupStatus(),
             'permissions' => [
                 'manage_settings' => $canManageConnectivity,
                 'manage_backups' => $canManageBackups,
@@ -967,6 +976,45 @@ final class ConnectivityAndBackupController extends Controller
             && Schema::hasTable('upload_sessions')
             && Schema::hasTable('uploaded_documents')
             && Schema::hasTable('backup_records');
+    }
+
+    /**
+     * Share only aggregate server-backup health with users who can open this
+     * configuration page. Paths, filenames and Google account details stay in
+     * the platform administrator's server-backup page.
+     *
+     * @return array{tracking_available: bool, last_run_at: string|null, last_pc_copied_at: string|null, last_drive_uploaded_at: string|null, server_recent: bool, pc_recent: bool, drive_connected: bool}
+     */
+    private function hostedServerBackupStatus(): array
+    {
+        $empty = [
+            'tracking_available' => false,
+            'last_run_at' => null,
+            'last_pc_copied_at' => null,
+            'last_drive_uploaded_at' => null,
+            'server_recent' => false,
+            'pc_recent' => false,
+            'drive_connected' => false,
+        ];
+
+        if (! Schema::hasTable('server_backup_runs') || ! Schema::hasTable('server_drive_connections')) {
+            return $empty;
+        }
+
+        $status = app(ServerBackupStatus::class);
+        $lastRun = $status->lastRun();
+        $lastPcCopyAt = $status->lastPcCopyAt();
+
+        return [
+            'tracking_available' => true,
+            'last_run_at' => $lastRun?->created_at?->toIso8601String(),
+            'last_pc_copied_at' => $lastPcCopyAt?->toIso8601String(),
+            'last_drive_uploaded_at' => $status->lastDriveUploadAt()?->toIso8601String(),
+            'server_recent' => ($lastRun?->created_at?->gte(now()->subHours(ServerBackupStatus::BACKUP_STALE_AFTER_HOURS)) ?? false)
+                && is_file($lastRun->path),
+            'pc_recent' => $lastPcCopyAt?->gte(now()->subHours(ServerBackupStatus::PC_STALE_AFTER_HOURS)) ?? false,
+            'drive_connected' => app(ServerBackupDrive::class)->isConnected(),
+        ];
     }
 
     private function portFromUrl(?string $url): ?int

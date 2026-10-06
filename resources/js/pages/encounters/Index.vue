@@ -1,9 +1,21 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { Eye, Pencil, Plus } from '@lucide/vue';
+import { ref } from 'vue';
 import Heading from '@/components/Heading.vue';
+import InputError from '@/components/InputError.vue';
 import PageBackButton from '@/components/PageBackButton.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import type { Paginator } from '@/types';
 import type {
     EncounterListItem,
@@ -25,6 +37,31 @@ const page = usePage();
 
 const can = (permission: string): boolean =>
     page.props.auth.user?.permissions?.includes(permission) ?? false;
+
+const localDate = (): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
+
+const showCreateDialog = ref(false);
+const form = useForm({ occurred_at: localDate() });
+
+const openCreateDialog = () => {
+    form.reset();
+    form.clearErrors();
+    form.occurred_at = localDate();
+    showCreateDialog.value = true;
+};
+
+const submitCreate = () => {
+    form.post(`/app/patients/${props.patient.id}/encounters`, {
+        preserveScroll: true,
+    });
+};
 
 const statusBadge = (status: string): string => {
     const base = 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium';
@@ -82,13 +119,13 @@ const formatDateTime = (value: string | null): string =>
                             >Retour au patient</Link
                         >
                     </Button>
-                    <Button v-if="can('encounters.create')" as-child>
-                        <Link
-                            :href="`/app/patients/${props.patient.id}/encounters/create`"
-                        >
-                            <Plus class="size-4" />
-                            Nouvelle consultation
-                        </Link>
+                    <Button
+                        v-if="can('encounters.create')"
+                        type="button"
+                        @click="openCreateDialog"
+                    >
+                        <Plus class="size-4" />
+                        Nouvelle consultation
                     </Button>
                 </div>
             </div>
@@ -203,5 +240,53 @@ const formatDateTime = (value: string | null): string =>
                 </div>
             </div>
         </section>
+
+        <Dialog v-model:open="showCreateDialog">
+            <DialogContent
+                class="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md"
+            >
+                <DialogHeader>
+                    <DialogTitle>Nouvelle consultation</DialogTitle>
+                    <DialogDescription>
+                        {{ props.patient.full_name }} · Dossier
+                        {{ props.patient.patient_number }}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form class="space-y-5" @submit.prevent="submitCreate">
+                    <div class="grid gap-2">
+                        <Label for="new-consultation-date">
+                            Date de consultation
+                        </Label>
+                        <Input
+                            id="new-consultation-date"
+                            v-model="form.occurred_at"
+                            type="date"
+                            :max="localDate()"
+                            required
+                        />
+                        <InputError :message="form.errors.occurred_at" />
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            :disabled="form.processing"
+                            @click="showCreateDialog = false"
+                        >
+                            Annuler
+                        </Button>
+                        <Button type="submit" :disabled="form.processing">
+                            {{
+                                form.processing
+                                    ? 'Création…'
+                                    : 'Créer la consultation'
+                            }}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

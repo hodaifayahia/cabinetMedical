@@ -447,6 +447,17 @@ export type HostedEntitlementPresentation = {
     remaining_days: number | null;
 };
 
+/** Aggregate status of the hosted database backups; no paths or account data. */
+export type HostedServerBackupStatus = {
+    tracking_available: boolean;
+    last_run_at: string | null;
+    last_pc_copied_at: string | null;
+    last_drive_uploaded_at: string | null;
+    server_recent: boolean;
+    pc_recent: boolean;
+    drive_connected: boolean;
+};
+
 /**
  * Inertia props contract for `configuration/ConnectivityAndBackup.vue`.
  *
@@ -467,6 +478,7 @@ export type ConnectivityBackupPageProps = {
     backupDestination?: BackupDestinationStatus;
     latestBackups?: LocalBackupEntry[];
     backupHistory?: BackupHistoryEntry[];
+    hostedServerBackup: HostedServerBackupStatus | null;
     permissions: ConnectivityBackupPermissions;
     license: LicenseRuntimeStatus;
     hostedEntitlement: HostedEntitlementPresentation | null;

@@ -49,7 +49,7 @@ class ServerBackups extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Chaque nuit, une copie chiffrée de toute la base part sur Google Drive et sur le PC Windows.';
+        return 'Suivez la dernière archive chiffrée, sa copie sur le PC Windows et l’envoi vers Google Drive.';
     }
 
     public static function canAccess(): bool
@@ -59,12 +59,18 @@ class ServerBackups extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        return app(ServerBackupStatus::class)->needsAttention() ? 'Requis' : null;
+        $status = app(ServerBackupStatus::class);
+
+        if ($status->needsAttention()) {
+            return 'Requis';
+        }
+
+        return $status->problems() === [] ? null : 'À compléter';
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return app(ServerBackupStatus::class)->needsAttention() ? 'danger' : 'warning';
     }
 
     public function mount(ServerBackupDrive $drive): void

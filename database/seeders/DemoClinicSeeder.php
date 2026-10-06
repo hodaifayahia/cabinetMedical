@@ -4,10 +4,12 @@ namespace Database\Seeders;
 
 use App\Actions\Payments\RecordConsultationPaymentAction;
 use App\Enums\AppointmentStatus;
+use App\Enums\ExpenseCategory;
 use App\Enums\RoleName;
 use App\Models\Appointment;
 use App\Models\Cabinet;
 use App\Models\Consultation;
+use App\Models\Expense;
 use App\Models\Patient;
 use App\Models\PatientAlert;
 use App\Models\Prescription;
@@ -24,7 +26,8 @@ use RuntimeException;
  *
  *   DEMO_CABINET_ID=1 php artisan db:seed --class=DemoClinicSeeder
  *
- * Never run against a production database: it writes invented patients.
+ * A production run requires both DEMO_CABINET_ID and DEMO_DOCTOR_EMAIL.
+ * The generated patients are visibly marked as demo records there.
  */
 class DemoClinicSeeder extends Seeder
 {
@@ -111,12 +114,20 @@ class DemoClinicSeeder extends Seeder
 
     private function seedDemo(): void
     {
-        $cabinet = Cabinet::query()->findOrFail((int) (getenv('DEMO_CABINET_ID') ?: 1));
+        $cabinetId = getenv('DEMO_CABINET_ID') ?: null;
+        $doctorEmail = trim((string) (getenv('DEMO_DOCTOR_EMAIL') ?: ''));
+
+        if (app()->isProduction() && (! $cabinetId || ! ctype_digit($cabinetId) || $doctorEmail === '')) {
+            throw new RuntimeException('Production demo data requires DEMO_CABINET_ID and DEMO_DOCTOR_EMAIL.');
+        }
+
+        $cabinet = Cabinet::query()->findOrFail((int) ($cabinetId ?: 1));
         $doctor = User::query()
             ->where('cabinet_id', $cabinet->getKey())
+            ->when($doctorEmail !== '', static fn ($query) => $query->where('email', $doctorEmail))
             ->whereHas('roles', static fn ($query) => $query->where('name', RoleName::DOCTOR->value))
             ->orderBy('id')
-            ->first() ?? throw new RuntimeException('Aucun médecin dans ce cabinet.');
+            ->first() ?? throw new RuntimeException('Aucun médecin correspondant dans ce cabinet.');
 
         // Tenant-owned models take their cabinet from the signed-in user.
         Auth::login($doctor);
@@ -125,12 +136,13 @@ class DemoClinicSeeder extends Seeder
         $patients = [];
 
         foreach (self::PATIENTS as $index => [$first, $last, $gender, $birth, $city, $allergy]) {
+            $first = app()->isProduction() ? 'Démo '.$first : $first;
             $patient = Patient::query()->firstOrCreate(
                 ['first_name' => $first, 'last_name' => $last, 'date_of_birth' => $birth],
                 [
                     'gender' => $gender,
                     'city' => $city,
-                    'phone' => sprintf('05%02d %02d %02d %02d', 50 + $index, 10 + $index, 20 + $index, 30 + $index),
+                    'phone' => app()->isProduction() ? null : sprintf('05%02d %02d %02d %02d', 50 + $index, 10 + $index, 20 + $index, 30 + $index),
                     'allergies' => $allergy,
                     'notes' => self::MARKER.' patient de démonstration',
                     'created_by' => $doctor->getKey(),
@@ -152,14 +164,32 @@ class DemoClinicSeeder extends Seeder
 
         // A duplicate of the first patient, to try "Doublons" and the merge.
         Patient::query()->firstOrCreate(
-            ['first_name' => 'HADDAD', 'last_name' => 'Karim', 'date_of_birth' => '1968-03-14'],
-            ['gender' => 'male', 'phone' => '0661 00 11 22', 'city' => 'Alger', 'notes' => self::MARKER.' doublon à fusionner'],
+            ['first_name' => 'HADDAD', 'last_name' => app()->isProduction() ? 'Démo Karim' : 'Karim', 'date_of_birth' => '1968-03-14'],
+            ['gender' => 'male', 'phone' => app()->isProduction() ? null : '0661 00 11 22', 'city' => 'Alger', 'notes' => self::MARKER.' doublon à fusionner'],
         );
 
         if (Appointment::query()->where('reception_notes', self::MARKER)->exists()) {
             $this->command?->warn('Les rendez-vous de démo existent déjà : seuls les patients ont été vérifiés.');
 
             return;
+        }
+
+        foreach ([
+            [ExpenseCategory::RENT, 'Loyer du cabinet', 6_500_000, $today->startOfMonth(), true],
+            [ExpenseCategory::MEDICAL_SUPPLIES, 'Consommables médicaux', 1_250_000, $today->startOfMonth()->addDay(), false],
+            [ExpenseCategory::UTILITIES, 'Électricité et eau', 480_000, $today->startOfMonth()->addDays(2), false],
+        ] as [$category, $label, $amount, $spentOn, $recurring]) {
+            Expense::query()->firstOrCreate(
+                ['label' => self::MARKER.' '.$label, 'spent_on' => $spentOn->toDateString()],
+                [
+                    'category' => $category,
+                    'amount_minor' => $amount,
+                    'method' => 'cash',
+                    'notes' => self::MARKER.' charge fictive pour les essais',
+                    'is_recurring' => $recurring,
+                    'created_by' => $doctor->getKey(),
+                ],
+            );
         }
 
         // History: 1 to 3 completed visits per patient over the last months.
@@ -276,7 +306,7 @@ class DemoClinicSeeder extends Seeder
             'paid_now_minor' => $patient->getKey() % 4 === 0 ? 100_000 : $charge,
             'method' => 'cash',
             'service' => 'Consultation',
-            'notes' => null,
+            'notes' => self::MARKER.' encaissement fictif pour les essais',
             'settle' => false,
             'client_reference' => null,
         ]);
