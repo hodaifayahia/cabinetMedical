@@ -31,6 +31,9 @@
 #   DRCLICK_SKIP_BACKUP  1 = no database backup before deploying
 #   DRCLICK_FORCE        1 = deploy even if already up to date or the server has local edits
 #   DRCLICK_ASSETS       github (default) | node
+#   DRCLICK_WEB_ROOT     folder the web server serves, when it is not
+#                        <app>/public (default: ../public_html when its
+#                        index.php loads this app)
 #   DRCLICK_ASSET_WAIT   seconds to wait for GitHub to finish the frontend build (default 900)
 set -Eeuo pipefail
 umask 022
@@ -46,6 +49,14 @@ if [ -z "${DRCLICK_APP_DIR:-}" ] && [ ! -f "$APP_DIR/artisan" ]; then
         fi
     done
 fi
+# Hostinger serves the site from a separate public_html folder whose
+# index.php loads ../backend-laravel: public files are copied there too.
+WEB_ROOT="${DRCLICK_WEB_ROOT:-}"
+if [ -z "$WEB_ROOT" ] && [ -f "$APP_DIR/../public_html/index.php" ] \
+    && [ "$(cd "$APP_DIR/../public_html" && pwd -P)" != "$(cd "$APP_DIR/public" 2>/dev/null && pwd -P)" ] \
+    && grep -q "$(basename "$APP_DIR")/bootstrap/app.php" "$APP_DIR/../public_html/index.php"; then
+    WEB_ROOT="$(cd "$APP_DIR/../public_html" && pwd)"
+fi
 STATE_DIR="${DRCLICK_DEPLOY_STATE_DIR:-$HOME/.local/state/drclick-deploy}"
 LOG_FILE="$STATE_DIR/deploy.log"
 ASSETS_MODE="${DRCLICK_ASSETS:-github}"
@@ -54,7 +65,7 @@ MODE="deploy"
 BRANCH="main"
 
 case "${1:-}" in
-    -h|--help) sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,/^set -E/p' "${BASH_SOURCE[0]}" | grep '^#' | sed 's/^# \{0,1\}//'; exit 0 ;;
     --check) MODE="check" ;;
     --rollback) MODE="rollback" ;;
     '') ;;
@@ -63,7 +74,13 @@ case "${1:-}" in
 esac
 
 mkdir -p "$STATE_DIR"
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Everything printed also goes to the log. Shared hosting has no /dev/fd, so
+# instead of a process substitution the script runs itself through tee.
+if [ -z "${DRCLICK_DEPLOY_LOGGED:-}" ]; then
+    set +e
+    DRCLICK_DEPLOY_LOGGED=1 DRCLICK_APP_DIR="$APP_DIR" bash "${BASH_SOURCE[0]}" "$@" 2>&1 | tee -a "$LOG_FILE"
+    exit "${PIPESTATUS[0]}"
+fi
 
 say() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 ok() { printf '\033[0;32m    ✔ %s\033[0m\n' "$*"; }
@@ -142,15 +159,9 @@ preflight() {
     [ -f "$APP_DIR/.env" ] || die "Fichier .env absent dans $APP_DIR."
     ok ".env présent"
 
-    if [ -n "$(git -C "$APP_DIR" status --porcelain --untracked-files=no)" ]; then
-        if [ "${DRCLICK_FORCE:-0}" = "1" ]; then
-            warn "Fichiers modifiés sur le serveur : ils seront remplacés (DRCLICK_FORCE=1)."
-            git -C "$APP_DIR" status --short --untracked-files=no | sed 's/^/      /'
-        else
-            git -C "$APP_DIR" status --short --untracked-files=no | sed 's/^/      /'
-            die "Des fichiers du code ont été modifiés directement sur le serveur (liste ci-dessus).
-Ils seraient écrasés. Sauvegardez-les si besoin, puis relancez avec DRCLICK_FORCE=1."
-        fi
+    if [ -n "$WEB_ROOT" ]; then
+        [ -d "$WEB_ROOT" ] || die "Dossier public introuvable : $WEB_ROOT"
+        ok "Dossier public du site : $WEB_ROOT"
     fi
 
     local free_kb
@@ -243,6 +254,107 @@ install_assets() {
     ok "Interface installée"
 }
 
+# --- Files edited on the server ------------------------------------------------
+
+# Code files changed on the server outside git. Those identical to a version
+# in GitHub's history were deployed by hand earlier and are safe to replace;
+# the others exist only here. A patch of all of them is always saved first.
+LOCAL_PATCH=""
+review_local_changes() {
+    local list f blob found commit local_only=0 known=0 patch
+    list="$STATE_DIR/local-changes.list"
+    git -C "$APP_DIR" diff --name-only HEAD > "$list"
+    [ -s "$list" ] || return 0
+
+    patch="$STATE_DIR/local-changes-$(date '+%Y%m%d-%H%M%S').patch"
+    git -C "$APP_DIR" diff --binary HEAD > "$patch"
+    LOCAL_PATCH="$patch"
+    : > "$STATE_DIR/local-only.list"
+
+    while IFS= read -r f; do
+        found=0
+        if [ -e "$APP_DIR/$f" ]; then
+            blob="$(git -C "$APP_DIR" hash-object -- "$f")"
+            for commit in $(git -C "$APP_DIR" log --format=%H "origin/$BRANCH" -- "$f"); do
+                if [ "$(git -C "$APP_DIR" rev-parse -q --verify "$commit:$f" 2>/dev/null)" = "$blob" ]; then
+                    found=1
+                    break
+                fi
+            done
+        elif ! git -C "$APP_DIR" cat-file -e "origin/$BRANCH:$f" 2>/dev/null; then
+            found=1 # deleted here and gone from GitHub too
+        fi
+        if [ "$found" = 1 ]; then
+            known=$((known + 1))
+        else
+            local_only=$((local_only + 1))
+            printf '%s\n' "$f" >> "$STATE_DIR/local-only.list"
+        fi
+    done < "$list"
+
+    if [ "$known" -gt 0 ]; then
+        ok "$known fichier(s) modifié(s) à la main sur le serveur : déjà présent(s) dans GitHub"
+    fi
+    if [ "$local_only" -gt 0 ]; then
+        warn "$local_only fichier(s) modifié(s) sur le serveur n'existent PAS dans GitHub :"
+        sed 's/^/        /' "$STATE_DIR/local-only.list"
+        warn "Copie de toutes les modifications : $patch"
+        if [ "$MODE" = "deploy" ] && [ "${DRCLICK_FORCE:-0}" != "1" ]; then
+            die "Ces changements seraient remplacés par la version de GitHub.
+Si c'est voulu (ils sont déjà dans le nouveau code, ou inutiles), relancez avec :
+  DRCLICK_FORCE=1 bash $0"
+        fi
+    else
+        ok "Copie de sécurité des modifications : $patch"
+    fi
+}
+
+# --- Web root (public_html) ---------------------------------------------------
+
+# Copies the app's public files into the web root: the built frontend
+# replaces build/ as a whole; tracked files are copied over. index.php,
+# .htaccess, storage and anything else that only lives there are kept.
+sync_web_root() {
+    local list f
+    [ -n "$WEB_ROOT" ] || return 0
+    [ -f "$APP_DIR/public/build/manifest.json" ] || die "public/build/manifest.json manquant : rien à publier."
+
+    rm -rf "$WEB_ROOT/build.drclick-deploy-new"
+    cp -R "$APP_DIR/public/build" "$WEB_ROOT/build.drclick-deploy-new"
+    rm -rf "$WEB_ROOT/build.drclick-deploy-old"
+    [ -d "$WEB_ROOT/build" ] && mv "$WEB_ROOT/build" "$WEB_ROOT/build.drclick-deploy-old"
+    mv "$WEB_ROOT/build.drclick-deploy-new" "$WEB_ROOT/build"
+    rm -rf "$WEB_ROOT/build.drclick-deploy-old"
+
+    copy_public_files || die "Copie des fichiers publics vers $WEB_ROOT impossible."
+    ok "Fichiers publics copiés dans $WEB_ROOT"
+}
+
+# Every file of <app>/public (including assets composer publishes, which are
+# not all in git) except the ones the web root keeps as its own.
+copy_public_files() {
+    local list f rel
+    list="$STATE_DIR/public-files.list"
+    (cd "$APP_DIR/public" && find . \( -path ./build -o -path "./build.*" -o -path ./storage -o -path ./hot \) -prune -o \
+        \( -type f -o -type l \) -print0) > "$list" || return 1
+    while IFS= read -r -d '' f; do
+        rel="${f#./}"
+        case "$rel" in
+            index.php | .htaccess) continue ;; # the web root's own versions
+        esac
+        mkdir -p "$WEB_ROOT/$(dirname "$rel")" || return 1
+        cp -pP "$APP_DIR/public/$rel" "$WEB_ROOT/$rel" || return 1
+    done < "$list"
+}
+
+save_web_root_build() {
+    [ -n "$WEB_ROOT" ] || return 0
+    rm -rf "$STATE_DIR/webroot-build.previous"
+    if [ -d "$WEB_ROOT/build" ]; then
+        cp -R "$WEB_ROOT/build" "$STATE_DIR/webroot-build.previous"
+    fi
+}
+
 # --- Steps -------------------------------------------------------------------
 
 backup_database() {
@@ -311,11 +423,24 @@ restore_previous() {
     [ -n "$PREVIOUS" ] || return 1
     say "Retour à la version précédente (${PREVIOUS:0:7})"
     git -C "$APP_DIR" reset -q --hard "$PREVIOUS" || return 1
+    if [ -n "$LOCAL_PATCH" ] && [ -s "$LOCAL_PATCH" ]; then
+        # Files that had been edited by hand on the server come back too.
+        git -C "$APP_DIR" apply --whitespace=nowarn "$LOCAL_PATCH" || return 1
+        ok "Modifications locales du serveur remises ($LOCAL_PATCH)"
+    fi
     composer_install || return 1
     if [ -d "$STATE_DIR/build.previous" ]; then
         rm -rf "$APP_DIR/public/build" || return 1
         cp -R "$STATE_DIR/build.previous" "$APP_DIR/public/build" || return 1
         ok "Interface précédente remise"
+    fi
+    if [ -n "$WEB_ROOT" ]; then
+        if [ -d "$STATE_DIR/webroot-build.previous" ]; then
+            rm -rf "$WEB_ROOT/build" || return 1
+            cp -R "$STATE_DIR/webroot-build.previous" "$WEB_ROOT/build" || return 1
+        fi
+        copy_public_files || return 1
+        ok "Dossier public remis ($WEB_ROOT)"
     fi
     refresh_caches || return 1
     artisan queue:restart >/dev/null 2>&1 || true
@@ -366,6 +491,7 @@ if [ "$MODE" = "check" ]; then
         ok "Nouvelle version disponible : ${target:0:7} ($(git log -1 --format=%s "$target"))"
         git log --oneline "$current..$target" | head -20 | sed 's/^/      /'
     fi
+    review_local_changes
     if [ "$ASSETS_MODE" = "node" ]; then
         ok "Interface compilée sur ce serveur (DRCLICK_ASSETS=node)"
     elif git fetch -q origin "+refs/heads/$(asset_branch):refs/remotes/origin/$(asset_branch)" 2>/dev/null; then
@@ -384,6 +510,7 @@ fi
 
 if [ "$MODE" = "rollback" ]; then
     PREVIOUS="$(cat "$STATE_DIR/previous-commit" 2>/dev/null || true)"
+    LOCAL_PATCH="$(cat "$STATE_DIR/previous-local-patch" 2>/dev/null || true)"
     [ -n "$PREVIOUS" ] || die "Aucune version précédente enregistrée (aucun déploiement fait avec ce script)."
     say "Retour à la version ${PREVIOUS:0:7}"
     maintenance_on
@@ -403,6 +530,7 @@ if [ "$CURRENT" = "$TARGET" ] && [ "${DRCLICK_FORCE:-0}" != "1" ]; then
     exit 0
 fi
 ok "${CURRENT:0:7} → ${TARGET:0:7} : $(git log -1 --format=%s "$TARGET")"
+review_local_changes
 
 prepare_assets "$TARGET"
 backup_database
@@ -410,18 +538,22 @@ backup_database
 say "Mise à jour"
 PREVIOUS="$CURRENT"
 printf '%s\n' "$PREVIOUS" > "$STATE_DIR/previous-commit"
+printf '%s\n' "$LOCAL_PATCH" > "$STATE_DIR/previous-local-patch"
 rm -rf "$STATE_DIR/build.previous"
 [ -d "$APP_DIR/public/build" ] && cp -R "$APP_DIR/public/build" "$STATE_DIR/build.previous"
+save_web_root_build
 
 maintenance_on
 STARTED=1
 
-git checkout -q -B "$BRANCH" "$TARGET"
+# Local edits were saved as a patch above; the rollback re-applies it.
+git checkout -q -f -B "$BRANCH" "$TARGET"
 git reset -q --hard "$TARGET"
 ok "Code : $(git log -1 --format='%h %s')"
 
 composer_install
 install_assets
+sync_web_root
 
 say "Base de données"
 artisan migrate --force

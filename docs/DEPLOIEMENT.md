@@ -48,12 +48,12 @@ ssh -p 65002 u165892118@<adresse-du-serveur>
 | Vérifications | PHP 8.3+, Composer, git, `.env`, aucun fichier du code modifié à la main sur le serveur |
 | Sauvegarde | Sauvegarde chiffrée de la base (`scripts/server/nightly-backup.sh`), avant tout changement |
 | Maintenance | Le site affiche « en maintenance » (en général moins d'une minute) |
-| Mise à jour | Nouveau code (git), paquets PHP (`composer install --no-dev`), interface compilée, migrations de la base, caches |
+| Mise à jour | Nouveau code (git), paquets PHP (`composer install --no-dev`), interface compilée (copiée aussi dans `public_html`), migrations de la base, caches |
 | Remise en ligne | Puis vérification que `https://drclickdz.com/up` répond |
 
 **Si une étape échoue après la mise en maintenance**, le script remet tout
-seul l'ancienne version (code, paquets, interface) et remet le site en
-ligne. Les migrations déjà passées restent (elles ne font qu'ajouter des
+seul l'ancienne version (code, paquets, interface, fichiers modifiés à la
+main sur le serveur) et remet le site en ligne. Les migrations déjà passées restent (elles ne font qu'ajouter des
 tables ou des colonnes).
 
 ## Autres commandes
@@ -97,44 +97,49 @@ hors du serveur et ne la donnez à personne.
 
 ## Première installation (une seule fois)
 
-Le script a besoin que le dossier du site soit un dépôt git relié à GitHub.
-Vérifiez :
-
-```bash
-cd ~/domains/drclickdz.com/backend-laravel && git remote -v
-```
-
-**Si une adresse GitHub s'affiche**, tout est prêt. Le premier déploiement
-se lance ainsi (le script n'est pas encore sur le serveur, on le prend dans
-GitHub) :
+Le dossier du site doit être relié au dépôt GitHub (public : aucune clé
+n'est nécessaire). Dans le dossier du site :
 
 ```bash
 cd ~/domains/drclickdz.com/backend-laravel
+git remote add origin https://github.com/hodaifayahia/cabinetMedical.git 2>/dev/null \
+  || git remote set-url origin https://github.com/hodaifayahia/cabinetMedical.git
 git fetch origin main
 git show origin/main:scripts/server/deploy.sh > ~/drclick-deploy.sh
+bash ~/drclick-deploy.sh --check
+```
+
+`--check` ne modifie rien. Il indique la version qui sera installée et
+compare les fichiers modifiés à la main sur le serveur (anciens déploiements
+faits fichier par fichier) avec l'historique de GitHub :
+
+- **« déjà présent(s) dans GitHub »** : ces fichiers seront simplement
+  remplacés par la nouvelle version ;
+- **« n'existent PAS dans GitHub »** : ces changements n'existent que sur le
+  serveur. Le script les liste et en garde une copie
+  (`~/.local/state/drclick-deploy/local-changes-*.patch`). Vérifiez-les,
+  puis lancez la mise à jour avec `DRCLICK_FORCE=1`.
+
+Puis le premier déploiement :
+
+```bash
 bash ~/drclick-deploy.sh
+# ou, si --check a signalé des changements propres au serveur :
+DRCLICK_FORCE=1 bash ~/drclick-deploy.sh
 ```
 
 Ensuite, utilisez toujours la commande du début de cette page.
 
-**Si « not a git repository » s'affiche**, le site a été copié sans git.
-Il faut d'abord donner au serveur un accès en lecture au dépôt :
+**Le dossier public `public_html`.** Sur Hostinger, le site est servi depuis
+`~/domains/drclickdz.com/public_html`, dont `index.php` charge
+`../backend-laravel`. Le script le détecte : il y copie l'interface
+(`build/`) et les fichiers publics, sans jamais toucher à `index.php`,
+`.htaccess`, `storage`, `downloads`, `desktop-updates` ni aux autres
+fichiers propres à ce dossier.
 
-```bash
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/drclick_github -C "drclickdz.com deploy"
-cat ~/.ssh/drclick_github.pub
-cat >> ~/.ssh/config <<'EOF'
-Host github.com
-  IdentityFile ~/.ssh/drclick_github
-  IdentitiesOnly yes
-EOF
-```
-
-Collez la clé affichée dans GitHub › dépôt › *Settings* › *Deploy keys* ›
-*Add deploy key* (sans cocher « Allow write access »). Puis reliez le
-dossier à GitHub. Le site passe en maintenance pendant ce temps ; `.env`,
-`storage/` et `vendor/` ne sont pas touchés, et une copie complète du
-dossier est faite avant :
+**Si `git` répond « not a git repository »** (site copié sans git) : faites
+d'abord une copie du dossier, puis reliez-le à GitHub sans toucher à
+`.env`, `storage/` ni `vendor/` :
 
 ```bash
 cd ~/domains/drclickdz.com
@@ -142,7 +147,7 @@ tar czf ~/backend-laravel-avant-git.tar.gz backend-laravel
 cd backend-laravel
 php artisan down
 git init -q
-git remote add origin git@github.com:hodaifayahia/cabinetMedical.git
+git remote add origin https://github.com/hodaifayahia/cabinetMedical.git
 git fetch origin main
 git reset -q origin/main
 git branch -M main
@@ -150,10 +155,6 @@ git checkout -- .
 git branch --set-upstream-to=origin/main main
 DRCLICK_FORCE=1 bash scripts/server/deploy.sh
 ```
-
-La dernière ligne installe les paquets, l'interface et les migrations de
-cette version, puis remet le site en ligne. Ensuite, utilisez toujours la
-commande du début de cette page.
 
 ## En cas de problème
 
