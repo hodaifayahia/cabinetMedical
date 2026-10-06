@@ -76,7 +76,7 @@ final class MobileAppointmentSynchroniser
         } catch (SyncTransportException $exception) {
             $report->offline = $exception->offline;
             $report->error = $exception->getMessage();
-            $state->markFailed($exception->getMessage());
+            $state->markFailed($exception->getMessage(), $exception->offline);
         } catch (Throwable $exception) {
             // Anything else — a database error mid-import, a malformed remote
             // response — must still leave the cursor recorded and the failure

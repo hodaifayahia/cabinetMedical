@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AppointmentSyncController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CabinetController;
 use App\Http\Controllers\Api\V1\CabinetSeatController;
+use App\Http\Controllers\Api\V1\DesktopActivationController;
 use App\Http\Controllers\Api\V1\PatientController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,12 @@ Route::prefix('v1')->group(function (): void {
 
     Route::post('cabinets/join', [CabinetController::class, 'join'])
         ->middleware('throttle:cabinet-join');
+
+    // An installed desktop's one-time activation: answers with a signed,
+    // installation-bound entitlement the desktop then trusts offline.
+    Route::post('desktop/activate', DesktopActivationController::class)
+        ->middleware('throttle:license-activation')
+        ->name('api.desktop.activate');
 
     // --- Authenticated (token present) ------------------------------------
     Route::middleware('auth:sanctum')->group(function (): void {

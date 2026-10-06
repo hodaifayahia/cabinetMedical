@@ -20,6 +20,14 @@ Schedule::command('drclick:sync-seats')
     ->everyFifteenMinutes()
     ->withoutOverlapping(10);
 
+// Mobile bookings reach a linked desktop, and its own changes reach the
+// mobile app, without anyone pressing a button. The command does nothing on
+// an unlinked poste or on the online service, and an offline poste simply
+// retries on the next run.
+Schedule::command('drclick:sync-appointments --scheduled')
+    ->everyTwoMinutes()
+    ->withoutOverlapping(10);
+
 Schedule::command('medismart:backup:scheduled')
     ->everyMinute()
     ->withoutOverlapping(60);

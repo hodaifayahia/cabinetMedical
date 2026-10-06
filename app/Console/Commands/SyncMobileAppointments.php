@@ -16,7 +16,8 @@ use Illuminate\Console\Command;
 class SyncMobileAppointments extends Command
 {
     protected $signature = 'drclick:sync-appointments
-        {--cabinet= : Restrict the run to one cabinet id}';
+        {--cabinet= : Restrict the run to one cabinet id}
+        {--scheduled : Unattended run: an unlinked or offline poste is not a failure}';
 
     protected $description = 'Exchange appointments with the online service used by the mobile application';
 
@@ -24,7 +25,15 @@ class SyncMobileAppointments extends Command
         MobileAppointmentSynchroniser $synchroniser,
         MobileSyncSettings $settings,
     ): int {
+        $scheduled = (bool) $this->option('scheduled');
+
         if (! $settings->isConfigured()) {
+            // The scheduler runs this every few minutes on every install,
+            // the online service included; nothing to do is not a failure.
+            if ($scheduled) {
+                return self::SUCCESS;
+            }
+
             $this->components->warn('La synchronisation mobile n’est pas configurée sur ce poste.');
 
             return self::FAILURE;
@@ -35,7 +44,7 @@ class SyncMobileAppointments extends Command
         if ($cabinetIds === []) {
             $this->components->warn('Aucun cabinet à synchroniser.');
 
-            return self::FAILURE;
+            return $scheduled ? self::SUCCESS : self::FAILURE;
         }
 
         $failed = false;
@@ -44,7 +53,10 @@ class SyncMobileAppointments extends Command
             $report = $synchroniser->synchronise($cabinetId);
 
             if ($report->failed()) {
-                $failed = true;
+                // Offline is the normal state of a local-first poste: the
+                // next scheduled run simply tries again. The outcome is kept
+                // on the sync state for Configuration › Service en ligne.
+                $failed = $failed || ! ($scheduled && $report->offline);
                 // Being offline is the expected state for a local-first
                 // installation, not a fault worth an error-level message.
                 $report->offline

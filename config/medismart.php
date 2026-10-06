@@ -133,7 +133,17 @@ return [
         'activation_url' => env('MEDISMART_LICENSE_ACTIVATION_URL'),
         'status_url' => env('MEDISMART_LICENSE_STATUS_URL'),
         'deactivation_url' => env('MEDISMART_LICENSE_DEACTIVATION_URL'),
-        'public_key_path' => env('MEDISMART_LICENSE_PUBLIC_KEY_PATH'),
+        // Every signed licensing artefact is verified against this RSA public
+        // key, with no network access. The default lives under config/ so it
+        // ships inside the desktop payload; a build without the file simply
+        // cannot verify (and so cannot be activated by) an entitlement.
+        'public_key_path' => env('MEDISMART_LICENSE_PUBLIC_KEY_PATH') ?: 'config/licensing/entitlement-public.pem',
+        // Online service only: the private key that signs the entitlement an
+        // installed desktop receives when it redeems its activation code. It
+        // must never be configured on a desktop (VerificationKey refuses any
+        // private key, and CabinetEntitlementIssuer refuses to run on a Hub).
+        'entitlement_signing_key_path' => env('MEDISMART_ENTITLEMENT_SIGNING_KEY_PATH'),
+        'entitlement_signing_key_passphrase' => env('MEDISMART_ENTITLEMENT_SIGNING_KEY_PASSPHRASE'),
         'fingerprint_pepper' => env('MEDISMART_FINGERPRINT_PEPPER') ?: env('APP_KEY'),
         'clock_rollback_tolerance_hours' => (int) env('MEDISMART_LICENSE_CLOCK_TOLERANCE_HOURS', 6),
     ],

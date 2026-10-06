@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Configuration;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
 use App\Models\Cabinet;
 use App\Services\Cabinet\CabinetSeatService;
 use App\Services\Sync\OnlineServiceLink;
@@ -27,6 +28,10 @@ class OnlineServiceController extends Controller
             'available' => $link->isAvailable(),
             'link' => $link->status($cabinet instanceof Cabinet ? $cabinet : null),
             'seats' => $cabinet instanceof Cabinet ? $seats->summary($cabinet) : null,
+            'sync' => $cabinet instanceof Cabinet ? $link->syncStatus($cabinet) : null,
+            'canSyncNow' => $request->user()->can('create', Appointment::class),
+            // Pre-fills the e-mail: the online account must be the owner's.
+            'ownerEmail' => $cabinet instanceof Cabinet ? $cabinet->owner?->email : null,
         ]);
     }
 
@@ -54,7 +59,8 @@ class OnlineServiceController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => 'Poste relié au service en ligne. Votre cabinet dispose de '.$seatLimit.' sièges.',
+            'message' => 'Poste relié au service en ligne. Votre cabinet dispose de '.$seatLimit.' sièges. '
+                .'Les rendez-vous de l’application mobile se synchronisent désormais automatiquement.',
         ]);
 
         return to_route('app.configuration.online-service.edit');

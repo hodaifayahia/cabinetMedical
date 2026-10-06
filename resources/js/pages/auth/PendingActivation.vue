@@ -5,11 +5,14 @@ import {
     CalendarX2,
     CircleAlert,
     Clock3,
+    Cloud,
+    FileKey,
     KeyRound,
     RefreshCw,
     ShieldCheck,
     ShieldX,
     Sparkles,
+    WifiOff,
 } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import AuthBackLink from '@/components/auth/AuthBackLink.vue';
@@ -37,8 +40,16 @@ type PendingLicenseGrant = {
     code_suffix: string;
 };
 
+type DesktopActivation = {
+    online: boolean;
+    license_file: boolean;
+    owner_email: string | null;
+    offline: boolean;
+};
+
 const props = defineProps<{
     can_redeem_license: boolean;
+    desktop_activation?: DesktopActivation;
     pending_license_grant: PendingLicenseGrant | null;
     cabinet: {
         name: string;
@@ -55,11 +66,45 @@ const licenseCode = ref('');
 const manualLicenseCode = ref('');
 const showManualEntry = ref(false);
 const csrfToken = ref('');
-const licenseError = computed(
+const errors = computed(
     () =>
-        (page.props.errors as Record<string, string | undefined> | undefined)
-            ?.license_code,
+        (page.props.errors as Record<string, string | undefined> | undefined) ??
+        {},
 );
+const licenseError = computed(() => errors.value.license_code);
+const onlineError = computed(
+    () => errors.value.online_email ?? errors.value.online_password,
+);
+const fileError = computed(
+    () => errors.value.entitlement ?? errors.value.entitlement_file,
+);
+
+const desktop = computed<DesktopActivation>(
+    () =>
+        props.desktop_activation ?? {
+            online: false,
+            license_file: false,
+            owner_email: null,
+            offline: false,
+        },
+);
+// An installed desktop never holds a grant of its own: its code is checked
+// once on the online service, so the code form is always offered there.
+const showCodeForm = computed(
+    () =>
+        props.can_redeem_license &&
+        (props.pending_license_grant !== null || desktop.value.online),
+);
+const onlineEmail = ref(props.desktop_activation?.owner_email ?? '');
+const onlinePassword = ref('');
+const showOnlineAccount = ref(Boolean(onlineError.value));
+const showLicenseFile = ref(Boolean(fileError.value));
+const licenseFileName = ref('');
+
+function onLicenseFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    licenseFileName.value = input.files?.[0]?.name ?? '';
+}
 
 const accessStatus = computed<AccessStatus>(() => {
     if (props.cabinet?.access_status) {
@@ -202,8 +247,23 @@ defineOptions({
         </div>
     </section>
 
+    <div
+        v-if="desktop.offline"
+        class="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+        role="alert"
+        data-test="activation-offline"
+    >
+        <WifiOff class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+        <p>
+            <strong>Pas de connexion Internet.</strong> L’activation d’un poste
+            demande Internet une seule fois. Reconnectez ce poste puis
+            réessayez, ou activez-le avec un fichier de licence fourni par
+            Drclick.
+        </p>
+    </div>
+
     <form
-        v-if="can_redeem_license && pending_license_grant"
+        v-if="showCodeForm"
         action="/cabinet/license/redeem"
         method="post"
         class="mt-6 rounded-2xl border border-border bg-card p-5 text-left"
@@ -222,6 +282,14 @@ defineOptions({
                     Activez une licence d’essai de 7 jours ou une licence à vie.
                     Le code est réservé à ce cabinet et ne fonctionne qu’une
                     fois.
+                </p>
+                <p
+                    v-if="desktop.online && !pending_license_grant"
+                    class="mt-1 text-sm text-muted-foreground"
+                    data-test="desktop-activation-notice"
+                >
+                    Le code est vérifié une seule fois auprès du service en
+                    ligne Drclick. Ensuite, ce poste fonctionne sans Internet.
                 </p>
             </div>
         </div>
@@ -345,6 +413,155 @@ defineOptions({
             </div>
             <InputError class="mt-2" :message="licenseError" />
         </form>
+    </section>
+
+    <section
+        v-if="can_redeem_license && (desktop.online || desktop.license_file)"
+        class="mt-4 grid gap-3 text-left"
+        data-test="desktop-activation-alternatives"
+    >
+        <div
+            v-if="desktop.online"
+            class="rounded-2xl border border-border bg-card p-4"
+        >
+            <button
+                type="button"
+                class="flex w-full items-center gap-3 text-left text-sm font-semibold text-foreground"
+                data-test="toggle-online-account-activation"
+                :aria-expanded="showOnlineAccount"
+                @click="showOnlineAccount = !showOnlineAccount"
+            >
+                <Cloud class="size-5 text-brand" aria-hidden="true" />
+                <span class="flex-1">
+                    Activer avec mon compte Drclick en ligne
+                    <span
+                        class="block text-xs font-normal text-muted-foreground"
+                    >
+                        Votre cabinet est déjà actif sur drclickdz.com ? Ce
+                        poste reçoit la même licence et reçoit aussi les
+                        rendez-vous de l’application mobile.
+                    </span>
+                </span>
+            </button>
+
+            <form
+                v-if="showOnlineAccount"
+                action="/cabinet/license/online-account"
+                method="post"
+                class="mt-4 grid gap-3"
+                data-test="online-account-activation"
+            >
+                <input type="hidden" name="_token" :value="csrfToken" />
+                <label
+                    for="online_email"
+                    class="text-sm font-semibold text-foreground"
+                >
+                    E-mail du compte en ligne
+                </label>
+                <input
+                    id="online_email"
+                    v-model="onlineEmail"
+                    name="online_email"
+                    type="email"
+                    autocomplete="username"
+                    maxlength="190"
+                    class="h-11 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                    :aria-invalid="Boolean(onlineError)"
+                />
+                <label
+                    for="online_password"
+                    class="text-sm font-semibold text-foreground"
+                >
+                    Mot de passe du compte en ligne
+                </label>
+                <input
+                    id="online_password"
+                    v-model="onlinePassword"
+                    name="online_password"
+                    type="password"
+                    autocomplete="current-password"
+                    maxlength="255"
+                    class="h-11 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                    :aria-invalid="Boolean(onlineError)"
+                />
+                <p class="text-xs text-muted-foreground">
+                    Le mot de passe sert une seule fois et n’est pas conservé
+                    sur ce poste.
+                </p>
+                <button
+                    type="submit"
+                    class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white disabled:opacity-60"
+                    :disabled="
+                        !onlineEmail.trim() || !onlinePassword || !csrfToken
+                    "
+                    data-test="submit-online-account-activation"
+                >
+                    <Cloud class="size-4" aria-hidden="true" />
+                    Activer et relier ce poste
+                </button>
+                <InputError :message="onlineError" />
+            </form>
+        </div>
+
+        <div
+            v-if="desktop.license_file"
+            class="rounded-2xl border border-border bg-card p-4"
+        >
+            <button
+                type="button"
+                class="flex w-full items-center gap-3 text-left text-sm font-semibold text-foreground"
+                data-test="toggle-license-file-activation"
+                :aria-expanded="showLicenseFile"
+                @click="showLicenseFile = !showLicenseFile"
+            >
+                <FileKey class="size-5 text-brand" aria-hidden="true" />
+                <span class="flex-1">
+                    Activer avec un fichier de licence
+                    <span
+                        class="block text-xs font-normal text-muted-foreground"
+                    >
+                        Sans aucune connexion Internet : importez le fichier de
+                        licence signé envoyé par Drclick.
+                    </span>
+                </span>
+            </button>
+
+            <form
+                v-if="showLicenseFile"
+                action="/cabinet/license/file"
+                method="post"
+                enctype="multipart/form-data"
+                class="mt-4 grid gap-3"
+                data-test="license-file-activation"
+            >
+                <input type="hidden" name="_token" :value="csrfToken" />
+                <label
+                    for="entitlement_file"
+                    class="text-sm font-semibold text-foreground"
+                >
+                    Fichier de licence
+                </label>
+                <input
+                    id="entitlement_file"
+                    name="entitlement_file"
+                    type="file"
+                    accept=".json,.lic,.txt,application/json,text/plain"
+                    class="text-sm"
+                    :aria-invalid="Boolean(fileError)"
+                    @change="onLicenseFileChange"
+                />
+                <button
+                    type="submit"
+                    class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white disabled:opacity-60"
+                    :disabled="!licenseFileName || !csrfToken"
+                    data-test="submit-license-file-activation"
+                >
+                    <FileKey class="size-4" aria-hidden="true" />
+                    Activer avec ce fichier
+                </button>
+                <InputError :message="fileError" />
+            </form>
+        </div>
     </section>
 
     <dl

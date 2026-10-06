@@ -19,6 +19,7 @@ use App\Http\Controllers\Auth\DesktopPinLoginController;
 use App\Http\Controllers\Auth\DesktopRestoreBackupController;
 use App\Http\Controllers\Auth\SessionLockController;
 use App\Http\Controllers\Cabinet\CabinetStatusController;
+use App\Http\Controllers\Cabinet\DesktopActivationController;
 use App\Http\Controllers\Cabinet\JoinCabinetController;
 use App\Http\Controllers\Cabinet\RedeemHostedLicenseCodeController;
 use App\Http\Controllers\Configuration\AccountingController;
@@ -207,6 +208,14 @@ Route::middleware('auth')->group(function (): void {
     Route::post('cabinet/license/redeem', RedeemHostedLicenseCodeController::class)
         ->middleware('throttle:license-activation')
         ->name('cabinet.license.redeem');
+    // An installed desktop's other activation paths: the cabinet's online
+    // account (which also links the poste), or a signed licence file offline.
+    Route::post('cabinet/license/online-account', [DesktopActivationController::class, 'onlineAccount'])
+        ->middleware('throttle:license-activation')
+        ->name('cabinet.license.online-account');
+    Route::post('cabinet/license/file', [DesktopActivationController::class, 'licenseFile'])
+        ->middleware('throttle:license-activation')
+        ->name('cabinet.license.file');
 });
 
 Route::middleware('auth')->prefix('session')->name('session-lock.')->group(function (): void {

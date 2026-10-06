@@ -33,6 +33,9 @@ final class CabinetEntitlementIssuer
 
     /**
      * @param  positive-int|null  $trialDays  Days a trial runs for; ignored for lifetime.
+     * @param  CarbonImmutable|null  $expiresAt  An exact trial expiry, taking precedence over
+     *                                           $trialDays: used when the entitlement mirrors a
+     *                                           licence the online service already holds.
      */
     public function issue(
         string $signingKeyPath,
@@ -42,6 +45,7 @@ final class CabinetEntitlementIssuer
         ?string $hubId = null,
         ?CarbonImmutable $issuedAt = null,
         #[SensitiveParameter] ?string $passphrase = null,
+        ?CarbonImmutable $expiresAt = null,
     ): string {
         $this->assertNotOnAHub();
 
@@ -58,7 +62,11 @@ final class CabinetEntitlementIssuer
         $issuedAt ??= CarbonImmutable::now()->utc();
         $expiresAt = $plan === 'lifetime'
             ? null
-            : $issuedAt->addDays($trialDays ?? 7);
+            : ($expiresAt?->utc() ?? $issuedAt->addDays($trialDays ?? 7));
+
+        if ($expiresAt !== null && $expiresAt->isBefore($issuedAt)) {
+            throw new RuntimeException('An entitlement cannot expire before it is issued.');
+        }
 
         $payload = [
             'entitlement_version' => 1,

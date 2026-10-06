@@ -53,11 +53,23 @@ class CabinetProvisioningService
             // created a pending cabinet so an administrator can issue its
             // activation code. Attach registration to that cabinet by the
             // same email address instead of creating a duplicate.
+            //
+            // The doctor may also have activated the installed desktop first,
+            // with the code issued to that download cabinet: the cabinet is
+            // then already active online, still without an owner account.
+            // Claiming it (rather than opening a second, pending cabinet) is
+            // what lets this account link the desktop for mobile bookings.
             $cabinet = $claimDownloadCabinet
                 ? Cabinet::query()
                     ->whereNull('owner_user_id')
-                    ->where('status', CabinetStatus::PENDING->value)
-                    ->whereNull('license_id')
+                    ->where(fn ($claimable) => $claimable
+                        ->where(fn ($pending) => $pending
+                            ->where('status', CabinetStatus::PENDING->value)
+                            ->whereNull('license_id'))
+                        ->orWhere(fn ($activatedFromDesktop) => $activatedFromDesktop
+                            ->where('status', CabinetStatus::ACTIVE->value)
+                            ->whereHas('hostedLicenseGrants', fn ($grants) => $grants
+                                ->whereNotNull('redeemed_installation_id'))))
                     ->whereHas('desktopDownloadLeads', fn ($leads) => $leads
                         ->whereRaw('LOWER(email) = ?', [strtolower(trim((string) $data['email']))]))
                     ->latest()
@@ -67,7 +79,8 @@ class CabinetProvisioningService
 
             $cabinetData = [
                 'name' => trim((string) $data['cabinet_name']),
-                'status' => CabinetStatus::PENDING,
+                // An already activated cabinet keeps its status and licence.
+                'status' => $cabinet?->isActive() === true ? CabinetStatus::ACTIVE : CabinetStatus::PENDING,
                 'specialization' => $this->specialties->display($specialty),
                 'wilaya_code' => (int) $data['wilaya'],
             ];

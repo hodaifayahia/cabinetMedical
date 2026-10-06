@@ -4,6 +4,7 @@ namespace App\Services\Sync;
 
 use App\Models\AuditLog;
 use App\Models\Cabinet;
+use App\Models\SyncState;
 use App\Services\Cabinet\CabinetSeatService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -84,6 +85,41 @@ final class OnlineServiceLink
     }
 
     /**
+     * How appointment sync with the mobile application is doing for
+     * $cabinet: shown on Configuration › Service en ligne so a doctor can
+     * see that bookings flow, or that the poste is offline and retrying.
+     *
+     * @return array{automatic: bool, lastSyncedAt: string|null, lastFailedAt: string|null, offline: bool, error: string|null}|null
+     */
+    public function syncStatus(Cabinet $cabinet): ?array
+    {
+        $endpoint = $this->settings->endpoint();
+
+        if (! $this->isLinkedFor($cabinet) || $endpoint === null) {
+            return null;
+        }
+
+        $state = SyncState::withoutCabinetScope()
+            ->where('cabinet_id', $cabinet->getKey())
+            ->where('endpoint_sha256', SyncState::hashEndpoint($endpoint))
+            ->where('stream', SyncState::STREAM_APPOINTMENTS)
+            ->first();
+
+        $failedSinceSuccess = $state?->last_failed_at !== null
+            && ($state->last_synced_at === null || $state->last_failed_at->isAfter($state->last_synced_at));
+
+        return [
+            // Only the desktop's supervised scheduler runs it on its own.
+            'automatic' => (bool) config('medismart.runtime.desktop_supervised', false)
+                && config('medismart.runtime.scheduler_status') === 'active',
+            'lastSyncedAt' => $state?->last_synced_at?->toIso8601String(),
+            'lastFailedAt' => $failedSinceSuccess ? $state->last_failed_at->toIso8601String() : null,
+            'offline' => $failedSinceSuccess && $state->last_failure_offline,
+            'error' => $failedSinceSuccess && ! $state->last_failure_offline ? $state->last_error : null,
+        ];
+    }
+
+    /**
      * Sign in to the online service and keep the link. Returns the seat
      * limit confirmed online.
      *
@@ -118,6 +154,37 @@ final class OnlineServiceLink
             ]);
         }
 
+        return $this->keep($cabinet, $endpoint, $token, $accountEmail, $cabinetName);
+    }
+
+    /**
+     * Keep a token the online service already issued for this cabinet's
+     * owner — the desktop activation call hands one back so the poste is
+     * linked in the same step it is activated. The same proof as link() is
+     * required before it is kept: the account must be this cabinet's.
+     *
+     * @throws ValidationException
+     */
+    public function adopt(
+        Cabinet $cabinet,
+        string $endpoint,
+        #[SensitiveParameter] string $token,
+        ?string $accountEmail,
+        ?string $cabinetName,
+    ): int {
+        return $this->keep($cabinet, $this->normaliseEndpoint($endpoint), $token, $accountEmail, $cabinetName);
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function keep(
+        Cabinet $cabinet,
+        string $endpoint,
+        #[SensitiveParameter] string $token,
+        ?string $accountEmail,
+        ?string $cabinetName,
+    ): int {
         $this->settings->configure($endpoint, $token, $accountEmail, $cabinetName, (int) $cabinet->getKey());
 
         try {
