@@ -388,6 +388,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('consultations.documents.analysis');
             });
 
+            // Voice dictation recorded in segments (desktop app): audio → text.
+            Route::post('consultations/{consultation}/dictation/transcribe', [ClinicalAiController::class, 'transcribeDictation'])
+                ->middleware(['permission:consultations.update', 'throttle:60,1'])
+                ->name('consultations.dictation.transcribe');
+
             Route::post('consultations/{consultation}/prescription', [ClinicalAiController::class, 'prescription'])
                 ->middleware(['permission:prescriptions.create', 'throttle:30,1'])
                 ->name('consultations.prescription');
@@ -401,11 +406,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('consultations.copilot.store');
                 Route::delete('consultations/{consultation}/copilot', [ClinicalAiController::class, 'copilotReset'])
                     ->name('consultations.copilot.reset');
-
-            // Voice dictation recorded in segments (desktop app): audio → text.
-            Route::post('consultations/{consultation}/dictation/transcribe', [ClinicalAiController::class, 'transcribeDictation'])
-                ->middleware(['permission:consultations.update', 'throttle:60,1'])
-                ->name('consultations.dictation.transcribe');
 
                 Route::post('ecgs/{ecg}/analysis', [EcgController::class, 'analyze'])
                     ->middleware('throttle:20,1')
