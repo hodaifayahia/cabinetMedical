@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\LanHostBoundary;
 use App\Services\LanUploadBoundary;
 use App\Services\RemoteUploadBoundary;
 use Closure;
@@ -14,6 +15,7 @@ final class EnforceRemoteUploadBoundary extends TrustProxies
     public function __construct(
         private readonly RemoteUploadBoundary $boundary,
         private readonly LanUploadBoundary $lanBoundary,
+        private readonly LanHostBoundary $lanHost,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -46,6 +48,17 @@ final class EnforceRemoteUploadBoundary extends TrustProxies
 
         if ($hostKind === null && $lanMatches) {
             $hostKind = 'lan';
+        }
+
+        // Another PC of the cabinet, through the poste principal's LAN
+        // listener: the whole application, behind the normal sign-in.
+        if ($hostKind === null && $this->lanHost->allows($request)) {
+            $request->attributes->set(LanHostBoundary::REQUEST_ATTRIBUTE, true);
+            // The native per-run diagnostics key belongs exclusively to the
+            // exact loopback administration origin.
+            $request->headers->remove('X-MediSmart-Health-Key');
+
+            return $next($request);
         }
 
         if ($hostKind === null) {

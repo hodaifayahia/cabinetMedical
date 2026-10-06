@@ -29,6 +29,8 @@ use std::{
     time::Duration,
 };
 
+use std::sync::Mutex;
+
 use drclick_runtime::{
     allocate_loopback_port, generate_runtime_secret, load_or_create_installation_identity,
     LanUploadSupervisor, QueueWorkerConfig, QueueWorkerSupervisor, RuntimeLogger, SchedulerConfig,
@@ -207,7 +209,23 @@ impl PackagedRuntime {
             .map(Path::to_path_buf)
             .unwrap_or_default()
     }
+
+    /// The CA bundle staged beside the bundled interpreter, if any. A
+    /// developer runtime keeps its own system configuration.
+    pub(crate) fn ca_bundle(&self) -> Option<PathBuf> {
+        if !self.bundled {
+            return None;
+        }
+
+        let bundle = self.php_directory().join(PACKAGED_CA_BUNDLE);
+
+        bundle.is_file().then_some(bundle)
+    }
 }
+
+/// File name of the root-certificate bundle staged next to `php.exe` by
+/// `scripts/desktop/stage-local-payload.mjs`.
+pub(crate) const PACKAGED_CA_BUNDLE: &str = "cacert.pem";
 
 /// Interpreter settings for the bundled runtime.
 ///
@@ -233,12 +251,18 @@ extension=sqlite3
 extension=zip
 
 memory_limit = 512M
-max_execution_time = 120
+; Restoring or uploading a whole clinic backup over a slow disk or the cabinet
+; LAN takes minutes, not seconds; a request cut at two minutes left a restore
+; half-received. One hour also covers the Drive upload job (timeout 3500 s)
+; run by the queue worker, which reads this same file.
+max_execution_time = 3600
+max_input_time = 3600
 ; A clinic backup (.msbackup) carries every scanned document, so starting a
-; new PC from one needs room for a large upload. PHP spools uploads to disk,
-; and the server only listens on the loopback address.
-post_max_size = 8G
-upload_max_filesize = 8G
+; new PC from one needs room for a large upload. PHP spools uploads to disk.
+; Laravel caps a restore upload at MEDISMART_BACKUP_RESTORE_UPLOAD_MAX_BYTES
+; (25 GiB); PHP must not refuse it first.
+post_max_size = 32G
+upload_max_filesize = 32G
 date.timezone = UTC
 
 ; The application makes its HTTP calls through curl. Disabling the URL stream
@@ -313,10 +337,23 @@ pub(crate) fn write_php_configuration(
     runtime: &PackagedRuntime,
     runtime_directory: &Path,
 ) -> Result<PathBuf, LocalRuntimeError> {
-    let configuration = PHP_INI_TEMPLATE.replace(
+    let mut configuration = PHP_INI_TEMPLATE.replace(
         "{extension_dir}",
         &runtime.php_directory().join("ext").to_string_lossy(),
     );
+
+    // The Windows PHP build links curl and OpenSSL without access to the
+    // Windows certificate store, so without a bundle every HTTPS call (Google
+    // Drive, licensing, the online service) fails with "cURL error 60". The
+    // payload ships one beside php.exe; see `packaged_ca_bundle`.
+    if let Some(bundle) = runtime.ca_bundle() {
+        let bundle = bundle.to_string_lossy();
+        configuration.push_str(&format!(
+            "\n; Trusted root certificates shipped with the application.\n\
+             curl.cainfo = \"{bundle}\"\n\
+             openssl.cafile = \"{bundle}\"\n"
+        ));
+    }
 
     fs::create_dir_all(runtime_directory).map_err(|error| {
         LocalRuntimeError::new(
@@ -406,9 +443,7 @@ fn development_override() -> Result<Option<PackagedRuntime>, LocalRuntimeError> 
 
 /// Reject an incomplete payload *before* spawning anything, so a broken build
 /// surfaces as one clear message instead of a crash loop.
-pub(crate) fn verify_packaged_runtime(
-    runtime: &PackagedRuntime,
-) -> Result<(), LocalRuntimeError> {
+pub(crate) fn verify_packaged_runtime(runtime: &PackagedRuntime) -> Result<(), LocalRuntimeError> {
     if !runtime.php_binary.is_file() {
         return Err(LocalRuntimeError::new(
             "local_runtime_php_missing",
@@ -527,7 +562,30 @@ fn export_online_service_url() {
 /// worker, and the scheduler terminate with the window.
 pub(crate) struct LocalRuntime {
     supervisor: Arc<Supervisor>,
+    queue_worker: Arc<QueueWorkerSupervisor>,
+    scheduler: Arc<SchedulerSupervisor>,
+    blueprint: SupervisorBlueprint,
     url: Url,
+    /// The optional second PHP listener that serves this PC's database to the
+    /// cabinet LAN ("poste principal"). Independent of the loopback listener,
+    /// so turning it on or off never moves this PC's own window to another
+    /// origin (which would empty its localStorage and its PIN enrolment).
+    lan_host: Mutex<Option<RunningLanHost>>,
+}
+
+struct RunningLanHost {
+    supervisor: Arc<Supervisor>,
+    port: u16,
+    health: Arc<Mutex<LanHostHealth>>,
+}
+
+/// What the LAN host listener last reported.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum LanHostHealth {
+    Starting,
+    Running,
+    Failed(&'static str),
+    Stopped,
 }
 
 impl LocalRuntime {
@@ -536,9 +594,214 @@ impl LocalRuntime {
         &self.url
     }
 
+    /// Stop PHP (both listeners), the queue worker and the scheduler.
     pub(crate) fn shutdown(&self) {
+        self.stop_lan_host();
+        // A dependency going down must not look like a reason to respawn PHP.
+        self.supervisor.freeze_runtime_contract_refresh();
         self.supervisor.stop();
+        self.queue_worker.shutdown();
+        self.scheduler.shutdown();
     }
+
+    /// The port and health of the LAN host listener, when it is running.
+    pub(crate) fn lan_host(&self) -> Option<(u16, LanHostHealth)> {
+        let guard = self.lan_host.lock().ok()?;
+        let running = guard.as_ref()?;
+        let health = running
+            .health
+            .lock()
+            .map(|health| health.clone())
+            .unwrap_or(LanHostHealth::Failed("lan_host_state_poisoned"));
+
+        Some((running.port, health))
+    }
+
+    /// Start serving this PC's database on `0.0.0.0:<port>`.
+    ///
+    /// Blocks until Laravel answers its authenticated health check on the new
+    /// listener, so the caller can report success or a precise failure.
+    pub(crate) fn start_lan_host(&self, port: u16) -> Result<(), LocalRuntimeError> {
+        if let Some((current, LanHostHealth::Running | LanHostHealth::Starting)) = self.lan_host() {
+            if current == port {
+                return Ok(());
+            }
+        }
+        self.stop_lan_host();
+
+        let supervisor = Arc::new(
+            Supervisor::new(
+                self.blueprint.config(
+                    self.blueprint.paths.runtime.join("lan-host"),
+                    generate_runtime_secret(),
+                    Some(port),
+                ),
+                Arc::clone(&self.queue_worker),
+                Arc::clone(&self.scheduler),
+                Arc::clone(&self.blueprint.lan_upload),
+                Arc::clone(&self.blueprint.logger),
+            )
+            .map_err(|error| {
+                LocalRuntimeError::new(
+                    "lan_host_supervisor_failed",
+                    format!("Impossible de préparer le partage réseau : {error}"),
+                )
+            })?,
+        );
+
+        let health = Arc::new(Mutex::new(LanHostHealth::Starting));
+        let receiver = run_supervisor(
+            Arc::clone(&supervisor),
+            "drclick-lan-host-supervisor",
+            Some(Arc::clone(&health)),
+        )?;
+
+        if let Ok(mut guard) = self.lan_host.lock() {
+            *guard = Some(RunningLanHost {
+                supervisor: Arc::clone(&supervisor),
+                port,
+                health,
+            });
+        }
+
+        match receiver.recv_timeout(LAN_HOST_READY_TIMEOUT) {
+            Ok(Ok(_)) => Ok(()),
+            outcome => {
+                self.stop_lan_host();
+                Err(match outcome {
+                    Ok(Err("process_retries_exhausted")) => LocalRuntimeError::new(
+                        "lan_host_start_failed",
+                        format!(
+                            "Le partage réseau n’a pas pu démarrer : le port {port} est \
+                             peut-être déjà utilisé par un autre programme."
+                        ),
+                    ),
+                    Ok(Err(code)) => LocalRuntimeError::new(
+                        "lan_host_start_failed",
+                        format!("Le partage réseau n’a pas pu démarrer ({code})."),
+                    ),
+                    _ => LocalRuntimeError::new(
+                        "lan_host_start_timeout",
+                        "Le partage réseau n’a pas répondu à temps.",
+                    ),
+                })
+            }
+        }
+    }
+
+    /// Close the LAN listener. This PC's own window keeps working.
+    pub(crate) fn stop_lan_host(&self) {
+        let running = self.lan_host.lock().ok().and_then(|mut guard| guard.take());
+        if let Some(running) = running {
+            running.supervisor.freeze_runtime_contract_refresh();
+            running.supervisor.stop();
+            if let Ok(mut health) = running.health.lock() {
+                *health = LanHostHealth::Stopped;
+            }
+        }
+    }
+}
+
+/// How long enabling the LAN listener may take before it is reported failed.
+const LAN_HOST_READY_TIMEOUT: Duration = Duration::from_secs(90);
+
+/// Everything needed to start another supervised PHP listener against the
+/// same installation (same database, storage, key, and native services).
+#[derive(Clone)]
+struct SupervisorBlueprint {
+    php_binary: PathBuf,
+    app_root: PathBuf,
+    public_directory: PathBuf,
+    router_script: PathBuf,
+    paths: LocalPaths,
+    app_key: String,
+    installation_id: String,
+    application_version: String,
+    production: bool,
+    lan_upload: Arc<LanUploadSupervisor>,
+    logger: Arc<RuntimeLogger>,
+}
+
+impl SupervisorBlueprint {
+    fn config(
+        &self,
+        runtime_directory: PathBuf,
+        health_key: String,
+        lan_host_port: Option<u16>,
+    ) -> SupervisorConfig {
+        SupervisorConfig {
+            php_binary: self.php_binary.clone(),
+            app_root: self.app_root.clone(),
+            public_directory: self.public_directory.clone(),
+            router_script: self.router_script.clone(),
+            runtime_directory,
+            temporary_directory: self.paths.temporary.clone(),
+            framework_cache_directory: self.paths.framework_cache.clone(),
+            database_path: Some(self.paths.database.clone()),
+            storage_path: Some(self.paths.storage.clone()),
+            app_key: Some(self.app_key.clone()),
+            installation_id: Some(self.installation_id.clone()),
+            application_version: self.application_version.clone(),
+            signed_updater_configured: crate::updates::is_configured(),
+            production: self.production,
+            health_key,
+            tunnel_upload_hostname: None,
+            lan_host_port,
+            health_timeout: Duration::from_secs(60),
+            shutdown_timeout: Duration::from_secs(15),
+            retry_limit: 3,
+            retry_delay: Duration::from_secs(2),
+        }
+    }
+}
+
+type ReadySignal = mpsc::Receiver<Result<String, &'static str>>;
+
+/// Run `supervisor` on its own thread and hand back a channel that receives
+/// the first `Ready` URL or `Failed` code.
+fn run_supervisor(
+    supervisor: Arc<Supervisor>,
+    thread_name: &str,
+    health: Option<Arc<Mutex<LanHostHealth>>>,
+) -> Result<ReadySignal, LocalRuntimeError> {
+    let (sender, receiver) = mpsc::channel::<Result<String, &'static str>>();
+    thread::Builder::new()
+        .name(thread_name.to_owned())
+        .spawn(move || {
+            supervisor.run(move |event| {
+                let update = |value: LanHostHealth| {
+                    if let Some(health) = health.as_ref() {
+                        if let Ok(mut current) = health.lock() {
+                            *current = value;
+                        }
+                    }
+                };
+                match event {
+                    SupervisorEvent::Ready { local_url, .. } => {
+                        update(LanHostHealth::Running);
+                        // The receiver is gone once startup has been resolved;
+                        // later restarts reuse the same port and need no signal.
+                        let _ = sender.send(Ok(local_url));
+                    }
+                    SupervisorEvent::Retrying { .. } | SupervisorEvent::Starting { .. } => {
+                        update(LanHostHealth::Starting);
+                    }
+                    SupervisorEvent::Failed { code } => {
+                        update(LanHostHealth::Failed(code));
+                        let _ = sender.send(Err(code));
+                    }
+                    SupervisorEvent::Stopped => update(LanHostHealth::Stopped),
+                }
+            });
+        })
+        .map_err(|error| {
+            LocalRuntimeError::new(
+                "local_runtime_supervisor_failed",
+                format!("Impossible de lancer le superviseur : {error}"),
+            )
+        })?;
+
+    Ok(receiver)
 }
 
 /// Prepare the writable tree and start supervising the bundled application.
@@ -576,6 +839,14 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
     if packaged.bundled {
         let configuration_dir = write_php_configuration(&packaged, &paths.runtime)?;
         std::env::set_var("PHPRC", &configuration_dir);
+
+        // Same bundle for code that configures TLS itself rather than through
+        // php.ini (Guzzle `verify`, OpenSSL defaults).
+        if let Some(bundle) = packaged.ca_bundle() {
+            std::env::set_var("MEDISMART_CA_BUNDLE", &bundle);
+            std::env::set_var("SSL_CERT_FILE", &bundle);
+            std::env::set_var("CURL_CA_BUNDLE", &bundle);
+        }
     }
 
     // The supervisor exports APP_CONFIG_CACHE, APP_ROUTES_CACHE,
@@ -702,29 +973,22 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
         )?,
     );
 
+    let blueprint = SupervisorBlueprint {
+        php_binary: packaged.php_binary.clone(),
+        app_root: packaged.app_root.clone(),
+        public_directory: packaged.public_directory(),
+        router_script: router_script.clone(),
+        paths: paths.clone(),
+        app_key: identity.app_key.clone(),
+        installation_id: identity.installation_id.to_string(),
+        application_version,
+        production,
+        lan_upload: Arc::clone(&lan_upload),
+        logger: Arc::clone(&logger),
+    };
+
     let supervisor = Supervisor::new(
-        SupervisorConfig {
-            php_binary: packaged.php_binary.clone(),
-            app_root: packaged.app_root.clone(),
-            public_directory: packaged.public_directory(),
-            router_script: router_script.clone(),
-            runtime_directory: paths.runtime.clone(),
-            temporary_directory: paths.temporary.clone(),
-            framework_cache_directory: paths.framework_cache.clone(),
-            database_path: Some(paths.database.clone()),
-            storage_path: Some(paths.storage.clone()),
-            app_key: Some(identity.app_key.clone()),
-            installation_id: Some(identity.installation_id.to_string()),
-            application_version,
-            signed_updater_configured: crate::updates::is_configured(),
-            production,
-            health_key,
-            tunnel_upload_hostname: None,
-            health_timeout: Duration::from_secs(60),
-            shutdown_timeout: Duration::from_secs(15),
-            retry_limit: 3,
-            retry_delay: Duration::from_secs(2),
-        },
+        blueprint.config(paths.runtime.clone(), health_key, None),
         Arc::clone(&queue_worker),
         Arc::clone(&scheduler),
         Arc::clone(&lan_upload),
@@ -741,29 +1005,7 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
     Arc::clone(&queue_worker).run();
     Arc::clone(&scheduler).run();
 
-    let (sender, receiver) = mpsc::channel::<Result<String, &'static str>>();
-    let supervisor_for_thread = Arc::clone(&supervisor);
-    thread::Builder::new()
-        .name("drclick-laravel-supervisor".to_owned())
-        .spawn(move || {
-            supervisor_for_thread.run(move |event| match event {
-                SupervisorEvent::Ready { local_url, .. } => {
-                    // The receiver is gone once startup has been resolved;
-                    // later restarts reuse the same port and need no signal.
-                    let _ = sender.send(Ok(local_url));
-                }
-                SupervisorEvent::Failed { code } => {
-                    let _ = sender.send(Err(code));
-                }
-                _ => {}
-            });
-        })
-        .map_err(|error| {
-            LocalRuntimeError::new(
-                "local_runtime_supervisor_failed",
-                format!("Impossible de lancer le superviseur : {error}"),
-            )
-        })?;
+    let receiver = run_supervisor(Arc::clone(&supervisor), "drclick-laravel-supervisor", None)?;
 
     match receiver.recv_timeout(READY_TIMEOUT) {
         Ok(Ok(local_url)) => {
@@ -774,7 +1016,14 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
                 )
             })?;
 
-            Ok(LocalRuntime { supervisor, url })
+            Ok(LocalRuntime {
+                supervisor,
+                queue_worker,
+                scheduler,
+                blueprint,
+                url,
+                lan_host: Mutex::new(None),
+            })
         }
         Ok(Err(code)) => {
             supervisor.stop();
@@ -980,8 +1229,12 @@ mod tests {
     fn an_application_without_its_autoloader_is_refused() {
         let root = scratch("no-vendor");
         let php_binary = root.join(php_executable_name());
-        fs::write(&php_binary, b"#!/bin/sh
-").unwrap();
+        fs::write(
+            &php_binary,
+            b"#!/bin/sh
+",
+        )
+        .unwrap();
         let app_root = root.join("laravel");
         fs::create_dir_all(app_root.join("public")).unwrap();
         fs::write(app_root.join("artisan"), b"<?php").unwrap();
@@ -1024,6 +1277,61 @@ mod tests {
         );
         assert!(configuration.contains("extension=pdo_sqlite"));
         assert!(configuration.contains("allow_url_fopen = Off"));
+        // A 25 GiB restore upload and hour-long transfers must not be cut.
+        assert!(configuration.contains("post_max_size = 32G"));
+        assert!(configuration.contains("upload_max_filesize = 32G"));
+        assert!(configuration.contains("max_execution_time = 3600"));
+        assert!(configuration.contains("max_input_time = 3600"));
+    }
+
+    #[test]
+    fn a_shipped_ca_bundle_is_used_by_curl_and_openssl() {
+        let root = scratch("php-ini-ca-bundle");
+        let php_directory = root.join("php");
+        fs::create_dir_all(&php_directory).unwrap();
+        fs::write(
+            php_directory.join(PACKAGED_CA_BUNDLE),
+            b"-----BEGIN CERTIFICATE-----",
+        )
+        .unwrap();
+        let runtime = PackagedRuntime {
+            php_binary: php_directory.join(php_executable_name()),
+            app_root: root.join("laravel"),
+            database_template: None,
+            bundled: true,
+        };
+
+        let directory = write_php_configuration(&runtime, &root.join("runtime")).unwrap();
+        let configuration = fs::read_to_string(directory.join("php.ini")).unwrap();
+        let bundle = php_directory.join(PACKAGED_CA_BUNDLE);
+
+        assert_eq!(runtime.ca_bundle(), Some(bundle.clone()));
+        assert!(configuration.contains(&format!("curl.cainfo = \"{}\"", bundle.display())));
+        assert!(configuration.contains(&format!("openssl.cafile = \"{}\"", bundle.display())));
+    }
+
+    #[test]
+    fn without_a_shipped_bundle_php_keeps_its_defaults() {
+        let root = scratch("php-ini-no-ca-bundle");
+        let runtime = PackagedRuntime {
+            php_binary: root.join("php").join(php_executable_name()),
+            app_root: root.join("laravel"),
+            database_template: None,
+            bundled: true,
+        };
+
+        let directory = write_php_configuration(&runtime, &root.join("runtime")).unwrap();
+        let configuration = fs::read_to_string(directory.join("php.ini")).unwrap();
+
+        assert_eq!(runtime.ca_bundle(), None);
+        assert!(!configuration.contains("curl.cainfo"));
+
+        // A developer's own PHP keeps its own TLS configuration.
+        let developer = PackagedRuntime {
+            bundled: false,
+            ..runtime
+        };
+        assert_eq!(developer.ca_bundle(), None);
     }
 
     #[test]
@@ -1035,10 +1343,7 @@ mod tests {
             bundled: true,
         };
 
-        assert_eq!(
-            runtime.php_directory(),
-            PathBuf::from("/opt/drclick/php")
-        );
+        assert_eq!(runtime.php_directory(), PathBuf::from("/opt/drclick/php"));
     }
 
     #[test]

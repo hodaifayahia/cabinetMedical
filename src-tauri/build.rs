@@ -25,6 +25,13 @@ fn main() {
             "configure_server_connection",
             "configure_local_mode",
             "runtime_mode_status",
+            "pick_backup_folder",
+            "lan_host_status",
+            "set_lan_host",
+            "open_lan_firewall",
+            "discover_lan_hosts",
+            "connect_to_lan_host",
+            "use_local_mode",
         ]),
     ))
     .expect("failed to build the Drclick Tauri application manifest");

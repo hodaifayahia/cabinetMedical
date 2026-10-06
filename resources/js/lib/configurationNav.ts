@@ -37,6 +37,13 @@ export const configurationNav: ConfigGroup[] = [
                 permissions: sensitiveConfigurationPermissions,
             },
             {
+                // Several PCs on one cabinet database, without Internet
+                // (desktop "poste principal" / "poste secondaire").
+                title: 'Réseau local',
+                href: '/app/configuration/local-network',
+                permissions: ['configuration.connectivity.manage'],
+            },
+            {
                 // Installed desktops only: the server decides, since it knows
                 // whether this runtime is the online service itself.
                 title: 'Service en ligne',

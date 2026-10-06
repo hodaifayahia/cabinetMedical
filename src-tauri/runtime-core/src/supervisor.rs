@@ -43,6 +43,13 @@ pub struct SupervisorConfig {
     pub production: bool,
     pub health_key: String,
     pub tunnel_upload_hostname: Option<String>,
+    /// `Some(port)` turns this supervisor into the cabinet's *LAN host*
+    /// listener ("poste principal"): PHP binds `0.0.0.0:<port>` so the other
+    /// Drclick PCs of the cabinet can open the application against this PC's
+    /// database, and Laravel is told to admit private-network peers on that
+    /// exact port. `None` keeps the historical loopback-only listener on the
+    /// stable per-install port.
+    pub lan_host_port: Option<u16>,
     pub health_timeout: Duration,
     pub shutdown_timeout: Duration,
     pub retry_limit: u8,
@@ -316,15 +323,17 @@ impl Supervisor {
         // Stable across launches *and* across restarts of the PHP child: a new
         // port would move the origin and empty the webview's storage under a
         // session that is still running.
-        let port = reserve_stable_loopback_port(&self.config.runtime_directory)?;
-        let local_url = format!("http://127.0.0.1:{port}");
+        let binding =
+            PhpServerBinding::resolve(self.config.lan_host_port, &self.config.runtime_directory)?;
+        let port = binding.port;
+        let local_url = binding.local_url();
         let runtime_contract = self.observed_runtime_contract();
 
         let mut command = Command::new(&self.config.php_binary);
         command
             .current_dir(&self.config.app_root)
             .arg("-S")
-            .arg(format!("127.0.0.1:{port}"))
+            .arg(binding.listen_address())
             .arg("-t")
             .arg(&self.config.public_directory)
             .arg(&self.config.router_script)
@@ -353,12 +362,13 @@ impl Supervisor {
             .env("QUEUE_CONNECTION", "database")
             .env("TELESCOPE_ENABLED", "false")
             .env("INERTIA_DEVTOOLS_ENABLED", "false")
-            .env("PHP_CLI_SERVER_WORKERS", "1")
+            .env("PHP_CLI_SERVER_WORKERS", binding.worker_count())
             .env("TMP", &self.config.temporary_directory)
             .env("TEMP", &self.config.temporary_directory)
             .env("TMPDIR", &self.config.temporary_directory);
 
         configure_remote_upload_origin(&mut command, self.config.tunnel_upload_hostname.as_deref());
+        configure_lan_host(&mut command, self.config.lan_host_port);
         let lan_upload_origin = self.lan_upload.required_attestation_origin();
         configure_lan_upload_contract(
             &mut command,
@@ -443,7 +453,12 @@ impl Supervisor {
         }
 
         self.logger.info(&format!(
-            "Laravel process started on loopback port {port} (attempt {retry_count})"
+            "Laravel process started on {} port {port} (attempt {retry_count})",
+            if binding.lan_host {
+                "LAN host"
+            } else {
+                "loopback"
+            }
         ));
 
         let mut snapshot = RuntimeSnapshot::starting(retry_count);
@@ -813,6 +828,85 @@ fn is_runtime_contract_status_change(code: &str) -> bool {
             | "lan_listener_status_changed"
             | "lan_listener_configuration_changed"
     )
+}
+
+/// Where the bundled PHP built-in server listens, and how the supervisor
+/// reaches it for its own health checks.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct PhpServerBinding {
+    port: u16,
+    lan_host: bool,
+}
+
+/// PHP's built-in server serves one request at a time per worker. A LAN host
+/// answers several PCs at once, so it asks for a small pool. PHP only honours
+/// this on platforms with `fork()`; on Windows the variable is ignored and the
+/// server stays sequential, which is why the host keeps its own window on the
+/// separate loopback listener.
+const LAN_HOST_PHP_WORKERS: &str = "4";
+
+impl PhpServerBinding {
+    fn resolve(lan_host_port: Option<u16>, runtime_directory: &Path) -> Result<Self, RuntimeError> {
+        match lan_host_port {
+            Some(port) => {
+                // Probe first so an occupied port is one clear error instead
+                // of a PHP crash loop.
+                TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).map_err(|error| {
+                    RuntimeError::new(
+                        "lan_host_port_unavailable",
+                        format!("LAN host port {port} is unavailable: {error}"),
+                    )
+                })?;
+                Ok(Self {
+                    port,
+                    lan_host: true,
+                })
+            }
+            None => Ok(Self {
+                port: reserve_stable_loopback_port(runtime_directory)?,
+                lan_host: false,
+            }),
+        }
+    }
+
+    fn listen_address(&self) -> String {
+        if self.lan_host {
+            format!("0.0.0.0:{}", self.port)
+        } else {
+            format!("127.0.0.1:{}", self.port)
+        }
+    }
+
+    /// The supervisor (and, for the loopback listener, the webview) always
+    /// talks to PHP over loopback, even when it also listens on the LAN.
+    fn local_url(&self) -> String {
+        format!("http://127.0.0.1:{}", self.port)
+    }
+
+    fn worker_count(&self) -> &'static str {
+        if self.lan_host {
+            LAN_HOST_PHP_WORKERS
+        } else {
+            "1"
+        }
+    }
+}
+
+/// Tell Laravel whether this process is the LAN host listener. Only then may
+/// it admit private-network peers (see `App\Services\LanHostBoundary`).
+fn configure_lan_host(command: &mut Command, lan_host_port: Option<u16>) {
+    command.env_remove("MEDISMART_LAN_HOST_ENABLED");
+    command.env_remove("MEDISMART_LAN_HOST_PORT");
+    match lan_host_port {
+        Some(port) => {
+            command
+                .env("MEDISMART_LAN_HOST_ENABLED", "true")
+                .env("MEDISMART_LAN_HOST_PORT", port.to_string());
+        }
+        None => {
+            command.env("MEDISMART_LAN_HOST_ENABLED", "false");
+        }
+    }
 }
 
 fn configure_remote_upload_origin(command: &mut Command, hostname: Option<&str>) {
@@ -1238,6 +1332,7 @@ mod tests {
             production: false,
             health_key: "test-health-key".to_owned(),
             tunnel_upload_hostname: None,
+            lan_host_port: None,
             health_timeout: Duration::from_secs(1),
             shutdown_timeout: Duration::from_secs(2),
             retry_limit: 0,
@@ -1265,6 +1360,73 @@ mod tests {
             .find(|(name, _)| *name == "MEDISMART_REMOTE_UPLOAD_URL")
             .unwrap();
         assert!(disabled_entry.1.is_none());
+    }
+
+    fn env_value(command: &Command, key: &str) -> Option<Option<String>> {
+        command
+            .get_envs()
+            .find(|(name, _)| *name == key)
+            .map(|(_, value)| value.and_then(|v| v.to_str()).map(str::to_owned))
+    }
+
+    #[test]
+    fn the_lan_host_listener_binds_every_interface_but_is_supervised_over_loopback() {
+        let directory = scratch_runtime_directory();
+        let port = allocate_loopback_port().unwrap();
+
+        let binding = PhpServerBinding::resolve(Some(port), &directory).unwrap();
+
+        assert!(binding.lan_host);
+        assert_eq!(binding.listen_address(), format!("0.0.0.0:{port}"));
+        assert_eq!(binding.local_url(), format!("http://127.0.0.1:{port}"));
+        assert_eq!(binding.worker_count(), LAN_HOST_PHP_WORKERS);
+        // The fixed LAN port never replaces the stable loopback record.
+        assert!(!directory.join(LOOPBACK_PORT_FILE).exists());
+    }
+
+    #[test]
+    fn the_default_listener_stays_on_loopback_with_one_worker() {
+        let directory = scratch_runtime_directory();
+
+        let binding = PhpServerBinding::resolve(None, &directory).unwrap();
+
+        assert!(!binding.lan_host);
+        assert!(binding.listen_address().starts_with("127.0.0.1:"));
+        assert_eq!(binding.worker_count(), "1");
+    }
+
+    #[test]
+    fn an_occupied_lan_host_port_is_reported_instead_of_crash_looping() {
+        let directory = scratch_runtime_directory();
+        let holder = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
+        let port = holder.local_addr().unwrap().port();
+
+        let error = PhpServerBinding::resolve(Some(port), &directory).unwrap_err();
+
+        assert_eq!(error.code(), "lan_host_port_unavailable");
+    }
+
+    #[test]
+    fn php_child_learns_whether_it_is_the_lan_host() {
+        let mut host = Command::new("php");
+        configure_lan_host(&mut host, Some(47850));
+        assert_eq!(
+            env_value(&host, "MEDISMART_LAN_HOST_ENABLED"),
+            Some(Some("true".to_owned()))
+        );
+        assert_eq!(
+            env_value(&host, "MEDISMART_LAN_HOST_PORT"),
+            Some(Some("47850".to_owned()))
+        );
+
+        let mut loopback = Command::new("php");
+        loopback.env("MEDISMART_LAN_HOST_PORT", "47850");
+        configure_lan_host(&mut loopback, None);
+        assert_eq!(
+            env_value(&loopback, "MEDISMART_LAN_HOST_ENABLED"),
+            Some(Some("false".to_owned()))
+        );
+        assert_eq!(env_value(&loopback, "MEDISMART_LAN_HOST_PORT"), Some(None));
     }
 
     #[test]
@@ -1801,6 +1963,7 @@ mod tests {
                     production: false,
                     health_key: "test-health-key".to_owned(),
                     tunnel_upload_hostname: None,
+                    lan_host_port: None,
                     health_timeout: Duration::from_millis(100),
                     shutdown_timeout: Duration::from_millis(100),
                     retry_limit,

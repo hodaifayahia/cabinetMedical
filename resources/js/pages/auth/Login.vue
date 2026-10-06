@@ -14,6 +14,7 @@ import {
 import { isTauri } from '@tauri-apps/api/core';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import AuthBackLink from '@/components/auth/AuthBackLink.vue';
+import LanJoinCard from '@/components/desktop/LanJoinCard.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
@@ -560,4 +561,6 @@ onBeforeUnmount(() => {
             {{ desktopRuntime ? 'Cabinet existant' : 'Rejoindre un cabinet' }}
         </TextLink>
     </div>
+
+    <LanJoinCard v-if="runtimeResolved && desktopRuntime" />
 </template>

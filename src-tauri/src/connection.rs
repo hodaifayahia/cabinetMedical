@@ -75,12 +75,52 @@ pub(crate) fn validate_server_url(value: &str) -> Result<Url, String> {
 
     match url.scheme() {
         "https" if url.host().is_some() => {}
+        // A Drclick "poste principal" on the cabinet's own network serves plain
+        // HTTP: there is no certificate a LAN IP could present. That is only
+        // accepted for addresses that cannot be on the Internet. Every other
+        // origin (the hosted service, a public Hub) still requires HTTPS.
+        "http" if is_private_lan_host(&url) => {}
         _ => return Err("Le serveur doit utiliser HTTPS.".to_owned()),
     }
 
     url.set_path("/");
 
     Ok(url)
+}
+
+/// True when `url` names a machine that can only be on the local network:
+/// a private or link-local IPv4 address, an IPv6 unique-local or link-local
+/// address, a bare Windows computer name (`CABINET-PC`), or an mDNS `.local`
+/// name. Loopback is excluded: attaching a PC to itself is never what the
+/// clinic meant.
+pub(crate) fn is_private_lan_host(url: &Url) -> bool {
+    match url.host() {
+        Some(url::Host::Ipv4(address)) => address.is_private() || address.is_link_local(),
+        Some(url::Host::Ipv6(address)) => {
+            let first = address.segments()[0];
+            (first & 0xfe00) == 0xfc00 || (first & 0xffc0) == 0xfe80
+        }
+        Some(url::Host::Domain(name)) => {
+            let name = name.trim_end_matches('.');
+            if name.eq_ignore_ascii_case("localhost") || name.is_empty() {
+                return false;
+            }
+            let single_label = !name.contains('.');
+            let mdns = name
+                .rsplit_once('.')
+                .is_some_and(|(label, tld)| !label.is_empty() && tld.eq_ignore_ascii_case("local"));
+
+            (single_label || mdns)
+                && name.split('.').all(|label| {
+                    !label.is_empty()
+                        && label.len() <= 63
+                        && label
+                            .bytes()
+                            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+                })
+        }
+        None => false,
+    }
 }
 
 pub(crate) async fn probe_server(url: &Url) -> Result<ServerProbe, String> {
@@ -157,7 +197,8 @@ pub(crate) fn validate_hub_identity(hub: &HubIdentity) -> Result<(), String> {
 
     if hub.protocol_version > SUPPORTED_HUB_PROTOCOL_VERSION {
         return Err(
-            "Ce Hub utilise une version plus récente de Drclick. Mettez ce poste à jour.".to_owned(),
+            "Ce Hub utilise une version plus récente de Drclick. Mettez ce poste à jour."
+                .to_owned(),
         );
     }
 
@@ -291,10 +332,34 @@ mod tests {
             "http://localhost:8000/",
             "http://127.0.0.1:8000/",
             "http://[::1]:8000/",
-            "http://192.168.1.20:8000/",
+            "http://8.8.8.8:47850/",
+            "http://172.32.0.1:47850/",
+            "http://hub.example.com/",
+            "http://app.drclick.dz/",
+            "http://evil.local.example.com/",
             "ftp://localhost:8000/",
         ] {
             assert!(validate_server_url(rejected).is_err(), "{rejected}");
+        }
+    }
+
+    #[test]
+    fn plain_http_is_accepted_only_for_a_poste_principal_on_the_lan() {
+        for accepted in [
+            "http://192.168.1.20:47850/",
+            "http://192.168.1.20:8000/",
+            "http://10.0.0.5:47850",
+            "http://172.16.4.2:47850/",
+            "http://169.254.10.20:47850/",
+            "http://CABINET-PC:47850/",
+            "http://cabinet-pc.local:47850/",
+            "http://[fd00::10]:47850/",
+            "http://[fe80::1]:47850/",
+        ] {
+            let url =
+                validate_server_url(accepted).unwrap_or_else(|error| panic!("{accepted}: {error}"));
+            assert_eq!(url.scheme(), "http");
+            assert_eq!(url.path(), "/");
         }
     }
 
@@ -400,6 +465,10 @@ mod tests {
         assert_eq!(
             validate_server_url("http://hub.example.test/").unwrap_err(),
             "Le serveur doit utiliser HTTPS."
+        );
+        assert_eq!(
+            validate_server_url("http://192.168.1.20:47850/login").unwrap_err(),
+            "Saisissez uniquement l’adresse du serveur, sans chemin ni paramètres."
         );
     }
 

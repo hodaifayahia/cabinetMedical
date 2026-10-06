@@ -21,9 +21,14 @@
 //   - System tray + hide-to-tray behaviour (desktop_behavior.rs)
 //   - Signed updater (updates.rs)
 //   - NavigationPolicy, now covering the loopback origin as well
+//
+// Several PCs, one cabinet (2026-10, ADR-005): the PC that owns the data can
+// also serve it to the cabinet LAN ("poste principal"), and the other PCs
+// attach to it over plain LAN HTTP ("poste secondaire"). See `lan`.
 
 mod connection;
 mod desktop_behavior;
+mod lan;
 mod local_runtime;
 mod runtime_mode;
 mod updates;
@@ -97,7 +102,7 @@ fn configuration_directory(app: &AppHandle) -> Result<PathBuf, String> {
 /// worker, and the scheduler with the window.
 #[derive(Default)]
 struct LocalRuntimeState {
-    running: Mutex<Option<LocalRuntime>>,
+    running: Mutex<Option<Arc<LocalRuntime>>>,
     /// Set when local mode was selected but could not start; surfaced to the
     /// connection page so the clinic sees why, instead of a blank window.
     failure: Mutex<Option<LocalRuntimeError>>,
@@ -105,11 +110,14 @@ struct LocalRuntimeState {
 
 impl LocalRuntimeState {
     fn shutdown(&self) {
-        if let Ok(running) = self.running.lock() {
-            if let Some(runtime) = running.as_ref() {
-                runtime.shutdown();
-            }
+        if let Some(runtime) = self.running() {
+            runtime.shutdown();
         }
+    }
+
+    /// The supervised runtime, when this PC owns its data and it started.
+    fn running(&self) -> Option<Arc<LocalRuntime>> {
+        self.running.lock().ok().and_then(|running| running.clone())
     }
 }
 
@@ -154,14 +162,33 @@ fn runtime_mode_status(
     })
 }
 
-/// Hand data ownership back to this PC. Takes effect on the next start: the
-/// database owner cannot be swapped underneath a running session.
+/// Hand data ownership back to this PC. The database owner cannot be swapped
+/// underneath a running session, so Drclick restarts into local mode.
 #[tauri::command]
 fn configure_local_mode(app: AppHandle) -> Result<bool, String> {
     let directory = configuration_directory(&app)?;
     persist_runtime_mode(&directory, &RuntimeMode::Local)?;
+    lan::schedule_restart(&app);
 
     Ok(true)
+}
+
+/// Native folder picker for the local backup destination. Only the PC that
+/// owns the data runs backups, so only the loopback origin may call this.
+#[tauri::command]
+async fn pick_backup_folder(app: AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        app.dialog()
+            .file()
+            .set_title("Choisir le dossier des sauvegardes Drclick")
+            .blocking_pick_folder()
+            .and_then(|folder| folder.into_path().ok())
+            .map(|folder| folder.to_string_lossy().into_owned())
+    })
+    .await
+    .map_err(|_| "La sélection du dossier a été interrompue.".to_owned())
 }
 
 #[tauri::command]
@@ -193,7 +220,15 @@ async fn configure_server_connection(
     persist_runtime_mode(&directory, &mode)?;
     // Kept in step so a downgrade to a thin-client build still finds its origin.
     persist_server_url(&app, &url)?;
-    policy.set_server_url(url);
+
+    // A poste principal reached over LAN HTTP needs a WebView2 environment
+    // that treats its origin as secure (microphone), which only a restart
+    // provides. The connection page shows "Redémarrage…" meanwhile.
+    if lan::insecure_lan_origin(&mode).is_some() {
+        lan::schedule_restart(&app);
+    } else {
+        policy.set_server_url(url);
+    }
 
     Ok(probe)
 }
@@ -248,6 +283,15 @@ impl NavigationPolicy {
             && url.password().is_none()
     }
 
+    /// True when `url` is on the owning web origin itself (not an internal
+    /// Tauri scheme). Used to scope native permission grants.
+    #[cfg_attr(not(windows), allow(dead_code))]
+    fn allows_origin(&self, url: &Url) -> bool {
+        matches!(url.scheme(), "http" | "https")
+            && self.allows(url)
+            && !matches!(url.host_str(), Some("tauri.localhost" | "asset.localhost"))
+    }
+
     /// Returns true if the URL is an external HTTPS link on a different origin
     /// that should be opened in the system browser rather than allowed in-app.
     fn is_external_link(&self, url: &Url) -> bool {
@@ -281,15 +325,24 @@ pub fn run() {
         // Navigation guard: allow the owning origin + tauri/asset schemes;
         // open external HTTPS links in the system browser.
         .plugin(navigation_guard(policy_for_guard))
+        .plugin(tauri_plugin_dialog::init())
         .manage(DesktopBehaviorState::default())
         .manage(SignedUpdaterState::compiled())
         .manage(LocalRuntimeState::default())
+        .manage(lan::LanHostState::default())
         .manage(policy_for_commands)
         .invoke_handler(tauri::generate_handler![
             probe_server_connection,
             configure_server_connection,
             configure_local_mode,
             runtime_mode_status,
+            pick_backup_folder,
+            lan::lan_host_status,
+            lan::set_lan_host,
+            lan::open_lan_firewall,
+            lan::discover_lan_hosts,
+            lan::connect_to_lan_host,
+            lan::use_local_mode,
             updates::signed_updater_status,
             updates::check_for_signed_update,
             updates::install_signed_update
@@ -326,8 +379,11 @@ pub fn run() {
                         let url = runtime.url().clone();
                         let state = handle.state::<LocalRuntimeState>();
                         if let Ok(mut running) = state.running.lock() {
-                            *running = Some(runtime);
+                            *running = Some(Arc::new(runtime));
                         }
+                        // Re-open the cabinet LAN listener in the background
+                        // when this PC is the poste principal.
+                        lan::resume_sharing_if_enabled(&handle);
                         Some(url)
                     }
                     Err(error) => {
@@ -374,6 +430,7 @@ pub fn run() {
         if matches!(event, RunEvent::ExitRequested { .. } | RunEvent::Exit) {
             // Stop PHP, the queue worker, and the scheduler with the window so
             // no orphan process keeps the SQLite database open.
+            app.state::<lan::LanHostState>().shutdown();
             app.state::<LocalRuntimeState>().shutdown();
         }
     });
@@ -404,7 +461,23 @@ fn build_main_window(
         _ => WebviewUrl::App("index.html".into()),
     };
 
-    WebviewWindowBuilder::new(app, "main", initial_url)
+    #[allow(unused_mut)]
+    let mut builder = WebviewWindowBuilder::new(app, "main", initial_url);
+
+    // Microphone (dictation) and, on a poste secondaire, a secure context for
+    // its plain-HTTP LAN origin. WebView2 fixes these per environment, so
+    // they are chosen here, before the webview exists.
+    #[cfg(windows)]
+    {
+        builder = builder.additional_browser_args(&lan::webview_browser_arguments(mode));
+        if let Some(name) = lan::webview_data_directory_name(mode) {
+            if let Ok(root) = app.path().app_local_data_dir() {
+                builder = builder.data_directory(root.join(name));
+            }
+        }
+    }
+
+    let window = builder
         .title("Drclick")
         .inner_size(1440.0, 900.0)
         .min_inner_size(1100.0, 720.0)
@@ -424,7 +497,48 @@ fn build_main_window(
         ))
         .build()?;
 
+    #[cfg(windows)]
+    grant_microphone_to_owning_origin(&window, app.state::<NavigationPolicy>().inner().clone());
+    #[cfg(not(windows))]
+    let _ = window;
+
     Ok(())
+}
+
+/// Answer WebView2's microphone permission request for the origin that owns
+/// this session, instead of leaving it to a prompt whose "Bloquer" answer is
+/// remembered per profile and silently breaks dictation. Every other
+/// permission keeps WebView2's default handling.
+#[cfg(windows)]
+fn grant_microphone_to_owning_origin(window: &tauri::WebviewWindow, policy: NavigationPolicy) {
+    let _ = window.with_webview(move |webview| unsafe {
+        use webview2_com::{
+            take_pwstr, Microsoft::Web::WebView2::Win32::*, PermissionRequestedEventHandler,
+        };
+
+        let Ok(core) = webview.controller().CoreWebView2() else {
+            return;
+        };
+        let handler = PermissionRequestedEventHandler::create(Box::new(move |_, args| {
+            let Some(args) = args else {
+                return Ok(());
+            };
+            let mut kind = COREWEBVIEW2_PERMISSION_KIND::default();
+            args.PermissionKind(&mut kind)?;
+            if kind != COREWEBVIEW2_PERMISSION_KIND_MICROPHONE {
+                return Ok(());
+            }
+            let mut uri = windows_core::PWSTR::null();
+            args.Uri(&mut uri)?;
+            let uri = take_pwstr(uri);
+            if Url::parse(&uri).is_ok_and(|url| policy.allows_origin(&url)) {
+                args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
+            }
+            Ok(())
+        }));
+        let mut token = 0_i64;
+        let _ = core.add_PermissionRequested(&handler, &mut token);
+    });
 }
 
 /// Tauri plugin that enforces the NavigationPolicy and opens external links in
@@ -532,6 +646,20 @@ mod tests {
 
         assert!(policy.allows(&Url::parse("http://127.0.0.1:51234/").unwrap()));
         assert!(policy.allows(&Url::parse("http://127.0.0.1:51234/dashboard").unwrap()));
+    }
+
+    #[test]
+    fn microphone_grants_are_scoped_to_the_owning_web_origin() {
+        let policy = make_policy("http://192.168.1.20:47850/");
+
+        assert!(
+            policy.allows_origin(&Url::parse("http://192.168.1.20:47850/consultations/1").unwrap())
+        );
+        assert!(!policy.allows_origin(&Url::parse("http://tauri.localhost/index.html").unwrap()));
+        assert!(!policy.allows_origin(&Url::parse("tauri://localhost/").unwrap()));
+        assert!(!policy.allows_origin(&Url::parse("http://192.168.1.21:47850/").unwrap()));
+        assert!(!NavigationPolicy::default()
+            .allows_origin(&Url::parse("http://192.168.1.20:47850/").unwrap()));
     }
 
     #[test]

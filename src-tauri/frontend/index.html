@@ -281,6 +281,22 @@
                 color: var(--text);
             }
 
+            .option-wide {
+                grid-column: 1 / -1;
+            }
+            .discover-results {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .discover-results:empty {
+                display: none;
+            }
+            .hint {
+                color: var(--muted);
+                font-size: 12px;
+                line-height: 1.5;
+            }
             .connection-error {
                 min-height: 20px;
                 color: var(--danger);
@@ -319,7 +335,9 @@
                 role="status"
                 aria-label="Connexion en cours"
             ></div>
-            <p class="spinner-label">Vérification du serveur Drclick…</p>
+            <p class="spinner-label" id="spinner-label">
+                Vérification du serveur Drclick…
+            </p>
         </div>
 
         <main class="offline-card" id="offline-card" aria-live="polite">
@@ -336,9 +354,11 @@
                     <h1>Choisissez où se trouve votre cabinet</h1>
                 </div>
                 <p class="intro">
-                    Le serveur mémorisé ne répond pas. Utilisez le Cloud quand
-                    Internet est disponible, ou le Hub Drclick du cabinet pour
-                    continuer à travailler ensemble sur le réseau local.
+                    Le serveur mémorisé ne répond pas. Si ce poste travaille
+                    avec le poste principal du cabinet, vérifiez que ce PC est
+                    allumé et que Drclick y est ouvert, puis réessayez. Vous
+                    pouvez aussi utiliser le Cloud quand Internet est
+                    disponible, ou revenir au mode autonome.
                 </p>
             </header>
 
@@ -377,15 +397,15 @@
                     </section>
 
                     <form class="option" id="hub-form">
-                        <h2>Hub du cabinet</h2>
+                        <h2>Poste principal ou Hub du cabinet</h2>
                         <p>
-                            Pour travailler à deux ou trois PC sans Internet. Le
-                            Hub doit être installé, allumé et associé à ce
-                            cabinet.
+                            Pour travailler à deux ou trois PC sans Internet sur
+                            la même base de données. Le poste principal doit
+                            être allumé, avec Drclick ouvert.
                         </p>
                         <label class="field-label" for="hub-url"
-                            >Adresse HTTPS fournie lors de l’installation du
-                            Hub</label
+                            >Adresse affichée sur le poste principal
+                            (Configuration › Réseau local)</label
                         >
                         <input
                             class="server-input"
@@ -395,19 +415,47 @@
                             inputmode="url"
                             autocomplete="off"
                             spellcheck="false"
-                            placeholder="https://hub-cabinet.drclick.local"
+                            placeholder="http://192.168.1.10:47850"
                             required
                         />
+                        <div
+                            class="discover-results"
+                            id="discover-results"
+                        ></div>
                         <div class="actions">
                             <button
                                 class="button button-primary"
                                 id="hub-btn"
                                 type="submit"
                             >
-                                Vérifier et utiliser ce Hub
+                                Vérifier et utiliser ce poste
+                            </button>
+                            <button
+                                class="button button-secondary"
+                                id="discover-btn"
+                                type="button"
+                            >
+                                Rechercher sur le réseau
                             </button>
                         </div>
                     </form>
+                    <section class="option option-wide" id="local-option">
+                        <h2>Utiliser ce PC seul</h2>
+                        <p>
+                            Revenir au mode autonome : ce PC reprend sa propre
+                            base de données, enregistrée sur ce PC et distincte
+                            de celle du poste principal. Drclick redémarre.
+                        </p>
+                        <div class="actions">
+                            <button
+                                class="button button-secondary"
+                                id="local-btn"
+                                type="button"
+                            >
+                                Revenir au mode autonome
+                            </button>
+                        </div>
+                    </section>
                 </div>
 
                 <p
@@ -442,6 +490,13 @@
                 const connectionError =
                     document.getElementById('connection-error');
                 const currentServer = document.getElementById('current-server');
+                const spinnerLabel = document.getElementById('spinner-label');
+                const localOption = document.getElementById('local-option');
+                const localBtn = document.getElementById('local-btn');
+                const discoverBtn = document.getElementById('discover-btn');
+                const discoverResults =
+                    document.getElementById('discover-results');
+                const runtimeMode = window.__DRCLICK_RUNTIME_MODE || '';
 
                 let retryDelay = INITIAL_DELAY_MS;
                 let retryTimer = null;
@@ -504,6 +559,22 @@
                     retryBtn.disabled = value;
                     cloudBtn.disabled = value;
                     hubBtn.disabled = value;
+                    localBtn.disabled = value;
+                    discoverBtn.disabled = value;
+                }
+                // Switching to a poste principal over LAN HTTP, or back to
+                // local mode, restarts Drclick natively (a new WebView2
+                // environment is needed); there is nothing to navigate to.
+                function showRestarting() {
+                    spinnerLabel.textContent = 'Redémarrage de Drclick…';
+                    showSpinner();
+                }
+                function isLanHttp(url) {
+                    try {
+                        return new URL(url).protocol === 'http:';
+                    } catch (error) {
+                        return false;
+                    }
                 }
 
                 function scheduleRetry() {
@@ -544,7 +615,9 @@
                     try {
                         const result = await probe(currentServerUrl);
                         window.location.replace(
-                            authenticationEntryUrl(result.url || currentServerUrl),
+                            authenticationEntryUrl(
+                                result.url || currentServerUrl,
+                            ),
                         );
                     } catch (error) {
                         showSetup(readableError(error));
@@ -566,7 +639,13 @@
                             );
                         }
                         const result = await request;
-                        window.location.replace(authenticationEntryUrl(result.url));
+                        if (isLanHttp(result.url)) {
+                            showRestarting();
+                            return;
+                        }
+                        window.location.replace(
+                            authenticationEntryUrl(result.url),
+                        );
                     } catch (error) {
                         showSetup(readableError(error));
                         setBusy(false);
@@ -596,6 +675,73 @@
                 hubForm.addEventListener('submit', function (event) {
                     event.preventDefault();
                     configureAndOpen(hubUrl.value);
+                });
+                if (runtimeMode === 'local') {
+                    // Already this PC's own data; the failure is shown above.
+                    localOption.hidden = true;
+                }
+                localBtn.addEventListener('click', async function () {
+                    if (busy) {
+                        return;
+                    }
+                    clearTimeout(retryTimer);
+                    connectionError.textContent = '';
+                    setBusy(true);
+                    try {
+                        const request = invoke('configure_local_mode');
+                        if (!request) {
+                            throw new Error(
+                                'Cette configuration est disponible dans l’application Windows Drclick.',
+                            );
+                        }
+                        await request;
+                        showRestarting();
+                    } catch (error) {
+                        showSetup(readableError(error));
+                        setBusy(false);
+                    }
+                });
+                discoverBtn.addEventListener('click', async function () {
+                    if (busy) {
+                        return;
+                    }
+                    clearTimeout(retryTimer);
+                    connectionError.textContent = '';
+                    discoverResults.textContent = '';
+                    setBusy(true);
+                    try {
+                        const request = invoke('discover_lan_hosts');
+                        if (!request) {
+                            throw new Error(
+                                'Cette recherche est disponible dans l’application Windows Drclick.',
+                            );
+                        }
+                        const hosts = await request;
+                        if (!Array.isArray(hosts) || hosts.length === 0) {
+                            connectionError.textContent =
+                                'Aucun poste principal trouvé. Saisissez son adresse, affichée dans Configuration › Réseau local sur ce poste.';
+                        }
+                        (Array.isArray(hosts) ? hosts : []).forEach(
+                            function (host) {
+                                const choice = document.createElement('button');
+                                choice.type = 'button';
+                                choice.className = 'button button-secondary';
+                                choice.textContent =
+                                    String(host.name || 'Poste principal') +
+                                    ' — ' +
+                                    String(host.url || '');
+                                choice.addEventListener('click', function () {
+                                    hubUrl.value = String(host.url || '');
+                                    configureAndOpen(hubUrl.value);
+                                });
+                                discoverResults.appendChild(choice);
+                            },
+                        );
+                    } catch (error) {
+                        connectionError.textContent = readableError(error);
+                    } finally {
+                        setBusy(false);
+                    }
                 });
 
                 // A local-mode start failure is terminal for this session:

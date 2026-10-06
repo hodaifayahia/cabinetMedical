@@ -1,5 +1,11 @@
 # Running a Cabinet Hub (offline LAN operation)
 
+> **Simpler option for most cabinets (ADR-005):** the doctor's own Drclick
+> desktop can act as the server ("poste principal") with no separate machine
+> or certificate. See [RESEAU-LOCAL.md](RESEAU-LOCAL.md) and
+> [ADR-005](architecture/ADR-005-desktop-lan-host.md). A Hub remains the choice
+> when LAN traffic must be encrypted or several assistants work at once.
+
 A **Cabinet Hub** is this same Laravel application running on one always-on
 machine inside the cabinet's own network. The doctor's PC and the reception PC
 both point their Drclick desktop at it, so clinical work continues with the

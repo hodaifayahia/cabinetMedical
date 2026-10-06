@@ -32,6 +32,10 @@ return [
         // generation never derives an audience from this port alone.
         'lan_port' => (int) env('MEDISMART_LAN_PORT', 8000),
         'desktop_supervised' => (bool) env('MEDISMART_DESKTOP_SUPERVISED', false),
+        // Set only for the native "poste principal" LAN listener (ADR-005):
+        // that PHP process admits private-network peers on this exact port.
+        'lan_host_enabled' => (bool) env('MEDISMART_LAN_HOST_ENABLED', false),
+        'lan_host_port' => (int) env('MEDISMART_LAN_HOST_PORT', 0),
         // The native installation identity is the authority in supervised
         // builds. Laravel mirrors it into its internal setting instead of
         // generating a second, incompatible machine identity.

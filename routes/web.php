@@ -29,6 +29,7 @@ use App\Http\Controllers\Configuration\ConnectivityAndBackupController;
 use App\Http\Controllers\Configuration\DocumentTemplateController;
 use App\Http\Controllers\Configuration\LicenseController;
 use App\Http\Controllers\Configuration\LocalBackupArchiveController;
+use App\Http\Controllers\Configuration\LocalNetworkController;
 use App\Http\Controllers\Configuration\MedicationController;
 use App\Http\Controllers\Configuration\OnlineServiceController;
 use App\Http\Controllers\Configuration\PrepareOfflineRestoreController;
@@ -555,6 +556,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('connectivity-backup.update');
 
             Route::middleware('permission:configuration.connectivity.manage')->group(function (): void {
+                Route::get('local-network', LocalNetworkController::class)->name('local-network.edit');
                 Route::get('online-service', [OnlineServiceController::class, 'edit'])->name('online-service.edit');
                 Route::post('online-service', [OnlineServiceController::class, 'store'])
                     ->middleware('throttle:6,1')

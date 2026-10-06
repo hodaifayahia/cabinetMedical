@@ -1,13 +1,14 @@
 {
     "$schema": "../gen/schemas/desktop-schema.json",
     "identifier": "connection-setup",
-    "description": "Only the bundled Drclick connection page may choose where this installation's data lives: keep it on this PC, or attach to a Cabinet Hub or Cloud endpoint.",
+    "description": "Only the bundled Drclick connection page may choose where this installation's data lives: keep it on this PC, or attach to the cabinet's poste principal, a Cabinet Hub or the Cloud (and look for a poste principal on the LAN).",
     "local": true,
     "windows": ["main"],
     "permissions": [
         "allow-probe-server-connection",
         "allow-configure-server-connection",
         "allow-configure-local-mode",
-        "allow-runtime-mode-status"
+        "allow-runtime-mode-status",
+        "allow-discover-lan-hosts"
     ]
 }

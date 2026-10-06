@@ -1,0 +1,19 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "desktop-local-runtime",
+    "description": "Only the application served by this PC's own supervised runtime (the loopback origin) may share this PC's database with the cabinet LAN, open the Windows firewall for it, look for or join another Drclick PC, return to local mode, or pick the local backup folder. Hosted and LAN origins are never granted these.",
+    "local": false,
+    "remote": {
+        "urls": ["http://127.0.0.1:*"]
+    },
+    "windows": ["main"],
+    "permissions": [
+        "allow-lan-host-status",
+        "allow-set-lan-host",
+        "allow-open-lan-firewall",
+        "allow-discover-lan-hosts",
+        "allow-connect-to-lan-host",
+        "allow-use-local-mode",
+        "allow-pick-backup-folder"
+    ]
+}
