@@ -126,6 +126,16 @@ class FortifyServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('account-recovery', function (Request $request) {
+            $email = mb_strtolower(trim((string) $request->input('email')));
+            $ip = (string) $request->ip();
+
+            return [
+                Limit::perMinute(5)->by(hash('sha256', "account-recovery|{$email}|{$ip}")),
+                Limit::perHour(30)->by(hash('sha256', "account-recovery-ip|{$ip}")),
+            ];
+        });
+
         RateLimiter::for('desktop-pin-login', function (Request $request) {
             $deviceToken = (string) $request->input('device_token');
             $ip = (string) $request->ip();
@@ -154,6 +164,14 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     private function passwordResetDeliveryAvailable(): bool
+    {
+        return self::passwordResetDeliveryConfigured();
+    }
+
+    /**
+     * Whether a reset link can actually be e-mailed from this installation.
+     */
+    public static function passwordResetDeliveryConfigured(): bool
     {
         if (! Features::enabled(Features::resetPasswords())) {
             return false;

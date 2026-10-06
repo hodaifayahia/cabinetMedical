@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use App\Services\ApplicationSettingService;
+use App\Services\Auth\AccountRecoveryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -45,6 +46,10 @@ class SecurityController extends Controller
                 : [],
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'localPinConfigured' => $request->user()->local_pin_hash !== null,
+            'recoveryCodes' => [
+                'remaining' => app(AccountRecoveryService::class)->remainingCodes($request->user()),
+                'generatedAt' => $request->user()->account_recovery_codes_generated_at?->toIso8601String(),
+            ],
             'idleLock' => [
                 'minutes' => (int) $idleLock['value'],
                 'minimum' => (int) $idleLock['minimum'],

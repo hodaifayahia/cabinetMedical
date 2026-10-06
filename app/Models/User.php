@@ -37,6 +37,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $local_pin_hash
+ * @property string|null $account_recovery_codes
+ * @property Carbon|null $account_recovery_codes_generated_at
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -49,7 +51,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'email', 'phone', 'password', 'cabinet_setting_id', 'cabinet_id', 'is_platform_admin', 'approved_at'])]
-#[Hidden(['public_id', 'password', 'local_pin_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['public_id', 'password', 'local_pin_hash', 'account_recovery_codes', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
@@ -96,6 +98,7 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'account_recovery_codes_generated_at' => 'datetime',
             'is_platform_admin' => 'boolean',
             'approved_at' => 'datetime',
         ];

@@ -9,6 +9,7 @@ import ManagePasskeys from '@/components/ManagePasskeys.vue';
 import type { Props as ManageTwoFactorProps } from '@/components/ManageTwoFactor.vue';
 import ManageTwoFactor from '@/components/ManageTwoFactor.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import RecoveryCodesSection from '@/components/settings/RecoveryCodesSection.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,10 @@ import { edit } from '@/routes/security';
 type Props = {
     passwordRules: string;
     localPinConfigured: boolean;
+    recoveryCodes: {
+        remaining: number;
+        generatedAt: string | null;
+    };
     idleLock: {
         minutes: number;
         minimum: number;
@@ -308,6 +313,11 @@ defineOptions({
             </div>
         </form>
     </section>
+
+    <RecoveryCodesSection
+        :remaining="props.recoveryCodes.remaining"
+        :generated-at="props.recoveryCodes.generatedAt"
+    />
 
     <section class="space-y-6" aria-labelledby="idle-lock-heading">
         <Heading

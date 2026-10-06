@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Cabinet;
 use App\Models\CabinetSetting;
 use App\Models\User;
+use App\Services\Auth\AccountRecoveryService;
 use App\Services\Cabinet\CabinetEntitlementService;
 use App\Services\Cabinet\CabinetSeatService;
 use App\Services\Sync\SyncTransportException;
@@ -226,6 +227,29 @@ class StaffIndexController extends Controller
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => 'Utilisateur mis à jour.',
+        ]);
+
+        return to_route('app.staff.index');
+    }
+
+    /**
+     * Forgets a colleague's desktop and lock-screen PINs: at the next sign-in
+     * with their password they create new ones.
+     */
+    public function resetPins(Request $request, User $user, AccountRecoveryService $recovery): RedirectResponse
+    {
+        $this->authorize('update', $user);
+
+        $actor = $request->user();
+        $target = $this->staffQuery($actor)
+            ->whereKey((int) $user->getKey())
+            ->firstOrFail();
+
+        $recovery->resetPins($target, $actor);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "Codes PIN de {$target->name} réinitialisés. Un nouveau code PIN lui sera demandé à la prochaine connexion avec son mot de passe.",
         ]);
 
         return to_route('app.staff.index');

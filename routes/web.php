@@ -12,6 +12,7 @@ use App\Http\Controllers\Appointments\ScheduleController;
 use App\Http\Controllers\Appointments\TimeOffController;
 use App\Http\Controllers\Appointments\WaitingRoomController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\Auth\AccountRecoveryController;
 use App\Http\Controllers\Auth\DesktopCabinetLoginController;
 use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
 use App\Http\Controllers\Auth\DesktopPinLoginController;
@@ -162,6 +163,22 @@ Route::middleware('guest')->group(function (): void {
 // Desktop PIN authentication is separate from Fortify's email/password flow.
 Route::post('desktop/pin/login', DesktopPinLoginController::class)
     ->middleware('throttle:desktop-pin-login')
+// Forgotten password and PIN without e-mail: recovery codes, the poste
+// principal key file, or a cabinet manager (see AccountRecoveryService).
+Route::middleware('guest')->group(function (): void {
+    Route::get('account-recovery', [AccountRecoveryController::class, 'show'])
+        ->name('account-recovery.show');
+    Route::post('account-recovery/code', [AccountRecoveryController::class, 'resetWithCode'])
+        ->middleware('throttle:account-recovery')
+        ->name('account-recovery.code');
+    Route::post('account-recovery/device/key', [AccountRecoveryController::class, 'issueDeviceCode'])
+        ->middleware('throttle:6,1')
+        ->name('account-recovery.device.key');
+    Route::post('account-recovery/device', [AccountRecoveryController::class, 'resetWithDeviceCode'])
+        ->middleware('throttle:account-recovery')
+        ->name('account-recovery.device');
+});
+
     ->name('desktop.pin.login');
 
 Route::post('desktop/pin/enroll', DesktopPinEnrollmentController::class)
@@ -651,3 +668,4 @@ Route::get('app/clinical-documents/{document}/file', [ClinicalDocumentController
 Route::post('app/clinical-documents/{document}/callback', [ClinicalDocumentController::class, 'callback'])->name('clinical-documents.callback');
 
 require __DIR__.'/settings.php';
+            Route::delete('staff/{user}/pins', [StaffIndexController::class, 'resetPins'])->name('staff.pins.reset');
