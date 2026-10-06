@@ -47,6 +47,14 @@ return [
         'lan_listener_status' => env('MEDISMART_LAN_LISTENER_STATUS', 'stopped'),
     ],
 
+    'hosted' => [
+        // Patient records live on each cabinet's own PC (desktop app), not on
+        // the online service: the hosted website only manages accounts,
+        // licences, AI credits and the mobile app. Set to true only to reopen
+        // the clinical screens online (they never close on a desktop or Hub).
+        'clinical_enabled' => (bool) env('MEDISMART_HOSTED_CLINICAL', false),
+    ],
+
     'online_service' => [
         // The hosted Drclick service a local desktop links to under
         // Configuration › Service en ligne. Only pre-fills that form; the

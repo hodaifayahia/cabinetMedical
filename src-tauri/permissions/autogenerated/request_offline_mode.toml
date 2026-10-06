@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-request-offline-mode"
+description = "Enables the request_offline_mode command without any pre-configured scope."
+commands.allow = ["request_offline_mode"]
+
+[[permission]]
+identifier = "deny-request-offline-mode"
+description = "Denies the request_offline_mode command without any pre-configured scope."
+commands.deny = ["request_offline_mode"]

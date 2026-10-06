@@ -54,6 +54,10 @@ final class AiGateway
      */
     public function complete(User $user, AiFeature $feature, array $messages, bool $vision = false, bool $json = true): AiCompletion
     {
+        if ($vision) {
+            $this->assertMediaAllowed($user, 'L’envoi d’images à l’assistant IA est désactivé pour ce cabinet (Configuration › Service en ligne).');
+        }
+
         return match ($this->mode($user)) {
             'direct' => $this->ledger->spend(
                 $this->cabinetOf($user),
@@ -76,6 +80,8 @@ final class AiGateway
     public function transcribe(User $user, string $path, string $mime): AiCompletion
     {
         $feature = AiFeature::DICTATION_TRANSCRIPTION;
+        $this->assertMediaAllowed($user, 'L’envoi de la voix à l’assistant IA est désactivé pour ce cabinet (Configuration › Service en ligne). '
+            .'Cliquez dans le champ texte puis appuyez sur Windows + H pour la dictée de Windows.');
 
         return match ($this->mode($user)) {
             'direct' => $this->ledger->spend(
@@ -90,6 +96,24 @@ final class AiGateway
                 AiException::UNAVAILABLE,
             ),
         };
+    }
+
+    /**
+     * Images and audio leave the PC only if the cabinet allows it; text sent
+     * to the assistant never carries the patient's name, phone or address.
+     */
+    public function mediaAllowed(User $user): bool
+    {
+        $cabinet = $user->cabinet;
+
+        return ! $cabinet instanceof Cabinet || $cabinet->ai_media_enabled !== false;
+    }
+
+    private function assertMediaAllowed(User $user, string $message): void
+    {
+        if (! $this->mediaAllowed($user)) {
+            throw new AiException($message, AiException::DISABLED);
+        }
     }
 
     /**

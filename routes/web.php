@@ -14,6 +14,7 @@ use App\Http\Controllers\Appointments\WaitingRoomController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AccountRecoveryController;
 use App\Http\Controllers\Auth\DesktopCabinetLoginController;
+use App\Http\Controllers\Auth\DesktopCabinetTransferController;
 use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
 use App\Http\Controllers\Auth\DesktopPinLoginController;
 use App\Http\Controllers\Auth\DesktopRestoreBackupController;
@@ -50,6 +51,7 @@ use App\Http\Controllers\DesktopUpdateArtifactController;
 use App\Http\Controllers\DesktopUpdateManifestController;
 use App\Http\Controllers\Encounters\EncounterController;
 use App\Http\Controllers\GlobalSearchController;
+use App\Http\Controllers\OnlineSpaceController;
 use App\Http\Controllers\Patients\PatientAlertController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Patients\PatientMergeController;
@@ -164,6 +166,18 @@ Route::middleware('guest')->group(function (): void {
         ->name('desktop.cabinet-login.store');
 });
 
+// Moving an online cabinet's records to this PC: progress, retry, and the
+// removal of the copy left online. Only while a transfer exists on this PC.
+Route::prefix('desktop/transfer')->name('desktop.transfer.')->group(function (): void {
+    Route::get('/', [DesktopCabinetTransferController::class, 'show'])->name('show');
+    Route::get('status', [DesktopCabinetTransferController::class, 'status'])->name('status');
+    Route::post('retry', [DesktopCabinetTransferController::class, 'retry'])
+        ->middleware('throttle:6,1')->name('retry');
+    Route::post('cancel', [DesktopCabinetTransferController::class, 'cancel'])->name('cancel');
+    Route::post('purge', [DesktopCabinetTransferController::class, 'purge'])
+        ->middleware('throttle:6,1')->name('purge');
+});
+
 // Forgotten password and PIN without e-mail: recovery codes, the poste
 // principal key file, or a cabinet manager (see AccountRecoveryService).
 Route::middleware('guest')->group(function (): void {
@@ -230,11 +244,17 @@ Route::middleware('auth')->prefix('session')->name('session-lock.')->group(funct
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', DashboardController::class)->name('dashboard');
+    // The cabinet's page on the online service: account, licence, AI
+    // credits, and where its records are (the desktop app on its PC).
+    Route::get('espace-cabinet', OnlineSpaceController::class)->name('online-space');
+
+    Route::get('dashboard', DashboardController::class)
+        ->middleware('clinical.workstation')
+        ->name('dashboard');
 
     Route::redirect('app', '/dashboard')->name('app.home');
 
-    Route::prefix('app')->name('app.')->group(function () {
+    Route::prefix('app')->name('app.')->middleware('clinical.workstation')->group(function () {
         Route::resource('patients', PatientController::class)->except(['destroy']);
         Route::get('audit-logs', AuditLogController::class)
             ->middleware('permission:audit-logs.view')
@@ -562,6 +582,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->middleware('throttle:6,1')
                     ->name('online-service.store');
                 Route::delete('online-service', [OnlineServiceController::class, 'destroy'])->name('online-service.destroy');
+                Route::put('online-service/ai', [OnlineServiceController::class, 'updateAi'])->name('online-service.ai');
             });
 
             Route::middleware('permission:configuration.backups.manage')->group(function (): void {

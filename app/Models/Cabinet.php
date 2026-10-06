@@ -30,6 +30,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $seat_limit
  * @property int|null $seat_price
  * @property CarbonImmutable|null $seat_limit_synced_at
+ * @property CarbonImmutable|null $clinical_data_transferred_at
+ * @property string|null $clinical_data_transferred_to
+ * @property bool $ai_media_enabled
  * @property-read string|null $wilaya_name
  */
 #[Fillable([
@@ -56,6 +59,7 @@ class Cabinet extends Model
     /** @var array<string, mixed> */
     protected $attributes = [
         'seat_limit' => self::DEFAULT_SEATS,
+        'ai_media_enabled' => true,
     ];
 
     protected function casts(): array
@@ -67,9 +71,11 @@ class Cabinet extends Model
             'activated_at' => 'immutable_datetime',
             'ai_credits' => 'integer',
             'ai_enabled' => 'boolean',
+            'ai_media_enabled' => 'boolean',
             'seat_limit' => 'integer',
             'seat_price' => 'integer',
             'seat_limit_synced_at' => 'immutable_datetime',
+            'clinical_data_transferred_at' => 'immutable_datetime',
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AppointmentSyncController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CabinetController;
 use App\Http\Controllers\Api\V1\CabinetSeatController;
+use App\Http\Controllers\Api\V1\CabinetTransferController;
 use App\Http\Controllers\Api\V1\DesktopActivationController;
 use App\Http\Controllers\Api\V1\PatientController;
 use App\Http\Controllers\Api\V1\ScheduleController;
@@ -44,6 +45,18 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
+
+        // A cabinet's PC takes its records from the online service, then has
+        // them removed here. Owner only; not gated by the licence.
+        Route::prefix('cabinet-transfer')->middleware('throttle:600,1')->group(function (): void {
+            Route::get('manifest', [CabinetTransferController::class, 'manifest']);
+            Route::get('tables/{table}', [CabinetTransferController::class, 'page'])
+                ->where('table', '[a-z_]+');
+            Route::get('files/{key}', [CabinetTransferController::class, 'file'])
+                ->where('key', '[a-z_]+:[0-9]+:[a-z_]+');
+            Route::post('complete', [CabinetTransferController::class, 'complete'])
+                ->middleware('throttle:5,1');
+        });
 
         // --- Authenticated + active, approved cabinet member --------------
         Route::middleware('cabinet.active.api')->group(function (): void {

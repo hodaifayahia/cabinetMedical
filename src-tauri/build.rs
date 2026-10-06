@@ -25,6 +25,7 @@ fn main() {
             "configure_server_connection",
             "configure_local_mode",
             "runtime_mode_status",
+            "request_offline_mode",
             "pick_backup_folder",
             "lan_host_status",
             "set_lan_host",

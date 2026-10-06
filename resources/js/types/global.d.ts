@@ -22,6 +22,7 @@ declare module '@inertiajs/core' {
             cabinet: Cabinet;
             auth: Auth;
             desktopDownload: DesktopDownload;
+            clinicalScreensOpen: boolean;
             backupReminder?: BackupReminder | null;
             sessionLock: SessionLockState | null;
             sidebarOpen: boolean;

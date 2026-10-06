@@ -13,6 +13,7 @@ use App\Services\DesktopUpdateInstallAuthority;
 use App\Services\DocumentBrandingService;
 use App\Services\SessionLockService;
 use App\Services\Sync\OnlineServiceLink;
+use App\Support\ClinicalWorkstation;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -85,6 +86,9 @@ class HandleInertiaRequests extends Middleware
                 'user' => $this->resolveAuthenticatedUser($request->user()),
             ],
             'desktopDownload' => app(DesktopDownloadService::class)->sharedProps(),
+            // False on the online service: patient screens live in the
+            // desktop app there, and the navigation leads to the online space.
+            'clinicalScreensOpen' => ClinicalWorkstation::clinicalScreensOpen(),
             'desktopUpdateInstallAvailable' => fn (): bool => $user instanceof User
                 && (bool) config('medismart.runtime.desktop_supervised', false)
                 && (bool) config('medismart.updates.signed_updater_configured', false)

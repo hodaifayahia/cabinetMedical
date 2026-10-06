@@ -173,6 +173,51 @@ fn configure_local_mode(app: AppHandle) -> Result<bool, String> {
     Ok(true)
 }
 
+/// "Utiliser ce PC hors ligne", offered by the online cabinet page while
+/// this PC still opens the online service. The website may ask, but only the
+/// person at the PC decides: a native confirmation the page cannot answer,
+/// then Drclick restarts on this PC's own database (empty until the doctor
+/// brings the cabinet's records back). Does nothing in any other mode.
+#[tauri::command]
+async fn request_offline_mode(app: AppHandle) -> Result<bool, String> {
+    use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+
+    let directory = configuration_directory(&app)?;
+    let Ok(RuntimeMode::Cloud { .. }) = resolve_runtime_mode(&directory, &cloud_server_url()) else {
+        return Ok(false);
+    };
+
+    let dialog_app = app.clone();
+    let confirmed = tauri::async_runtime::spawn_blocking(move || {
+        dialog_app
+            .dialog()
+            .message(
+                "Drclick va redémarrer et enregistrer les dossiers sur ce PC, sans Internet.\n\n\
+                 Au démarrage, choisissez « Cabinet existant » et connectez-vous avec le compte \
+                 du médecin titulaire en laissant cochée « Récupérer les dossiers enregistrés \
+                 en ligne » : vos patients seront copiés sur ce PC.",
+            )
+            .title("Utiliser ce PC hors ligne")
+            .kind(MessageDialogKind::Info)
+            .buttons(MessageDialogButtons::OkCancelCustom(
+                "Continuer".to_owned(),
+                "Annuler".to_owned(),
+            ))
+            .blocking_show()
+    })
+    .await
+    .map_err(|_| "La confirmation a été interrompue.".to_owned())?;
+
+    if !confirmed {
+        return Ok(false);
+    }
+
+    persist_runtime_mode(&directory, &RuntimeMode::Local)?;
+    lan::schedule_restart(&app);
+
+    Ok(true)
+}
+
 /// Native folder picker for the local backup destination. Only the PC that
 /// owns the data runs backups, so only the loopback origin may call this.
 #[tauri::command]
@@ -336,6 +381,7 @@ pub fn run() {
             configure_server_connection,
             configure_local_mode,
             runtime_mode_status,
+            request_offline_mode,
             pick_backup_folder,
             lan::lan_host_status,
             lan::set_lan_host,

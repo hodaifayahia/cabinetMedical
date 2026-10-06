@@ -32,6 +32,27 @@ const page = usePage();
 const mainNavItems = computed<NavItem[]>(() => {
     const permissions = page.props.auth.user?.permissions ?? [];
 
+    // Online service: patient screens live in the desktop app.
+    if (page.props.clinicalScreensOpen === false) {
+        const onlineItems: NavItem[] = [
+            {
+                title: 'Espace cabinet',
+                href: '/espace-cabinet',
+                icon: LayoutGrid,
+            },
+        ];
+
+        if (page.props.auth.user?.can.manageStaff) {
+            onlineItems.push({
+                title: 'Utilisateurs',
+                href: '/app/staff',
+                icon: UserCog,
+            });
+        }
+
+        return onlineItems;
+    }
+
     const items: NavItem[] = [
         {
             title: 'Tableau de bord',

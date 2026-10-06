@@ -1,7 +1,7 @@
 {
     "$schema": "../gen/schemas/desktop-schema.json",
     "identifier": "desktop-windows",
-    "description": "The Drclick application window may invoke signed-updater commands and read which machine owns this installation's data. It is granted no offline-restore, LAN, Google OAuth, opener, shell, or filesystem capability, and it cannot change the data owner.",
+    "description": "The Drclick application window may invoke signed-updater commands and read which machine owns this installation's data. It is granted no offline-restore, LAN, Google OAuth, opener, shell, or filesystem capability. It cannot change the data owner by itself: it may only ask to move a cloud installation to this PC, which the person at the PC confirms in a native dialog.",
     "local": false,
     "remote": {
         "urls": [
@@ -16,6 +16,7 @@
         "allow-signed-updater-status",
         "allow-check-for-signed-update",
         "allow-install-signed-update",
-        "allow-runtime-mode-status"
+        "allow-runtime-mode-status",
+        "allow-request-offline-mode"
     ]
 }

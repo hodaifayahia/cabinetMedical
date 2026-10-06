@@ -135,6 +135,44 @@ final class DesktopLicenseActivator
     }
 
     /**
+     * First half of moving an online cabinet's records to this empty PC:
+     * the online service confirms the owner and returns the licence and
+     * the token the transfer then uses. Nothing is written locally yet.
+     *
+     * @throws ValidationException under `email`
+     */
+    public function activateForTransfer(string $email, #[SensitiveParameter] string $password): CloudActivation
+    {
+        $activation = $this->cloud->activateWithAccount($email, $password, true, 'Poste Drclick', 'email');
+
+        if ($activation->token === null) {
+            throw ValidationException::withMessages([
+                'email' => 'Le service en ligne n’a pas autorisé le transfert des dossiers. Réessayez plus tard.',
+            ]);
+        }
+
+        return $activation;
+    }
+
+    /**
+     * Second half: once the cabinet's rows are on this PC, activate that
+     * cabinet with the licence received and link it for the mobile app.
+     */
+    public function adoptTransferredCabinet(Cabinet $cabinet, CloudActivation $activation): Cabinet
+    {
+        $cabinet = $this->apply($cabinet, $activation->entitlement, 'email', 'desktop_online_transfer');
+        $seatLimit = $activation->cabinet['seat_limit'] ?? null;
+
+        if (is_int($seatLimit) && $seatLimit >= 1 && $seatLimit <= Cabinet::MAX_GRANTABLE_SEATS) {
+            $cabinet->forceFill(['seat_limit' => $seatLimit, 'seat_limit_synced_at' => now()])->save();
+        }
+
+        $this->adoptLink($cabinet, $activation);
+
+        return $cabinet->refresh();
+    }
+
+    /**
      * "Cabinet existant" on a fresh desktop: no local account matches, so the
      * owner's online account is used to recreate the cabinet here — identity
      * only, the records never leave the other postes — activate it and link
