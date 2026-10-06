@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Banknote,
     CircleDollarSign,
@@ -38,10 +38,14 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import {
     createFrDzMoneyFormatter,
+    localIsoDate,
+    maxCollectable,
+    monthStartIsoDate,
     paymentDateLabel,
     paymentMethodLabel,
     paymentPaginationLabel,
     paymentStatusLabel,
+    projectedOutstanding as projectOutstanding,
 } from '@/pages/payments/display';
 
 type Payment = {
@@ -53,6 +57,7 @@ type Payment = {
     initials: string;
     user_name: string | null;
     service: string;
+    payment_service: string | null;
     method: string | null;
     amount: number;
     paid: number;
@@ -101,6 +106,8 @@ const props = defineProps<{
         today: number;
         paid: number;
         outstanding: number;
+        /** Every open debt, all periods (the « Dettes » shortcut). */
+        debts: number;
     };
     currency: string;
     users: { id: number; name: string }[];
@@ -117,6 +124,10 @@ defineOptions({
 });
 
 const localFilters = reactive({ ...props.filters });
+const page = usePage();
+const canViewPatients = computed(() =>
+    (page.props.auth?.user?.permissions ?? []).includes('patients.view'),
+);
 const showEditor = ref(false);
 const selectedPayment = ref<Payment | null>(null);
 
@@ -159,10 +170,8 @@ const applyFilters = () => {
 
 const resetFilters = () => {
     const now = new Date();
-    localFilters.from = new Date(now.getFullYear(), now.getMonth(), 1)
-        .toISOString()
-        .slice(0, 10);
-    localFilters.to = now.toISOString().slice(0, 10);
+    localFilters.from = monthStartIsoDate(now);
+    localFilters.to = localIsoDate(now);
     localFilters.user = '';
     localFilters.search = '';
     localFilters.status = 'all';
@@ -170,42 +179,60 @@ const resetFilters = () => {
     applyFilters();
 };
 
-const reportUrl = computed(() => {
+// Print and export follow the applied filters, i.e. exactly the rows and
+// totals on screen (not values typed but not yet applied).
+const appliedFilterQuery = computed(() => {
     const params = new URLSearchParams();
 
-    Object.entries(localFilters).forEach(([key, value]) => {
-        if (value) {
+    Object.entries(props.filters).forEach(([key, value]) => {
+        if (value && !(key === 'status' && value === 'all')) {
             params.set(key, value);
         }
     });
 
-    return '/app/payments/print?' + params.toString();
+    return params.toString();
 });
+
+const reportUrl = computed(
+    () => '/app/payments/print?' + appliedFilterQuery.value,
+);
 
 const openEditor = (payment: Payment) => {
     selectedPayment.value = payment;
     paymentForm.amount = String(payment.amount);
     paymentForm.method = payment.method ?? '';
-    paymentForm.service = payment.service;
+    paymentForm.service = payment.payment_service ?? '';
     paymentForm.paid_today = '';
-    paymentForm.notes = '';
-    paymentForm.settlement = 'debt';
+    // Keep an existing documented discount (and its reason) unless the user
+    // changes it: saving with « dette » would turn the discount back into debt.
+    paymentForm.notes = payment.notes ?? '';
+    paymentForm.settlement = payment.adjustment > 0 ? 'settled' : 'debt';
     paymentForm.client_reference = newPaymentReference();
     paymentForm.clearErrors();
     showEditor.value = true;
 };
 
+// Computed from the price being edited, as the server does: raising the
+// total in the same dialog allows collecting the difference.
+const collectableNow = computed(() =>
+    maxCollectable(paymentForm.amount, selectedPayment.value?.paid ?? 0),
+);
+
 const projectedOutstanding = computed(() =>
-    Math.max(
-        0,
-        (selectedPayment.value?.outstanding ?? 0) -
-            Number(paymentForm.paid_today || 0),
+    projectOutstanding(
+        paymentForm.amount,
+        selectedPayment.value?.paid ?? 0,
+        paymentForm.paid_today,
     ),
 );
 
+// Every open debt, all periods and users: the same set the badge totals.
 const showAllDebts = () => {
     localFilters.from = '';
     localFilters.to = '';
+    localFilters.user = '';
+    localFilters.search = '';
+    localFilters.method = '';
     localFilters.status = 'debt';
     applyFilters();
 };
@@ -219,19 +246,9 @@ const chooseService = (value: string) => {
     }
 };
 
-const exportUrl = computed(() => {
-    const params = new URLSearchParams();
-
-    if (localFilters.from) {
-        params.set('from', localFilters.from);
-    }
-
-    if (localFilters.to) {
-        params.set('to', localFilters.to);
-    }
-
-    return '/app/payments/export?' + params.toString();
-});
+const exportUrl = computed(
+    () => '/app/payments/export?' + appliedFilterQuery.value,
+);
 
 type Installment = Payment['installments'][number];
 
@@ -310,10 +327,11 @@ const savePayment = () => {
                     <CircleDollarSign class="size-4" />
                     Dettes
                     <span
-                        v-if="summary.outstanding > 0"
+                        v-if="summary.debts > 0"
                         class="rounded-full bg-white/80 px-2 py-0.5 text-xs text-slate-900 tabular-nums"
+                        title="Total des dettes, toutes périodes confondues"
                     >
-                        {{ formatMoney(summary.outstanding) }}
+                        {{ formatMoney(summary.debts) }}
                     </span>
                 </Button>
                 <Button variant="outline" as-child>
@@ -479,6 +497,7 @@ const savePayment = () => {
                     </label>
                     <div class="flex items-end gap-2">
                         <Button
+                            type="button"
                             class="flex-1 bg-amber-500 text-slate-950 hover:bg-amber-400"
                             @click="applyFilters"
                         >
@@ -676,6 +695,7 @@ const savePayment = () => {
                                             </a>
                                         </Button>
                                         <Button
+                                            v-if="canViewPatients"
                                             variant="ghost"
                                             size="icon"
                                             as-child
@@ -858,7 +878,7 @@ const savePayment = () => {
                             v-model="paymentForm.paid_today"
                             type="number"
                             min="0"
-                            :max="selectedPayment?.outstanding ?? undefined"
+                            :max="collectableNow"
                             step="0.01"
                         />
                         <InputError :message="paymentForm.errors.paid_today" />
@@ -941,6 +961,7 @@ const savePayment = () => {
                             </span>
                         </label>
                     </div>
+                    <InputError :message="paymentForm.errors.settlement" />
                 </div>
 
                 <div class="grid gap-2">
@@ -962,6 +983,9 @@ const savePayment = () => {
                         placeholder="Motif de remise, accord du patient ou détail du versement…"
                     />
                     <InputError :message="paymentForm.errors.notes" />
+                    <InputError
+                        :message="paymentForm.errors.client_reference"
+                    />
                 </div>
 
                 <details
@@ -1125,6 +1149,7 @@ const savePayment = () => {
                             </span>
                         </span>
                     </label>
+                    <InputError :message="refundForm.errors.reduce_charge" />
                 </div>
 
                 <div class="grid gap-2">
@@ -1137,6 +1162,7 @@ const savePayment = () => {
                         placeholder="Prestation annulée, erreur de saisie, chèque rejeté…"
                     />
                     <InputError :message="refundForm.errors.reason" />
+                    <InputError :message="refundForm.errors.client_reference" />
                 </div>
 
                 <DialogFooter>

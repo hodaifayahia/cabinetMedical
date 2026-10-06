@@ -40,7 +40,20 @@
         <x-document-branding-header :branding="$branding">
             <div>
                 <strong>RAPPORT DES PAIEMENTS</strong>
-                <p class="muted">{{ $filters['from'] }} — {{ $filters['to'] }}</p>
+                @php
+                    $periodDate = static fn (string $date): string => $date !== '' ? \Illuminate\Support\Carbon::parse($date)->format('d/m/Y') : '';
+                    $statusLabels = ['paid' => 'Payés', 'unpaid' => 'Impayés', 'partial' => 'Partiellement payés', 'debt' => 'Toutes les dettes'];
+                @endphp
+                <p class="muted">
+                    @if($filters['from'] === '' && $filters['to'] === '')
+                        Toutes périodes
+                    @else
+                        {{ $filters['from'] !== '' ? $periodDate($filters['from']) : '…' }} — {{ $filters['to'] !== '' ? $periodDate($filters['to']) : '…' }}
+                    @endif
+                    @isset($statusLabels[$filters['status']])
+                        · {{ $statusLabels[$filters['status']] }}
+                    @endisset
+                </p>
             </div>
         </x-document-branding-header>
 
@@ -68,10 +81,10 @@
                         <td>{{ $payment['service'] }}</td>
                         <td>{{ $payment['date_label'] ?: '—' }}</td>
                         <td>{{ $payment['method'] ?: '—' }}</td>
-                        <td class="number">{{ number_format($payment['amount'], 2) }} {{ $currency }}</td>
-                        <td class="number">{{ number_format($payment['paid'], 2) }} {{ $currency }}</td>
-                        <td class="number">{{ number_format($payment['adjustment'], 2) }} {{ $currency }}</td>
-                        <td class="number">{{ number_format($payment['outstanding'], 2) }} {{ $currency }}</td>
+                        <td class="number">{{ number_format($payment['amount'], 2, ',', ' ') }} {{ $currency }}</td>
+                        <td class="number">{{ number_format($payment['paid'], 2, ',', ' ') }} {{ $currency }}</td>
+                        <td class="number">{{ number_format($payment['adjustment'], 2, ',', ' ') }} {{ $currency }}</td>
+                        <td class="number">{{ number_format($payment['outstanding'], 2, ',', ' ') }} {{ $currency }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="9" style="text-align:center;padding:30px">Aucun paiement ne correspond à ces filtres.</td></tr>
@@ -80,10 +93,10 @@
             <tfoot>
                 <tr>
                     <td colspan="5" class="number">TOTAL</td>
-                    <td class="number">{{ number_format($totals['amount'], 2) }} {{ $currency }}</td>
-                    <td class="number">{{ number_format($totals['paid'], 2) }} {{ $currency }}</td>
-                    <td class="number">{{ number_format($totals['adjustment'], 2) }} {{ $currency }}</td>
-                    <td class="number">{{ number_format($totals['outstanding'], 2) }} {{ $currency }}</td>
+                    <td class="number">{{ number_format($totals['amount'], 2, ',', ' ') }} {{ $currency }}</td>
+                    <td class="number">{{ number_format($totals['paid'], 2, ',', ' ') }} {{ $currency }}</td>
+                    <td class="number">{{ number_format($totals['adjustment'], 2, ',', ' ') }} {{ $currency }}</td>
+                    <td class="number">{{ number_format($totals['outstanding'], 2, ',', ' ') }} {{ $currency }}</td>
                 </tr>
             </tfoot>
         </table>

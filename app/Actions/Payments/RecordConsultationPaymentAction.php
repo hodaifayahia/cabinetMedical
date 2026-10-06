@@ -35,7 +35,8 @@ final class RecordConsultationPaymentAction
             $locked = Consultation::query()->lockForUpdate()->findOrFail($consultation->getKey());
             $chargeMinor = max(0, $data['charge_minor']);
             $paidNowMinor = max(0, $data['paid_now_minor']);
-            $existingPaidMinor = (int) $locked->payments()->sum('amount_minor');
+            $existingPaidMinor = $this->materializeLegacyCollection($locked, $actor)
+                ?? (int) $locked->payments()->sum('amount_minor');
             $notes = trim((string) ($data['notes'] ?? ''));
             $clientReference = filled($data['client_reference'] ?? null)
                 ? (string) $data['client_reference']
@@ -134,5 +135,37 @@ final class RecordConsultationPaymentAction
                 'status' => $status,
             ];
         });
+    }
+
+    /**
+     * Consultations marked paid before the payment ledger existed (or
+     * imported) have no instalment: their whole price counts as collected
+     * (see Consultation::collectedMinor()). Editing one must not turn that
+     * money back into debt, so the historical collection is written to the
+     * ledger first, dated like the reports already count it (consultation
+     * date). Returns the collected amount, or null for a regular record.
+     */
+    private function materializeLegacyCollection(Consultation $locked, User $actor): ?int
+    {
+        $amountMinor = (int) ($locked->payment_amount_minor ?? 0);
+
+        if (! $locked->is_paid
+            || $amountMinor <= 0
+            || (int) ($locked->payment_adjustment_minor ?? 0) !== 0
+            || $locked->payments()->exists()) {
+            return null;
+        }
+
+        $locked->payments()->create([
+            'cabinet_id' => $locked->getAttribute('cabinet_id'),
+            'patient_id' => $locked->patient_id,
+            'amount_minor' => $amountMinor,
+            'method' => $locked->payment_method,
+            'notes' => 'Encaissement antérieur au journal des versements',
+            'received_at' => $locked->consulted_at ?? now(),
+            'received_by' => $locked->created_by ?? $actor->getKey(),
+        ]);
+
+        return $amountMinor;
     }
 }

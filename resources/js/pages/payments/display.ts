@@ -116,3 +116,40 @@ const methodSlots: Readonly<Record<string, string>> = {
 
 export const methodColor = (method?: string | null): string =>
     methodSlots[paymentMethodLabel(method)] ?? 'var(--viz-cat-6)';
+
+const pad2 = (value: number): string => String(value).padStart(2, '0');
+
+/**
+ * « YYYY-MM-DD » of a date in the browser's own time zone. Unlike
+ * toISOString() (UTC), midnight in Algiers (UTC+1) stays on the same day.
+ */
+export const localIsoDate = (date: Date = new Date()): string =>
+    `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
+/** First day of the date's month, in local time (« YYYY-MM-01 »). */
+export const monthStartIsoDate = (date: Date = new Date()): string =>
+    localIsoDate(new Date(date.getFullYear(), date.getMonth(), 1));
+
+const toCents = (value: number | string | null | undefined): number => {
+    const amount = Number(value ?? 0);
+
+    return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+};
+
+/**
+ * Most that can be collected now: the (possibly edited) total price minus
+ * what is already paid, in whole cents so 1500,3 − 1000,1 gives 500,2 and
+ * not 500,19999… (which would make the browser reject a valid 500,2).
+ */
+export const maxCollectable = (
+    total: number | string | null | undefined,
+    alreadyPaid: number | string | null | undefined,
+): number => Math.max(0, toCents(total) - toCents(alreadyPaid)) / 100;
+
+/** What will still be owed once this payment is recorded. */
+export const projectedOutstanding = (
+    total: number | string | null | undefined,
+    alreadyPaid: number | string | null | undefined,
+    paidNow: number | string | null | undefined,
+): number =>
+    Math.max(0, toCents(total) - toCents(alreadyPaid) - toCents(paidNow)) / 100;

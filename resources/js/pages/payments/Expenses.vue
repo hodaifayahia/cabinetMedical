@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
     createFrDzMoneyFormatter,
+    localIsoDate,
     paymentMethodLabel,
     paymentPaginationLabel,
 } from '@/pages/payments/display';
@@ -84,12 +85,7 @@ defineOptions({
 const formatMoney = createFrDzMoneyFormatter(props.currency);
 const localFilters = reactive({ ...props.filters });
 
-const today = (): string => {
-    const now = new Date();
-    const pad = (value: number) => String(value).padStart(2, '0');
-
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-};
+const today = (): string => localIsoDate();
 
 const applyFilters = () => {
     router.get(
@@ -108,10 +104,11 @@ const resetFilters = () => {
     router.get('/app/expenses', {}, { preserveScroll: true });
 };
 
+// Export what is on screen: the applied filters, not unapplied edits.
 const exportUrl = computed(() => {
     const params = new URLSearchParams();
 
-    Object.entries(localFilters).forEach(([key, value]) => {
+    Object.entries(props.filters).forEach(([key, value]) => {
         if (value) {
             params.set(key, value);
         }
@@ -129,17 +126,30 @@ const targetMonthLabel = computed(() =>
     ),
 );
 
+const copyingRecurring = ref(false);
 const copyRecurring = () => {
+    if (copyingRecurring.value) {
+        return;
+    }
+
     router.post(
         '/app/expenses/recurring',
         { month: targetMonth.value },
-        { preserveScroll: true },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                copyingRecurring.value = true;
+            },
+            onFinish: () => {
+                copyingRecurring.value = false;
+            },
+        },
     );
 };
 
 const showEditor = ref(false);
 const editing = ref<Expense | null>(null);
-const form = useForm({
+const blankExpense = () => ({
     category: 'rent',
     label: '',
     amount: '',
@@ -149,11 +159,14 @@ const form = useForm({
     notes: '',
     is_recurring: false,
 });
+const form = useForm(blankExpense());
 
+// useForm makes the last successfully submitted data its new defaults, so
+// reset() alone would reopen « Nouvelle charge » with the previous expense.
 const openCreate = () => {
     editing.value = null;
+    form.defaults(blankExpense());
     form.reset();
-    form.spent_on = today();
     form.clearErrors();
     showEditor.value = true;
 };
@@ -188,14 +201,19 @@ const save = () => {
 };
 
 const deleting = ref<Expense | null>(null);
+const deleteProcessing = ref(false);
 const confirmDelete = () => {
-    if (!deleting.value) {
+    if (!deleting.value || deleteProcessing.value) {
         return;
     }
 
     router.delete(`/app/expenses/${deleting.value.id}`, {
         preserveScroll: true,
+        onStart: () => {
+            deleteProcessing.value = true;
+        },
         onFinish: () => {
+            deleteProcessing.value = false;
             deleting.value = null;
         },
     });
@@ -232,7 +250,11 @@ const categoryBars = computed(() =>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <Button variant="outline" @click="copyRecurring">
+                <Button
+                    variant="outline"
+                    :disabled="copyingRecurring"
+                    @click="copyRecurring"
+                >
                     <CalendarSync class="size-4" />
                     Reporter les charges récurrentes ({{ targetMonthLabel }})
                 </Button>
@@ -596,16 +618,19 @@ const categoryBars = computed(() =>
                                 {{ paymentMethodLabel(method) }}
                             </option>
                         </select>
+                        <InputError :message="form.errors.method" />
                     </div>
                     <div class="grid gap-2 sm:col-span-2">
                         <Label for="expense-supplier">
                             Fournisseur / bénéficiaire
                         </Label>
                         <Input id="expense-supplier" v-model="form.supplier" />
+                        <InputError :message="form.errors.supplier" />
                     </div>
                     <div class="grid gap-2 sm:col-span-2">
                         <Label for="expense-notes">Note</Label>
                         <Textarea id="expense-notes" v-model="form.notes" />
+                        <InputError :message="form.errors.notes" />
                     </div>
                 </div>
 
@@ -627,6 +652,7 @@ const categoryBars = computed(() =>
                         </span>
                     </span>
                 </label>
+                <InputError :message="form.errors.is_recurring" />
 
                 <DialogFooter>
                     <Button
@@ -661,7 +687,11 @@ const categoryBars = computed(() =>
                 <Button variant="outline" @click="deleting = null">
                     Annuler
                 </Button>
-                <Button variant="destructive" @click="confirmDelete">
+                <Button
+                    variant="destructive"
+                    :disabled="deleteProcessing"
+                    @click="confirmDelete"
+                >
                     <Trash2 class="size-4" />
                     Supprimer
                 </Button>

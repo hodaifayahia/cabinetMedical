@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Payments;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Payments\Concerns\FiltersPaymentJournal;
 use App\Models\AccountingSetting;
 use App\Models\Consultation;
 use App\Models\Payment;
 use App\Services\Billing\FinanceReport;
 use App\Services\DocumentBrandingService;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Inertia\Inertia;
@@ -17,6 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FinanceController extends Controller
 {
+    use FiltersPaymentJournal;
+
     public function __construct(
         private readonly FinanceReport $report,
     ) {}
@@ -88,19 +92,32 @@ class FinanceController extends Controller
     /**
      * Cash journal (every collection and refund) for a date window, as a
      * CSV that opens directly in Excel / LibreOffice with French settings.
+     *
+     * Accepts the payments journal filters: the window applies to the date
+     * money moved (received_at); user, status and search narrow the
+     * consultations exactly like the on-screen journal; the method filter
+     * applies to each movement's own payment method. A debt status without
+     * dates exports every period, like the journal's « Dettes » shortcut.
      */
     public function export(Request $request): StreamedResponse
     {
-        $validated = $request->validate([
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
-        ]);
-        $from = CarbonImmutable::parse($validated['from'] ?? now()->startOfMonth()->toDateString())->startOfDay();
-        $to = CarbonImmutable::parse($validated['to'] ?? now()->toDateString())->endOfDay();
+        $filters = $this->validatedFilters($request);
+        $from = $filters['from'] !== '' ? CarbonImmutable::parse($filters['from'])->startOfDay() : null;
+        $to = $filters['to'] !== '' ? CarbonImmutable::parse($filters['to'])->endOfDay() : null;
         $currency = AccountingSetting::current()->currency ?? 'DA';
-        $filename = sprintf('journal-encaissements_%s_%s.csv', $from->toDateString(), $to->toDateString());
+        $filename = sprintf(
+            'journal-encaissements_%s_%s.csv',
+            $from?->toDateString() ?? 'debut',
+            $to?->toDateString() ?? 'aujourdhui',
+        );
 
-        return response()->streamDownload(function () use ($from, $to, $currency): void {
+        // Only narrow by consultation when a consultation filter is active,
+        // so the plain journal keeps every movement of the window.
+        $consultationScope = $filters['user'] !== '' || $filters['search'] !== '' || $filters['status'] !== 'all'
+            ? $this->consultationScope($filters)
+            : null;
+
+        return response()->streamDownload(function () use ($from, $to, $currency, $filters, $consultationScope): void {
             $out = fopen('php://output', 'wb');
             if ($out === false) {
                 return;
@@ -120,7 +137,10 @@ class FinanceController extends Controller
                 : (string) $value;
 
             Payment::query()
-                ->whereBetween('received_at', [$from, $to])
+                ->when($from !== null, fn (Builder $query) => $query->where('received_at', '>=', $from))
+                ->when($to !== null, fn (Builder $query) => $query->where('received_at', '<=', $to))
+                ->when($filters['method'] !== '', fn (Builder $query) => $query->where('method', $filters['method']))
+                ->when($consultationScope !== null, fn (Builder $query) => $query->whereIn('consultation_id', $consultationScope))
                 ->with([
                     'patient:id,first_name,last_name,patient_number',
                     'consultation:id,motif,payment_service',
@@ -152,7 +172,10 @@ class FinanceController extends Controller
                 ->where('is_paid', true)
                 ->where('payment_amount_minor', '>', 0)
                 ->whereDoesntHave('payments')
-                ->whereBetween('consulted_at', [$from, $to])
+                ->when($from !== null, fn (Builder $query) => $query->where('consulted_at', '>=', $from))
+                ->when($to !== null, fn (Builder $query) => $query->where('consulted_at', '<=', $to))
+                ->when($filters['method'] !== '', fn (Builder $query) => $query->where('payment_method', $filters['method']))
+                ->when($consultationScope !== null, fn (Builder $query) => $query->whereIn('id', $consultationScope))
                 ->with(['patient:id,first_name,last_name,patient_number', 'createdBy:id,name'])
                 ->orderBy('consulted_at')
                 ->each(function (Consultation $consultation) use ($out, $format, $text): void {
@@ -173,5 +196,21 @@ class FinanceController extends Controller
 
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Ids of the consultations matching the journal filters other than the
+     * period (the export window is on the date money moved) and the method
+     * (applied to each movement).
+     *
+     * @param  array{from: string, to: string, user: string, search: string, status: string, method: string}  $filters
+     * @return Builder<Consultation>
+     */
+    private function consultationScope(array $filters): Builder
+    {
+        $query = $this->filteredQuery([...$filters, 'from' => '', 'to' => '', 'method' => '']);
+        $this->applyPaymentStatus($query, $filters['status']);
+
+        return $query->select('id');
     }
 }

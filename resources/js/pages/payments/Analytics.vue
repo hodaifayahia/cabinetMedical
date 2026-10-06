@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -215,6 +215,24 @@ const step = (direction: -1 | 1) => {
     );
     visit(date.getFullYear(), date.getMonth() + 1);
 };
+
+// The server accepts years from 2000 (FinanceController::period()).
+const FIRST_YEAR = 2000;
+
+const canStepBack = computed(() =>
+    isMonthView.value
+        ? period.value.year > FIRST_YEAR || (period.value.month ?? 1) > 1
+        : period.value.year > FIRST_YEAR,
+);
+
+const page = usePage();
+const canViewPatients = computed(() =>
+    (page.props.auth?.user?.permissions ?? []).includes('patients.view'),
+);
+// Without access to patient files the name is plain text, not a dead link.
+const patientTag = computed(() => (canViewPatients.value ? Link : 'span'));
+const patientHref = (patientId: number): string | undefined =>
+    canViewPatients.value ? `/app/patients/${patientId}` : undefined;
 
 const canStepForward = computed(() => {
     const now = new Date();
@@ -460,6 +478,7 @@ const collectUrl = (debtor: {
                     size="icon"
                     aria-label="Période précédente"
                     title="Période précédente"
+                    :disabled="!canStepBack"
                     @click="step(-1)"
                 >
                     <ChevronLeft class="size-4" />
@@ -1271,9 +1290,11 @@ const collectUrl = (debtor: {
                             :key="patient.patient_id"
                             class="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
                         >
-                            <Link
-                                :href="`/app/patients/${patient.patient_id}`"
-                                class="flex min-w-0 items-center gap-3 hover:underline"
+                            <component
+                                :is="patientTag"
+                                :href="patientHref(patient.patient_id)"
+                                class="flex min-w-0 items-center gap-3"
+                                :class="{ 'hover:underline': canViewPatients }"
                             >
                                 <span
                                     class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold"
@@ -1289,7 +1310,7 @@ const collectUrl = (debtor: {
                                         {{ patient.count }} versement(s)</span
                                     >
                                 </span>
-                            </Link>
+                            </component>
                             <span class="shrink-0 font-semibold tabular-nums">{{
                                 formatMoney(patient.value)
                             }}</span>
@@ -1396,15 +1417,19 @@ const collectUrl = (debtor: {
                                 class="bg-background"
                             >
                                 <td class="px-4 py-2">
-                                    <Link
-                                        :href="`/app/patients/${debtor.patient_id}`"
-                                        class="inline-flex items-center gap-2 font-medium hover:underline"
+                                    <component
+                                        :is="patientTag"
+                                        :href="patientHref(debtor.patient_id)"
+                                        class="inline-flex items-center gap-2 font-medium"
+                                        :class="{
+                                            'hover:underline': canViewPatients,
+                                        }"
                                     >
                                         <UserRound
                                             class="size-4 text-muted-foreground"
                                         />
                                         {{ debtor.patient_name }}
-                                    </Link>
+                                    </component>
                                     <span
                                         class="ml-1 text-xs text-muted-foreground"
                                         >{{ debtor.patient_number }}</span
