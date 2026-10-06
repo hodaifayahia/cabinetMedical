@@ -20,6 +20,9 @@ use crate::{
 
 pub const SUPERVISED_QUEUE_NAMES: &str = "backups,default";
 const POLL_INTERVAL: Duration = Duration::from_millis(100);
+/// Longest wait for the PHP process to prove it stays up. A cold start on a
+/// slow clinic PC (antivirus scanning the bundled PHP) takes well over 10 s.
+pub const MAX_QUEUE_WORKER_STARTUP_STABILITY: Duration = Duration::from_secs(30);
 
 pub struct QueueWorkerConfig {
     pub php_binary: PathBuf,
@@ -513,7 +516,7 @@ impl Drop for QueueWorkerSupervisor {
 fn validate_config(config: &QueueWorkerConfig) -> Result<(), QueueWorkerError> {
     if config.application_version.trim().is_empty()
         || config.startup_stability_timeout.is_zero()
-        || config.startup_stability_timeout > Duration::from_secs(10)
+        || config.startup_stability_timeout > MAX_QUEUE_WORKER_STARTUP_STABILITY
         || config.shutdown_timeout.is_zero()
         || config.shutdown_timeout > Duration::from_secs(30)
         || config.retry_limit > 5
@@ -864,7 +867,7 @@ mod tests {
     fn bounds_at_their_limits_are_accepted() {
         assert_eq!(
             invalid_config_code(|config| {
-                config.startup_stability_timeout = Duration::from_secs(10);
+                config.startup_stability_timeout = MAX_QUEUE_WORKER_STARTUP_STABILITY;
                 config.shutdown_timeout = Duration::from_secs(30);
                 config.retry_limit = 5;
                 config.retry_delay = Duration::from_secs(30);
@@ -893,9 +896,8 @@ mod tests {
             invalid
         );
         assert_eq!(
-            invalid_config_code(
-                |config| config.startup_stability_timeout = Duration::from_millis(10_001)
-            ),
+            invalid_config_code(|config| config.startup_stability_timeout =
+                MAX_QUEUE_WORKER_STARTUP_STABILITY + Duration::from_millis(1)),
             invalid
         );
         assert_eq!(

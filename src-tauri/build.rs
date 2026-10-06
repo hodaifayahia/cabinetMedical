@@ -9,7 +9,10 @@
 // Debug builds skip the gate: `tauri dev` supervises the repository's own
 // Laravel tree through DRCLICK_LOCAL_APP_ROOT instead of a staged payload.
 
-use std::{env, path::{Path, PathBuf}};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 use url::Url;
 
@@ -118,7 +121,9 @@ fn configure_cloud_server_url() {
     }
 
     if url.query().is_some() || url.fragment().is_some() || url.path() != "/" {
-        panic!("DRCLICK_CLOUD_SERVER_URL must be a bare origin, without a path, query, or fragment");
+        panic!(
+            "DRCLICK_CLOUD_SERVER_URL must be a bare origin, without a path, query, or fragment"
+        );
     }
 
     // Re-export the parsed form so the constant always carries a trailing
