@@ -50,6 +50,7 @@ use App\Http\Controllers\DesktopUpdateArtifactController;
 use App\Http\Controllers\DesktopUpdateManifestController;
 use App\Http\Controllers\Encounters\EncounterController;
 use App\Http\Controllers\GlobalSearchController;
+use App\Http\Controllers\OnlineSpaceController;
 use App\Http\Controllers\Patients\PatientAlertController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Patients\PatientMergeController;
@@ -230,11 +231,17 @@ Route::middleware('auth')->prefix('session')->name('session-lock.')->group(funct
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', DashboardController::class)->name('dashboard');
+    // The cabinet's page on the online service: account, licence, AI
+    // credits, and where its records are (the desktop app on its PC).
+    Route::get('espace-cabinet', OnlineSpaceController::class)->name('online-space');
+
+    Route::get('dashboard', DashboardController::class)
+        ->middleware('clinical.workstation')
+        ->name('dashboard');
 
     Route::redirect('app', '/dashboard')->name('app.home');
 
-    Route::prefix('app')->name('app.')->group(function () {
+    Route::prefix('app')->name('app.')->middleware('clinical.workstation')->group(function () {
         Route::resource('patients', PatientController::class)->except(['destroy']);
         Route::get('audit-logs', AuditLogController::class)
             ->middleware('permission:audit-logs.view')

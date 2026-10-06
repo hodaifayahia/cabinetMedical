@@ -112,6 +112,27 @@ const isConfigurationActive = computed(() =>
 const mainNavItems = computed<NavItem[]>(() => {
     const permissions = auth.value.user?.permissions ?? [];
 
+    // Online service: patient screens live in the desktop app.
+    if (page.props.clinicalScreensOpen === false) {
+        const onlineItems: NavItem[] = [
+            {
+                title: 'Espace cabinet',
+                href: '/espace-cabinet',
+                icon: LayoutGrid,
+            },
+        ];
+
+        if (auth.value.user?.can.manageStaff) {
+            onlineItems.push({
+                title: 'Utilisateurs',
+                href: '/app/staff',
+                icon: UserCog,
+            });
+        }
+
+        return onlineItems;
+    }
+
     const items: NavItem[] = [
         { title: 'Tableau de bord', href: dashboard(), icon: LayoutGrid },
     ];
