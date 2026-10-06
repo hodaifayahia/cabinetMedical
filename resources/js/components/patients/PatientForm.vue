@@ -17,6 +17,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { isValidationError, postJson, putJson } from '@/lib/http';
+import {
+    PATIENT_HISTORY_FIELDS,
+    PATIENT_HISTORY_MAX,
+} from '@/lib/patientHistory';
 import type { PatientDetail, PatientOption } from '@/types';
 
 type SavedPatient = { id: number; full_name: string; patient_number: string };
@@ -31,8 +35,24 @@ const props = withDefaults(
         cancelUrl?: string;
         patient?: PatientDetail | null;
         mode?: 'inertia' | 'json';
+        maritalStatuses?: PatientOption[];
+        smokingStatuses?: PatientOption[];
     }>(),
-    { mode: 'inertia' },
+    {
+        mode: 'inertia',
+        patient: null,
+        maritalStatuses: () => [
+            { value: 'single', label: 'Célibataire' },
+            { value: 'married', label: 'Marié(e)' },
+            { value: 'divorced', label: 'Divorcé(e)' },
+            { value: 'widowed', label: 'Veuf / veuve' },
+        ],
+        smokingStatuses: () => [
+            { value: 'non_smoker', label: 'Non-fumeur' },
+            { value: 'smoker', label: 'Fumeur' },
+            { value: 'former_smoker', label: 'Ancien fumeur' },
+        ],
+    },
 );
 
 const emit = defineEmits<{
@@ -45,6 +65,10 @@ const form = useForm({
     last_name: props.patient?.last_name ?? '',
     date_of_birth: props.patient?.date_of_birth ?? '',
     gender: props.patient?.gender ?? '',
+    marital_status: props.patient?.marital_status ?? '',
+    profession: props.patient?.profession ?? '',
+    smoking_status: props.patient?.smoking_status ?? '',
+    referred_by: props.patient?.referred_by ?? '',
     phone: props.patient?.phone ?? '',
     secondary_phone: props.patient?.secondary_phone ?? '',
     email: props.patient?.email ?? '',
@@ -57,9 +81,27 @@ const form = useForm({
     antecedents_medical: props.patient?.antecedents_medical ?? '',
     antecedents_surgical: props.patient?.antecedents_surgical ?? '',
     antecedents_family: props.patient?.antecedents_family ?? '',
+    antecedents_gyneco: props.patient?.antecedents_gyneco ?? '',
     antecedents_other: props.patient?.antecedents_other ?? '',
     notes: props.patient?.notes ?? '',
 });
+
+// Gyneco-obstetric history is offered for women (and kept visible whenever
+// something was already written there).
+const historyFields = computed(() =>
+    PATIENT_HISTORY_FIELDS.filter(
+        (field) =>
+            field.key !== 'antecedents_gyneco' ||
+            form.gender !== 'male' ||
+            form.antecedents_gyneco.trim() !== '',
+    ),
+);
+
+/** Values outside the offered list (typed before the lists existed). */
+const withCurrent = (options: PatientOption[], current: string) =>
+    current && !options.some((option) => option.value === current)
+        ? [...options, { value: current, label: current }]
+        : options;
 
 const jsonProcessing = ref(false);
 
@@ -69,7 +111,16 @@ type FormField = keyof ReturnType<typeof form.data>;
 const activeTab = ref<string>('identity');
 
 const tabFields: Record<TabKey, FormField[]> = {
-    identity: ['first_name', 'last_name', 'date_of_birth', 'gender'],
+    identity: [
+        'first_name',
+        'last_name',
+        'date_of_birth',
+        'gender',
+        'marital_status',
+        'profession',
+        'smoking_status',
+        'referred_by',
+    ],
     contact: ['phone', 'secondary_phone', 'email', 'address', 'city'],
     medical: [
         'blood_group',
@@ -79,6 +130,7 @@ const tabFields: Record<TabKey, FormField[]> = {
         'antecedents_medical',
         'antecedents_surgical',
         'antecedents_family',
+        'antecedents_gyneco',
         'antecedents_other',
         'notes',
     ],
@@ -249,6 +301,84 @@ const submit = () => {
                         </Select>
                         <InputError :message="form.errors.gender" />
                     </div>
+
+                    <div class="grid gap-2">
+                        <Label for="marital_status">Situation familiale</Label>
+                        <Select
+                            :model-value="form.marital_status"
+                            @update:model-value="
+                                (value) =>
+                                    (form.marital_status =
+                                        (value as string) ?? '')
+                            "
+                        >
+                            <SelectTrigger id="marital_status" class="w-full">
+                                <SelectValue placeholder="Choisir" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="option in withCurrent(
+                                        maritalStatuses,
+                                        form.marital_status,
+                                    )"
+                                    :key="option.value"
+                                    :value="option.value"
+                                >
+                                    {{ option.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError :message="form.errors.marital_status" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="smoking_status">Tabagisme</Label>
+                        <Select
+                            :model-value="form.smoking_status"
+                            @update:model-value="
+                                (value) =>
+                                    (form.smoking_status =
+                                        (value as string) ?? '')
+                            "
+                        >
+                            <SelectTrigger id="smoking_status" class="w-full">
+                                <SelectValue placeholder="Choisir" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="option in withCurrent(
+                                        smokingStatuses,
+                                        form.smoking_status,
+                                    )"
+                                    :key="option.value"
+                                    :value="option.value"
+                                >
+                                    {{ option.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError :message="form.errors.smoking_status" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="profession">Profession</Label>
+                        <Input
+                            id="profession"
+                            v-model="form.profession"
+                            maxlength="100"
+                        />
+                        <InputError :message="form.errors.profession" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="referred_by">Orienté par</Label>
+                        <Input
+                            id="referred_by"
+                            v-model="form.referred_by"
+                            maxlength="150"
+                        />
+                        <InputError :message="form.errors.referred_by" />
+                    </div>
                 </div>
             </TabsContent>
 
@@ -375,72 +505,20 @@ const submit = () => {
                         </div>
                     </div>
 
-                    <div class="grid gap-2">
-                        <Label for="allergies">
-                            Allergies et réactions connues
-                        </Label>
+                    <div
+                        v-for="field in historyFields"
+                        :key="field.key"
+                        class="grid gap-2"
+                    >
+                        <Label :for="field.key">{{ field.label }}</Label>
                         <Textarea
-                            id="allergies"
-                            v-model="form.allergies"
+                            :id="field.key"
+                            v-model="form[field.key]"
                             rows="3"
-                            placeholder="Ex. pénicilline, latex, iode"
+                            :maxlength="PATIENT_HISTORY_MAX"
+                            :placeholder="field.placeholder"
                         />
-                        <InputError :message="form.errors.allergies" />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="antecedents_medical">
-                            Maladies chroniques et antécédents médicaux
-                        </Label>
-                        <Textarea
-                            id="antecedents_medical"
-                            v-model="form.antecedents_medical"
-                            rows="3"
-                            placeholder="Ex. diabète, HTA, asthme"
-                        />
-                        <InputError
-                            :message="form.errors.antecedents_medical"
-                        />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="antecedents_surgical">
-                            Antécédents chirurgicaux
-                        </Label>
-                        <Textarea
-                            id="antecedents_surgical"
-                            v-model="form.antecedents_surgical"
-                            rows="3"
-                            placeholder="Ex. appendicectomie en 2020"
-                        />
-                        <InputError
-                            :message="form.errors.antecedents_surgical"
-                        />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="antecedents_family">
-                            Antécédents familiaux
-                        </Label>
-                        <Textarea
-                            id="antecedents_family"
-                            v-model="form.antecedents_family"
-                            rows="3"
-                            placeholder="Ex. frère diabétique, sœur hypertendue"
-                        />
-                        <InputError :message="form.errors.antecedents_family" />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="antecedents_other">
-                            Autres antécédents utiles
-                        </Label>
-                        <Textarea
-                            id="antecedents_other"
-                            v-model="form.antecedents_other"
-                            rows="3"
-                        />
-                        <InputError :message="form.errors.antecedents_other" />
+                        <InputError :message="form.errors[field.key]" />
                     </div>
 
                     <div class="grid gap-2">

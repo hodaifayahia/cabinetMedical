@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\Patient;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,26 +23,9 @@ class GlobalSearchController extends Controller
             return response()->json(['patients' => []]);
         }
 
-        $query = Patient::query();
-
         // Every word must match somewhere: « amina kaci » and « kaci amina »
         // both find Amina Kaci.
-        foreach (array_slice($words, 0, 4) as $word) {
-            $like = '%'.$word.'%';
-            $digits = preg_replace('/\D+/', '', $word) ?? '';
-
-            $query->where(static function (Builder $nested) use ($like, $digits): void {
-                $nested->where('first_name', 'like', $like)
-                    ->orWhere('last_name', 'like', $like)
-                    ->orWhere('patient_number', 'like', $like)
-                    ->orWhere('phone', 'like', $like);
-
-                if (strlen($digits) >= 4) {
-                    // « 0555123456 » also finds « 0555 12 34 56 ».
-                    $nested->orWhereRaw("replace(replace(phone, ' ', ''), '-', '') like ?", ['%'.$digits.'%']);
-                }
-            });
-        }
+        $query = Patient::query()->matchingWords(implode(' ', $words));
 
         $patients = $query
             ->orderBy('last_name')

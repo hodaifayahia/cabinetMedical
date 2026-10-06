@@ -33,6 +33,10 @@ describe('consultation display labels', () => {
         ['wife', 'épouse'],
         ['son', 'fils'],
         ['daughter', 'fille'],
+        ['brother', 'frère'],
+        ['sister', 'sœur'],
+        ['grandmother', 'grand-mère'],
+        ['cousin', 'cousin(e)'],
         ['other', 'proche'],
     ])('localizes the family relation %s', (relation, expected) => {
         expect(familyRelationLabel(relation)).toBe(expected);

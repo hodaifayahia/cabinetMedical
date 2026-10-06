@@ -9,6 +9,7 @@ use App\Models\EcgRecord;
 use App\Models\Patient;
 use App\Models\PatientMeasurement;
 use App\Models\Prescription;
+use App\Services\Clinical\FamilyMedicalHistory;
 use App\Services\Clinical\PatientSafety;
 use Illuminate\Support\Str;
 
@@ -23,7 +24,10 @@ final class PatientContextBuilder
 {
     private const MAX_CHARS = 14000;
 
-    public function __construct(private readonly PatientSafety $safety) {}
+    public function __construct(
+        private readonly PatientSafety $safety,
+        private readonly FamilyMedicalHistory $family,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $draft  Unsaved values of the visit being written.
@@ -33,6 +37,7 @@ final class PatientContextBuilder
         $sections = [
             $this->identity($patient),
             $this->history($patient),
+            $this->relatives($patient),
         ];
 
         if ($current !== null) {
@@ -71,13 +76,24 @@ final class PatientContextBuilder
     private function history(Patient $patient): string
     {
         return $this->alerts($patient).$this->section('ANTÉCÉDENTS', [
-            'Allergies / important' => $patient->allergies,
-            'Médicaux' => $patient->antecedents_medical,
+            'Allergies et réactions connues' => $patient->allergies,
+            'Maladies chroniques / antécédents médicaux' => $patient->antecedents_medical,
             'Chirurgicaux' => $patient->antecedents_surgical,
             'Familiaux' => $patient->antecedents_family,
             'Gynéco-obstétricaux' => $patient->antecedents_gyneco,
             'Autres' => $patient->antecedents_other,
         ]);
+    }
+
+    /**
+     * What the dossiers of the patient's relatives report (relation and
+     * findings only: a relative's identity never leaves the cabinet either).
+     */
+    private function relatives(Patient $patient): string
+    {
+        $lines = $this->family->contextLines($patient);
+
+        return $lines === [] ? '' : "ANTÉCÉDENTS DES PROCHES (dossiers liés)\n".implode("\n", array_slice($lines, 0, 12));
     }
 
     /**

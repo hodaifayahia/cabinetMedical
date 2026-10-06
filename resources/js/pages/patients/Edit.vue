@@ -9,6 +9,8 @@ const props = defineProps<{
     patient: PatientDetail;
     genders: PatientOption[];
     bloodGroups: PatientOption[];
+    maritalStatuses?: PatientOption[];
+    smokingStatuses?: PatientOption[];
 }>();
 
 defineOptions({
@@ -38,6 +40,8 @@ defineOptions({
                 :patient="props.patient"
                 :genders="genders"
                 :blood-groups="bloodGroups"
+                :marital-statuses="maritalStatuses"
+                :smoking-statuses="smokingStatuses"
                 method="put"
                 :submit-url="`/app/patients/${props.patient.id}`"
                 submit-label="Enregistrer les modifications"

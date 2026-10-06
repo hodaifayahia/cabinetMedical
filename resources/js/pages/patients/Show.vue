@@ -21,8 +21,10 @@ import {
 import { computed, ref } from 'vue';
 import PatientAiAnalysis from '@/components/ai/PatientAiAnalysis.vue';
 import PageBackButton from '@/components/PageBackButton.vue';
+import FamilyFindings from '@/components/patients/FamilyFindings.vue';
 import PatientAvatar from '@/components/patients/PatientAvatar.vue';
 import PatientMergeDialog from '@/components/patients/PatientMergeDialog.vue';
+import PatientRelatives from '@/components/patients/PatientRelatives.vue';
 import PatientSafetyBanner from '@/components/patients/PatientSafetyBanner.vue';
 import type { PatientSafetySummary } from '@/components/patients/PatientSafetyBanner.vue';
 import PatientVaccinations from '@/components/patients/PatientVaccinations.vue';
@@ -42,7 +44,9 @@ import {
     formatGender,
     relativeDay,
 } from '@/lib/patientDisplay';
-import type { PatientDetail, PatientOverview } from '@/types';
+import { PATIENT_HISTORY_FIELDS } from '@/lib/patientHistory';
+import type { FamilyMedicalRelative } from '@/lib/patientHistory';
+import type { PatientDetail, PatientOption, PatientOverview } from '@/types';
 
 defineOptions({
     layout: {
@@ -57,6 +61,9 @@ const props = defineProps<{
     vaccinations: VaccinationCard;
     overview: PatientOverview;
     canMerge: boolean;
+    relatives: FamilyMedicalRelative[];
+    relationOptions: PatientOption[];
+    canEditRelatives: boolean;
 }>();
 
 const page = usePage();
@@ -121,6 +128,20 @@ const details = computed(() =>
         { label: 'Téléphone secondaire', value: props.patient.secondary_phone },
         { label: 'Adresse', value: props.patient.address },
         {
+            label: 'Situation familiale',
+            value:
+                props.patient.marital_status_label ??
+                props.patient.marital_status,
+        },
+        { label: 'Profession', value: props.patient.profession },
+        {
+            label: 'Tabagisme',
+            value:
+                props.patient.smoking_status_label ??
+                props.patient.smoking_status,
+        },
+        { label: 'Orienté par', value: props.patient.referred_by },
+        {
             label: 'Contact d’urgence',
             value: [
                 props.patient.emergency_contact_name,
@@ -136,29 +157,20 @@ const details = computed(() =>
     ].filter((detail) => detail.value),
 );
 
+// Every history field is listed, filled or not, so a missing allergy note
+// is visible as such. Gyneco-obstetric history is not shown for men unless
+// something was written there.
 const medicalHistory = computed(() =>
-    [
-        {
-            label: 'Allergies',
-            value: props.patient.allergies,
-        },
-        {
-            label: 'Maladies chroniques',
-            value: props.patient.antecedents_medical,
-        },
-        {
-            label: 'Antécédents chirurgicaux',
-            value: props.patient.antecedents_surgical,
-        },
-        {
-            label: 'Antécédents familiaux',
-            value: props.patient.antecedents_family,
-        },
-        {
-            label: 'Autres antécédents',
-            value: props.patient.antecedents_other,
-        },
-    ].filter((item) => Boolean(item.value && item.value.trim().length > 0)),
+    PATIENT_HISTORY_FIELDS.filter(
+        (field) =>
+            field.key !== 'antecedents_gyneco' ||
+            props.patient.gender !== 'male' ||
+            Boolean(props.patient.antecedents_gyneco?.trim()),
+    ).map((field) => ({
+        key: field.key,
+        label: field.label,
+        value: props.patient[field.key]?.trim() || null,
+    })),
 );
 
 const lastVisit = computed(
@@ -476,32 +488,6 @@ const lastVisit = computed(
                         </p>
                     </div>
                     <div
-                        v-if="medicalHistory.length"
-                        class="mt-4 border-t pt-3"
-                    >
-                        <p
-                            class="flex items-center gap-1.5 text-xs text-muted-foreground"
-                        >
-                            <HeartPulse class="size-3.5" /> Antécédents médicaux
-                        </p>
-                        <dl class="mt-2 grid gap-2">
-                            <div
-                                v-for="item in medicalHistory"
-                                :key="item.label"
-                                class="grid gap-0.5"
-                            >
-                                <dt class="text-xs text-muted-foreground">
-                                    {{ item.label }}
-                                </dt>
-                                <dd
-                                    class="text-sm font-medium whitespace-pre-line"
-                                >
-                                    {{ item.value }}
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
-                    <div
                         v-if="overview.merged.length"
                         class="mt-4 border-t pt-3"
                     >
@@ -527,8 +513,81 @@ const lastVisit = computed(
                         </ul>
                     </div>
                 </section>
+
+                <PatientRelatives
+                    :patient-id="props.patient.id"
+                    :patient-name="props.patient.full_name"
+                    :relatives="props.relatives"
+                    :relation-options="props.relationOptions"
+                    :can-edit="props.canEditRelatives"
+                />
             </div>
         </div>
+
+        <!-- Medical history -->
+        <section
+            class="med-panel p-5"
+            aria-labelledby="medical-history-title"
+            data-testid="patient-medical-history"
+        >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2
+                        id="medical-history-title"
+                        class="flex items-center gap-2 text-base font-semibold"
+                    >
+                        <HeartPulse class="size-4 text-rose-600" />
+                        Antécédents médicaux du patient
+                    </h2>
+                    <p class="text-xs text-muted-foreground">
+                        Informations médicales complètes, reprises dans chaque
+                        consultation.
+                    </p>
+                </div>
+                <Button
+                    v-if="can('patients.update')"
+                    size="sm"
+                    variant="outline"
+                    as-child
+                >
+                    <Link :href="`/app/patients/${props.patient.id}/edit`">
+                        <Pencil class="size-4" />
+                        Compléter
+                    </Link>
+                </Button>
+            </div>
+            <dl class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div
+                    v-for="item in medicalHistory"
+                    :key="item.key"
+                    class="grid content-start gap-1 rounded-xl border px-3 py-2.5"
+                    :class="
+                        item.key === 'allergies' && item.value
+                            ? 'border-rose-300 bg-rose-50/60 dark:border-rose-500/40 dark:bg-rose-500/10'
+                            : ''
+                    "
+                >
+                    <dt class="text-xs font-medium text-muted-foreground">
+                        {{ item.label }}
+                    </dt>
+                    <dd
+                        v-if="item.value"
+                        class="text-sm font-medium break-words whitespace-pre-line"
+                    >
+                        {{ item.value }}
+                    </dd>
+                    <dd v-else class="text-sm text-muted-foreground italic">
+                        Non renseigné
+                    </dd>
+                    <FamilyFindings
+                        v-if="item.key === 'antecedents_family'"
+                        class="mt-2"
+                        :relatives="props.relatives"
+                        link-dossiers
+                    />
+                </div>
+            </dl>
+        </section>
 
         <PatientVaccinations
             :patient-id="props.patient.id"

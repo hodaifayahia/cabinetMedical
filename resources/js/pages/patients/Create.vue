@@ -17,6 +17,8 @@ defineOptions({
 defineProps<{
     genders: PatientOption[];
     bloodGroups: PatientOption[];
+    maritalStatuses?: PatientOption[];
+    smokingStatuses?: PatientOption[];
 }>();
 </script>
 
@@ -39,6 +41,8 @@ defineProps<{
                 class="mt-6"
                 :genders="genders"
                 :blood-groups="bloodGroups"
+                :marital-statuses="maritalStatuses"
+                :smoking-statuses="smokingStatuses"
                 method="post"
                 submit-url="/app/patients"
                 submit-label="Créer le patient"

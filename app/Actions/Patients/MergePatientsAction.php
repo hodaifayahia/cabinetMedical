@@ -75,6 +75,12 @@ final class MergePatientsAction
 
         return DB::transaction(function () use ($primary, $duplicate, $user, $choices): array {
             $moved = $this->moveRelatedRows($primary, $duplicate);
+            $relatives = $this->moveRelatives($primary, $duplicate);
+
+            if ($relatives > 0) {
+                $moved['patient_relatives'] = $relatives;
+            }
+
             $this->mergeFields($primary, $duplicate, $choices);
             $this->moveMobileLinks($primary, $duplicate);
 
@@ -115,6 +121,14 @@ final class MergePatientsAction
             }
         }
 
+        $relatives = Schema::hasTable('patient_relatives')
+            ? DB::table('patient_relatives')->where('patient_id', $duplicate->getKey())->count()
+            : 0;
+
+        if ($relatives > 0) {
+            $counts['patient_relatives'] = $relatives;
+        }
+
         return $counts;
     }
 
@@ -153,6 +167,46 @@ final class MergePatientsAction
             if ($count > 0) {
                 $moved[$table] = $count;
             }
+        }
+
+        return $moved;
+    }
+
+    /**
+     * Family links follow the person: the duplicate's relatives become the
+     * kept dossier's relatives (both directions), without duplicating a link
+     * the kept dossier already has or linking it to itself.
+     */
+    private function moveRelatives(Patient $primary, Patient $duplicate): int
+    {
+        if (! Schema::hasTable('patient_relatives')) {
+            return 0;
+        }
+
+        $primaryId = $primary->getKey();
+        $duplicateId = $duplicate->getKey();
+        $moved = 0;
+
+        // A link between the two dossiers of the same person is meaningless.
+        DB::table('patient_relatives')
+            ->whereIn('patient_id', [$primaryId, $duplicateId])
+            ->whereIn('relative_patient_id', [$primaryId, $duplicateId])
+            ->delete();
+
+        foreach (['patient_id' => 'relative_patient_id', 'relative_patient_id' => 'patient_id'] as $column => $other) {
+            $alreadyLinked = DB::table('patient_relatives')
+                ->where($column, $primaryId)
+                ->pluck($other)
+                ->all();
+
+            DB::table('patient_relatives')
+                ->where($column, $duplicateId)
+                ->whereIn($other, $alreadyLinked)
+                ->delete();
+
+            $moved += DB::table('patient_relatives')
+                ->where($column, $duplicateId)
+                ->update([$column => $primaryId, 'updated_at' => now()]);
         }
 
         return $moved;
@@ -228,7 +282,9 @@ final class MergePatientsAction
         foreach (Schema::getTableListing(schemaQualified: false) as $table) {
             $table = (string) $table;
 
-            if ($table !== 'patients' && ! str_starts_with($table, 'sqlite_') && Schema::hasColumn($table, 'patient_id')) {
+            if (! in_array($table, ['patients', 'patient_relatives'], true)
+                && ! str_starts_with($table, 'sqlite_')
+                && Schema::hasColumn($table, 'patient_id')) {
                 $tables[] = $table;
             }
         }

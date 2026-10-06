@@ -50,6 +50,7 @@ use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\Patients\PatientAlertController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Patients\PatientMergeController;
+use App\Http\Controllers\Patients\PatientRelativeController;
 use App\Http\Controllers\Patients\VaccinationController;
 use App\Http\Controllers\Payments\ExpenseController;
 use App\Http\Controllers\Payments\FinanceController;
@@ -254,6 +255,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('patients/{patient}/alerts', [PatientAlertController::class, 'store'])->name('patients.alerts.store');
             Route::patch('patient-alerts/{alert}/deactivate', [PatientAlertController::class, 'deactivate'])->name('patient-alerts.deactivate');
             Route::delete('patient-alerts/{alert}', [PatientAlertController::class, 'destroy'])->name('patient-alerts.destroy');
+            Route::get('patients/{patient}/relatives/search', [PatientRelativeController::class, 'search'])->name('patients.relatives.search');
+            Route::post('patients/{patient}/relatives', [PatientRelativeController::class, 'store'])->name('patients.relatives.store');
+            Route::delete('patients/{patient}/relatives/{relative}', [PatientRelativeController::class, 'destroy'])->name('patients.relatives.destroy');
         });
         Route::get('patient-duplicates', [PatientMergeController::class, 'duplicates'])
             ->middleware('permission:patients.delete')

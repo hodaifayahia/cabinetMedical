@@ -83,6 +83,12 @@ export type PatientDetail = {
     full_name: string;
     date_of_birth: string | null;
     gender: string | null;
+    marital_status: string | null;
+    marital_status_label: string | null;
+    profession: string | null;
+    smoking_status: string | null;
+    smoking_status_label: string | null;
+    referred_by: string | null;
     phone: string | null;
     secondary_phone: string | null;
     email: string | null;
@@ -95,10 +101,22 @@ export type PatientDetail = {
     antecedents_medical: string | null;
     antecedents_surgical: string | null;
     antecedents_family: string | null;
+    antecedents_gyneco: string | null;
     antecedents_other: string | null;
     notes: string | null;
     created_at: string | null;
     updated_at: string | null;
+};
+
+/** A dossier found when linking a relative. */
+export type RelativeCandidate = {
+    id: number;
+    name: string;
+    number: string | null;
+    phone: string | null;
+    gender: string | null;
+    age: number | null;
+    linked: boolean;
 };
 
 export type PatientOption = {

@@ -6,6 +6,7 @@ use App\Actions\Patients\CreatePatientAction;
 use App\Actions\Patients\UpdatePatientAction;
 use App\Enums\BloodGroup;
 use App\Enums\Gender;
+use App\Enums\PatientRelation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Patients\StorePatientRequest;
 use App\Http\Requests\Patients\UpdatePatientRequest;
@@ -17,9 +18,11 @@ use App\Models\Patient;
 use App\Models\PatientAlert;
 use App\Models\Prescription;
 use App\Models\User;
+use App\Services\Clinical\FamilyMedicalHistory;
 use App\Services\Clinical\PatientSafety;
 use App\Services\Clinical\VaccinationSchedule;
 use App\Services\Patients\DuplicatePatientFinder;
+use App\Support\Patients\PatientDossierOptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -108,6 +111,8 @@ class PatientController extends Controller
         return Inertia::render('patients/Create', [
             'genders' => $this->genderOptions(),
             'bloodGroups' => $this->bloodGroupOptions(),
+            'maritalStatuses' => PatientDossierOptions::maritalStatuses(),
+            'smokingStatuses' => PatientDossierOptions::smokingStatuses(),
         ]);
     }
 
@@ -131,14 +136,24 @@ class PatientController extends Controller
     /**
      * Display a single patient's dossier.
      */
-    public function show(Request $request, Patient $patient, PatientSafety $safety, VaccinationSchedule $vaccinations): Response
-    {
+    public function show(
+        Request $request,
+        Patient $patient,
+        PatientSafety $safety,
+        VaccinationSchedule $vaccinations,
+        FamilyMedicalHistory $family,
+    ): Response {
         $this->authorize('view', $patient);
+
+        $canUpdate = $request->user()?->can('update', $patient) ?? false;
 
         return Inertia::render('patients/Show', [
             'patient' => $this->transform($patient),
             'safety' => $safety->summary($patient),
             'canEditSafety' => $request->user()?->can('patients.update') ?? false,
+            'relatives' => $family->forPatient($patient),
+            'relationOptions' => PatientRelation::options(),
+            'canEditRelatives' => $canUpdate,
             'vaccinations' => $vaccinations->forPatient($patient),
             'overview' => $this->overview($patient),
             'canMerge' => $request->user()?->can('patients.delete') ?? false,
@@ -156,6 +171,8 @@ class PatientController extends Controller
             'patient' => $this->transform($patient),
             'genders' => $this->genderOptions(),
             'bloodGroups' => $this->bloodGroupOptions(),
+            'maritalStatuses' => PatientDossierOptions::maritalStatuses(),
+            'smokingStatuses' => PatientDossierOptions::smokingStatuses(),
         ]);
     }
 
@@ -294,6 +311,12 @@ class PatientController extends Controller
             'full_name' => $patient->full_name,
             'date_of_birth' => $patient->date_of_birth?->toDateString(),
             'gender' => $patient->gender?->value,
+            'marital_status' => $patient->marital_status,
+            'marital_status_label' => PatientDossierOptions::label($patient->marital_status),
+            'profession' => $patient->profession,
+            'smoking_status' => $patient->smoking_status,
+            'smoking_status_label' => PatientDossierOptions::label($patient->smoking_status),
+            'referred_by' => $patient->referred_by,
             'phone' => $patient->phone,
             'secondary_phone' => $patient->secondary_phone,
             'email' => $patient->email,
@@ -306,6 +329,7 @@ class PatientController extends Controller
             'antecedents_medical' => $patient->antecedents_medical,
             'antecedents_surgical' => $patient->antecedents_surgical,
             'antecedents_family' => $patient->antecedents_family,
+            'antecedents_gyneco' => $patient->antecedents_gyneco,
             'antecedents_other' => $patient->antecedents_other,
             'notes' => $patient->notes,
             'created_at' => $patient->created_at?->toISOString(),

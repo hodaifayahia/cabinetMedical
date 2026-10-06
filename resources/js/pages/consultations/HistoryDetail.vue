@@ -17,6 +17,7 @@ import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { filledPatientHistory } from '@/lib/patientHistory';
 
 defineOptions({
     layout: {
@@ -65,6 +66,7 @@ const props = defineProps<{
         antecedents_medical: string | null;
         antecedents_surgical: string | null;
         antecedents_family: string | null;
+        antecedents_gyneco?: string | null;
         antecedents_other: string | null;
     };
     consultation: {
@@ -148,28 +150,7 @@ const measurements = computed(() =>
 );
 
 const patientHistoryFields = computed(() =>
-    [
-        {
-            label: 'Allergies',
-            value: props.patient.allergies,
-        },
-        {
-            label: 'Maladies chroniques',
-            value: props.patient.antecedents_medical,
-        },
-        {
-            label: 'Antécédents chirurgicaux',
-            value: props.patient.antecedents_surgical,
-        },
-        {
-            label: 'Antécédents familiaux',
-            value: props.patient.antecedents_family,
-        },
-        {
-            label: 'Autres antécédents',
-            value: props.patient.antecedents_other,
-        },
-    ].filter((field) => field.value !== null && field.value.trim() !== ''),
+    filledPatientHistory(props.patient),
 );
 
 const generatedDocuments = computed(() =>
