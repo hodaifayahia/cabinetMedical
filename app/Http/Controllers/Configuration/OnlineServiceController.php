@@ -32,7 +32,29 @@ class OnlineServiceController extends Controller
             'canSyncNow' => $request->user()->can('create', Appointment::class),
             // Pre-fills the e-mail: the online account must be the owner's.
             'ownerEmail' => $cabinet instanceof Cabinet ? $cabinet->owner?->email : null,
+            'aiMediaEnabled' => ! $cabinet instanceof Cabinet || $cabinet->ai_media_enabled !== false,
         ]);
+    }
+
+    /**
+     * Whether images (ECG, scanned documents) and dictation audio may be
+     * sent to the AI assistant. Text is always sent without the patient's
+     * name, phone or address.
+     */
+    public function updateAi(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['ai_media_enabled' => ['required', 'boolean']]);
+        $cabinet = $this->cabinetOf($request);
+        $cabinet->forceFill(['ai_media_enabled' => (bool) $data['ai_media_enabled']])->save();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $cabinet->ai_media_enabled
+                ? 'L’assistant IA peut recevoir les images et la voix.'
+                : 'Les images et la voix ne sont plus envoyées à l’assistant IA.',
+        ]);
+
+        return to_route('app.configuration.online-service.edit');
     }
 
     public function store(Request $request, OnlineServiceLink $link): RedirectResponse

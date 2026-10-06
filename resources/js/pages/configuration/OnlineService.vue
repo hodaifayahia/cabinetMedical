@@ -45,7 +45,25 @@ const props = defineProps<{
     } | null;
     canSyncNow?: boolean;
     ownerEmail?: string | null;
+    aiMediaEnabled?: boolean;
 }>();
+
+// Images (ECG, scanned documents) and dictation audio for the AI assistant.
+const aiMediaSaving = ref(false);
+
+const setAiMedia = (enabled: boolean): void => {
+    aiMediaSaving.value = true;
+    router.put(
+        '/app/configuration/online-service/ai',
+        { ai_media_enabled: enabled },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                aiMediaSaving.value = false;
+            },
+        },
+    );
+};
 
 const form = useForm({
     endpoint: props.link.endpoint ?? '',
@@ -381,6 +399,50 @@ const benefits = [
                     </Button>
                 </div>
             </form>
+        </section>
+
+        <section class="med-panel p-6" data-test="ai-media-setting">
+            <Heading
+                variant="small"
+                title="Assistant IA : ce qui quitte ce PC"
+                description="Les dossiers restent sur ce PC. Pour répondre, l’assistant IA reçoit le contenu médical utile sans le nom, le téléphone ni l’adresse du patient."
+            />
+            <div
+                class="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border p-4"
+            >
+                <div class="min-w-0 text-sm">
+                    <p class="font-semibold text-slate-900 dark:text-white">
+                        Envoyer aussi les images et la voix
+                    </p>
+                    <p class="text-muted-foreground">
+                        Lecture des ECG, analyse des documents scannés et dictée
+                        vocale. Désactivé : ces fonctions sont indisponibles et
+                        seul le texte est envoyé.
+                    </p>
+                </div>
+                <Button
+                    type="button"
+                    :variant="
+                        props.aiMediaEnabled === false ? 'default' : 'outline'
+                    "
+                    :disabled="aiMediaSaving"
+                    @click="setAiMedia(props.aiMediaEnabled === false)"
+                >
+                    {{
+                        props.aiMediaEnabled === false
+                            ? 'Autoriser'
+                            : 'Ne plus envoyer'
+                    }}
+                </Button>
+            </div>
+            <p class="mt-2 text-xs text-muted-foreground">
+                État actuel :
+                <strong>{{
+                    props.aiMediaEnabled === false
+                        ? 'texte seulement'
+                        : 'texte, images et voix'
+                }}</strong>
+            </p>
         </section>
     </div>
 </template>
