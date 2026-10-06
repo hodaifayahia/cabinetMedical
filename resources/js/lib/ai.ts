@@ -2,7 +2,13 @@
 // every "✨ IA" button so a spend in one panel updates the counter everywhere.
 
 import { reactive } from 'vue';
-import { getJson, isHttpError, isValidationError, postJson } from '@/lib/http';
+import {
+    getJson,
+    isHttpError,
+    isValidationError,
+    postFormData,
+    postJson,
+} from '@/lib/http';
 
 export type AiFeature =
     | 'consultation_text'
@@ -12,7 +18,8 @@ export type AiFeature =
     | 'patient_analysis'
     | 'ecg_analysis'
     | 'ecg_chat'
-    | 'copilot_chat';
+    | 'copilot_chat'
+    | 'dictation_transcription';
 
 export type AiStatus = {
     available: boolean;
@@ -115,6 +122,7 @@ const defaultCosts: Record<AiFeature, number> = {
     ecg_analysis: 4,
     ecg_chat: 1,
     copilot_chat: 1,
+    dictation_transcription: 0,
 };
 
 export const aiState = reactive<{
@@ -218,6 +226,43 @@ const toFailure = (error: unknown): AiFailure => {
         message:
             'L’assistant IA n’a pas pu répondre. Vérifiez la connexion puis réessayez.',
     };
+};
+
+/**
+ * Turn one recorded dictation segment into text (desktop app, whose web view
+ * has no working speech recognition). Rejects with an AiFailure.
+ */
+export const transcribeDictation = async (
+    consultationId: number,
+    audio: Blob,
+): Promise<string> => {
+    const type = audio.type || 'audio/webm';
+    const extension = type.includes('ogg')
+        ? 'ogg'
+        : type.includes('mp4')
+          ? 'm4a'
+          : type.includes('mpeg')
+            ? 'mp3'
+            : type.includes('wav')
+              ? 'wav'
+              : 'webm';
+    const body = new FormData();
+    body.append('audio', audio, `dictee.${extension}`);
+
+    try {
+        const result = await postFormData<{
+            text?: unknown;
+            balance?: number | null;
+        }>(
+            `/app/ai/consultations/${consultationId}/dictation/transcribe`,
+            body,
+        );
+        rememberBalance(result?.balance);
+
+        return typeof result?.text === 'string' ? result.text : '';
+    } catch (error) {
+        throw toFailure(error);
+    }
 };
 
 export const consultationAiUrl = (

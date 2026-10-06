@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-lan-host-status"
+description = "Enables the lan_host_status command without any pre-configured scope."
+commands.allow = ["lan_host_status"]
+
+[[permission]]
+identifier = "deny-lan-host-status"
+description = "Denies the lan_host_status command without any pre-configured scope."
+commands.deny = ["lan_host_status"]

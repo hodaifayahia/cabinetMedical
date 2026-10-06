@@ -1,0 +1,25 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "desktop-lan-client",
+    "description": "A poste secondaire shows pages served by the cabinet's poste principal over plain LAN HTTP. Those pages may read which machine owns the data, return this PC to its own local database, and use the signed updater. The patterns only match private IPv4 ranges, bare computer names and .local names; NavigationPolicy additionally pins the window to the one configured origin.",
+    "local": false,
+    "remote": {
+        "urls": [
+            "http://(192\\.168\\.[0-9]+\\.[0-9]+):*",
+            "http://(10\\.[0-9]+\\.[0-9]+\\.[0-9]+):*",
+            "http://(172\\.(?:1[6-9]|2[0-9]|3[01])\\.[0-9]+\\.[0-9]+):*",
+            "http://(169\\.254\\.[0-9]+\\.[0-9]+):*",
+            "http://([a-z0-9-]+):*",
+            "http://*.local:*"
+        ]
+    },
+    "windows": ["main"],
+    "permissions": [
+        "allow-runtime-mode-status",
+        "allow-lan-host-status",
+        "allow-use-local-mode",
+        "allow-signed-updater-status",
+        "allow-check-for-signed-update",
+        "allow-install-signed-update"
+    ]
+}

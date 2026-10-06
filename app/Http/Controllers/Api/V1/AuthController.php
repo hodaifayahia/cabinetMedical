@@ -31,6 +31,17 @@ class AuthController extends Controller
         /** @var User|null $user */
         $user = User::query()->where('email', $data['email'])->first();
 
+        // A desktop or phone often capitalises the first letter of an
+        // address. Fall back to a case-insensitive match, but only when it is
+        // unambiguous.
+        if ($user === null) {
+            $matches = User::query()
+                ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim($data['email']))])
+                ->limit(2)
+                ->get();
+            $user = $matches->count() === 1 ? $matches->first() : null;
+        }
+
         if ($user === null || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Ces identifiants ne correspondent à aucun compte.'],

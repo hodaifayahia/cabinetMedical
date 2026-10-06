@@ -7,8 +7,11 @@ import {
     isDesktopPinEnrollmentForUser,
     isValidDesktopPin,
     normalizeDesktopPin,
+    hasDesktopPinEnrollmentForUser,
     readDesktopPinEnrollment,
+    readDesktopPinEnrollments,
     saveDesktopPinEnrollment,
+    touchDesktopPinEnrollment,
 } from './desktopPin';
 import type { DesktopPinEnrollment } from './desktopPin';
 
@@ -18,6 +21,7 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 const mockedIsTauri = vi.mocked(isTauri);
 const STORAGE_KEY = 'drclickdz.desktop-pin.enrollment.v1';
+const LIST_KEY = 'drclickdz.desktop-pin.enrollments.v2';
 const VALID_TOKEN = '0123456789abcdef'.repeat(4);
 
 const validRecord = (
@@ -53,18 +57,21 @@ describe('desktop PIN enrollment storage (extended)', () => {
         expect(readDesktopPinEnrollment()).toEqual(validRecord());
     });
 
-    it('writes the record under the exact versioned key', () => {
+    it('writes the record under the exact versioned list key', () => {
         expect(saveDesktopPinEnrollment(VALID_TOKEN, 'Poste', 3, 'Nadia')).toBe(
             true,
         );
 
-        expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual({
-            version: 1,
-            deviceToken: VALID_TOKEN,
-            deviceName: 'Poste',
-            userId: 3,
-            userName: 'Nadia',
-        });
+        expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+        expect(JSON.parse(window.localStorage.getItem(LIST_KEY)!)).toEqual([
+            {
+                version: 1,
+                deviceToken: VALID_TOKEN,
+                deviceName: 'Poste',
+                userId: 3,
+                userName: 'Nadia',
+            },
+        ]);
     });
 
     it.each([
@@ -171,15 +178,55 @@ describe('desktop PIN enrollment storage (extended)', () => {
         expect(readDesktopPinEnrollment()?.deviceName).toBe('Poste A');
     });
 
-    it('replaces the record when another account enrolls this installation', () => {
+    it('keeps the PIN of every account enrolled on this installation', () => {
         saveDesktopPinEnrollment(VALID_TOKEN, 'Poste A', 5, 'Karim');
         saveDesktopPinEnrollment('ff'.repeat(32), 'Poste A', 9, 'Nadia');
 
-        const enrollment = readDesktopPinEnrollment();
+        expect(readDesktopPinEnrollment()?.userId).toBe(9);
+        expect(readDesktopPinEnrollment(5)?.deviceToken).toBe(VALID_TOKEN);
+        expect(readDesktopPinEnrollment(9)?.deviceToken).toBe('ff'.repeat(32));
+        expect(hasDesktopPinEnrollmentForUser(5)).toBe(true);
+        expect(hasDesktopPinEnrollmentForUser(9)).toBe(true);
+        expect(readDesktopPinEnrollments().map((e) => e.userId)).toEqual([
+            9, 5,
+        ]);
+    });
 
-        expect(enrollment?.userId).toBe(9);
-        expect(isDesktopPinEnrollmentForUser(enrollment, 5)).toBe(false);
-        expect(isDesktopPinEnrollmentForUser(enrollment, 9)).toBe(true);
+    it('re-enrolling an account replaces only that account', () => {
+        saveDesktopPinEnrollment(VALID_TOKEN, 'Poste A', 5, 'Karim');
+        saveDesktopPinEnrollment('ff'.repeat(32), 'Poste A', 9, 'Nadia');
+        saveDesktopPinEnrollment('ee'.repeat(32), 'Poste A', 5, 'Karim');
+
+        expect(readDesktopPinEnrollments()).toHaveLength(2);
+        expect(readDesktopPinEnrollment(5)?.deviceToken).toBe('ee'.repeat(32));
+        expect(readDesktopPinEnrollment(9)?.deviceToken).toBe('ff'.repeat(32));
+    });
+
+    it('forgets one account without touching the others', () => {
+        saveDesktopPinEnrollment(VALID_TOKEN, 'Poste A', 5, 'Karim');
+        saveDesktopPinEnrollment('ff'.repeat(32), 'Poste A', 9, 'Nadia');
+
+        clearDesktopPinEnrollment(9);
+
+        expect(readDesktopPinEnrollment(9)).toBeNull();
+        expect(readDesktopPinEnrollment(5)?.userName).toBe('Karim');
+    });
+
+    it('moves an account to the top after it signs in', () => {
+        saveDesktopPinEnrollment(VALID_TOKEN, 'Poste A', 5, 'Karim');
+        saveDesktopPinEnrollment('ff'.repeat(32), 'Poste A', 9, 'Nadia');
+
+        touchDesktopPinEnrollment(5);
+
+        expect(readDesktopPinEnrollment()?.userId).toBe(5);
+    });
+
+    it('migrates a single-account record from an older version', () => {
+        storeRaw(validRecord());
+
+        expect(readDesktopPinEnrollments()).toEqual([validRecord()]);
+        expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+        expect(readDesktopPinEnrollment(12)).toEqual(validRecord());
     });
 
     it('clear removes only its own key', () => {

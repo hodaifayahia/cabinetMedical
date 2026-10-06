@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cabinet;
 
 use App\Http\Controllers\Controller;
+use App\Licensing\DesktopLicenseActivator;
 use App\Models\User;
 use App\Services\Cabinet\CabinetAccessService;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +22,7 @@ class CabinetStatusController extends Controller
      * "Pending activation" screen shown to owners of a cabinet that has not
      * yet been activated (or has been suspended) by platform staff.
      */
-    public function pending(Request $request): Response|RedirectResponse
+    public function pending(Request $request, DesktopLicenseActivator $activator): Response|RedirectResponse
     {
         $user = $request->user();
 
@@ -51,8 +52,18 @@ class CabinetStatusController extends Controller
             && ($cabinet->isPending()
                 || ($cabinet->isActive() && $license?->plan?->value === 'trial'));
 
+        $activateOnline = $canRedeemLicense && $activator->canActivateOnline();
+
         return Inertia::render('auth/PendingActivation', [
             'can_redeem_license' => $canRedeemLicense,
+            // An installed desktop holds no grant of its own: its code is
+            // checked on the online service once, then the poste runs offline.
+            'desktop_activation' => [
+                'online' => $activateOnline,
+                'license_file' => $canRedeemLicense && $activator->canImportLicenseFile(),
+                'owner_email' => $isOwner ? $user->email : null,
+                'offline' => (bool) $request->session()->get('activation_offline', false),
+            ],
             'pending_license_grant' => $outstandingGrant === null ? null : [
                 'plan' => $outstandingGrant->licenseType?->slug ?? $outstandingGrant->plan?->value,
                 'plan_label' => $outstandingGrant->typeLabel(),

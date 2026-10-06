@@ -25,8 +25,15 @@ describe('configurationNavForPermissions', () => {
         ]);
     });
 
+    it('adds the local network page for connectivity managers', () => {
+        expect(visibleLinks(['configuration.connectivity.manage'])).toEqual([
+            '/app/configuration/connectivity-backup',
+            '/app/configuration/connectivity-backup#license',
+            '/app/configuration/local-network',
+        ]);
+    });
+
     it.each([
-        'configuration.connectivity.manage',
         'configuration.backups.manage',
         'configuration.restore.manage',
         'configuration.drive.manage',

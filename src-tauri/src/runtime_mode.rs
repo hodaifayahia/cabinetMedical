@@ -118,8 +118,7 @@ pub(crate) fn resolve_runtime_mode(
     configuration_directory: &Path,
     cloud_url: &Url,
 ) -> Result<RuntimeMode, DamagedRuntimeMode> {
-    if let Some(result) =
-        read_runtime_mode(&runtime_mode_path(configuration_directory), cloud_url)
+    if let Some(result) = read_runtime_mode(&runtime_mode_path(configuration_directory), cloud_url)
     {
         return result;
     }
@@ -313,6 +312,19 @@ mod tests {
     }
 
     #[test]
+    fn attaching_to_a_poste_principal_over_lan_http_round_trips() {
+        let directory = scratch("round-trip-lan-http");
+        let host = Url::parse("http://192.168.1.20:47850/").unwrap();
+
+        persist_runtime_mode(&directory, &RuntimeMode::Attach { url: host.clone() }).unwrap();
+
+        assert_eq!(
+            resolve_runtime_mode(&directory, &cloud()),
+            Ok(RuntimeMode::Attach { url: host })
+        );
+    }
+
+    #[test]
     fn persisting_local_mode_clears_the_legacy_server_file() {
         let directory = scratch("clears-legacy");
         fs::write(
@@ -395,11 +407,12 @@ mod tests {
         let directory = scratch("attach-invalid");
         fs::write(
             runtime_mode_path(&directory),
-            br#"{"schema_version":1,"mode":"attach","url":"http://192.168.1.20/"}"#,
+            br#"{"schema_version":1,"mode":"attach","url":"http://hub.example.com/"}"#,
         )
         .unwrap();
 
-        // Neither attach over plain HTTP, nor quietly become the data owner.
+        // Neither attach to a public host over plain HTTP, nor quietly become
+        // the data owner.
         assert_eq!(
             resolve_runtime_mode(&directory, &cloud()),
             Err(DamagedRuntimeMode)
@@ -431,7 +444,9 @@ mod tests {
         .unwrap();
 
         assert!(runtime_mode_path(&directory).exists());
-        assert!(!runtime_mode_path(&directory).with_extension("json.tmp").exists());
+        assert!(!runtime_mode_path(&directory)
+            .with_extension("json.tmp")
+            .exists());
     }
 
     fn unique_scratch(name: &str) -> PathBuf {
@@ -629,7 +644,7 @@ mod tests {
     #[test]
     fn legacy_files_with_unusable_urls_are_damaged() {
         for json in [
-            r#"{"url":"http://192.168.1.20/"}"#,
+            r#"{"url":"http://hub.example.com/"}"#,
             r#"{"url":"https://192.168.1.20/login"}"#,
             r#"{"url":""}"#,
             r#"{"address":"https://192.168.1.20/"}"#,

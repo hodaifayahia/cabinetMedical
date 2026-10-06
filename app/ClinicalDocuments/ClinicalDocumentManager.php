@@ -58,6 +58,7 @@ final class ClinicalDocumentManager
         $title = trim((string) ($selection['title'] ?? '')) ?: $template['title'];
         $templateKey = $template['key'];
         $body = $template['body'];
+        $bodyFormat = $template['body_format'];
 
         $filename = (Str::slug($title) ?: 'document').'-'.now()->format('Ymd-His').'.docx';
         $path = 'clinical-documents/'.$patient->getKey().'/'.Str::uuid().'.docx';
@@ -72,6 +73,7 @@ final class ClinicalDocumentManager
                 $body,
                 $variables,
                 $paperSize,
+                $bodyFormat,
             );
 
             return Document::query()->create([

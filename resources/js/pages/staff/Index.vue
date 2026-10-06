@@ -3,6 +3,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Armchair,
     Building2,
+    KeyRound,
     Pencil,
     Plus,
     RefreshCw,
@@ -240,6 +241,22 @@ const removeUser = (member: StaffMember) => {
     }
 
     router.delete('/app/staff/' + member.id, { preserveScroll: true });
+};
+
+const resetPins = (member: StaffMember) => {
+    if (
+        !window.confirm(
+            'Réinitialiser les codes PIN de ' +
+                member.name +
+                ' ? Un nouveau PIN lui sera demandé à sa prochaine connexion avec son mot de passe. Pour un mot de passe oublié, modifiez l’utilisateur et choisissez un nouveau mot de passe.',
+        )
+    ) {
+        return;
+    }
+
+    router.delete('/app/staff/' + member.id + '/pins', {
+        preserveScroll: true,
+    });
 };
 </script>
 
@@ -530,6 +547,16 @@ const removeUser = (member: StaffMember) => {
                                         @click="openEdit(member)"
                                     >
                                         <Pencil class="size-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label="Réinitialiser les codes PIN"
+                                        title="Réinitialiser les codes PIN (PIN oublié)"
+                                        data-test="staff-reset-pins"
+                                        @click="resetPins(member)"
+                                    >
+                                        <KeyRound class="size-4" />
                                     </Button>
                                     <Button
                                         v-if="member.id !== currentUserId"

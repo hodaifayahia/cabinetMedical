@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Ai;
 
+use App\Actions\Patients\LinkPatientRelativeAction;
+use App\Enums\PatientRelation;
 use App\Models\AiInsight;
 use App\Models\Consultation;
 use App\Models\Document;
@@ -72,9 +74,34 @@ class PatientContextBuilderTest extends TestCase
         $text = $this->builder()->build($this->patient);
 
         $this->assertStringContainsString('ANTÉCÉDENTS', $text);
-        $this->assertStringContainsString('Allergies / important : Pénicilline', $text);
-        $this->assertStringContainsString('Médicaux : HTA depuis 2019', $text);
+        $this->assertStringContainsString('Allergies et réactions connues : Pénicilline', $text);
+        $this->assertStringContainsString('Maladies chroniques / antécédents médicaux : HTA depuis 2019', $text);
         $this->assertStringNotContainsString('Chirurgicaux', $text);
+    }
+
+    public function test_relatives_findings_are_included_without_their_identity(): void
+    {
+        $brother = Patient::factory()->create([
+            'first_name' => 'Karim',
+            'last_name' => 'Zerrouki',
+            'gender' => 'male',
+            'date_of_birth' => now()->subYears(50)->subMonth(),
+            'antecedents_medical' => 'Diabète type 2',
+            'allergies' => null,
+        ]);
+        app(LinkPatientRelativeAction::class)->link($this->patient, $brother, PatientRelation::BROTHER);
+
+        $text = $this->builder()->build($this->patient);
+
+        $this->assertStringContainsString("ANTÉCÉDENTS DES PROCHES (dossiers liés)\n- Frère (50 ans) : Diabète type 2", $text);
+        $this->assertStringNotContainsString('Karim', $text);
+        $this->assertStringNotContainsString('Zerrouki', $text);
+        $this->assertStringNotContainsString((string) $brother->patient_number, $text);
+    }
+
+    public function test_without_relatives_there_is_no_relatives_section(): void
+    {
+        $this->assertStringNotContainsString('ANTÉCÉDENTS DES PROCHES', $this->builder()->build($this->patient));
     }
 
     public function test_the_unsaved_draft_wins_over_the_stored_visit(): void

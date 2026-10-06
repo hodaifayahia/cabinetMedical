@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Configuration;
 
 use App\Backups\AutomaticDriveUploadPolicy;
+use App\Backups\DriveCopyIssue;
 use App\Backups\LocalRestorePointRunner;
 use App\Http\Controllers\Controller;
 use App\Jobs\UploadBackupToGoogleDrive;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Services\ApplicationHealthService;
 use App\Services\Backups\DriveBackupAuthority;
 use App\Services\Backups\DriveBackupEntitlement;
+use App\Services\Backups\DriveReconnectRequired;
 use App\Services\Backups\LocalBackupAuthority;
 use App\Services\BackupService;
 use App\Services\GoogleDriveService;
@@ -45,18 +47,51 @@ class BackupController extends Controller
 
     /**
      * Save a verified backup on this PC now, exactly like a scheduled one
-     * (retention, then the Drive copy when the doctor turned it on).
+     * (retention, the copy to the chosen folder, then the Drive copy when the
+     * doctor turned it on). The doctor may also send this one backup to Drive
+     * with a passphrase typed now ("Envoyer aussi sur Google Drive").
      */
-    public function createNow(Request $request, LocalRestorePointRunner $runner): RedirectResponse
-    {
+    public function createNow(
+        Request $request,
+        LocalRestorePointRunner $runner,
+        AutomaticDriveUploadPolicy $automaticUpload,
+        GoogleDriveService $drive,
+    ): RedirectResponse {
         $this->localBackups->authorizeManage($request->user());
+
+        $drivePassphrase = null;
+        $driveRequested = $request->boolean('send_to_drive');
+
+        if ($driveRequested && ! $automaticUpload->enabled()) {
+            // Sending data off the PC: the Drive boundary and a recent
+            // password confirmation, as for the one-off Drive upload.
+            $this->driveAuthority->authorizeManage($request->user());
+
+            if (! $this->recentlyConfirmedPassword($request)) {
+                return back()->withErrors([
+                    'backup_now' => 'Confirmez d’abord votre mot de passe pour envoyer une sauvegarde vers Google Drive.',
+                ]);
+            }
+
+            $drivePassphrase = $request->validate([
+                'drive_passphrase' => ['required', 'string', 'min:12', 'max:1024', 'confirmed'],
+            ], [
+                'drive_passphrase.required' => 'Saisissez la phrase secrète qui chiffrera la copie Google Drive.',
+                'drive_passphrase.min' => 'La phrase secrète doit contenir au moins 12 caractères.',
+                'drive_passphrase.confirmed' => 'Les deux phrases secrètes ne correspondent pas.',
+            ])['drive_passphrase'];
+        }
 
         // A clinic's archive can take longer than the interpreter's default
         // request limit, and stopping half way would only waste the work.
         @set_time_limit(0);
 
         try {
-            $result = $runner->run(LocalRestorePointRunner::TRIGGER_MANUAL, actor: $request->user());
+            $result = $runner->run(
+                LocalRestorePointRunner::TRIGGER_MANUAL,
+                actor: $request->user(),
+                drivePassphrase: $drivePassphrase,
+            );
         } catch (Throwable) {
             return back()->withErrors(['backup_now' => self::LOCAL_BACKUP_FAILED_FR]);
         }
@@ -67,16 +102,43 @@ class BackupController extends Controller
             ]);
         }
 
+        $messages = ['Sauvegarde enregistrée et vérifiée sur ce PC.'];
+        $warning = false;
+
+        if ($result['copy']['status'] === 'copied') {
+            $messages[] = 'Copie vérifiée dans le dossier choisi.';
+        } elseif ($result['copy']['status'] === 'failed') {
+            $messages[] = 'Sa copie vers le dossier choisi a échoué : '.$result['copy']['message'];
+            $warning = true;
+        }
+
+        $driveConnected = ($drive->status(CabinetSetting::current())['google_drive_connected'] ?? false) === true;
+
+        if ($result['drive'] === 'queued') {
+            $messages[] = 'Sa copie chiffrée part vers Google Drive.';
+        } elseif ($result['drive'] === 'failed') {
+            $messages[] = 'Sa copie Google Drive n’a pas pu être préparée.';
+            $warning = true;
+        } elseif ($driveRequested || ($driveConnected && $result['drive_reason'] !== 'automatic_upload_disabled')) {
+            $messages[] = 'Elle n’a pas été envoyée vers Google Drive : '.DriveCopyIssue::describe($result['drive_reason']);
+            $warning = true;
+        } elseif ($driveConnected) {
+            $messages[] = 'Pour l’envoyer aussi vers Google Drive, cochez « Envoyer aussi sur Google Drive » ou activez l’envoi automatique.';
+        }
+
         Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => match ($result['drive']) {
-                'queued' => 'Sauvegarde enregistrée et vérifiée sur ce PC. Sa copie chiffrée part vers Google Drive.',
-                'failed' => 'Sauvegarde enregistrée et vérifiée sur ce PC, mais sa copie Google Drive n’a pas pu être préparée.',
-                default => 'Sauvegarde enregistrée et vérifiée sur ce PC.',
-            },
+            'type' => $warning ? 'warning' : 'success',
+            'message' => implode(' ', $messages),
         ]);
 
         return back();
+    }
+
+    private function recentlyConfirmedPassword(Request $request): bool
+    {
+        $confirmedAt = (int) $request->session()->get('auth.password_confirmed_at', 0);
+
+        return $confirmedAt >= time() - max(1, (int) config('auth.password_timeout', 10800));
     }
 
     public function local(Request $request, BackupService $backup): BinaryFileResponse|RedirectResponse
@@ -234,9 +296,12 @@ class BackupController extends Controller
             ApplicationEvent::record('CloudDriveConnectionVerified', context: [
                 'provider' => 'google_drive',
             ]);
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
             return back()->withErrors([
-                'drive_connection' => 'La connexion Google Drive n’a pas pu être vérifiée. Reconnectez le compte si le problème persiste.',
+                'drive_connection' => $exception instanceof DriveReconnectRequired
+                    || $exception->getPrevious() instanceof DriveReconnectRequired
+                    ? DriveReconnectRequired::MESSAGE
+                    : 'La connexion Google Drive n’a pas pu être vérifiée (Internet indisponible ou Google injoignable). Réessayez; reconnectez le compte si le problème persiste.',
             ]);
         }
 

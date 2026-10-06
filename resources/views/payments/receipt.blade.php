@@ -72,20 +72,20 @@
         <div class="total">
             <div>
                 <span class="muted">FACTURÉ</span>
-                <strong>{{ number_format($payment['amount'], 2) }} {{ $currency }}</strong>
+                <strong>{{ number_format($payment['amount'], 2, ',', ' ') }} {{ $currency }}</strong>
             </div>
             <div>
                 <span class="muted">ENCAISSÉ</span>
-                <strong>{{ number_format($paid, 2) }} {{ $currency }}</strong>
+                <strong>{{ number_format($paid, 2, ',', ' ') }} {{ $currency }}</strong>
             </div>
             <div>
                 <span class="muted">RESTE DÛ</span>
-                <strong>{{ number_format($outstanding, 2) }} {{ $currency }}</strong>
+                <strong>{{ number_format($outstanding, 2, ',', ' ') }} {{ $currency }}</strong>
             </div>
         </div>
 
         @if($adjustment > 0)
-            <p class="muted">Remise documentée : <strong>{{ number_format($adjustment, 2) }} {{ $currency }}</strong>{{ ! empty($payment['notes']) ? ' — '.$payment['notes'] : '' }}</p>
+            <p class="muted">Remise documentée : <strong>{{ number_format($adjustment, 2, ',', ' ') }} {{ $currency }}</strong>{{ ! empty($payment['notes']) ? ' — '.$payment['notes'] : '' }}</p>
         @endif
 
         @if(count($installments) > 0)
@@ -98,7 +98,7 @@
                             <tr>
                                 <td>{{ $installment['received_at'] ? \Illuminate\Support\Carbon::parse($installment['received_at'])->format('d/m/Y H:i') : '—' }}</td>
                                 <td>
-                                    {{ number_format($installment['amount'], 2) }} {{ $currency }}
+                                    {{ number_format($installment['amount'], 2, ',', ' ') }} {{ $currency }}
                                     @if($installment['is_refund'] ?? false)
                                         <em>(remboursement{{ filled($installment['notes'] ?? null) ? ' : '.$installment['notes'] : '' }})</em>
                                     @endif

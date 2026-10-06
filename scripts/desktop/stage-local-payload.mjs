@@ -30,6 +30,12 @@
  *                         already reviewed.
  *   --php-zip <file>      Official windows.php.net zip to extract instead.
  *   --php-sha256 <hex>    Required with --php-zip; compared before extraction.
+ *   --ca-bundle <file>    PEM bundle of trusted root certificates to ship
+ *                         beside php.exe as cacert.pem. Defaults to the
+ *                         staging machine's system bundle (Debian/Ubuntu,
+ *                         Fedora, macOS paths). The Windows PHP build has no
+ *                         access to the Windows certificate store, so without
+ *                         it every HTTPS call fails with "cURL error 60".
  *   --force               Replace an existing staged payload.
  *   --skip-assets         Assume `npm run build` already ran.
  */
@@ -86,7 +92,12 @@ function fail(message) {
 
 function parseArguments(argv) {
     const flags = new Set(['force', 'skip-assets', 'help']);
-    const values = new Set(['php-runtime', 'php-zip', 'php-sha256']);
+    const values = new Set([
+        'php-runtime',
+        'php-zip',
+        'php-sha256',
+        'ca-bundle',
+    ]);
     const parsed = {};
 
     for (let index = 0; index < argv.length; index += 1) {
@@ -232,6 +243,47 @@ function stagePhpRuntime(parsed) {
     removeIfPresent(path.join(destination, 'php.ini'));
 
     return { files, interpreter: path.join(destination, 'php.exe') };
+}
+
+// ---------------------------------------------------------------------------
+// Root certificates for the bundled PHP
+// ---------------------------------------------------------------------------
+
+/** Where Linux and macOS keep the Mozilla-derived system bundle. */
+const SYSTEM_CA_BUNDLES = [
+    '/etc/ssl/certs/ca-certificates.crt',
+    '/etc/pki/tls/certs/ca-bundle.crt',
+    '/etc/ssl/cert.pem',
+];
+
+/** File name the launcher looks for beside php.exe (local_runtime.rs). */
+const PACKAGED_CA_BUNDLE = 'cacert.pem';
+
+function stageCaBundle(parsed) {
+    const candidates = parsed['ca-bundle']
+        ? [parsed['ca-bundle']]
+        : SYSTEM_CA_BUNDLES;
+    const source = candidates.find((candidate) => fs.existsSync(candidate));
+
+    if (!source) {
+        fail(
+            'no CA bundle found; pass --ca-bundle <file> (for example the Mozilla bundle from https://curl.se/ca/cacert.pem)',
+        );
+    }
+
+    const pem = fs.readFileSync(source, 'utf8');
+    const certificates = pem.match(/-----BEGIN CERTIFICATE-----/g)?.length ?? 0;
+
+    if (certificates < 50) {
+        fail(
+            `${source} holds ${certificates} certificates; expected a full root bundle`,
+        );
+    }
+
+    const destination = path.join(resourcesRoot, 'php', PACKAGED_CA_BUNDLE);
+    fs.writeFileSync(destination, pem);
+
+    return { source, certificates };
 }
 
 // ---------------------------------------------------------------------------
@@ -450,6 +502,11 @@ function main() {
 
     const php = stagePhpRuntime(parsed);
     process.stdout.write(`staged PHP runtime (${php.files} files)\n`);
+
+    const caBundle = stageCaBundle(parsed);
+    process.stdout.write(
+        `staged CA bundle (${caBundle.certificates} certificates from ${caBundle.source})\n`,
+    );
 
     const application = stageApplication(parsed);
     process.stdout.write(

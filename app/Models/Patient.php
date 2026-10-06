@@ -138,6 +138,34 @@ class Patient extends Model
     }
 
     /**
+     * Find patients by every word of a free-text query, in any order: name,
+     * dossier number or phone (« amina kaci » and « kaci amina » both find
+     * Amina Kaci; « 0555123456 » also finds « 0555 12 34 56 »).
+     *
+     * @param  Builder<Patient>  $query
+     */
+    public function scopeMatchingWords(Builder $query, string $term): void
+    {
+        $words = array_values(array_filter(preg_split('/\s+/', trim($term)) ?: []));
+
+        foreach (array_slice($words, 0, 4) as $word) {
+            $like = '%'.$word.'%';
+            $digits = preg_replace('/\D+/', '', $word) ?? '';
+
+            $query->where(static function (Builder $nested) use ($like, $digits): void {
+                $nested->where('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like)
+                    ->orWhere('patient_number', 'like', $like)
+                    ->orWhere('phone', 'like', $like);
+
+                if (strlen($digits) >= 4) {
+                    $nested->orWhereRaw("replace(replace(phone, ' ', ''), '-', '') like ?", ['%'.$digits.'%']);
+                }
+            });
+        }
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function createdBy(): BelongsTo
@@ -181,6 +209,17 @@ class Patient extends Model
     public function encounters(): HasMany
     {
         return $this->hasMany(Encounter::class);
+    }
+
+    /**
+     * Family links recorded by the cabinet, from this patient's side: each
+     * row says who the relative is and how they are related to this patient.
+     *
+     * @return HasMany<PatientRelative, $this>
+     */
+    public function relativeLinks(): HasMany
+    {
+        return $this->hasMany(PatientRelative::class);
     }
 
     /**

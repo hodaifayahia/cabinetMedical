@@ -8,15 +8,17 @@ import {
     formatAiText,
     loadAiStatus,
     runAi,
+    transcribeDictation,
 } from './ai';
 import { aiWorkspace, bindAiWorkspace, takeQueued } from './aiWorkspace';
-import { HttpError, getJson, postJson } from './http';
+import { HttpError, getJson, postFormData, postJson } from './http';
 import type * as Http from './http';
 
 vi.mock('./http', async (importActual) => ({
     ...(await importActual<typeof Http>()),
     getJson: vi.fn(),
     postJson: vi.fn(),
+    postFormData: vi.fn(),
 }));
 
 const getJsonMock = vi.mocked(getJson);
@@ -35,6 +37,7 @@ const status = (overrides: Partial<AiStatus> = {}): AiStatus => ({
         ecg_analysis: 4,
         ecg_chat: 1,
         copilot_chat: 1,
+        dictation_transcription: 0,
     },
     support: { phone: null, email: null },
     message: null,
@@ -124,6 +127,7 @@ describe('aiCost and creditsLabel', () => {
             ecg_analysis: 4,
             ecg_chat: 1,
             copilot_chat: 1,
+            dictation_transcription: 0,
         };
 
         for (const [feature, cost] of Object.entries(expected)) {
@@ -286,6 +290,44 @@ describe('runAi', () => {
             message:
                 'L’assistant IA n’a pas pu répondre. Vérifiez la connexion puis réessayez.',
         });
+    });
+});
+
+describe('transcribeDictation', () => {
+    const postFormDataMock = vi.mocked(postFormData);
+
+    it('uploads the segment with a matching file name and returns the text', async () => {
+        postFormDataMock.mockResolvedValueOnce({ text: 'Toux sèche' });
+
+        const text = await transcribeDictation(
+            9,
+            new Blob(['x'], { type: 'audio/ogg;codecs=opus' }),
+        );
+
+        expect(text).toBe('Toux sèche');
+        const [url, body] = postFormDataMock.mock.calls.at(-1)!;
+        expect(url).toBe('/app/ai/consultations/9/dictation/transcribe');
+        expect((body.get('audio') as File).name).toBe('dictee.ogg');
+    });
+
+    it('defaults to a WebM file name and an empty text', async () => {
+        postFormDataMock.mockResolvedValueOnce({});
+
+        const text = await transcribeDictation(9, new Blob(['x']));
+
+        expect(text).toBe('');
+        const [, body] = postFormDataMock.mock.calls.at(-1)!;
+        expect((body.get('audio') as File).name).toBe('dictee.webm');
+    });
+
+    it('rejects with a readable failure', async () => {
+        postFormDataMock.mockRejectedValueOnce(
+            new HttpError(503, 'Pas d’Internet'),
+        );
+
+        await expect(
+            transcribeDictation(9, new Blob(['x'], { type: 'audio/webm' })),
+        ).rejects.toEqual({ reason: 'unavailable', message: 'Pas d’Internet' });
     });
 });
 

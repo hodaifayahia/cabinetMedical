@@ -137,10 +137,17 @@ describe('Drclick authentication and onboarding contract', () => {
     it('gives the cabinet owner a one-time licence-code redemption form', () => {
         const source = readAuthPage('PendingActivation');
 
+        // A desktop holds no grant of its own: its code is checked online
+        // once, so the form is shown there even without a local grant.
+        expect(source).toContain('v-if="showCodeForm"');
         expect(source).toContain(
-            'v-if="can_redeem_license && pending_license_grant"',
+            '(props.pending_license_grant !== null || desktop.value.online)',
         );
         expect(source).toContain('pending_license_grant');
+        expect(source).toContain('action="/cabinet/license/online-account"');
+        expect(source).toContain('action="/cabinet/license/file"');
+        expect(source).toContain('enctype="multipart/form-data"');
+        expect(source).toContain('data-test="activation-offline"');
         expect(source).toContain('action="/cabinet/license/redeem"');
         expect(source).toContain('method="post"');
         expect(source).toContain('name="_token"');

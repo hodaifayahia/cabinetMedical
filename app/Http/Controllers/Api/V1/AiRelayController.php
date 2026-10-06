@@ -10,8 +10,10 @@ use App\Services\Ai\AiCreditLedger;
 use App\Services\Ai\AiException;
 use App\Services\Ai\AiGateway;
 use App\Services\Ai\AiProviderClient;
+use App\Services\Ai\DictationAudio;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -85,6 +87,45 @@ class AiRelayController extends Controller
     }
 
     /**
+     * A desktop's dictation segment, transcribed with the key held here and
+     * logged against the token owner's cabinet.
+     */
+    public function transcribe(Request $request, AiGateway $gateway, AiProviderClient $provider, AiCreditLedger $ledger): JsonResponse
+    {
+        $request->validate(['audio' => DictationAudio::rules()], DictationAudio::messages());
+
+        $user = $this->user($request);
+        $audio = $request->file('audio');
+        abort_unless($audio instanceof UploadedFile, 422);
+        $feature = AiFeature::DICTATION_TRANSCRIPTION;
+
+        try {
+            $completion = $ledger->spend(
+                $gateway->cabinetOf($user),
+                $user,
+                $feature,
+                fn (): AiCompletion => $provider->transcribe(
+                    (string) $audio->getRealPath(),
+                    DictationAudio::mimeOf($audio),
+                    $feature->model(false),
+                ),
+            );
+        } catch (AiException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'reason' => $exception->reason,
+                'balance' => $exception->balance,
+            ], $exception->httpStatus());
+        }
+
+        return response()->json([
+            'text' => $completion->content,
+            'model' => $completion->model,
+            'balance' => $completion->balance,
+        ]);
+    }
+
+    /**
      * Credits are priced per action, so a request must look like the action
      * it names: plain text, or — for an action that reads an image — one
      * image no heavier than a desktop sends. Otherwise a cheap action could
@@ -96,6 +137,13 @@ class AiRelayController extends Controller
      */
     private function assertShapeOf(AiFeature $feature, bool $vision, array $messages): void
     {
+        if ($feature->transcribesAudio()) {
+            // Priced as speech to text: as a chat it would be a free prompt.
+            throw ValidationException::withMessages([
+                'feature' => 'Cette action se fait par l’envoi d’un enregistrement audio.',
+            ]);
+        }
+
         if ($vision && ! $feature->readsImages()) {
             throw ValidationException::withMessages([
                 'vision' => 'Cette action de l’assistant IA ne lit pas d’image.',

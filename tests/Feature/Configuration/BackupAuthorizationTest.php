@@ -25,6 +25,12 @@ class BackupAuthorizationTest extends TestCase
         'app.configuration.backup.local.encrypted' => 'configuration.backups.manage',
         'app.configuration.backup.restore' => 'configuration.restore.manage',
         'app.configuration.backup.restore.prepare' => 'configuration.restore.manage',
+        'app.configuration.backup.destination.update' => 'configuration.backups.manage',
+        'app.configuration.backup.destination.test' => 'configuration.backups.manage',
+        'app.configuration.backup.archives.download' => 'configuration.backups.manage',
+        'app.configuration.backup.archives.restore.prepare' => 'configuration.restore.manage',
+        'app.configuration.backup.archives.restore.apply' => 'configuration.restore.manage',
+        'app.configuration.backup.archives.restore.cancel' => 'configuration.restore.manage',
         'app.configuration.backup.google.prepare' => 'configuration.drive.manage',
         'app.configuration.backup.google.files' => 'configuration.drive.manage',
         'app.configuration.backup.google.files.download' => 'configuration.drive.manage',
@@ -42,6 +48,9 @@ class BackupAuthorizationTest extends TestCase
         'app.configuration.backup.local.encrypted',
         'app.configuration.backup.restore',
         'app.configuration.backup.restore.prepare',
+        'app.configuration.backup.archives.download',
+        'app.configuration.backup.archives.restore.prepare',
+        'app.configuration.backup.archives.restore.apply',
         'app.configuration.backup.google.prepare',
         'app.configuration.backup.google.files.download',
         'app.configuration.backup.google.files.destroy',
@@ -81,6 +90,10 @@ class BackupAuthorizationTest extends TestCase
         $this->post(route('app.configuration.backup.local.encrypted'))->assertForbidden();
         $this->post(route('app.configuration.backup.restore'))->assertForbidden();
         $this->post(route('app.configuration.backup.restore.prepare'))->assertForbidden();
+        $this->put(route('app.configuration.backup.destination.update'))->assertForbidden();
+        $this->get(route('app.configuration.backup.archives.download', ['archive' => 'Drclick-Backup-x.msbackup']))->assertForbidden();
+        $this->post(route('app.configuration.backup.archives.restore.prepare'))->assertForbidden();
+        $this->post(route('app.configuration.backup.archives.restore.apply'))->assertForbidden();
         $this->post(route('app.configuration.backup.google.prepare'))->assertForbidden();
         $this->get(route('app.configuration.backup.google.files'))->assertForbidden();
         $this->post(route('app.configuration.backup.google.files.download', ['fileId' => 'remote-id']))->assertForbidden();

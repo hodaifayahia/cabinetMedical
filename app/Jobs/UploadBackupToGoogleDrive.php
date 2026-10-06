@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\BackupRecord;
 use App\Models\CabinetSetting;
 use App\Services\Backups\DriveBackupAuthority;
+use App\Services\Backups\DriveReconnectRequired;
 use App\Services\Backups\DriveUploadCancelled;
 use App\Services\GoogleDriveService;
 use Illuminate\Bus\Queueable;
@@ -32,6 +33,14 @@ final class UploadBackupToGoogleDrive implements ShouldQueue
 
     /** @var list<int> */
     public array $backoff = [60, 300, 900];
+
+    /**
+     * A clinic's archive can take a long time to send on a slow line. This
+     * overrides the supervised worker's short --timeout for this job only,
+     * and stays below the database queue's retry_after so a running upload
+     * is never handed to a second attempt.
+     */
+    public int $timeout = 3500;
 
     public readonly int $cabinetId;
 
@@ -154,6 +163,18 @@ final class UploadBackupToGoogleDrive implements ShouldQueue
             ]);
         } catch (DriveUploadCancelled) {
             $this->recordCancellation($record);
+
+            return;
+        } catch (DriveReconnectRequired) {
+            // Google refused the grant: retrying cannot help until the doctor
+            // connects the account again (the page now says so).
+            if ($this->markFailed($record, 'drive_reconnect_required')) {
+                $this->recordFailure($record, 'drive_reconnect_required');
+            }
+
+            $this->rejectPermanently(
+                new RuntimeException('The Google Drive account must be connected again.'),
+            );
 
             return;
         } catch (InvalidArgumentException) {

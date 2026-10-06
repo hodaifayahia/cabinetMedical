@@ -220,5 +220,11 @@ defineOptions({
                 Connexion classique
             </TextLink>
         </p>
+        <p data-test="desktop-cabinet-import-hint">
+            Votre cabinet existe déjà sur le service en ligne Drclick mais pas
+            encore sur ce poste ? Saisissez l’e-mail du propriétaire dans les
+            deux champs avec le mot de passe du compte en ligne : le cabinet est
+            importé et activé ici (Internet requis une seule fois).
+        </p>
     </div>
 </template>

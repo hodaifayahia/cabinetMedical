@@ -64,7 +64,9 @@ describe('desktop PIN user-flow contract', () => {
     it('shows only account-bound fast PIN login for an enrolled desktop', () => {
         const login = read('pages/auth/Login.vue');
 
-        expect(login).toContain('v-if="runtimeResolved && pinEnrollment"');
+        expect(login).toContain(
+            'v-if="runtimeResolved && pinEnrollment && showPinLogin"',
+        );
         expect(login).toContain("pinForm.post('/desktop/pin/login'");
         expect(login).toContain('name="device_token"');
         expect(login).toContain('name="pin"');
@@ -74,14 +76,22 @@ describe('desktop PIN user-flow contract', () => {
         expect(login).toContain('<template v-else-if="runtimeResolved">');
     });
 
-    it('retains enrollment on logout and clears it only for another account', () => {
+    it('keeps every account PIN on logout and when switching accounts', () => {
         const login = read('pages/auth/Login.vue');
         const appLayout = read('layouts/AppLayout.vue');
         const pending = read('pages/auth/PendingActivation.vue');
 
-        expect(login).toContain('clearDesktopPinEnrollment()');
         expect(login).toContain('Utiliser un autre compte');
         expect(login).toContain('data-test="desktop-pin-use-another-account"');
+        expect(login).toContain('data-test="desktop-pin-accounts"');
+        expect(login).toContain('readDesktopPinEnrollments()');
+        // Switching account only shows the password form: other PINs stay.
+        const switchAccount = login.slice(
+            login.indexOf('async function useAnotherAccount'),
+            login.indexOf('function forgetSelectedAccount'),
+        );
+        expect(switchAccount).not.toContain('clearDesktopPinEnrollment');
+        expect(login).toContain('clearDesktopPinEnrollment(enrollment.userId)');
         expect(appLayout).not.toContain('clearDesktopPinEnrollment');
         expect(pending).not.toContain('clearDesktopPinEnrollment');
     });

@@ -109,7 +109,8 @@ class OnlineServiceLinkTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertSessionHas(
                 'inertia.flash_data.toast.message',
-                'Poste relié au service en ligne. Votre cabinet dispose de 4 sièges.',
+                'Poste relié au service en ligne. Votre cabinet dispose de 4 sièges. '
+                .'Les rendez-vous de l’application mobile se synchronisent désormais automatiquement.',
             );
 
         $settings = app(MobileSyncSettings::class);

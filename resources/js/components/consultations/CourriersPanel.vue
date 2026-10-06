@@ -5,6 +5,13 @@ import { computed, ref, watch } from 'vue';
 import CourrierDocumentEditor from '@/components/consultations/CourrierDocumentEditor.vue';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    ageFromBirthDate,
+    buildTemplateValues,
+    escapeHtml,
+    renderTemplateHtml,
+} from '@/lib/documentTemplateBody';
+import type { TemplateValueSources } from '@/lib/documentTemplateBody';
 import type {
     ClinicalDocument,
     ClinicalDocumentTemplate,
@@ -20,7 +27,7 @@ const props = defineProps<{
     patient: {
         full_name: string;
         date_of_birth: string | null;
-    };
+    } & TemplateValueSources['patient'];
     consultation: {
         motif: string | null;
         examens: string | null;
@@ -45,75 +52,33 @@ const notes = ref('');
 const templateId = (template: ClinicalDocumentTemplate): string =>
     template.source + ':' + template.key;
 
-const patientAge = computed(() => {
-    if (!props.patient.date_of_birth) {
-        return null;
-    }
+const patientAge = computed(() =>
+    ageFromBirthDate(props.patient.date_of_birth),
+);
 
-    const birth = new Date(String(props.patient.date_of_birth) + 'T00:00:00');
-    const age = Math.floor(
-        (Date.now() - birth.getTime()) / (365.25 * 24 * 3600 * 1000),
-    );
-
-    return age >= 0 ? age : null;
-});
-
-const displayDate = (date: string | null): string => {
-    if (!date) {
-        return '—';
-    }
-
-    const [year, month, day] = date.slice(0, 10).split('-');
-
-    return year && month && day ? day + '/' + month + '/' + year : date;
-};
-
-const escapeHtml = (value: string | null | undefined): string =>
-    String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-
+/**
+ * Fill the template with the current patient, consultation and cabinet.
+ * Every variable offered in Configuration › Modèles de documents is
+ * resolved (allergies, antécédents, cabinet…); rich (HTML) bodies keep their
+ * formatting, legacy line-based bodies are converted first.
+ */
 const renderTemplate = (template: ClinicalDocumentTemplate): string => {
-    const values: Record<string, string> = {
-        'patient.full_name': props.patient.full_name,
-        'patient.name': props.patient.full_name,
-        'patient.date_of_birth': props.patient.date_of_birth ?? '',
-        'patient.birth_date': props.patient.date_of_birth ?? '',
-        'patient.age':
-            patientAge.value === null ? '' : String(patientAge.value),
-        'doctor.name': props.cabinet.doctor_name ?? '',
-        doctor_name: props.cabinet.doctor_name ?? '',
-        'doctor.specialty': props.cabinet.specialty ?? '',
-        specialty: props.cabinet.specialty ?? '',
-        'document.date': displayDate(documentDate.value),
-        date: displayDate(documentDate.value),
-        motif: props.consultation.motif ?? '',
-        'consultation.motif': props.consultation.motif ?? '',
-        examens: props.consultation.examens ?? '',
-        'consultation.examens': props.consultation.examens ?? '',
-        diagnostic: props.consultation.diagnostic ?? '',
-        'consultation.diagnostic': props.consultation.diagnostic ?? '',
-        traitement: props.consultation.traitement ?? '',
-        'consultation.traitement': props.consultation.traitement ?? '',
-        notes: props.consultation.notes ?? '',
-        'consultation.notes': props.consultation.notes ?? '',
-    };
-    const source =
-        template.body?.trim() ||
-        '<p><strong>' +
-            escapeHtml(template.title) +
-            '</strong></p><p>Contenu du document à compléter.</p>';
+    const values = buildTemplateValues({
+        patient: props.patient,
+        consultation: props.consultation,
+        cabinet: props.cabinet,
+        documentDate: documentDate.value,
+    });
 
-    return source
-        .replace(/\{\{([^}]+)\}\}/g, (_match, key: string) =>
-            escapeHtml(values[key.trim()] ?? ''),
-        )
-        .replace(/^##\s+(.+)$/gm, '<h3>$1</h3>')
-        .replace(/\n{2,}/g, '<br><br>')
-        .replace(/\n/g, '<br>');
+    if (!template.body?.trim()) {
+        return (
+            '<p><strong>' +
+            escapeHtml(template.title) +
+            '</strong></p><p>Contenu du document à compléter.</p>'
+        );
+    }
+
+    return renderTemplateHtml(template.body, template.body_format, values);
 };
 
 const availableTemplates = computed(() => {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DesktopCabinetLoginRequest;
+use App\Licensing\DesktopLicenseActivator;
 use App\Models\Cabinet;
 use App\Models\User;
 use App\Support\PostLoginDestination;
@@ -29,6 +30,7 @@ class DesktopCabinetLoginController extends Controller
     public function store(
         DesktopCabinetLoginRequest $request,
         StatefulGuard $guard,
+        DesktopLicenseActivator $activator,
     ): RedirectResponse {
         $credentials = $request->safe()->only(['email', 'password']);
         $provider = $guard->getProvider();
@@ -37,6 +39,25 @@ class DesktopCabinetLoginController extends Controller
             ->limit(2)
             ->get();
         $user = $matchingUsers->count() === 1 ? $matchingUsers->first() : null;
+
+        // A fresh desktop knows no one yet. The owner of a cabinet that
+        // already exists online brings it here with that online account:
+        // the cabinet (identity only) is recreated on this poste, activated
+        // with a signed licence and linked for mobile appointments. Needs
+        // Internet this once; the poste then works offline.
+        if ($matchingUsers->isEmpty()
+            && $credentials['email'] === $request->string('owner_email')->toString()
+            && $activator->canActivateOnline()) {
+            $owner = $activator->importOnlineCabinet($credentials['email'], $credentials['password']);
+
+            $guard->login($owner, $request->boolean('remember'));
+            $request->session()->regenerate();
+
+            return redirect()->to(PostLoginDestination::for($owner))->with(
+                'success',
+                'Cabinet importé depuis votre compte en ligne. Ce poste fonctionne désormais sans Internet.',
+            );
+        }
 
         if (! $user instanceof User || ! $provider->validateCredentials($user, $credentials)) {
             $this->fail($request, $user instanceof User ? $user : null);

@@ -1051,7 +1051,7 @@ Two kinds of members:
   booking**.
 
 `relation` values: `father`, `mother`, `husband`, `wife`, `son`, `daughter`,
-`other`. `status` values: `active`, `pending`, `approved`, `declined`.
+`brother`, `sister`, `other`. `status` values: `active`, `pending`, `approved`, `declined`.
 
 #### POST /family-members — create a dependent
 

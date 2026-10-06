@@ -27,14 +27,19 @@ describe('desktop runtime hydration contract', () => {
         const source = read('pages/auth/Login.vue');
         const mounted = source.indexOf('onMounted(');
 
-        expect(source.indexOf('readDesktopPinEnrollment()')).toBeGreaterThan(
-            mounted,
-        );
+        // Storage is read only by refreshEnrollments(), first called on mount.
+        const setup = source.slice(0, mounted);
+        expect(setup).not.toMatch(/^const .*readDesktopPinEnrollments\(\)/mu);
+        expect(
+            source.indexOf('refreshEnrollments();', mounted),
+        ).toBeGreaterThan(mounted);
         expect(
             source.indexOf('hasCompletedDesktopOnboarding()'),
         ).toBeGreaterThan(mounted);
         expect(source).toContain('v-if="!runtimeResolved"');
-        expect(source).toContain('runtimeResolved && pinEnrollment');
+        expect(source).toContain(
+            'runtimeResolved && pinEnrollment && showPinLogin',
+        );
         expect(source).toContain('v-else-if="runtimeResolved"');
     });
 
@@ -54,11 +59,15 @@ describe('desktop runtime hydration contract', () => {
         const source = read('components/DesktopPinEnrollment.vue');
         const mounted = source.indexOf('onMounted(');
         const mountedRead = source.indexOf(
-            'localEnrollment.value = readDesktopPinEnrollment()',
+            'localEnrollment.value = readDesktopPinEnrollment(',
             mounted,
         );
 
         expect(mountedRead).toBeGreaterThan(mounted);
+        // The account watcher only reads once the desktop runtime is known.
+        expect(source).toContain(
+            'if (desktopRuntime.value) {\n            localEnrollment.value = readDesktopPinEnrollment(userId ?? null);',
+        );
         expect(source).toContain(
             'const localEnrollment = ref<DesktopPinEnrollment | null>(null)',
         );

@@ -20,6 +20,8 @@ final class DesktopPinService
 
     public const ENROLLMENT_CONFLICT_MESSAGE = 'Cet appareil ne peut pas être configuré avec ce compte.';
 
+    public const REVOKED_DEVICE_MESSAGE = 'Le code PIN de ce compte n’est plus actif sur ce poste (mot de passe modifié ou accès révoqué). Connectez-vous avec votre mot de passe pour en créer un nouveau.';
+
     public const MAX_FAILED_ATTEMPTS = 5;
 
     public const LOCKOUT_MINUTES = 15;
@@ -107,8 +109,9 @@ final class DesktopPinService
     public function authenticate(string $deviceToken, string $pin): User
     {
         $tokenHash = $this->hashDeviceToken($deviceToken);
+        $unknownDevice = false;
 
-        $user = DB::transaction(function () use ($tokenHash, $pin): ?User {
+        $user = DB::transaction(function () use ($tokenHash, $pin, &$unknownDevice): ?User {
             $credential = DesktopPinCredential::withoutCabinetScope()
                 ->where('device_token_hash', $tokenHash)
                 ->lockForUpdate()
@@ -119,6 +122,7 @@ final class DesktopPinService
                 AuditLog::record('auth.desktop_pin_login_failed', null, [
                     'state' => 'invalid',
                 ]);
+                $unknownDevice = true;
 
                 return null;
             }
@@ -186,6 +190,15 @@ final class DesktopPinService
 
             return $user;
         });
+
+        if ($unknownDevice) {
+            // The opaque device token is a 256-bit secret, so saying it is no
+            // longer known reveals nothing useful. It lets the poste forget a
+            // PIN revoked by a password change and offer the password form.
+            throw ValidationException::withMessages([
+                'device_token' => self::REVOKED_DEVICE_MESSAGE,
+            ]);
+        }
 
         if (! $user instanceof User) {
             throw ValidationException::withMessages([

@@ -217,6 +217,71 @@ class PatientControllerTest extends TestCase
         $this->assertSame('Oran', $patient->refresh()->city);
     }
 
+    public function test_the_complete_medical_history_is_saved_and_shown(): void
+    {
+        $user = $this->userWithRole(RoleName::DOCTOR);
+        $patient = Patient::factory()->create(['gender' => 'female']);
+        $history = [
+            'allergies' => trim(str_repeat('Pénicilline (urticaire). ', 250)),
+            'antecedents_medical' => 'Diabète type 2, HTA',
+            'antecedents_surgical' => 'Appendicectomie 2015',
+            'antecedents_family' => 'Frère diabétique',
+            'antecedents_gyneco' => 'G2P2, césarienne 2018',
+            'antecedents_other' => 'Sédentarité',
+            'marital_status' => 'married',
+            'profession' => 'Enseignante',
+            'smoking_status' => 'non_smoker',
+            'referred_by' => 'Dr Kaci',
+        ];
+
+        $this->actingAs($user)
+            ->put(route('app.patients.update', $patient), [
+                'first_name' => $patient->first_name,
+                'last_name' => $patient->last_name,
+                ...$history,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame($history, $patient->refresh()->only(array_keys($history)));
+
+        $this->actingAs($user)
+            ->get(route('app.patients.edit', $patient))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('patients/Edit')
+                ->where('patient.antecedents_gyneco', 'G2P2, césarienne 2018')
+                ->where('patient.marital_status', 'married')
+                ->where('patient.marital_status_label', 'Marié(e)')
+                ->where('patient.smoking_status_label', 'Non-fumeur')
+                ->where('patient.referred_by', 'Dr Kaci')
+                ->has('maritalStatuses', 4)
+                ->has('smokingStatuses', 3));
+
+        $this->actingAs($user)
+            ->get(route('app.patients.show', $patient))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('patient.antecedents_gyneco', 'G2P2, césarienne 2018')
+                ->where('patient.profession', 'Enseignante')
+                ->where('relatives', []));
+    }
+
+    public function test_medical_history_fields_are_validated(): void
+    {
+        $user = $this->userWithRole(RoleName::DOCTOR);
+        $patient = Patient::factory()->create();
+
+        $this->actingAs($user)
+            ->put(route('app.patients.update', $patient), [
+                'first_name' => $patient->first_name,
+                'last_name' => $patient->last_name,
+                'antecedents_gyneco' => str_repeat('a', 10001),
+                'marital_status' => str_repeat('a', 31),
+                'referred_by' => ['not', 'a', 'string'],
+            ])
+            ->assertSessionHasErrors(['antecedents_gyneco', 'marital_status', 'referred_by']);
+    }
+
     public function test_update_is_forbidden_without_update_permission(): void
     {
         $user = $this->userMissingPermission(PermissionName::PATIENTS_UPDATE);

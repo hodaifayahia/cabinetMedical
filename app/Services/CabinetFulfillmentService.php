@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\CabinetStatus;
 use App\Enums\LicensePlan;
 use App\Licensing\CabinetEntitlement;
+use App\Licensing\DesktopActivationRefused;
 use App\Mail\CabinetActivatedMail;
 use App\Mail\CabinetLicenseCodeIssuedMail;
 use App\Mail\CabinetLicenseUpdatedMail;
@@ -275,81 +276,7 @@ class CabinetFulfillmentService
             }
 
             $redeemedAt = CarbonImmutable::now();
-            $initialActivation = false;
-            $previousPlan = null;
-            $previousExpiry = null;
-
-            if ($lockedCabinet->isPending()) {
-                if ($lockedCabinet->license_id !== null) {
-                    $this->throwInvalidLicenseCode();
-                }
-
-                $license = $this->issueLicense(
-                    $lockedCabinet,
-                    $grant->licenseType ?? $grant->plan,
-                    $redeemedAt,
-                    [
-                        'source' => 'hosted_license_code',
-                        'grant_id' => $grant->getKey(),
-                        'redeemed_by_user_id' => $owner->getKey(),
-                    ],
-                );
-
-                $lockedCabinet->forceFill([
-                    'status' => CabinetStatus::ACTIVE,
-                    'activated_at' => $redeemedAt,
-                    'license_id' => $license->getKey(),
-                ])->save();
-                $initialActivation = true;
-
-                AuditLog::record('cabinet.activated', $lockedCabinet, [
-                    'license_id' => $license->license_id,
-                    'license_plan' => $grant->typeLabel(),
-                    'expires_at' => $license->expires_at?->toIso8601String(),
-                    'grant_id' => $grant->getKey(),
-                    'activation_method' => 'license_code',
-                    'owner_user_id' => $owner->getKey(),
-                ], $owner->getKey());
-            } elseif ($lockedCabinet->isActive()) {
-                $license = $this->hostedLicenseForUpdate($lockedCabinet);
-
-                if ($license === null || $license->plan !== LicensePlan::TRIAL || $license->status === 'revoked') {
-                    $this->throwInvalidLicenseCode();
-                }
-
-                $previousPlan = $license->plan;
-                $previousExpiry = $license->expires_at;
-                $license->forceFill([
-                    'plan' => $grant->plan,
-                    'license_type_id' => $grant->license_type_id,
-                    'status' => 'active',
-                    'expires_at' => $grant->expiresAt($redeemedAt),
-                    'offline_grace_until' => null,
-                    'last_verified_at' => $redeemedAt,
-                    'last_server_response' => array_merge($license->last_server_response ?? [], [
-                        'source' => 'hosted_license_code',
-                        'cabinet_id' => $lockedCabinet->getKey(),
-                        'one_time_activation' => true,
-                        'plan' => $grant->typeLabel(),
-                        'grant_id' => $grant->getKey(),
-                        'redeemed_at' => $redeemedAt->toIso8601String(),
-                    ]),
-                ])->save();
-
-                AuditLog::record('cabinet.license_renewed', $lockedCabinet, [
-                    'previous_plan' => $previousPlan->value,
-                    'new_plan' => $grant->typeLabel(),
-                    'previous_expires_at' => $previousExpiry?->toIso8601String(),
-                    'expires_at' => $license->expires_at?->toIso8601String(),
-                    'grant_id' => $grant->getKey(),
-                    'activation_method' => 'license_code',
-                    'owner_user_id' => $owner->getKey(),
-                ], $owner->getKey());
-            } else {
-                throw ValidationException::withMessages([
-                    'license_code' => 'Ce cabinet est suspendu. Contactez l’administration Drclick.',
-                ]);
-            }
+            [$license, $initialActivation] = $this->applyGrant($lockedCabinet, $grant, $owner, $redeemedAt);
 
             $grant->forceFill([
                 'redeemed_by_user_id' => $owner->getKey(),
@@ -374,6 +301,225 @@ class CabinetFulfillmentService
         }
 
         return $redeemedCabinet;
+    }
+
+    /**
+     * Redeem a code an installed desktop sent to the online service.
+     *
+     * The desktop holds its own database, so the grant (which only exists
+     * here) is matched by its keyed digest alone; the code is a single-use
+     * 128-bit secret and possessing it is the authorisation. The online
+     * cabinet is activated (or its trial renewed) exactly as a web redemption
+     * would, and the grant remembers which installation took it: a retry from
+     * that same poste — its first answer lost on a poor connection — gets the
+     * same licence back, while any other poste is refused.
+     *
+     * @return array{cabinet: Cabinet, license: License, grant: HostedLicenseGrant, freshly_redeemed: bool}
+     *
+     * @throws DesktopActivationRefused
+     */
+    public function redeemLicenseCodeForInstallation(
+        string $plainCode,
+        string $installationId,
+        string $ownerEmail,
+    ): array {
+        $codeHash = $this->hashLicenseCode($this->normalizeLicenseCode($plainCode));
+
+        $candidate = HostedLicenseGrant::withoutCabinetScope()
+            ->where('code_hash', $codeHash)
+            ->first();
+
+        if ($candidate === null || $candidate->revoked_at !== null) {
+            throw DesktopActivationRefused::invalidCode();
+        }
+
+        $result = DB::transaction(function () use ($candidate, $installationId, $ownerEmail): array {
+            // Cabinet before grant, the same lock order as issue and redeem.
+            $lockedCabinet = Cabinet::query()
+                ->lockForUpdate()
+                ->findOrFail((int) $candidate->cabinet_id);
+
+            /** @var HostedLicenseGrant|null $grant */
+            $grant = HostedLicenseGrant::withoutCabinetScope()
+                ->whereKey($candidate->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if ($grant === null || $grant->revoked_at !== null) {
+                throw DesktopActivationRefused::invalidCode();
+            }
+
+            if ($grant->redeemed_at !== null) {
+                $takenBy = $grant->redeemed_installation_id;
+
+                if (! is_string($takenBy) || ! hash_equals($takenBy, $installationId)) {
+                    throw DesktopActivationRefused::codeAlreadyUsed();
+                }
+
+                $license = $lockedCabinet->license_id === null
+                    ? null
+                    : License::query()->find($lockedCabinet->license_id);
+
+                if (! $license instanceof License || ! $lockedCabinet->isActive()) {
+                    throw DesktopActivationRefused::cabinetUnavailable();
+                }
+
+                return [
+                    'cabinet' => $lockedCabinet,
+                    'license' => $license,
+                    'grant' => $grant,
+                    'freshly_redeemed' => false,
+                    'initial' => false,
+                ];
+            }
+
+            if ($lockedCabinet->isSuspended()) {
+                throw DesktopActivationRefused::cabinetSuspended();
+            }
+
+            $owner = $lockedCabinet->owner_user_id === null
+                ? null
+                : User::query()->find($lockedCabinet->owner_user_id);
+            $redeemedAt = CarbonImmutable::now();
+
+            try {
+                [$license, $initialActivation] = $this->applyGrant($lockedCabinet, $grant, $owner, $redeemedAt, [
+                    'activation_method' => 'desktop_license_code',
+                    'installation_id' => $installationId,
+                ]);
+            } catch (ValidationException) {
+                throw DesktopActivationRefused::invalidCode();
+            }
+
+            $grant->forceFill([
+                'redeemed_by_user_id' => $owner?->getKey(),
+                'redeemed_at' => $redeemedAt,
+                'redeemed_installation_id' => $installationId,
+                'redeemed_owner_email' => Str::lower(trim($ownerEmail)),
+            ])->save();
+
+            AuditLog::record('cabinet.license_code_redeemed', $lockedCabinet, [
+                'grant_id' => $grant->getKey(),
+                'license_id' => $license->license_id,
+                'license_plan' => $grant->typeLabel(),
+                'initial_activation' => $initialActivation,
+                'grant_suffix' => $grant->code_suffix,
+                'activation_method' => 'desktop_license_code',
+                'installation_id' => $installationId,
+            ], $owner?->getKey());
+
+            return [
+                'cabinet' => $lockedCabinet->load(['owner', 'license']),
+                'license' => $license->refresh(),
+                'grant' => $grant,
+                'freshly_redeemed' => true,
+                'initial' => $initialActivation,
+            ];
+        });
+
+        if ($result['freshly_redeemed']) {
+            $result['initial']
+                ? $this->notifyOwner($result['cabinet'])
+                : $this->notifyOwnerOfLicenseUpdate($result['cabinet'], $result['license']);
+        }
+
+        unset($result['initial']);
+
+        return $result;
+    }
+
+    /**
+     * Apply one outstanding grant to its locked cabinet: a pending cabinet
+     * receives its sole entitlement, an existing trial is renewed or upgraded
+     * in place. Callers hold the cabinet and grant locks and mark the grant
+     * redeemed afterwards.
+     *
+     * @param  array<string, mixed>  $context
+     * @return array{0: License, 1: bool}
+     */
+    private function applyGrant(
+        Cabinet $lockedCabinet,
+        HostedLicenseGrant $grant,
+        ?User $owner,
+        CarbonImmutable $redeemedAt,
+        array $context = [],
+    ): array {
+        $initialActivation = false;
+
+        if ($lockedCabinet->isPending()) {
+            if ($lockedCabinet->license_id !== null) {
+                $this->throwInvalidLicenseCode();
+            }
+
+            $license = $this->issueLicense(
+                $lockedCabinet,
+                $grant->licenseType ?? $grant->plan,
+                $redeemedAt,
+                [
+                    'source' => 'hosted_license_code',
+                    'grant_id' => $grant->getKey(),
+                    'redeemed_by_user_id' => $owner?->getKey(),
+                    ...$context,
+                ],
+            );
+
+            $lockedCabinet->forceFill([
+                'status' => CabinetStatus::ACTIVE,
+                'activated_at' => $redeemedAt,
+                'license_id' => $license->getKey(),
+            ])->save();
+            $initialActivation = true;
+
+            AuditLog::record('cabinet.activated', $lockedCabinet, [
+                'license_id' => $license->license_id,
+                'license_plan' => $grant->typeLabel(),
+                'expires_at' => $license->expires_at?->toIso8601String(),
+                'grant_id' => $grant->getKey(),
+                'activation_method' => $context['activation_method'] ?? 'license_code',
+                'owner_user_id' => $owner?->getKey(),
+            ], $owner?->getKey());
+        } elseif ($lockedCabinet->isActive()) {
+            $license = $this->hostedLicenseForUpdate($lockedCabinet);
+
+            if ($license === null || $license->plan !== LicensePlan::TRIAL || $license->status === 'revoked') {
+                $this->throwInvalidLicenseCode();
+            }
+
+            $previousPlan = $license->plan;
+            $previousExpiry = $license->expires_at;
+            $license->forceFill([
+                'plan' => $grant->plan,
+                'license_type_id' => $grant->license_type_id,
+                'status' => 'active',
+                'expires_at' => $grant->expiresAt($redeemedAt),
+                'offline_grace_until' => null,
+                'last_verified_at' => $redeemedAt,
+                'last_server_response' => array_merge($license->last_server_response ?? [], [
+                    'source' => 'hosted_license_code',
+                    'cabinet_id' => $lockedCabinet->getKey(),
+                    'one_time_activation' => true,
+                    'plan' => $grant->typeLabel(),
+                    'grant_id' => $grant->getKey(),
+                    'redeemed_at' => $redeemedAt->toIso8601String(),
+                ]),
+            ])->save();
+
+            AuditLog::record('cabinet.license_renewed', $lockedCabinet, [
+                'previous_plan' => $previousPlan->value,
+                'new_plan' => $grant->typeLabel(),
+                'previous_expires_at' => $previousExpiry?->toIso8601String(),
+                'expires_at' => $license->expires_at?->toIso8601String(),
+                'grant_id' => $grant->getKey(),
+                'activation_method' => $context['activation_method'] ?? 'license_code',
+                'owner_user_id' => $owner?->getKey(),
+            ], $owner?->getKey());
+        } else {
+            throw ValidationException::withMessages([
+                'license_code' => 'Ce cabinet est suspendu. Contactez l’administration Drclick.',
+            ]);
+        }
+
+        return [$license, $initialActivation];
     }
 
     /**
@@ -573,6 +719,7 @@ class CabinetFulfillmentService
         CabinetEntitlement $entitlement,
         ?string $hubId = null,
         ?CarbonImmutable $now = null,
+        ?Cabinet $expected = null,
     ): Cabinet {
         $now ??= CarbonImmutable::now();
 
@@ -584,7 +731,7 @@ class CabinetFulfillmentService
             throw new LogicException('Cette clé d’activation a été émise pour un autre Hub.');
         }
 
-        return DB::transaction(function () use ($entitlement, $now): Cabinet {
+        return DB::transaction(function () use ($entitlement, $now, $expected): Cabinet {
             $owner = User::query()
                 ->whereRaw('LOWER(email) = ?', [$entitlement->ownerEmail])
                 ->first();
@@ -599,6 +746,13 @@ class CabinetFulfillmentService
 
             if (! $cabinet instanceof Cabinet || $cabinet->owner_user_id !== $owner->getKey()) {
                 throw new LogicException('Aucun cabinet ne correspond à cette clé d’activation.');
+            }
+
+            // A desktop activates the cabinet its owner is signed in to. An
+            // entitlement naming another owner of this computer must not
+            // quietly activate that other cabinet instead.
+            if ($expected !== null && ! $cabinet->is($expected)) {
+                throw new LogicException('Cette licence a été émise pour un autre cabinet : l’adresse e-mail du titulaire ne correspond pas à celle de ce cabinet.');
             }
 
             // One entitlement activates once. Re-applying the same file must

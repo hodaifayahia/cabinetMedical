@@ -8,7 +8,7 @@ import {
     ShieldCheck,
 } from '@lucide/vue';
 import { isTauri } from '@tauri-apps/api/core';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import AuthBackLink from '@/components/auth/AuthBackLink.vue';
 import InputError from '@/components/InputError.vue';
 import { markDesktopOnboardingComplete } from '@/lib/desktopOnboarding';
@@ -143,7 +143,7 @@ function enroll(): void {
             }
 
             markDesktopOnboardingComplete();
-            localEnrollment.value = readDesktopPinEnrollment();
+            localEnrollment.value = readDesktopPinEnrollment(enrollingUser.id);
         },
         onError: async () => {
             await nextTick();
@@ -152,6 +152,15 @@ function enroll(): void {
     });
 }
 
+watch(
+    () => authenticatedUser.value?.id,
+    (userId) => {
+        if (desktopRuntime.value) {
+            localEnrollment.value = readDesktopPinEnrollment(userId ?? null);
+        }
+    },
+);
+
 onMounted(async () => {
     desktopRuntime.value = isTauri();
 
@@ -159,7 +168,9 @@ onMounted(async () => {
         return;
     }
 
-    localEnrollment.value = readDesktopPinEnrollment();
+    localEnrollment.value = readDesktopPinEnrollment(
+        authenticatedUser.value?.id ?? null,
+    );
 
     if (!shouldEnroll.value) {
         return;

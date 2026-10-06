@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -64,6 +65,16 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthAuditing();
+
+        // The PHP bundled with the Windows desktop has no certificate store of
+        // its own. Every call to the online service (activation, Service en
+        // ligne link, mobile appointment sync, AI relay) must trust the CA
+        // bundle the desktop shell ships, or HTTPS fails before any request.
+        $caBundle = config('medismart.http.ca_bundle');
+
+        if (is_string($caBundle) && $caBundle !== '' && is_file($caBundle)) {
+            Http::globalOptions(['verify' => $caBundle]);
+        }
 
         // Mobile in-app notifications: react to appointment status changes.
         Appointment::observe(AppointmentNotificationObserver::class);
@@ -252,9 +263,12 @@ class AppServiceProvider extends ServiceProvider
                         ], 429, $headers);
                     }
 
-                    $errorKey = $request->routeIs('cabinet.license.redeem')
-                        ? 'license_code'
-                        : 'license_activation';
+                    $errorKey = match (true) {
+                        $request->routeIs('cabinet.license.redeem') => 'license_code',
+                        $request->routeIs('cabinet.license.online-account') => 'online_email',
+                        $request->routeIs('cabinet.license.file') => 'entitlement',
+                        default => 'license_activation',
+                    };
                     $response = back()->withErrors([$errorKey => $message]);
                     $response->headers->add($headers);
 

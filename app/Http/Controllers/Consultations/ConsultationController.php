@@ -7,6 +7,8 @@ use App\ClinicalDocuments\ClinicalDocumentManager;
 use App\ClinicalDocuments\ClinicalDocumentOnlyOffice;
 use App\ClinicalDocuments\ClinicalDocumentTemplateCatalog;
 use App\ClinicalDocuments\ClinicalHtmlSanitizer;
+use App\ClinicalDocuments\TemplateBody;
+use App\Concerns\PatientValidationRules;
 use App\Enums\AppointmentStatus;
 use App\Enums\BloodGroup;
 use App\Enums\Gender;
@@ -30,9 +32,11 @@ use App\Models\PaymentMethod;
 use App\Models\Prescription;
 use App\Models\PrescriptionProtocol;
 use App\Models\User;
+use App\Services\Clinical\FamilyMedicalHistory;
 use App\Services\Clinical\PatientSafety;
 use App\Services\DocumentBrandingService;
 use App\Support\Appointments\BookingProvenance;
+use App\Support\Patients\PatientDossierOptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -48,6 +52,8 @@ use Inertia\Response;
 
 class ConsultationController extends Controller
 {
+    use PatientValidationRules;
+
     /**
      * Today's patients: appointments scheduled for today, ready to be consulted.
      */
@@ -124,6 +130,7 @@ class ConsultationController extends Controller
         ClinicalDocumentOnlyOffice $onlyOffice,
         DocumentBrandingService $documentBranding,
         PatientSafety $safety,
+        FamilyMedicalHistory $familyMedicalHistory,
     ): Response {
         $consultation->load(['patient', 'appointment', 'payments.receivedBy:id,name'])
             ->loadSum('payments', 'amount_minor');
@@ -151,41 +158,35 @@ class ConsultationController extends Controller
             'contact_name' => $patient->family_contact_name ?? ($bookedBy['name'] ?? null),
         ];
 
-        $familyHistory = [];
-        $familyGroupId = $patient->family_group_public_id;
+        // Relatives linked by the cabinet or booked through the same mobile
+        // family account: what their dossiers report, and their last visits.
+        $familyMedical = $familyMedicalHistory->forPatient($patient);
+        $relativesById = collect($familyMedical)->keyBy('patient_id');
 
-        if (filled($familyGroupId)) {
-            $familyPatients = Patient::withTrashed()
-                ->where('family_group_public_id', $familyGroupId)
-                ->whereKeyNot($patient->getKey())
-                ->get(['id', 'first_name', 'last_name', 'family_relation']);
-            $familyPatientsById = $familyPatients->keyBy(fn (Patient $relative): int => (int) $relative->getKey());
+        $familyHistory = $relativesById->isEmpty() ? [] : Consultation::query()
+            ->whereIn('patient_id', $relativesById->keys()->all())
+            ->orderByDesc('consulted_at')
+            ->limit(30)
+            ->get(['id', 'patient_id', 'consulted_at', 'motif', 'diagnostic', 'traitement'])
+            ->map(function (Consultation $item) use ($relativesById): array {
+                /** @var array<string, mixed>|null $relative */
+                $relative = $relativesById->get((int) $item->patient_id);
 
-            $familyHistory = Consultation::query()
-                ->whereIn('patient_id', $familyPatientsById->keys())
-                ->orderByDesc('consulted_at')
-                ->limit(30)
-                ->get(['id', 'patient_id', 'consulted_at', 'motif', 'diagnostic', 'traitement'])
-                ->map(function (Consultation $item) use ($familyPatientsById): array {
-                    /** @var Patient|null $relative */
-                    $relative = $familyPatientsById->get((int) $item->patient_id);
-
-                    return [
-                        'id' => (int) $item->getKey(),
-                        'patient_name' => $relative?->full_name,
-                        'relation' => $relative?->family_relation,
-                        'consulted_at' => $item->consulted_at?->toDateString(),
-                        'motif' => $item->motif,
-                        'diagnostic' => $item->diagnostic,
-                        'traitement' => $item->traitement,
-                    ];
-                })
-                ->filter(fn (array $item): bool => filled($item['motif'])
-                    || filled($item['diagnostic'])
-                    || filled($item['traitement']))
-                ->values()
-                ->all();
-        }
+                return [
+                    'id' => (int) $item->getKey(),
+                    'patient_name' => $relative['full_name'] ?? null,
+                    'relation' => $relative['relation'] ?? null,
+                    'consulted_at' => $item->consulted_at?->toDateString(),
+                    'motif' => $item->motif,
+                    'diagnostic' => $item->diagnostic,
+                    'traitement' => $item->traitement,
+                ];
+            })
+            ->filter(fn (array $item): bool => filled($item['motif'])
+                || filled($item['diagnostic'])
+                || filled($item['traitement']))
+            ->values()
+            ->all();
 
         $history = Consultation::query()
             ->where('patient_id', $patient->getKey())
@@ -267,6 +268,7 @@ class ConsultationController extends Controller
                 'title' => $template['title'],
                 'description' => null,
                 'body' => $template['body'],
+                'body_format' => $template['body_format'],
                 'default_paper_size' => $template['default_paper_size'],
             ]);
         $bilanCategories = BilanType::query()
@@ -291,6 +293,7 @@ class ConsultationController extends Controller
                 'status' => $consultation->status,
                 'consulted_at' => $consultation->consulted_at?->toIso8601String(),
                 'completed_at' => $consultation->completed_at?->toIso8601String(),
+                'updated_at' => $consultation->updated_at?->toIso8601String(),
                 'motif' => $consultation->motif,
                 'examens' => $consultation->examens,
                 'diagnostic' => $consultation->diagnostic,
@@ -345,9 +348,11 @@ class ConsultationController extends Controller
                 'antecedents_family' => $patient->antecedents_family,
                 'antecedents_gyneco' => $patient->antecedents_gyneco,
                 'antecedents_other' => $patient->antecedents_other,
+                'updated_at' => $patient->updated_at?->toIso8601String(),
             ],
             'familyContext' => $familyContext,
             'familyHistory' => $familyHistory,
+            'familyMedical' => $familyMedical,
             'options' => [
                 'genders' => $this->genderOptions(),
                 'bloodGroups' => $this->bloodGroupOptions(),
@@ -572,21 +577,14 @@ class ConsultationController extends Controller
             'last_name' => ['required', 'string', 'max:100'],
             'date_of_birth' => ['nullable', 'date'],
             'gender' => ['nullable', Rule::in(Gender::values())],
-            'marital_status' => ['nullable', 'string', 'max:30'],
-            'profession' => ['nullable', 'string', 'max:100'],
-            'smoking_status' => ['nullable', 'string', 'max:30'],
-            'referred_by' => ['nullable', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:40'],
             'email' => ['nullable', 'email', 'max:190'],
             'address' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:100'],
             'blood_group' => ['nullable', Rule::in($this->bloodGroupValues())],
-            'allergies' => ['nullable', 'string', 'max:2000'],
-            'antecedents_medical' => ['nullable', 'string', 'max:5000'],
-            'antecedents_surgical' => ['nullable', 'string', 'max:5000'],
-            'antecedents_family' => ['nullable', 'string', 'max:5000'],
-            'antecedents_gyneco' => ['nullable', 'string', 'max:5000'],
-            'antecedents_other' => ['nullable', 'string', 'max:5000'],
+            // Same limits as the patient form: a value saved there must never
+            // block the workspace autosave.
+            ...$this->patientDossierRules(),
         ]);
 
         $patient->update($data);
@@ -829,7 +827,8 @@ class ConsultationController extends Controller
         $data = $request->validate([
             'category' => ['required', 'string', 'max:40'],
             'title' => ['required', 'string', 'max:200'],
-            'content' => ['nullable', 'string', 'max:60000'],
+            // Courriers written from rich templates may carry inline images.
+            'content' => ['nullable', 'string', 'max:'.TemplateBody::MAX_LENGTH],
         ]);
         $originalContent = $data['content'] ?? null;
         $content = $sanitizer->sanitize($originalContent);
@@ -1016,12 +1015,7 @@ class ConsultationController extends Controller
      */
     private function maritalOptions(): array
     {
-        return [
-            ['value' => 'single', 'label' => 'Single'],
-            ['value' => 'married', 'label' => 'Married'],
-            ['value' => 'divorced', 'label' => 'Divorced'],
-            ['value' => 'widowed', 'label' => 'Widowed'],
-        ];
+        return PatientDossierOptions::maritalStatuses();
     }
 
     /**
@@ -1029,10 +1023,6 @@ class ConsultationController extends Controller
      */
     private function smokingOptions(): array
     {
-        return [
-            ['value' => 'non_smoker', 'label' => 'Non-smoker'],
-            ['value' => 'smoker', 'label' => 'Smoker'],
-            ['value' => 'former_smoker', 'label' => 'Former smoker'],
-        ];
+        return PatientDossierOptions::smokingStatuses();
     }
 }

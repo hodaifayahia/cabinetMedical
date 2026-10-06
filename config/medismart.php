@@ -32,6 +32,10 @@ return [
         // generation never derives an audience from this port alone.
         'lan_port' => (int) env('MEDISMART_LAN_PORT', 8000),
         'desktop_supervised' => (bool) env('MEDISMART_DESKTOP_SUPERVISED', false),
+        // Set only for the native "poste principal" LAN listener (ADR-005):
+        // that PHP process admits private-network peers on this exact port.
+        'lan_host_enabled' => (bool) env('MEDISMART_LAN_HOST_ENABLED', false),
+        'lan_host_port' => (int) env('MEDISMART_LAN_HOST_PORT', 0),
         // The native installation identity is the authority in supervised
         // builds. Laravel mirrors it into its internal setting instead of
         // generating a second, incompatible machine identity.
@@ -102,6 +106,18 @@ return [
         'remote_download_max_bytes' => (int) env('MEDISMART_BACKUP_REMOTE_MAX_BYTES', 25 * 1024 * 1024 * 1024),
         'restore_upload_max_bytes' => (int) env('MEDISMART_BACKUP_RESTORE_UPLOAD_MAX_BYTES', 25 * 1024 * 1024 * 1024),
         'prepared_restore_retention_hours' => (int) env('MEDISMART_PREPARED_RESTORE_RETENTION_HOURS', 168),
+        // Archives above this size go to Google Drive with the resumable
+        // protocol, in chunks (a multiple of 256 KiB), instead of a single
+        // multipart request.
+        'drive_resumable_threshold_bytes' => (int) env('MEDISMART_DRIVE_RESUMABLE_THRESHOLD_BYTES', 5 * 1024 * 1024),
+        'drive_upload_chunk_bytes' => (int) env('MEDISMART_DRIVE_UPLOAD_CHUNK_BYTES', 8 * 1024 * 1024),
+    ],
+
+    'http' => [
+        // CA bundle (PEM) for outgoing HTTPS calls such as Google Drive. The
+        // bundled PHP for Windows has no certificate store of its own, so the
+        // desktop shell points this at the bundle it ships. Null: PHP default.
+        'ca_bundle' => env('MEDISMART_CA_BUNDLE'),
     ],
 
     'uploads' => [
@@ -121,7 +137,17 @@ return [
         'activation_url' => env('MEDISMART_LICENSE_ACTIVATION_URL'),
         'status_url' => env('MEDISMART_LICENSE_STATUS_URL'),
         'deactivation_url' => env('MEDISMART_LICENSE_DEACTIVATION_URL'),
-        'public_key_path' => env('MEDISMART_LICENSE_PUBLIC_KEY_PATH'),
+        // Every signed licensing artefact is verified against this RSA public
+        // key, with no network access. The default lives under config/ so it
+        // ships inside the desktop payload; a build without the file simply
+        // cannot verify (and so cannot be activated by) an entitlement.
+        'public_key_path' => env('MEDISMART_LICENSE_PUBLIC_KEY_PATH') ?: 'config/licensing/entitlement-public.pem',
+        // Online service only: the private key that signs the entitlement an
+        // installed desktop receives when it redeems its activation code. It
+        // must never be configured on a desktop (VerificationKey refuses any
+        // private key, and CabinetEntitlementIssuer refuses to run on a Hub).
+        'entitlement_signing_key_path' => env('MEDISMART_ENTITLEMENT_SIGNING_KEY_PATH'),
+        'entitlement_signing_key_passphrase' => env('MEDISMART_ENTITLEMENT_SIGNING_KEY_PASSPHRASE'),
         'fingerprint_pepper' => env('MEDISMART_FINGERPRINT_PEPPER') ?: env('APP_KEY'),
         'clock_rollback_tolerance_hours' => (int) env('MEDISMART_LICENSE_CLOCK_TOLERANCE_HOURS', 6),
     ],

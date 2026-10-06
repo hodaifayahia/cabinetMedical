@@ -20,6 +20,7 @@ type FakeWindow = {
     __DRCLICK_CLOUD_SERVER_URL?: string;
     __DRCLICK_SERVER_URL?: string;
     __DRCLICK_LOCAL_ERROR?: string;
+    __DRCLICK_RUNTIME_MODE?: string;
     __TAURI_INTERNALS__?: { invoke: ReturnType<typeof vi.fn> };
     location: { href: string; replace: ReturnType<typeof vi.fn> };
 };
@@ -490,5 +491,117 @@ describe('desktop connection-setup page', () => {
                 (call) => call[0],
             ),
         ).toEqual(['configure_server_connection']);
+    });
+    it('returns an attached PC to local mode and waits for the native restart', async () => {
+        const fakeWindow = createWindow({
+            __DRCLICK_LOCAL_ERROR: 'stop',
+            __DRCLICK_RUNTIME_MODE: 'attach',
+            __TAURI_INTERNALS__: nativeBridge({
+                configure_local_mode: () => Promise.resolve(true),
+            }),
+        });
+
+        runPage(fakeWindow);
+        expect(element('local-option').hidden).toBe(false);
+        element<HTMLButtonElement>('local-btn').click();
+        await flush();
+
+        expect(fakeWindow.__TAURI_INTERNALS__!.invoke).toHaveBeenCalledWith(
+            'configure_local_mode',
+            undefined,
+        );
+        expect(element('spinner').classList.contains('visible')).toBe(true);
+        expect(element('spinner-label').textContent).toBe(
+            'Redémarrage de Drclick…',
+        );
+        expect(fakeWindow.location.replace).not.toHaveBeenCalled();
+    });
+
+    it('hides the local-mode option when this PC already owns its data', () => {
+        runPage(
+            createWindow({
+                __DRCLICK_LOCAL_ERROR: 'stop',
+                __DRCLICK_RUNTIME_MODE: 'local',
+            }),
+        );
+
+        expect(element('local-option').hidden).toBe(true);
+    });
+
+    it('waits for the restart after choosing a poste principal over LAN HTTP', async () => {
+        const fakeWindow = createWindow({
+            __DRCLICK_LOCAL_ERROR: 'stop',
+            __TAURI_INTERNALS__: nativeBridge({
+                configure_server_connection: () =>
+                    Promise.resolve({ url: 'http://192.168.1.10:47850/' }),
+            }),
+        });
+
+        runPage(fakeWindow);
+        element<HTMLInputElement>('hub-url').value =
+            'http://192.168.1.10:47850';
+        element<HTMLFormElement>('hub-form').dispatchEvent(
+            new Event('submit', { cancelable: true }),
+        );
+        await flush();
+
+        expect(fakeWindow.location.replace).not.toHaveBeenCalled();
+        expect(element('spinner-label').textContent).toBe(
+            'Redémarrage de Drclick…',
+        );
+    });
+
+    it('lists discovered postes principaux and joins one in a click', async () => {
+        const fakeWindow = createWindow({
+            __DRCLICK_LOCAL_ERROR: 'stop',
+            __TAURI_INTERNALS__: nativeBridge({
+                discover_lan_hosts: () =>
+                    Promise.resolve([
+                        {
+                            name: 'CABINET-PC',
+                            url: 'http://192.168.1.10:47850/',
+                        },
+                    ]),
+                configure_server_connection: ({ url }) =>
+                    Promise.resolve({ url }),
+            }),
+        });
+
+        runPage(fakeWindow);
+        element<HTMLButtonElement>('discover-btn').click();
+        await flush();
+
+        const choices = element('discover-results').querySelectorAll('button');
+
+        expect(choices).toHaveLength(1);
+        expect(choices[0]!.textContent).toBe(
+            'CABINET-PC — http://192.168.1.10:47850/',
+        );
+
+        choices[0]!.click();
+        await flush();
+
+        expect(fakeWindow.__TAURI_INTERNALS__!.invoke).toHaveBeenCalledWith(
+            'configure_server_connection',
+            { url: 'http://192.168.1.10:47850/' },
+        );
+    });
+
+    it('explains how to find the address when no poste principal answers', async () => {
+        runPage(
+            createWindow({
+                __DRCLICK_LOCAL_ERROR: 'stop',
+                __TAURI_INTERNALS__: nativeBridge({
+                    discover_lan_hosts: () => Promise.resolve([]),
+                }),
+            }),
+        );
+        element<HTMLButtonElement>('discover-btn').click();
+        await flush();
+
+        expect(element('connection-error').textContent).toContain(
+            'Aucun poste principal trouvé',
+        );
+        expect(element<HTMLButtonElement>('discover-btn').disabled).toBe(false);
     });
 });

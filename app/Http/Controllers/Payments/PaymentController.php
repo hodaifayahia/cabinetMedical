@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Payments;
 use App\Actions\Payments\RecordConsultationPaymentAction;
 use App\Actions\Payments\RefundConsultationPaymentAction;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Payments\Concerns\FiltersPaymentJournal;
 use App\Models\AccountingSetting;
 use App\Models\Act;
 use App\Models\AuditLog;
@@ -27,6 +28,8 @@ use Inertia\Response;
 
 class PaymentController extends Controller
 {
+    use FiltersPaymentJournal;
+
     public function index(Request $request): Response
     {
         $filters = $this->validatedFilters($request);
@@ -59,6 +62,14 @@ class PaymentController extends Controller
             ->whereDoesntHave('payments')
             ->whereDate('consulted_at', now()->toDateString())
             ->sum('payment_amount_minor');
+        // The « Dettes » shortcut opens every open debt whatever the period,
+        // so its badge must count all of them, not only the filtered window.
+        $debtsMinor = Consultation::query()
+            ->where('is_paid', false)
+            ->where('payment_amount_minor', '>', 0)
+            ->withSum('payments', 'amount_minor')
+            ->get(['id', 'payment_amount_minor', 'payment_adjustment_minor', 'is_paid'])
+            ->sum(fn (Consultation $row): int => $row->outstandingMinor());
 
         return Inertia::render('payments/Index', [
             'payments' => $payments,
@@ -67,6 +78,7 @@ class PaymentController extends Controller
                 'today' => (int) $todayMinor / 100,
                 'paid' => (int) $paidMinor / 100,
                 'outstanding' => (int) $outstandingMinor / 100,
+                'debts' => (int) $debtsMinor / 100,
             ],
             'currency' => AccountingSetting::current()->currency ?? 'DA',
             'users' => User::query()
@@ -270,77 +282,6 @@ class PaymentController extends Controller
     }
 
     /**
-     * @return array{from: string, to: string, user: string, search: string, status: string, method: string}
-     */
-    private function validatedFilters(Request $request): array
-    {
-        $validated = $request->validate([
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
-            'user' => ['nullable', 'integer', 'exists:users,id'],
-            'search' => ['nullable', 'string', 'max:120'],
-            'status' => ['nullable', Rule::in(['all', 'paid', 'unpaid', 'partial', 'debt'])],
-            'method' => ['nullable', 'string', 'max:50'],
-        ]);
-
-        $status = (string) ($validated['status'] ?? 'all');
-        $allTimeDebt = in_array($status, ['debt', 'unpaid', 'partial'], true)
-            && ! $request->filled('from')
-            && ! $request->filled('to');
-
-        return [
-            'from' => $allTimeDebt ? '' : (string) ($validated['from'] ?? now()->startOfMonth()->toDateString()),
-            'to' => $allTimeDebt ? '' : (string) ($validated['to'] ?? now()->toDateString()),
-            'user' => isset($validated['user']) ? (string) $validated['user'] : '',
-            'search' => trim((string) ($validated['search'] ?? '')),
-            'status' => $status,
-            'method' => trim((string) ($validated['method'] ?? '')),
-        ];
-    }
-
-    /**
-     * @param  array{from: string, to: string, user: string, search: string, status: string, method: string}  $filters
-     * @return Builder<Consultation>
-     */
-    private function filteredQuery(array $filters): Builder
-    {
-        return Consultation::query()
-            ->whereNotNull('payment_amount_minor')
-            ->when($filters['from'] !== '', fn (Builder $query) => $query->whereDate('consulted_at', '>=', $filters['from']))
-            ->when($filters['to'] !== '', fn (Builder $query) => $query->whereDate('consulted_at', '<=', $filters['to']))
-            ->when($filters['user'] !== '', fn (Builder $query) => $query->where('created_by', $filters['user']))
-            ->when($filters['method'] !== '', fn (Builder $query) => $query->where('payment_method', $filters['method']))
-            ->when($filters['search'] !== '', function (Builder $query) use ($filters): void {
-                $search = $filters['search'];
-                $query->where(function (Builder $nested) use ($search): void {
-                    $nested
-                        ->where('payment_service', 'like', "%{$search}%")
-                        ->orWhere('payment_method', 'like', "%{$search}%")
-                        ->orWhereHas('patient', function (Builder $patientQuery) use ($search): void {
-                            $patientQuery
-                                ->where('first_name', 'like', "%{$search}%")
-                                ->orWhere('last_name', 'like', "%{$search}%")
-                                ->orWhere('patient_number', 'like', "%{$search}%");
-                        });
-                });
-            });
-    }
-
-    /**
-     * @param  Builder<Consultation>  $query
-     */
-    private function applyPaymentStatus(Builder $query, string $status): void
-    {
-        if ($status === 'paid') {
-            $query->where('is_paid', true);
-        } elseif (in_array($status, ['unpaid', 'debt'], true)) {
-            $query->where('is_paid', false);
-        } elseif ($status === 'partial') {
-            $query->where('is_paid', false)->whereHas('payments');
-        }
-    }
-
-    /**
      * @return array<string, mixed>
      */
     private function paymentPayload(Consultation $consultation): array
@@ -365,6 +306,10 @@ class PaymentController extends Controller
                 ->implode(''),
             'user_name' => $consultation->createdBy?->name,
             'service' => $consultation->payment_service ?: ($consultation->motif ?: __('Consultation')),
+            // The stored value only (the label above falls back to the visit
+            // motif, which can be longer than a service and must not be saved
+            // back as one when the payment is edited).
+            'payment_service' => $consultation->payment_service,
             'method' => $consultation->payment_method,
             'amount' => $amountMinor / 100,
             'paid' => $paidMinor / 100,

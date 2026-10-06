@@ -10,6 +10,9 @@ use ZipArchive;
 final class DocxDocumentBuilder
 {
     /**
+     * Build the Word file of a consultation document: letterhead, patient line,
+     * title, then the template body with its {{variables}} substituted.
+     *
      * @param  array<string, string>  $variables
      */
     public function build(
@@ -18,6 +21,53 @@ final class DocxDocumentBuilder
         string $body,
         array $variables,
         string $paperSize,
+        string $bodyFormat = TemplateBody::FORMAT_TEXT,
+    ): int {
+        $logo = $this->resolveLogo($variables['cabinet.logo_path'] ?? null);
+        $content = $this->bodyContent($body, $bodyFormat, $variables, $paperSize);
+        $documentXml = $this->documentXml(
+            $title,
+            $content['xml'],
+            $variables,
+            $paperSize,
+            $logo,
+        );
+
+        return $this->writePackage($absolutePath, $title, $documentXml, $variables, $logo, $content, true);
+    }
+
+    /**
+     * Build a bare Word file of a template (no letterhead, no footer), with
+     * its {{variables}} left in place so it can be edited in Word and
+     * imported back into the template editor.
+     */
+    public function buildTemplate(
+        string $absolutePath,
+        string $title,
+        string $body,
+        string $bodyFormat,
+        string $paperSize,
+    ): int {
+        $content = $this->bodyContent($body, $bodyFormat, [], $paperSize);
+        [$width, $height, $margin] = $this->pageGeometry($paperSize);
+        $documentXml = $this->wrapDocument($content['xml'], '', $width, $height, $margin, false);
+
+        return $this->writePackage($absolutePath, $title, $documentXml, [], null, $content, false);
+    }
+
+    /**
+     * @param  array<string, string>  $variables
+     * @param  array{xml: string, images: list<array{id: string, filename: string, bytes: string, extension: string, content_type: string}>, numbering: string|null}  $content
+     * @param  array{filename: string, bytes: string, extension: string, content_type: string, width_emu: int, height_emu: int}|null  $logo
+     */
+    private function writePackage(
+        string $absolutePath,
+        string $title,
+        string $documentXml,
+        array $variables,
+        ?array $logo,
+        array $content,
+        bool $withFooter,
     ): int {
         $zip = new ZipArchive;
         $result = $zip->open($absolutePath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
@@ -26,28 +76,31 @@ final class DocxDocumentBuilder
             throw new RuntimeException('The Word document could not be created.');
         }
 
-        $logo = $this->resolveLogo($variables['cabinet.logo_path'] ?? null);
-        $documentXml = $this->documentXml(
-            $title,
-            $this->replaceVariables($body, $variables),
-            $variables,
-            $paperSize,
-            $logo,
-        );
-
-        $zip->addFromString('[Content_Types].xml', $this->contentTypesXml($logo));
+        $zip->addFromString('[Content_Types].xml', $this->contentTypesXml($logo, $content, $withFooter));
         $zip->addFromString('_rels/.rels', $this->packageRelationshipsXml());
         $zip->addFromString('docProps/core.xml', $this->corePropertiesXml($title, $variables));
         $zip->addFromString('docProps/app.xml', $this->appPropertiesXml());
         $zip->addFromString('word/document.xml', $documentXml);
         $zip->addFromString('word/styles.xml', $this->stylesXml());
-        $zip->addFromString('word/footer1.xml', $this->footerXml($variables));
-        $zip->addFromString('word/_rels/document.xml.rels', $this->documentRelationshipsXml($logo));
+
+        if ($withFooter) {
+            $zip->addFromString('word/footer1.xml', $this->footerXml($variables));
+        }
+
+        $zip->addFromString('word/_rels/document.xml.rels', $this->documentRelationshipsXml($logo, $content, $withFooter));
 
         if ($logo !== null) {
             $zip->addFromString('word/media/'.$logo['filename'], $logo['bytes']);
             $zip->addFromString('word/header1.xml', $this->watermarkHeaderXml($logo));
             $zip->addFromString('word/_rels/header1.xml.rels', $this->headerRelationshipsXml($logo));
+        }
+
+        foreach ($content['images'] as $image) {
+            $zip->addFromString('word/media/'.$image['filename'], $image['bytes']);
+        }
+
+        if ($content['numbering'] !== null) {
+            $zip->addFromString('word/numbering.xml', $content['numbering']);
         }
 
         $zip->close();
@@ -62,19 +115,56 @@ final class DocxDocumentBuilder
     }
 
     /**
+     * The body's WordprocessingML: legacy line-based text, or rich HTML from
+     * the document editor (variables substituted with escaped values).
+     *
+     * @param  array<string, string>  $variables
+     * @return array{xml: string, images: list<array{id: string, filename: string, bytes: string, extension: string, content_type: string}>, numbering: string|null}
+     */
+    private function bodyContent(string $body, string $bodyFormat, array $variables, string $paperSize): array
+    {
+        if (TemplateBody::normalizeFormat($bodyFormat) === TemplateBody::FORMAT_HTML) {
+            [$width, , $margin] = $this->pageGeometry($paperSize);
+
+            return (new HtmlToWordprocessingMl)->convert(
+                TemplateBody::renderHtml($body, $variables),
+                $width - 2 * $margin,
+            );
+        }
+
+        $paragraphs = '';
+
+        foreach (preg_split('/\R/u', $this->replaceVariables($body, $variables)) ?: [] as $line) {
+            $heading = str_starts_with($line, '## ');
+            $text = $heading ? substr($line, 3) : $line;
+            $paragraphs .= $this->paragraph($text, bold: $heading, fontSize: $heading ? 23 : 22);
+        }
+
+        return ['xml' => $paragraphs, 'images' => [], 'numbering' => null];
+    }
+
+    /**
+     * @return array{int, int, int} width, height and margin in twips
+     */
+    private function pageGeometry(string $paperSize): array
+    {
+        return strtoupper($paperSize) === 'A5'
+            ? [8391, 11906, 720]
+            : [11906, 16838, 1000];
+    }
+
+    /**
      * @param  array<string, string>  $variables
      * @param  array{filename: string, bytes: string, extension: string, content_type: string, width_emu: int, height_emu: int}|null  $logo
      */
     private function documentXml(
         string $title,
-        string $body,
+        string $bodyXml,
         array $variables,
         string $paperSize,
         ?array $logo,
     ): string {
-        [$width, $height, $margin] = strtoupper($paperSize) === 'A5'
-            ? [8391, 11906, 720]
-            : [11906, 16838, 1000];
+        [$width, $height, $margin] = $this->pageGeometry($paperSize);
 
         $doctor = trim($variables['doctor.name'] ?? '');
         $specialty = $variables['doctor.specialty'] ?? '';
@@ -106,14 +196,19 @@ final class DocxDocumentBuilder
             $this->paragraph(''),
         );
 
-        foreach (preg_split('/\R/u', $body) ?: [] as $line) {
-            $heading = str_starts_with($line, '## ');
-            $text = $heading ? substr($line, 3) : $line;
-            $paragraphs[] = $this->paragraph($text, bold: $heading, fontSize: $heading ? 23 : 22);
-        }
+        $headerXml = $logo !== null ? '<w:headerReference w:type="default" r:id="rId4"/>' : '';
 
-        $bodyXml = implode('', $paragraphs);
+        return $this->wrapDocument(implode('', $paragraphs).$bodyXml, $headerXml, $width, $height, $margin, true);
+    }
 
+    private function wrapDocument(
+        string $bodyXml,
+        string $headerXml,
+        int $width,
+        int $height,
+        int $margin,
+        bool $withFooter,
+    ): string {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
             .'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
@@ -122,8 +217,8 @@ final class DocxDocumentBuilder
             .'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
             .'<w:body>'.$bodyXml
             .'<w:sectPr>'
-            .($logo !== null ? '<w:headerReference w:type="default" r:id="rId4"/>' : '')
-            .'<w:footerReference w:type="default" r:id="rId2"/>'
+            .$headerXml
+            .($withFooter ? '<w:footerReference w:type="default" r:id="rId2"/>' : '')
             .'<w:pgSz w:w="'.$width.'" w:h="'.$height.'"/>'
             .'<w:pgMar w:top="'.$margin.'" w:right="'.$margin.'" w:bottom="'.$margin.'" w:left="'.$margin.'" w:header="360" w:footer="360" w:gutter="0"/>'
             .'<w:cols w:space="708"/><w:docGrid w:linePitch="360"/>'
@@ -289,21 +384,41 @@ final class DocxDocumentBuilder
 
     /**
      * @param  array{filename: string, bytes: string, extension: string, content_type: string, width_emu: int, height_emu: int}|null  $logo
+     * @param  array{xml: string, images: list<array{id: string, filename: string, bytes: string, extension: string, content_type: string}>, numbering: string|null}  $content
      */
-    private function contentTypesXml(?array $logo): string
+    private function contentTypesXml(?array $logo, array $content, bool $withFooter): string
     {
+        $defaults = [];
+
+        if ($logo !== null) {
+            $defaults[$logo['extension']] = $logo['content_type'];
+        }
+
+        foreach ($content['images'] as $image) {
+            $defaults[$image['extension']] ??= $image['content_type'];
+        }
+
+        $defaultXml = '';
+
+        foreach ($defaults as $extension => $type) {
+            $defaultXml .= '<Default Extension="'.$extension.'" ContentType="'.$type.'"/>';
+        }
+
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
             .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
             .'<Default Extension="xml" ContentType="application/xml"/>'
-            .($logo !== null
-                ? '<Default Extension="'.$logo['extension'].'" ContentType="'.$logo['content_type'].'"/>'
-                : '')
+            .$defaultXml
             .'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
             .'<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
-            .'<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'
+            .($withFooter
+                ? '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'
+                : '')
             .($logo !== null
                 ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>'
+                : '')
+            .($content['numbering'] !== null
+                ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>'
                 : '')
             .'<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
             .'<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
@@ -322,19 +437,32 @@ final class DocxDocumentBuilder
 
     /**
      * @param  array{filename: string, bytes: string, extension: string, content_type: string, width_emu: int, height_emu: int}|null  $logo
+     * @param  array{xml: string, images: list<array{id: string, filename: string, bytes: string, extension: string, content_type: string}>, numbering: string|null}  $content
      */
-    private function documentRelationshipsXml(?array $logo): string
+    private function documentRelationshipsXml(?array $logo, array $content, bool $withFooter): string
     {
+        $images = '';
+
+        foreach ($content['images'] as $image) {
+            $images .= '<Relationship Id="'.$image['id'].'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/'.$image['filename'].'"/>';
+        }
+
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
-            .'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>'
+            .($withFooter
+                ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>'
+                : '')
             .($logo !== null
                 ? '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/'.$logo['filename'].'"/>'
                 : '')
             .($logo !== null
                 ? '<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>'
                 : '')
+            .($content['numbering'] !== null
+                ? '<Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>'
+                : '')
+            .$images
             .'</Relationships>';
     }
 
@@ -402,7 +530,26 @@ final class DocxDocumentBuilder
             .'<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault>'
             .'<w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
             .'<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>'
+            .$this->headingStyleXml(1, 32)
+            .$this->headingStyleXml(2, 28)
+            .$this->headingStyleXml(3, 26)
+            .$this->headingStyleXml(4, 24)
+            .$this->headingStyleXml(5, 22)
+            .$this->headingStyleXml(6, 22)
             .'</w:styles>';
+    }
+
+    /**
+     * "heading N" styles, so Word's navigation pane (and a re-import into the
+     * template editor) recognise the headings written by the editor.
+     */
+    private function headingStyleXml(int $level, int $size): string
+    {
+        return '<w:style w:type="paragraph" w:styleId="Heading'.$level.'">'
+            .'<w:name w:val="heading '.$level.'"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>'
+            .'<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/><w:outlineLvl w:val="'.($level - 1).'"/></w:pPr>'
+            .'<w:rPr><w:b/><w:bCs/><w:sz w:val="'.$size.'"/><w:szCs w:val="'.$size.'"/></w:rPr>'
+            .'</w:style>';
     }
 
     /** @param array<string, string> $variables */

@@ -15,6 +15,7 @@ final class ClinicalDocumentTemplateCatalog
      *     group: string,
      *     title: string,
      *     body: string,
+     *     body_format: string,
      *     default_paper_size: string
      * }>
      */
@@ -39,6 +40,7 @@ final class ClinicalDocumentTemplateCatalog
      *     group: string,
      *     title: string,
      *     body: string,
+     *     body_format: string,
      *     default_paper_size: string
      * }|null
      */
@@ -60,6 +62,7 @@ final class ClinicalDocumentTemplateCatalog
      *     group: string,
      *     title: string,
      *     body: string,
+     *     body_format: string,
      *     default_paper_size: string
      * }>
      */
@@ -356,6 +359,7 @@ TEXT,
      *     group: string,
      *     title: string,
      *     body: string,
+     *     body_format: string,
      *     default_paper_size: string
      * }>
      */
@@ -401,6 +405,7 @@ TEXT,
      *     group: string,
      *     title: string,
      *     body: string,
+     *     body_format: string,
      *     default_paper_size: string
      * }>
      */
@@ -418,6 +423,7 @@ TEXT,
                 $template->title,
                 (string) $template->body,
                 strtoupper((string) $template->paper_size) === 'A5' ? 'A5' : 'A4',
+                TemplateBody::normalizeFormat($template->body_format),
             ))
             ->all();
 
@@ -431,6 +437,7 @@ TEXT,
      *     group: string,
      *     title: string,
      *     body: string,
+     *     body_format: string,
      *     default_paper_size: string
      * }
      */
@@ -441,6 +448,7 @@ TEXT,
         string $title,
         string $body,
         string $paperSize = 'A4',
+        string $bodyFormat = TemplateBody::FORMAT_TEXT,
     ): array {
         return [
             'key' => $key,
@@ -448,6 +456,7 @@ TEXT,
             'group' => $group,
             'title' => $title,
             'body' => $body,
+            'body_format' => $bodyFormat,
             'default_paper_size' => $paperSize,
         ];
     }

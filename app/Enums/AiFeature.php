@@ -16,6 +16,7 @@ enum AiFeature: string
     case ECG_ANALYSIS = 'ecg_analysis';
     case ECG_CHAT = 'ecg_chat';
     case COPILOT_CHAT = 'copilot_chat';
+    case DICTATION_TRANSCRIPTION = 'dictation_transcription';
 
     public function cost(): int
     {
@@ -33,6 +34,7 @@ enum AiFeature: string
             self::ECG_ANALYSIS => 'Lecture d’ECG',
             self::ECG_CHAT => 'Question sur un ECG',
             self::COPILOT_CHAT => 'Copilote',
+            self::DICTATION_TRANSCRIPTION => 'Dictée vocale (transcription)',
         };
     }
 
@@ -50,6 +52,7 @@ enum AiFeature: string
             self::ECG_ANALYSIS => 'Lecture ECG',
             self::ECG_CHAT => 'Question ECG',
             self::COPILOT_CHAT => 'Copilote',
+            self::DICTATION_TRANSCRIPTION => 'Dictée',
         };
     }
 
@@ -63,6 +66,16 @@ enum AiFeature: string
     }
 
     /**
+     * Whether the action turns recorded audio into text. It is served only by
+     * the transcription endpoints, never as a chat completion: it is priced
+     * as a speech-to-text call, not as a prompt.
+     */
+    public function transcribesAudio(): bool
+    {
+        return $this === self::DICTATION_TRANSCRIPTION;
+    }
+
+    /**
      * The model is chosen where the key lives (here, or on the hosted relay),
      * so a desktop can never pick a model on its own.
      */
@@ -70,6 +83,7 @@ enum AiFeature: string
     {
         return match (true) {
             $this === self::ECG_ANALYSIS, $this === self::ECG_CHAT => (string) config('ai.ecg_model'),
+            $this === self::DICTATION_TRANSCRIPTION => (string) config('ai.transcription_model'),
             $vision => (string) config('ai.vision_model'),
             default => (string) config('ai.model'),
         };

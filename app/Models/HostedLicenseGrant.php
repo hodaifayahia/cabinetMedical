@@ -27,6 +27,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $code_encrypted
  * @property string $code_suffix
  * @property CarbonImmutable|null $redeemed_at
+ * @property string|null $redeemed_installation_id
+ * @property string|null $redeemed_owner_email
  * @property CarbonImmutable|null $revoked_at
  */
 #[Fillable([
@@ -42,6 +44,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'code_encrypted',
     'code_suffix',
     'redeemed_at',
+    'redeemed_installation_id',
+    'redeemed_owner_email',
     'revoked_at',
 ])]
 #[Hidden(['code_hash', 'code_encrypted'])]

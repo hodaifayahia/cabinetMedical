@@ -10,6 +10,8 @@ enum FamilyRelation: string
     case WIFE = 'wife';
     case SON = 'son';
     case DAUGHTER = 'daughter';
+    case BROTHER = 'brother';
+    case SISTER = 'sister';
     case OTHER = 'other';
 
     public function label(): string
@@ -21,6 +23,8 @@ enum FamilyRelation: string
             self::WIFE => 'Épouse',
             self::SON => 'Fils',
             self::DAUGHTER => 'Fille',
+            self::BROTHER => 'Frère',
+            self::SISTER => 'Sœur',
             self::OTHER => 'Autre',
         };
     }

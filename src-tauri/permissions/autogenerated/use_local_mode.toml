@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-use-local-mode"
+description = "Enables the use_local_mode command without any pre-configured scope."
+commands.allow = ["use_local_mode"]
+
+[[permission]]
+identifier = "deny-use-local-mode"
+description = "Denies the use_local_mode command without any pre-configured scope."
+commands.deny = ["use_local_mode"]

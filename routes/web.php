@@ -12,12 +12,14 @@ use App\Http\Controllers\Appointments\ScheduleController;
 use App\Http\Controllers\Appointments\TimeOffController;
 use App\Http\Controllers\Appointments\WaitingRoomController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\Auth\AccountRecoveryController;
 use App\Http\Controllers\Auth\DesktopCabinetLoginController;
 use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
 use App\Http\Controllers\Auth\DesktopPinLoginController;
 use App\Http\Controllers\Auth\DesktopRestoreBackupController;
 use App\Http\Controllers\Auth\SessionLockController;
 use App\Http\Controllers\Cabinet\CabinetStatusController;
+use App\Http\Controllers\Cabinet\DesktopActivationController;
 use App\Http\Controllers\Cabinet\JoinCabinetController;
 use App\Http\Controllers\Cabinet\RedeemHostedLicenseCodeController;
 use App\Http\Controllers\Configuration\AccountingController;
@@ -26,6 +28,8 @@ use App\Http\Controllers\Configuration\ClinicIdentityController;
 use App\Http\Controllers\Configuration\ConnectivityAndBackupController;
 use App\Http\Controllers\Configuration\DocumentTemplateController;
 use App\Http\Controllers\Configuration\LicenseController;
+use App\Http\Controllers\Configuration\LocalBackupArchiveController;
+use App\Http\Controllers\Configuration\LocalNetworkController;
 use App\Http\Controllers\Configuration\MedicationController;
 use App\Http\Controllers\Configuration\OnlineServiceController;
 use App\Http\Controllers\Configuration\PrepareOfflineRestoreController;
@@ -49,6 +53,7 @@ use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\Patients\PatientAlertController;
 use App\Http\Controllers\Patients\PatientController;
 use App\Http\Controllers\Patients\PatientMergeController;
+use App\Http\Controllers\Patients\PatientRelativeController;
 use App\Http\Controllers\Patients\VaccinationController;
 use App\Http\Controllers\Payments\ExpenseController;
 use App\Http\Controllers\Payments\FinanceController;
@@ -159,6 +164,22 @@ Route::middleware('guest')->group(function (): void {
         ->name('desktop.cabinet-login.store');
 });
 
+// Forgotten password and PIN without e-mail: recovery codes, the poste
+// principal key file, or a cabinet manager (see AccountRecoveryService).
+Route::middleware('guest')->group(function (): void {
+    Route::get('account-recovery', [AccountRecoveryController::class, 'show'])
+        ->name('account-recovery.show');
+    Route::post('account-recovery/code', [AccountRecoveryController::class, 'resetWithCode'])
+        ->middleware('throttle:account-recovery')
+        ->name('account-recovery.code');
+    Route::post('account-recovery/device/key', [AccountRecoveryController::class, 'issueDeviceCode'])
+        ->middleware('throttle:6,1')
+        ->name('account-recovery.device.key');
+    Route::post('account-recovery/device', [AccountRecoveryController::class, 'resetWithDeviceCode'])
+        ->middleware('throttle:account-recovery')
+        ->name('account-recovery.device');
+});
+
 // Desktop PIN authentication is separate from Fortify's email/password flow.
 Route::post('desktop/pin/login', DesktopPinLoginController::class)
     ->middleware('throttle:desktop-pin-login')
@@ -188,6 +209,14 @@ Route::middleware('auth')->group(function (): void {
     Route::post('cabinet/license/redeem', RedeemHostedLicenseCodeController::class)
         ->middleware('throttle:license-activation')
         ->name('cabinet.license.redeem');
+    // An installed desktop's other activation paths: the cabinet's online
+    // account (which also links the poste), or a signed licence file offline.
+    Route::post('cabinet/license/online-account', [DesktopActivationController::class, 'onlineAccount'])
+        ->middleware('throttle:license-activation')
+        ->name('cabinet.license.online-account');
+    Route::post('cabinet/license/file', [DesktopActivationController::class, 'licenseFile'])
+        ->middleware('throttle:license-activation')
+        ->name('cabinet.license.file');
 });
 
 Route::middleware('auth')->prefix('session')->name('session-lock.')->group(function (): void {
@@ -237,6 +266,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('patients/{patient}/alerts', [PatientAlertController::class, 'store'])->name('patients.alerts.store');
             Route::patch('patient-alerts/{alert}/deactivate', [PatientAlertController::class, 'deactivate'])->name('patient-alerts.deactivate');
             Route::delete('patient-alerts/{alert}', [PatientAlertController::class, 'destroy'])->name('patient-alerts.destroy');
+            Route::get('patients/{patient}/relatives/search', [PatientRelativeController::class, 'search'])->name('patients.relatives.search');
+            Route::post('patients/{patient}/relatives', [PatientRelativeController::class, 'store'])->name('patients.relatives.store');
+            Route::delete('patients/{patient}/relatives/{relative}', [PatientRelativeController::class, 'destroy'])->name('patients.relatives.destroy');
         });
         Route::get('patient-duplicates', [PatientMergeController::class, 'duplicates'])
             ->middleware('permission:patients.delete')
@@ -371,6 +403,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('consultations.documents.analysis');
             });
 
+            // Voice dictation recorded in segments (desktop app): audio → text.
+            Route::post('consultations/{consultation}/dictation/transcribe', [ClinicalAiController::class, 'transcribeDictation'])
+                ->middleware(['permission:consultations.update', 'throttle:60,1'])
+                ->name('consultations.dictation.transcribe');
+
             Route::post('consultations/{consultation}/prescription', [ClinicalAiController::class, 'prescription'])
                 ->middleware(['permission:prescriptions.create', 'throttle:30,1'])
                 ->name('consultations.prescription');
@@ -492,6 +529,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 // Cabinet-authored consultation document templates ("modèles").
                 Route::get('document-templates', [DocumentTemplateController::class, 'index'])->name('document-templates.index');
                 Route::post('document-templates', [DocumentTemplateController::class, 'store'])->name('document-templates.store');
+                Route::post('document-templates/export-docx', [DocumentTemplateController::class, 'exportDocx'])->name('document-templates.export-docx');
                 Route::put('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'update'])->name('document-templates.update');
                 Route::delete('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
             });
@@ -518,6 +556,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('connectivity-backup.update');
 
             Route::middleware('permission:configuration.connectivity.manage')->group(function (): void {
+                Route::get('local-network', LocalNetworkController::class)->name('local-network.edit');
                 Route::get('online-service', [OnlineServiceController::class, 'edit'])->name('online-service.edit');
                 Route::post('online-service', [OnlineServiceController::class, 'store'])
                     ->middleware('throttle:6,1')
@@ -537,6 +576,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('backup/local/encrypted', [BackupController::class, 'encryptedLocal'])
                     ->middleware('password.confirm')
                     ->name('backup.local.encrypted');
+                Route::put('backup/destination', [LocalBackupArchiveController::class, 'updateDestination'])
+                    ->name('backup.destination.update');
+                Route::post('backup/destination/test', [LocalBackupArchiveController::class, 'testDestination'])
+                    ->middleware('throttle:20,1')
+                    ->name('backup.destination.test');
+                Route::get('backup/archives/download', [LocalBackupArchiveController::class, 'download'])
+                    ->middleware('password.confirm')
+                    ->name('backup.archives.download');
             });
 
             Route::middleware('permission:configuration.restore.manage')->group(function (): void {
@@ -546,6 +593,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('backup/restore/prepare', PrepareOfflineRestoreController::class)
                     ->middleware(['password.confirm', 'throttle:offline-restore-prepare'])
                     ->name('backup.restore.prepare');
+                Route::post('backup/archives/restore/prepare', [LocalBackupArchiveController::class, 'prepareRestore'])
+                    ->middleware(['password.confirm', 'throttle:10,1'])
+                    ->name('backup.archives.restore.prepare');
+                Route::post('backup/archives/restore/apply', [LocalBackupArchiveController::class, 'applyRestore'])
+                    ->middleware(['password.confirm', 'throttle:5,1'])
+                    ->name('backup.archives.restore.apply');
+                Route::delete('backup/archives/restore', [LocalBackupArchiveController::class, 'cancelRestore'])
+                    ->name('backup.archives.restore.cancel');
             });
 
             Route::middleware('permission:configuration.drive.manage')->group(function (): void {
@@ -621,6 +676,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('staff.seats.refresh');
             Route::put('staff/{user}', [StaffIndexController::class, 'update'])->name('staff.update');
             Route::delete('staff/{user}', [StaffIndexController::class, 'destroy'])->name('staff.destroy');
+            Route::delete('staff/{user}/pins', [StaffIndexController::class, 'resetPins'])->name('staff.pins.reset');
 
             Route::get('staff/pending', [PendingMemberController::class, 'index'])->name('staff.pending.index');
             Route::post('staff/pending/{user}/approve', [PendingMemberController::class, 'approve'])

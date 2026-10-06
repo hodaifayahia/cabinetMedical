@@ -27,6 +27,9 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import QRCodeGenerator from 'qrcode';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import TimeSelect24 from '@/components/appointments/TimeSelect24.vue';
+import BackupLocationPanel from '@/components/configuration/backup/BackupLocationPanel.vue';
+import InAppRestorePanel from '@/components/configuration/backup/InAppRestorePanel.vue';
+import LatestBackupsPanel from '@/components/configuration/backup/LatestBackupsPanel.vue';
 import ConfigurationTabs from '@/components/configuration/ConfigurationTabs.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -34,7 +37,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { postFormData, postJson } from '@/lib/http';
+import { postJson } from '@/lib/http';
 import {
     boundedDriveUploadAttempts,
     boundedDriveUploadBytes,
@@ -46,11 +49,6 @@ import {
     isGoogleAuthorizationUrl,
     openGoogleAuthorization,
 } from '@/pages/configuration/googleOAuthContract';
-import {
-    normalizeOfflineRestorePreparation,
-    offlineRestoreComponentLabel,
-    offlineRestorePreparationErrorMessage,
-} from '@/pages/configuration/restoreContract';
 import {
     normalizeNativeUpdateCheck,
     normalizeNativeUpdateInstallResponse,
@@ -64,9 +62,7 @@ import type {
     ConfigurationCapability,
     ConnectivityBackupPageProps,
     ConnectivityBackupSettings,
-    OfflineRestoreApplyResult,
-    OfflineRestorePreparation,
-    OfflineRestoreRuntimeState,
+    LocalBackupEntry,
     RemoteDriveBackup,
     RuntimeState,
     UploadMode,
@@ -89,6 +85,13 @@ const props = withDefaults(defineProps<ConnectivityBackupPageProps>(), {
     activeUploadSessions: () => [],
     pendingUploads: () => [],
     backupHistory: () => [],
+    latestBackups: () => [],
+    backupDestination: () => ({
+        internal_location: null,
+        copy_directory: null,
+        copy_keep: 10,
+        last_copy: null,
+    }),
     patients: () => [],
     qrDataUrl: null,
 });
@@ -140,20 +143,12 @@ const automaticDriveDisabling = ref(false);
 const backupNowProcessing = ref(false);
 const licenseForm = useForm({ serial: '' });
 const restoreForm = useForm<{ backup: File | null }>({ backup: null });
-const offlineRestoreFileInput = ref<HTMLInputElement | null>(null);
-const offlineRestoreArchive = ref<File | null>(null);
-const offlineRestoreArchiveName = ref<string | null>(null);
-const offlineRestorePassphrase = ref('');
-const offlineRestorePreparation = ref<OfflineRestorePreparation | null>(null);
-const offlineRestorePreparing = ref(false);
-const offlineRestoreApplying = ref(false);
-const offlineRestoreConfirmed = ref(false);
-const offlineRestoreError = ref<string | null>(null);
-const offlineRestoreApplyMessage = ref<string | null>(null);
-const offlineRestoreApplyStatus = ref<
-    OfflineRestoreApplyResult['status'] | null
->(null);
-const offlineRestoreRuntimeState = ref<OfflineRestoreRuntimeState>('unchanged');
+const backupNowToDrive = ref(false);
+const backupNowDrivePassphrase = ref('');
+const backupNowDrivePassphraseConfirmation = ref('');
+const inAppRestorePanel = ref<InstanceType<typeof InAppRestorePanel> | null>(
+    null,
+);
 
 const selectedBackupName = ref<string | null>(null);
 const revokingUploadId = ref<string | null>(null);
@@ -478,7 +473,11 @@ const backupNowError = computed(() => {
         page.props as { errors?: Record<string, string | undefined> }
     ).errors;
 
-    return errors?.backup_now;
+    return (
+        errors?.backup_now ??
+        errors?.drive_passphrase ??
+        errors?.drive_passphrase_confirmation
+    );
 });
 const backupSlotLabels = ['Matin', 'Midi', 'Soir'] as const;
 const formatBackupDateTime = (value: string | null): string | null => {
@@ -616,34 +615,6 @@ const canConnectDrive = computed(
         !props.backup.google_drive_connected &&
         browserOnline.value &&
         !driveConnectProcessing.value,
-);
-const offlineRestoreRecoveryRequired = computed(
-    () => offlineRestoreRuntimeState.value === 'offline_recovery_required',
-);
-const canPrepareOfflineRestore = computed(
-    () =>
-        !desktopShell &&
-        props.permissions.manage_restore &&
-        props.permissions.sensitive_actions_confirmed &&
-        props.capabilities.offline_restore.available &&
-        offlineRestoreArchive.value !== null &&
-        offlineRestorePassphrase.value.length >= 12 &&
-        offlineRestorePassphrase.value.length <= 1024 &&
-        !offlineRestorePreparing.value &&
-        !offlineRestoreApplying.value &&
-        !offlineRestoreRecoveryRequired.value,
-);
-const canApplyOfflineRestore = computed(
-    () =>
-        !desktopShell &&
-        props.permissions.manage_restore &&
-        props.permissions.sensitive_actions_confirmed &&
-        props.capabilities.offline_restore.available &&
-        offlineRestorePreparation.value !== null &&
-        offlineRestoreConfirmed.value &&
-        !offlineRestorePreparing.value &&
-        !offlineRestoreApplying.value &&
-        !offlineRestoreRecoveryRequired.value,
 );
 const activeUploadExpired = computed(
     () => remainingSeconds.value !== null && remainingSeconds.value <= 0,
@@ -861,8 +832,7 @@ const refreshRuntimeState = () => {
         form.processing ||
         uploadSessionForm.processing ||
         driveConnectProcessing.value ||
-        offlineRestorePreparing.value ||
-        offlineRestoreApplying.value ||
+        backupNowProcessing.value ||
         reviewingUploadId.value !== null
     ) {
         return;
@@ -872,10 +842,16 @@ const refreshRuntimeState = () => {
     router.reload({
         only: [
             'runtime',
+            // A Drive account connected in the system browser meanwhile must
+            // enable the Drive actions without a full reload.
+            'capabilities',
+            'permissions',
             'activeUploadSessions',
             'pendingUploads',
             'backup',
             'backupHistory',
+            'latestBackups',
+            'backupDestination',
             // A backup or Drive connection finished meanwhile must also
             // clear the reminder banner without a full navigation.
             'driveAutomation',
@@ -1291,111 +1267,6 @@ const testUploadSession = (id: string) => {
         },
     );
 };
-const chooseOfflineRestoreArchive = (event: Event) => {
-    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
-
-    offlineRestorePreparation.value = null;
-    offlineRestoreConfirmed.value = false;
-    offlineRestoreApplyMessage.value = null;
-    offlineRestoreApplyStatus.value = null;
-    offlineRestoreRuntimeState.value = 'unchanged';
-    offlineRestoreError.value = null;
-    offlineRestoreArchive.value = null;
-    offlineRestoreArchiveName.value = file?.name ?? null;
-
-    if (file === null) {
-        return;
-    }
-
-    if (
-        file.name.length > 255 ||
-        !/\.msbackup$/i.test(file.name) ||
-        /[/\\<>:"|?*\u0000-\u001f\u007f]/.test(file.name)
-    ) {
-        offlineRestoreError.value =
-            'Choisissez une archive Drclick portant l’extension .msbackup.';
-
-        return;
-    }
-
-    offlineRestoreArchive.value = file;
-};
-const resetOfflineRestorePreparation = () => {
-    if (offlineRestoreApplying.value || offlineRestoreRecoveryRequired.value) {
-        return;
-    }
-
-    offlineRestoreArchive.value = null;
-    offlineRestoreArchiveName.value = null;
-    offlineRestorePassphrase.value = '';
-    offlineRestorePreparation.value = null;
-    offlineRestoreConfirmed.value = false;
-    offlineRestoreError.value = null;
-    offlineRestoreApplyMessage.value = null;
-    offlineRestoreApplyStatus.value = null;
-    offlineRestoreRuntimeState.value = 'unchanged';
-
-    if (offlineRestoreFileInput.value !== null) {
-        offlineRestoreFileInput.value.value = '';
-    }
-};
-const prepareOfflineRestore = async () => {
-    if (
-        !canPrepareOfflineRestore.value ||
-        offlineRestoreArchive.value === null
-    ) {
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append(
-        'backup',
-        offlineRestoreArchive.value,
-        offlineRestoreArchive.value.name,
-    );
-    formData.append('passphrase', offlineRestorePassphrase.value);
-    offlineRestorePassphrase.value = '';
-    offlineRestorePreparing.value = true;
-    offlineRestorePreparation.value = null;
-    offlineRestoreConfirmed.value = false;
-    offlineRestoreError.value = null;
-    offlineRestoreApplyMessage.value = null;
-    offlineRestoreApplyStatus.value = null;
-    offlineRestoreRuntimeState.value = 'unchanged';
-
-    try {
-        const response = await postFormData<unknown>(
-            '/app/configuration/backup/restore/prepare',
-            formData,
-        );
-        const normalized = normalizeOfflineRestorePreparation(response);
-
-        if (normalized === null) {
-            throw new Error('invalid_offline_restore_preparation');
-        }
-
-        offlineRestorePreparation.value = normalized;
-        offlineRestoreArchive.value = null;
-    } catch (error) {
-        offlineRestoreError.value =
-            offlineRestorePreparationErrorMessage(error);
-    } finally {
-        formData.delete('passphrase');
-        formData.delete('backup');
-        offlineRestorePreparing.value = false;
-    }
-};
-const applyOfflineRestore = () => {
-    if (
-        !canApplyOfflineRestore.value ||
-        offlineRestorePreparation.value === null
-    ) {
-        return;
-    }
-
-    offlineRestoreError.value =
-        'L’application locale d’une archive n’est pas disponible dans le client hébergé. Contactez le support Drclick pour une restauration gérée côté serveur.';
-};
 const chooseLocalBackup = (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0] ?? null;
     restoreForm.backup = file;
@@ -1445,22 +1316,59 @@ const enableAutomaticDrive = () => {
             automaticDriveForm.reset('passphrase', 'passphrase_confirmation'),
     });
 };
-// Saves a verified archive on this PC now; the server also queues its Drive
-// copy when the doctor turned that on.
+// Saves a verified archive on this PC now (and its copy in the chosen
+// folder); the server also queues its Drive copy when the doctor turned that
+// on, or for this backup only when "Envoyer aussi sur Google Drive" is ticked.
+const backupNowDriveOffered = computed(
+    () =>
+        props.permissions.manage_drive &&
+        props.backup.google_drive_connected &&
+        props.capabilities.google_drive.available &&
+        !props.driveAutomation.enabled,
+);
+const backupNowDriveReady = computed(
+    () =>
+        !backupNowToDrive.value ||
+        !backupNowDriveOffered.value ||
+        (props.permissions.sensitive_actions_confirmed &&
+            backupNowDrivePassphrase.value.length >= 12 &&
+            backupNowDrivePassphrase.value ===
+                backupNowDrivePassphraseConfirmation.value),
+);
 const createBackupNow = () => {
-    if (!props.permissions.manage_backups || backupNowProcessing.value) {
+    if (
+        !props.permissions.manage_backups ||
+        backupNowProcessing.value ||
+        !backupNowDriveReady.value
+    ) {
         return;
     }
 
+    const sendToDrive = backupNowToDrive.value && backupNowDriveOffered.value;
+
     router.post(
         '/app/configuration/backup/now',
-        {},
+        sendToDrive
+            ? {
+                  send_to_drive: true,
+                  drive_passphrase: backupNowDrivePassphrase.value,
+                  drive_passphrase_confirmation:
+                      backupNowDrivePassphraseConfirmation.value,
+              }
+            : {},
         {
             preserveScroll: true,
             onStart: () => (backupNowProcessing.value = true),
-            onFinish: () => (backupNowProcessing.value = false),
+            onFinish: () => {
+                backupNowProcessing.value = false;
+                backupNowDrivePassphrase.value = '';
+                backupNowDrivePassphraseConfirmation.value = '';
+            },
         },
     );
+};
+const restoreListedBackup = (entry: LocalBackupEntry) => {
+    inAppRestorePanel.value?.selectArchive(entry);
 };
 const disableAutomaticDrive = () => {
     if (
@@ -3503,13 +3411,90 @@ const testDriveConnection = () => {
                         Drclick, choisissez « Restaurer une sauvegarde » et
                         sélectionnez un fichier .msbackup.
                     </p>
+                    <div
+                        v-if="backupNowDriveOffered"
+                        class="space-y-2 rounded-lg border border-emerald-200 bg-white/70 p-3 dark:border-emerald-900 dark:bg-slate-900/40"
+                    >
+                        <div class="flex items-start gap-2">
+                            <Checkbox
+                                id="backup-now-drive"
+                                :model-value="backupNowToDrive"
+                                :disabled="
+                                    backupNowProcessing ||
+                                    !permissions.sensitive_actions_confirmed
+                                "
+                                @update:model-value="
+                                    (value) =>
+                                        (backupNowToDrive = value === true)
+                                "
+                            />
+                            <Label
+                                for="backup-now-drive"
+                                class="leading-5 font-normal"
+                            >
+                                Envoyer aussi sur Google Drive (copie chiffrée)
+                            </Label>
+                        </div>
+                        <p
+                            v-if="!permissions.sensitive_actions_confirmed"
+                            class="text-xs text-muted-foreground"
+                        >
+                            Confirmez votre mot de passe (en haut de la page)
+                            pour envoyer cette sauvegarde vers Google Drive.
+                        </p>
+                        <div
+                            v-if="backupNowToDrive"
+                            class="grid gap-2 sm:grid-cols-2"
+                        >
+                            <div class="grid gap-1">
+                                <Label for="backup-now-drive-passphrase">
+                                    Phrase secrète
+                                </Label>
+                                <Input
+                                    id="backup-now-drive-passphrase"
+                                    v-model="backupNowDrivePassphrase"
+                                    type="password"
+                                    minlength="12"
+                                    maxlength="1024"
+                                    autocomplete="new-password"
+                                    :disabled="backupNowProcessing"
+                                />
+                            </div>
+                            <div class="grid gap-1">
+                                <Label
+                                    for="backup-now-drive-passphrase-confirmation"
+                                >
+                                    Confirmer la phrase secrète
+                                </Label>
+                                <Input
+                                    id="backup-now-drive-passphrase-confirmation"
+                                    v-model="
+                                        backupNowDrivePassphraseConfirmation
+                                    "
+                                    type="password"
+                                    minlength="12"
+                                    maxlength="1024"
+                                    autocomplete="new-password"
+                                    :disabled="backupNowProcessing"
+                                />
+                            </div>
+                            <p
+                                class="text-xs text-amber-800 sm:col-span-2 dark:text-amber-300"
+                            >
+                                12 caractères minimum. Elle chiffre la copie
+                                Drive et n’est pas enregistrée : notez-la, elle
+                                sera demandée pour restaurer cette archive.
+                            </p>
+                        </div>
+                    </div>
                     <InputError :message="backupNowError" />
                 </div>
                 <Button
                     type="button"
                     :disabled="
                         backupNowProcessing ||
-                        !capabilities.local_backups.available
+                        !capabilities.local_backups.available ||
+                        !backupNowDriveReady
                     "
                     @click="createBackupNow"
                 >
@@ -3525,6 +3510,13 @@ const testDriveConnection = () => {
                     }}
                 </Button>
             </article>
+
+            <BackupLocationPanel
+                v-if="permissions.manage_backups"
+                class="mt-6"
+                :destination="backupDestination"
+                :disabled="!capabilities.local_backups.available"
+            />
 
             <div class="mt-6 grid gap-4 lg:grid-cols-2">
                 <article
@@ -3724,6 +3716,36 @@ const testDriveConnection = () => {
                         </span>
                     </div>
                     <p
+                        v-if="backup.google_drive_reconnect_required"
+                        class="mt-2 flex gap-2 rounded-lg bg-red-50 p-3 text-xs text-red-800 dark:bg-red-950/30 dark:text-red-200"
+                        role="alert"
+                    >
+                        <AlertTriangle class="mt-0.5 size-4 shrink-0" />
+                        Google a refusé l’accès au compte
+                        {{ backup.google_drive_email ?? '' }} (autorisation
+                        expirée ou révoquée). Les envois vers Drive sont
+                        suspendus : reconnectez le compte Google Drive.
+                    </p>
+                    <p
+                        v-if="
+                            backup.google_drive_connected &&
+                            driveAutomation.last_issue
+                        "
+                        class="mt-2 flex gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+                        role="status"
+                    >
+                        <AlertTriangle class="mt-0.5 size-4 shrink-0" />
+                        <span>
+                            Dernière sauvegarde non envoyée vers Drive
+                            <template v-if="driveAutomation.last_issue.at">
+                                ({{
+                                    formatDate(driveAutomation.last_issue.at)
+                                }})
+                            </template>
+                            : {{ driveAutomation.last_issue.message }}
+                        </span>
+                    </p>
+                    <p
                         v-if="!backup.google_drive_connected"
                         class="mt-2 text-xs text-muted-foreground"
                     >
@@ -3896,7 +3918,7 @@ const testDriveConnection = () => {
                             {{
                                 driveAutomation.enabled
                                     ? 'Chacune des trois sauvegardes du jour, et chaque sauvegarde faite à la main, est aussi chiffrée puis envoyée vers ce Drive. La sauvegarde sur ce PC reste valable même si l’envoi échoue.'
-                                    : 'Facultatif : activez-le pour qu’une copie chiffrée de chaque sauvegarde parte aussi vers ce Drive.'
+                                    : 'Désactivé : les sauvegardes ne partent pas vers Drive d’elles-mêmes. Activez-le pour qu’une copie chiffrée de chaque sauvegarde y parte, ou cochez « Envoyer aussi sur Google Drive » lors d’une sauvegarde manuelle.'
                             }}
                         </p>
                         <form
@@ -4274,350 +4296,24 @@ const testDriveConnection = () => {
             </div>
         </section>
 
-        <section v-if="permissions.manage_restore" class="med-panel p-6">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <h2
-                        class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"
-                    >
-                        <RefreshCw class="size-5 text-amber-600" />
-                        Restaurer une archive chiffrée
-                    </h2>
-                    <p class="mt-1 max-w-3xl text-sm text-muted-foreground">
-                        Authentifiez d’abord l’archive .msbackup et contrôlez
-                        son contenu. Les données actives ne sont remplacées
-                        qu’après une seconde confirmation et une sauvegarde de
-                        sécurité supervisée.
-                    </p>
-                </div>
-                <span
-                    class="rounded-full border px-2.5 py-1 text-xs font-semibold"
-                    :class="capabilityClass(capabilities.offline_restore)"
-                >
-                    {{
-                        capabilities.offline_restore.available
-                            ? 'Superviseur prêt'
-                            : 'Indisponible'
-                    }}
-                </span>
-            </div>
+        <LatestBackupsPanel
+            v-if="permissions.manage_backups"
+            :entries="latestBackups"
+            :can-download="permissions.sensitive_actions_confirmed"
+            :can-restore="
+                (permissions.restore_backups ?? false) &&
+                capabilities.in_app_restore.available
+            "
+            :copy-folder-configured="backupDestination.copy_directory !== null"
+            @restore="restoreListedBackup"
+        />
 
-            <p
-                v-if="!capabilities.offline_restore.available"
-                class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-muted-foreground dark:border-slate-800 dark:bg-slate-950/30"
-            >
-                {{ capabilities.offline_restore.reason }}
-            </p>
-
-            <div
-                v-if="desktopShell && capabilities.offline_restore.available"
-                class="mt-4 flex gap-3 rounded-xl border border-brand bg-brand-soft/70 p-4 text-sm text-brand dark:border-brand dark:bg-brand-deep/25 dark:text-brand-soft"
-            >
-                <Cloud class="mt-0.5 size-5 shrink-0" />
-                <div>
-                    <p class="font-semibold">Restauration gérée côté serveur</p>
-                    <p class="mt-1">
-                        Le client hébergé n’applique aucune archive locale.
-                        Contactez le support Drclick pour organiser une
-                        restauration supervisée sur le serveur.
-                    </p>
-                </div>
-            </div>
-
-            <div
-                v-else-if="offlineRestoreRecoveryRequired"
-                class="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
-                role="alert"
-            >
-                <p class="flex items-center gap-2 font-semibold">
-                    <AlertTriangle class="size-4" />
-                    Récupération hors ligne requise
-                </p>
-                <p class="mt-2">
-                    Les actions de restauration restent bloquées pour éviter une
-                    nouvelle modification. Conservez l’ordinateur allumé et
-                    suivez le diagnostic fourni par le superviseur ou le support
-                    Drclick.
-                </p>
-            </div>
-
-            <div
-                v-else-if="!permissions.sensitive_actions_confirmed"
-                class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
-            >
-                Confirmez votre mot de passe avant de manipuler une archive de
-                restauration.
-                <a
-                    href="/app/configuration/connectivity-backup/confirm-sensitive-actions"
-                    class="ml-1 font-semibold underline underline-offset-2"
-                >
-                    Confirmer maintenant
-                </a>
-            </div>
-
-            <div
-                v-if="
-                    capabilities.offline_restore.available &&
-                    !desktopShell &&
-                    !offlineRestoreRecoveryRequired &&
-                    offlineRestorePreparation === null
-                "
-                class="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]"
-            >
-                <div class="grid gap-2">
-                    <Label for="offline-restore-backup">
-                        Archive Drclick chiffrée
-                    </Label>
-                    <label
-                        for="offline-restore-backup"
-                        class="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 px-4 py-2 text-sm font-medium hover:bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20"
-                        :class="
-                            (!permissions.sensitive_actions_confirmed ||
-                                offlineRestorePreparing) &&
-                            'pointer-events-none opacity-50'
-                        "
-                    >
-                        <Upload class="size-4 shrink-0" />
-                        <span class="min-w-0 break-all">
-                            {{
-                                offlineRestoreArchiveName ??
-                                'Choisir une archive .msbackup'
-                            }}
-                        </span>
-                    </label>
-                    <input
-                        id="offline-restore-backup"
-                        ref="offlineRestoreFileInput"
-                        class="sr-only"
-                        type="file"
-                        accept=".msbackup,application/octet-stream"
-                        :disabled="
-                            !permissions.sensitive_actions_confirmed ||
-                            offlineRestorePreparing
-                        "
-                        @change="chooseOfflineRestoreArchive"
-                    />
-                    <p class="text-xs text-muted-foreground">
-                        Le fichier est vérifié dans un espace temporaire géré.
-                        Aucun chemin local ni secret n’est renvoyé à l’écran.
-                    </p>
-                </div>
-
-                <div class="grid content-start gap-2">
-                    <Label for="offline-restore-passphrase">
-                        Phrase secrète de récupération
-                    </Label>
-                    <Input
-                        id="offline-restore-passphrase"
-                        v-model="offlineRestorePassphrase"
-                        type="password"
-                        minlength="12"
-                        maxlength="1024"
-                        autocomplete="off"
-                        :disabled="
-                            !permissions.sensitive_actions_confirmed ||
-                            offlineRestorePreparing
-                        "
-                        @keydown.enter.prevent="prepareOfflineRestore"
-                    />
-                    <p class="text-xs text-muted-foreground">
-                        La phrase est effacée de ce formulaire après chaque
-                        tentative.
-                    </p>
-                    <Button
-                        type="button"
-                        class="mt-1 w-fit"
-                        :disabled="!canPrepareOfflineRestore"
-                        @click="prepareOfflineRestore"
-                    >
-                        <LoaderCircle
-                            v-if="offlineRestorePreparing"
-                            class="size-4 animate-spin"
-                        />
-                        <ShieldCheck v-else class="size-4" />
-                        {{
-                            offlineRestorePreparing
-                                ? 'Authentification…'
-                                : 'Vérifier l’archive'
-                        }}
-                    </Button>
-                </div>
-            </div>
-
-            <div
-                v-if="offlineRestorePreparation"
-                class="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900 dark:bg-emerald-950/20"
-            >
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h3 class="flex items-center gap-2 font-semibold">
-                        <ShieldCheck class="size-4 text-emerald-600" />
-                        Archive authentifiée
-                    </h3>
-                    <span
-                        class="rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-slate-950 dark:text-emerald-300"
-                    >
-                        Aucune donnée active modifiée
-                    </span>
-                </div>
-
-                <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div>
-                        <dt class="text-xs text-muted-foreground">Créée le</dt>
-                        <dd class="mt-1 text-sm font-semibold">
-                            {{
-                                formatDate(
-                                    offlineRestorePreparation.backup.created_at,
-                                )
-                            }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs text-muted-foreground">
-                            Version Drclick
-                        </dt>
-                        <dd class="mt-1 text-sm font-semibold">
-                            {{
-                                offlineRestorePreparation.backup
-                                    .application_version
-                            }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs text-muted-foreground">
-                            Schéma de sauvegarde
-                        </dt>
-                        <dd class="mt-1 text-sm font-semibold">
-                            v{{
-                                offlineRestorePreparation.backup.schema_version
-                            }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs text-muted-foreground">
-                            Contenu total
-                        </dt>
-                        <dd class="mt-1 text-sm font-semibold">
-                            {{ offlineRestorePreparation.backup.file_count }}
-                            fichier(s) ·
-                            {{
-                                formatBytes(
-                                    offlineRestorePreparation.backup.size_bytes,
-                                )
-                            }}
-                        </dd>
-                    </div>
-                </dl>
-
-                <div class="mt-4 overflow-x-auto rounded-lg border">
-                    <table class="w-full text-left text-sm">
-                        <thead
-                            class="bg-muted/50 text-xs text-muted-foreground"
-                        >
-                            <tr>
-                                <th class="px-3 py-2 font-medium">Composant</th>
-                                <th class="px-3 py-2 font-medium">Fichiers</th>
-                                <th class="px-3 py-2 font-medium">Taille</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            <tr
-                                v-for="component in offlineRestorePreparation
-                                    .backup.components"
-                                :key="component.name"
-                            >
-                                <td class="px-3 py-2 font-medium">
-                                    {{
-                                        offlineRestoreComponentLabel(
-                                            component.name,
-                                        )
-                                    }}
-                                </td>
-                                <td class="px-3 py-2 text-muted-foreground">
-                                    {{ component.file_count }}
-                                </td>
-                                <td class="px-3 py-2 text-muted-foreground">
-                                    {{ formatBytes(component.size_bytes) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div
-                    class="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
-                >
-                    <p class="flex items-start gap-2 font-semibold">
-                        <AlertTriangle class="mt-0.5 size-4 shrink-0" />
-                        Cette opération arrête temporairement Drclick et
-                        remplace la base, les documents gérés et le logo par le
-                        contenu vérifié ci-dessus.
-                    </p>
-                    <div class="mt-3 flex items-start gap-2">
-                        <Checkbox
-                            id="offline-restore-confirmation"
-                            :model-value="offlineRestoreConfirmed"
-                            :disabled="offlineRestoreApplying"
-                            @update:model-value="
-                                offlineRestoreConfirmed = $event === true
-                            "
-                        />
-                        <Label
-                            for="offline-restore-confirmation"
-                            class="cursor-pointer leading-5"
-                        >
-                            J’ai contrôlé la date, la version et le contenu de
-                            cette archive. Je comprends que les données
-                            actuelles seront remplacées après création d’une
-                            sauvegarde de sécurité.
-                        </Label>
-                    </div>
-                </div>
-
-                <div class="mt-4 flex flex-wrap gap-2">
-                    <Button
-                        type="button"
-                        class="bg-red-700 text-white hover:bg-red-800"
-                        :disabled="!canApplyOfflineRestore"
-                        @click="applyOfflineRestore"
-                    >
-                        <LoaderCircle
-                            v-if="offlineRestoreApplying"
-                            class="size-4 animate-spin"
-                        />
-                        <RefreshCw v-else class="size-4" />
-                        Appliquer et redémarrer Drclick
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        :disabled="offlineRestoreApplying"
-                        @click="resetOfflineRestorePreparation"
-                    >
-                        Préparer une autre archive
-                    </Button>
-                </div>
-            </div>
-
-            <p
-                v-if="offlineRestoreApplyMessage && !offlineRestoreApplying"
-                class="mt-4 rounded-xl border p-4 text-sm"
-                :class="
-                    offlineRestoreApplyStatus === 'manual_recovery_required'
-                        ? 'border-red-300 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200'
-                        : 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200'
-                "
-                role="status"
-            >
-                {{ offlineRestoreApplyMessage }}
-            </p>
-            <p
-                v-if="offlineRestoreError"
-                class="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
-                role="alert"
-            >
-                {{ offlineRestoreError }}
-            </p>
-        </section>
+        <InAppRestorePanel
+            v-if="permissions.restore_backups"
+            ref="inAppRestorePanel"
+            :capability="capabilities.in_app_restore"
+            :confirmed="permissions.sensitive_actions_confirmed"
+        />
 
         <section
             v-if="permissions.manage_backups || permissions.manage_drive"
@@ -4750,6 +4446,12 @@ const testDriveConnection = () => {
                                         </p>
                                     </div>
                                     <p
+                                        v-if="entry.drive_failure_message"
+                                        class="max-w-80 text-xs text-red-700 dark:text-red-300"
+                                    >
+                                        {{ entry.drive_failure_message }}
+                                    </p>
+                                    <p
                                         v-if="
                                             boundedDriveUploadAttempts(
                                                 entry.drive_upload_attempts,
@@ -4837,36 +4539,5 @@ const testDriveConnection = () => {
                 </table>
             </div>
         </section>
-
-        <div
-            v-if="offlineRestoreApplying"
-            class="fixed inset-0 z-[100] grid place-items-center bg-slate-950/90 p-6 text-white"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="offline-restore-progress-title"
-            aria-describedby="offline-restore-progress-description"
-        >
-            <div class="max-w-lg text-center">
-                <LoaderCircle class="mx-auto size-12 animate-spin" />
-                <h2
-                    id="offline-restore-progress-title"
-                    class="mt-5 text-xl font-bold"
-                >
-                    Restauration supervisée en cours
-                </h2>
-                <p
-                    id="offline-restore-progress-description"
-                    class="mt-3 text-sm leading-6 text-slate-200"
-                >
-                    {{
-                        offlineRestoreApplyMessage ??
-                        'Drclick vérifie la sauvegarde de sécurité, remplace les données et redémarre ses services. N’éteignez pas cet ordinateur et ne fermez pas l’application.'
-                    }}
-                </p>
-                <p class="mt-3 text-xs text-slate-400">
-                    Cette étape ne peut pas être annulée depuis l’interface.
-                </p>
-            </div>
-        </div>
     </div>
 </template>

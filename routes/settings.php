@@ -3,6 +3,7 @@
 use App\Http\Controllers\Settings\IdleLockController;
 use App\Http\Controllers\Settings\LocalPinController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\RecoveryCodeController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('settings/local-pin', [LocalPinController::class, 'destroy'])
         ->middleware(['password.confirm', 'throttle:6,1'])
         ->name('security.local-pin.destroy');
+
+    Route::post('settings/recovery-codes', [RecoveryCodeController::class, 'store'])
+        ->middleware(['password.confirm', 'throttle:6,1'])
+        ->name('security.recovery-codes.store');
 
     Route::put('settings/idle-lock', [IdleLockController::class, 'update'])
         ->middleware(['password.confirm', 'throttle:6,1'])

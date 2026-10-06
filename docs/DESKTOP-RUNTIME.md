@@ -1,26 +1,102 @@
-# Drclick desktop runtime foundation (historical)
+# Drclick desktop runtime
 
-> **Superseded:** this document describes the removed bundled PHP/SQLite
-> runtime and is retained only as implementation history. It is not the
-> architecture shipped by the current installer.
+> The sections from "Implemented boundary" onwards are implementation history
+> of the original supervision core (ADR-001). The current architecture is
+> described here and in
+> [ADR-004](architecture/ADR-004-local-first-desktop-restored.md) and
+> [ADR-005](architecture/ADR-005-desktop-lan-host.md).
 
-## Current shipped boundary
+## Current shipped boundary (2026-10)
 
-The current Tauri application is a thin HTTPS client. It bundles no PHP
-runtime, clinical database, queue worker, scheduler, LAN listener, or offline
-restore engine. It opens the configured Drclick server and therefore requires
-that server to be reachable. A hosted server provides shared same-cabinet data
-while Internet connectivity is available; a separately installed Cabinet Hub
-can provide the same server boundary on a cabinet LAN.
+The Windows installer ships the PHP runtime, the production Laravel tree and an
+empty migrated SQLite template. Each installation chooses who owns the
+clinical database (`src-tauri/src/runtime_mode.rs`):
 
-The Cabinet Hub installer/service, PostgreSQL deployment, signed pairing,
-certificate pinning, and two-Windows-PC disconnected acceptance test are not
-part of this repository's current desktop bundle. Shared offline/LAN operation
-must not be advertised from this installer until those deliverables satisfy
-the acceptance criteria in
-[`ADR-002`](architecture/ADR-002-cabinet-hub-offline-lan.md).
+| Mode     | Who owns the data                              | Window origin                         |
+| -------- | ---------------------------------------------- | ------------------------------------- |
+| `local`  | this PC (default for a fresh installation)     | `http://127.0.0.1:<stable port>`      |
+| `attach` | the cabinet's *poste principal* (or a Hub)     | `http://<LAN IP>:47850` or `https://…` |
+| `cloud`  | the hosted service (pre-2026 installations)    | `https://drclickdz.com`               |
 
-The sections below document the former runtime only.
+Nothing in the clinical flow (sign-in, PIN, dashboard, patients, appointments,
+consultations, prescriptions, payments, documents, local backups) calls the
+Internet in `local` or `attach` mode. Only features that are online by nature
+use it: AI assistance and dictation transcription, Google Drive copies, the
+online-service link (seats, mobile appointment sync — scheduled in the
+background, never on a page load), licence refresh (scheduled) and the signed
+updater (background check).
+
+### Data and processes in `local` mode
+
+- Database: `%LOCALAPPDATA%\dz.click.medismart\data\database.sqlite` (WAL,
+  `busy_timeout` 5 s); storage under `data\storage`; logs under `logs`.
+- PHP built-in server on `127.0.0.1:<stable port>` (one worker), plus the
+  database queue worker and the scheduler, all supervised by the shell and
+  stopped with it (`LocalRuntime::shutdown`).
+- `php.ini` is generated per start (`runtime\php.ini`). When the payload ships
+  `php\cacert.pem` (staged by `scripts/desktop/stage-local-payload.mjs` from
+  the build machine's Mozilla bundle or `--ca-bundle`), it sets
+  `curl.cainfo` and `openssl.cafile` and exports `MEDISMART_CA_BUNDLE`,
+  `SSL_CERT_FILE` and `CURL_CA_BUNDLE`, so HTTPS from the bundled Windows PHP
+  no longer fails with "cURL error 60".
+- The same `php.ini` allows 32 GB uploads (`post_max_size`,
+  `upload_max_filesize`; Laravel caps a restore at 25 GiB) and one-hour
+  requests (`max_execution_time` / `max_input_time` = 3600), so a whole-clinic
+  restore or a Drive upload job (timeout 3500 s) is never cut by PHP.
+
+### Cabinet LAN: poste principal / poste secondaire (ADR-005)
+
+- **Poste principal.** Configuration › Réseau local › "Partager ce PC sur le
+  réseau du cabinet" persists `config\lan-host.json` and starts a *second*
+  supervised PHP listener on `0.0.0.0:47850` (`SupervisorConfig::lan_host_port`,
+  `PHP_CLI_SERVER_WORKERS=4`, `MEDISMART_LAN_HOST_ENABLED=true`,
+  `MEDISMART_LAN_HOST_PORT=47850`). The doctor's own window stays on the
+  loopback listener, so its origin, localStorage and PIN enrolment never move.
+  A UDP responder on port 47851 answers `DRCLICK_DISCOVER v1` with the PC name
+  and port. Both restart with the application while the setting is on.
+- **Laravel boundary.** `App\Services\LanHostBoundary` admits the whole
+  application on that listener only for private/link-local/ULA/loopback peers,
+  a `Host` of `<private IP>|<computer-name>|<name>.local` with the exact port,
+  no forwarding header and plain HTTP. Anything else is the usual 404 of
+  `EnforceRemoteUploadBoundary`. Requests that crossed it carry the
+  `medismart.lan_host_client` attribute
+  (`LanHostBoundary::isLanClientRequest()`). Google OAuth and detailed health
+  stay loopback-only.
+- **Poste secondaire.** The sign-in page (`components/desktop/LanJoinCard.vue`)
+  and the connection page (`src-tauri/frontend/index.html`) can discover the
+  host or take its address; `connect_to_lan_host` probes `/health`, persists
+  `attach` with the `http://` LAN origin (accepted only for private hosts, see
+  `connection::is_private_lan_host`) and restarts. `use_local_mode` /
+  `configure_local_mode` switch back and restart.
+- **Firewall.** Windows prompts on the first LAN listen; the page also offers
+  `open_lan_firewall`, which runs `netsh` elevated (UAC) to allow TCP 47850 and
+  UDP 47851 on private/domain profiles.
+- **Concurrency.** PHP ignores `PHP_CLI_SERVER_WORKERS` on Windows, so the LAN
+  listener answers one request at a time; the doctor's own window is not
+  affected because it uses the separate loopback listener.
+
+### Native commands and who may call them
+
+| Capability              | Origins                         | Commands |
+| ----------------------- | ------------------------------- | -------- |
+| `connection-setup`      | bundled `index.html`            | probe/configure server, `configure_local_mode`, `runtime_mode_status`, `discover_lan_hosts` |
+| `desktop-windows`       | loopback + hosted origins       | signed updater, `runtime_mode_status` |
+| `desktop-local-runtime` | `http://127.0.0.1:*` only       | `lan_host_status`, `set_lan_host`, `open_lan_firewall`, `discover_lan_hosts`, `connect_to_lan_host`, `use_local_mode`, `pick_backup_folder` |
+| `desktop-lan-client`    | private IPv4, bare names, `.local` (HTTP) | `runtime_mode_status`, `lan_host_status`, `use_local_mode`, signed updater |
+
+`pick_backup_folder` opens the native folder picker (tauri-plugin-dialog) and
+returns the chosen path or `null`.
+
+### Microphone
+
+The main window is created with WebView2 arguments that keep Tauri's defaults
+(`--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection`) and add
+`--use-fake-ui-for-media-stream`; a `PermissionRequested` handler also grants
+the microphone to the owning origin only. On a poste secondaire the LAN origin
+is added with `--unsafely-treat-insecure-origin-as-secure=<origin>` so
+`getUserMedia` works over plain HTTP, and that mode uses its own WebView2 data
+directory (`EBWebView-lan-<hash>`) because browser arguments are fixed per data
+directory while a browser process is alive.
 
 ## Implemented boundary
 

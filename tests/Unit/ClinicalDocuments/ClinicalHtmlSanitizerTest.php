@@ -63,4 +63,45 @@ HTML;
         $this->assertStringNotContainsString('rowspan="999"', $sanitized);
         $this->assertStringContainsString('border-collapse: collapse', $sanitized);
     }
+
+    public function test_it_keeps_the_document_editor_formatting_allowlist(): void
+    {
+        $html = '<p style="text-align: justify; line-height: 1.5; margin-left: 40px; text-indent: 20px">Paragraphe</p>'
+            .'<p><span style="font-family: &quot;Times New Roman&quot;, serif; font-size: 14pt; color: #c00000">Texte</span>'
+            .'<mark data-color="#fff2a8" style="background-color: #fff2a8; color: inherit">surligné</mark></p>'
+            .'<table style="min-width: 50px"><colgroup><col style="width: 120px"></colgroup><tbody><tr>'
+            .'<td colspan="1" rowspan="1" colwidth="120,80">A</td><td colwidth="javascript:1">B</td></tr></tbody></table>'
+            .'<div class="page-break other"></div><p class="tracker">Classe retirée</p>';
+
+        $sanitized = (string) (new ClinicalHtmlSanitizer)->sanitize($html);
+
+        $this->assertStringContainsString('text-align: justify', $sanitized);
+        $this->assertStringContainsString('line-height: 1.5', $sanitized);
+        $this->assertStringContainsString('margin-left: 40px', $sanitized);
+        $this->assertStringContainsString('text-indent: 20px', $sanitized);
+        $this->assertStringContainsString('font-size: 14pt', $sanitized);
+        $this->assertStringContainsString('font-family:', $sanitized);
+        $this->assertStringContainsString('data-color="#fff2a8"', $sanitized);
+        $this->assertStringContainsString('<colgroup><col style="width: 120px"></colgroup>', $sanitized);
+        $this->assertStringContainsString('colwidth="120,80"', $sanitized);
+        $this->assertStringNotContainsString('javascript', $sanitized);
+        $this->assertStringContainsString('<div class="page-break"></div>', $sanitized);
+        $this->assertStringNotContainsString('other', $sanitized);
+        $this->assertStringNotContainsString('tracker', $sanitized);
+        $this->assertStringContainsString('<p>Classe retirée</p>', $sanitized);
+    }
+
+    public function test_style_values_cannot_smuggle_urls_or_expressions(): void
+    {
+        $html = '<p style="line-height: expression(alert(1)); text-indent: url(https://x.test/a); vertical-align: top">x</p>'
+            .'<mark data-color="javascript:alert(1)">y</mark>';
+
+        $sanitized = (string) (new ClinicalHtmlSanitizer)->sanitize($html);
+
+        $this->assertStringContainsString('vertical-align: top', $sanitized);
+        $this->assertStringNotContainsString('expression', $sanitized);
+        $this->assertStringNotContainsString('url(', $sanitized);
+        $this->assertStringNotContainsString('javascript', $sanitized);
+        $this->assertStringContainsString('<mark>y</mark>', $sanitized);
+    }
 }

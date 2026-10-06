@@ -363,10 +363,40 @@
           "markdownDescription": "Enables the configure_server_connection command without any pre-configured scope."
         },
         {
+          "description": "Enables the connect_to_lan_host command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-connect-to-lan-host",
+          "markdownDescription": "Enables the connect_to_lan_host command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the discover_lan_hosts command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-discover-lan-hosts",
+          "markdownDescription": "Enables the discover_lan_hosts command without any pre-configured scope."
+        },
+        {
           "description": "Enables the install_signed_update command without any pre-configured scope.",
           "type": "string",
           "const": "allow-install-signed-update",
           "markdownDescription": "Enables the install_signed_update command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the lan_host_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-lan-host-status",
+          "markdownDescription": "Enables the lan_host_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open_lan_firewall command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-open-lan-firewall",
+          "markdownDescription": "Enables the open_lan_firewall command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the pick_backup_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-pick-backup-folder",
+          "markdownDescription": "Enables the pick_backup_folder command without any pre-configured scope."
         },
         {
           "description": "Enables the probe_server_connection command without any pre-configured scope.",
@@ -381,10 +411,22 @@
           "markdownDescription": "Enables the runtime_mode_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the set_lan_host command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-set-lan-host",
+          "markdownDescription": "Enables the set_lan_host command without any pre-configured scope."
+        },
+        {
           "description": "Enables the signed_updater_status command without any pre-configured scope.",
           "type": "string",
           "const": "allow-signed-updater-status",
           "markdownDescription": "Enables the signed_updater_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the use_local_mode command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-use-local-mode",
+          "markdownDescription": "Enables the use_local_mode command without any pre-configured scope."
         },
         {
           "description": "Denies the check_for_signed_update command without any pre-configured scope.",
@@ -405,10 +447,40 @@
           "markdownDescription": "Denies the configure_server_connection command without any pre-configured scope."
         },
         {
+          "description": "Denies the connect_to_lan_host command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-connect-to-lan-host",
+          "markdownDescription": "Denies the connect_to_lan_host command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the discover_lan_hosts command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-discover-lan-hosts",
+          "markdownDescription": "Denies the discover_lan_hosts command without any pre-configured scope."
+        },
+        {
           "description": "Denies the install_signed_update command without any pre-configured scope.",
           "type": "string",
           "const": "deny-install-signed-update",
           "markdownDescription": "Denies the install_signed_update command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the lan_host_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-lan-host-status",
+          "markdownDescription": "Denies the lan_host_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open_lan_firewall command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-open-lan-firewall",
+          "markdownDescription": "Denies the open_lan_firewall command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the pick_backup_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-pick-backup-folder",
+          "markdownDescription": "Denies the pick_backup_folder command without any pre-configured scope."
         },
         {
           "description": "Denies the probe_server_connection command without any pre-configured scope.",
@@ -423,10 +495,22 @@
           "markdownDescription": "Denies the runtime_mode_status command without any pre-configured scope."
         },
         {
+          "description": "Denies the set_lan_host command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-set-lan-host",
+          "markdownDescription": "Denies the set_lan_host command without any pre-configured scope."
+        },
+        {
           "description": "Denies the signed_updater_status command without any pre-configured scope.",
           "type": "string",
           "const": "deny-signed-updater-status",
           "markdownDescription": "Denies the signed_updater_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the use_local_mode command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-use-local-mode",
+          "markdownDescription": "Denies the use_local_mode command without any pre-configured scope."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",
@@ -2443,6 +2527,72 @@
           "type": "string",
           "const": "core:window:deny-unminimize",
           "markdownDescription": "Denies the unminimize command without any pre-configured scope."
+        },
+        {
+          "description": "This permission set configures the types of dialogs\navailable from the dialog plugin.\n\n#### Granted Permissions\n\nAll dialog types are enabled.\n\n\n\n#### This default permission set includes:\n\n- `allow-message`\n- `allow-save`\n- `allow-open`",
+          "type": "string",
+          "const": "dialog:default",
+          "markdownDescription": "This permission set configures the types of dialogs\navailable from the dialog plugin.\n\n#### Granted Permissions\n\nAll dialog types are enabled.\n\n\n\n#### This default permission set includes:\n\n- `allow-message`\n- `allow-save`\n- `allow-open`"
+        },
+        {
+          "description": "Enables the ask command without any pre-configured scope. (**DEPRECATED**: This is now an alias to `allow-message` and will be removed in v3)",
+          "type": "string",
+          "const": "dialog:allow-ask",
+          "markdownDescription": "Enables the ask command without any pre-configured scope. (**DEPRECATED**: This is now an alias to `allow-message` and will be removed in v3)"
+        },
+        {
+          "description": "Enables the confirm command without any pre-configured scope. (**DEPRECATED**: This is now an alias to `allow-message` and will be removed in v3)",
+          "type": "string",
+          "const": "dialog:allow-confirm",
+          "markdownDescription": "Enables the confirm command without any pre-configured scope. (**DEPRECATED**: This is now an alias to `allow-message` and will be removed in v3)"
+        },
+        {
+          "description": "Enables the message command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:allow-message",
+          "markdownDescription": "Enables the message command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:allow-open",
+          "markdownDescription": "Enables the open command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:allow-save",
+          "markdownDescription": "Enables the save command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ask command without any pre-configured scope. (**DEPRECATED**: This is now an alias to `deny-message` and will be removed in v3)",
+          "type": "string",
+          "const": "dialog:deny-ask",
+          "markdownDescription": "Denies the ask command without any pre-configured scope. (**DEPRECATED**: This is now an alias to `deny-message` and will be removed in v3)"
+        },
+        {
+          "description": "Denies the confirm command without any pre-configured scope. (**DEPRECATED**: This is now an alias to `deny-message` and will be removed in v3)",
+          "type": "string",
+          "const": "dialog:deny-confirm",
+          "markdownDescription": "Denies the confirm command without any pre-configured scope. (**DEPRECATED**: This is now an alias to `deny-message` and will be removed in v3)"
+        },
+        {
+          "description": "Denies the message command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:deny-message",
+          "markdownDescription": "Denies the message command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:deny-open",
+          "markdownDescription": "Denies the open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save command without any pre-configured scope.",
+          "type": "string",
+          "const": "dialog:deny-save",
+          "markdownDescription": "Denies the save command without any pre-configured scope."
         },
         {
           "description": "This permission set allows opening `mailto:`, `tel:`, `https://` and `http://` urls using their default application\nas well as reveal file in directories using default file explorer\n#### This default permission set includes:\n\n- `allow-open-url`\n- `allow-reveal-item-in-dir`\n- `allow-default-urls`",

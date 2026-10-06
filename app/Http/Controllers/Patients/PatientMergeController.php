@@ -35,6 +35,7 @@ class PatientMergeController extends Controller
         'encounters' => 'Actes',
         'clinical_observations' => 'Observations',
         'consultation_diagnoses' => 'Diagnostics codés',
+        'patient_relatives' => 'Liens familiaux',
     ];
 
     private const FIELD_LABELS = [
@@ -55,8 +56,8 @@ class PatientMergeController extends Controller
         'referred_by' => 'Adressé par',
         'emergency_contact_name' => 'Contact d’urgence',
         'emergency_contact_phone' => 'Téléphone d’urgence',
-        'allergies' => 'Allergies',
-        'antecedents_medical' => 'Antécédents médicaux',
+        'allergies' => 'Allergies et réactions connues',
+        'antecedents_medical' => 'Maladies chroniques / antécédents médicaux',
         'antecedents_surgical' => 'Antécédents chirurgicaux',
         'antecedents_family' => 'Antécédents familiaux',
         'antecedents_gyneco' => 'Antécédents gynéco-obstétricaux',

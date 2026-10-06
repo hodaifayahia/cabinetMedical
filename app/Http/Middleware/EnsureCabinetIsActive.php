@@ -59,6 +59,8 @@ class EnsureCabinetIsActive
         return $request->routeIs(
             'cabinet.pending',
             'cabinet.license.redeem',
+            'cabinet.license.online-account',
+            'cabinet.license.file',
             'cabinet.sign-out',
             'cabinet.awaiting-approval',
             'desktop.pin.enroll',

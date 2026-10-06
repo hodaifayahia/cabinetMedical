@@ -1,5 +1,6 @@
 mod diagnostics;
 mod installation;
+mod lan_host;
 #[cfg(feature = "supervisor")]
 mod lan_upload;
 mod logging;
@@ -19,6 +20,12 @@ mod tunnel;
 
 pub use diagnostics::{RuntimePhase, RuntimeSnapshot};
 pub use installation::{load_or_create_installation_identity, InstallationIdentity};
+pub use lan_host::{
+    default_discovery_targets, discover_lan_hosts, is_private_lan_ipv4, lan_host_settings_path,
+    load_lan_host_settings, local_computer_name, private_lan_addresses, save_lan_host_settings,
+    validate_lan_host_port, DiscoveredLanHost, LanAddress, LanDiscoveryResponder,
+    LanHostAdvertisement, LanHostSettings, DEFAULT_LAN_HOST_PORT, LAN_DISCOVERY_PORT,
+};
 #[cfg(feature = "supervisor")]
 pub use lan_upload::{
     discover_lan_adapter_candidates, load_lan_listener_settings, LanAdapterCandidate,

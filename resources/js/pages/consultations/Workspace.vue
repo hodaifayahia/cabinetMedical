@@ -38,12 +38,14 @@ import BilansPanel from '@/components/consultations/BilansPanel.vue';
 import CourbesPanel from '@/components/consultations/CourbesPanel.vue';
 import CourriersPanel from '@/components/consultations/CourriersPanel.vue';
 import DiagnosisCodes from '@/components/consultations/DiagnosisCodes.vue';
+import DictationStatus from '@/components/consultations/DictationStatus.vue';
 import { familyRelationLabel } from '@/components/consultations/display';
 import DocumentsPanel from '@/components/consultations/DocumentsPanel.vue';
 import OrdonnancesPanel from '@/components/consultations/OrdonnancesPanel.vue';
 import type { PrescriptionProtocol } from '@/components/consultations/PrescriptionProtocols.vue';
 import RendezVousPanel from '@/components/consultations/RendezVousPanel.vue';
 import InputError from '@/components/InputError.vue';
+import FamilyFindings from '@/components/patients/FamilyFindings.vue';
 import PatientSafetyBanner from '@/components/patients/PatientSafetyBanner.vue';
 import type { PatientSafetySummary } from '@/components/patients/PatientSafetyBanner.vue';
 import { Button } from '@/components/ui/button';
@@ -63,9 +65,20 @@ import type {
     ConsultationDraft,
     ConsultationSuggestion,
 } from '@/lib/ai';
-import { consultationAiUrl, runAi } from '@/lib/ai';
+import { consultationAiUrl, runAi, transcribeDictation } from '@/lib/ai';
 import { bindAiWorkspace } from '@/lib/aiWorkspace';
 import { isValidationError, postJson } from '@/lib/http';
+import {
+    firstDegreeAlerts,
+    formatRelativeFinding,
+    PATIENT_HISTORY_MAX,
+    patientHistoryLabel,
+} from '@/lib/patientHistory';
+import type { FamilyMedicalRelative } from '@/lib/patientHistory';
+import {
+    maxCollectable,
+    projectedOutstanding as projectOutstanding,
+} from '@/pages/payments/display';
 import type {
     BilanTemplate,
     ClinicalDocument,
@@ -142,6 +155,7 @@ type PatientInfo = {
     antecedents_family: string | null;
     antecedents_gyneco: string | null;
     antecedents_other: string | null;
+    updated_at?: string | null;
 };
 
 type ConsultationData = {
@@ -149,6 +163,7 @@ type ConsultationData = {
     status: string;
     consulted_at: string | null;
     completed_at: string | null;
+    updated_at?: string | null;
     motif: string | null;
     examens: string | null;
     diagnostic: string | null;
@@ -194,6 +209,7 @@ const props = defineProps<{
         contact_name: string | null;
     };
     familyHistory: FamilyConsultation[];
+    familyMedical: FamilyMedicalRelative[];
     patientDebt: {
         total: number;
         consultations: {
@@ -457,12 +473,16 @@ const paymentForm = useForm({
     client_reference: newPaymentReference(),
 });
 
+// Whole-cent arithmetic (shared with the payments journal) so the max
+// attribute never rejects a valid amount because of float leftovers.
+const collectableNow = computed(() =>
+    maxCollectable(paymentForm.amount, props.consultation.payment_paid),
+);
 const projectedOutstanding = computed(() =>
-    Math.max(
-        0,
-        Number(paymentForm.amount || 0) -
-            props.consultation.payment_paid -
-            Number(paymentForm.paid_today || 0),
+    projectOutstanding(
+        paymentForm.amount,
+        props.consultation.payment_paid,
+        paymentForm.paid_today,
     ),
 );
 const patientDebtUrl = computed(
@@ -480,6 +500,9 @@ const isCompleted = computed(() => props.consultation.status === 'completed');
 
 let patientAutosaveTimer: number | null = null;
 let consultationAutosaveTimer: number | null = null;
+let patientSaveQueued = false;
+let workspaceUnmounted = false;
+const patientSaveError = ref<string | null>(null);
 
 const patientDraft = () => ({
     first_name: patientForm.first_name,
@@ -518,42 +541,135 @@ const consultationDraft = () => ({
     payment_service: consultationForm.payment_service,
 });
 
-const saveOfflineDraft = () => {
-    const savedAt = new Date().toISOString();
-    localStorage.setItem(
-        offlineDraftKey,
-        JSON.stringify({
-            patient: patientDraft(),
-            consultation: consultationDraft(),
-            savedAt,
-        }),
-    );
-    offlineDraftSavedAt.value = savedAt;
+type OfflineDraft = {
+    patient?: Record<string, unknown>;
+    consultation?: Record<string, unknown>;
+    savedAt?: string;
+    /** The server versions (updated_at) the draft was written over. */
+    patientBasedOn?: string | null;
+    consultationBasedOn?: string | null;
 };
 
-const applyOfflineDraft = () => {
-    const raw = localStorage.getItem(offlineDraftKey);
-
-    if (!raw) {
-        return null;
-    }
-
+const readOfflineDraft = (): OfflineDraft | null => {
     try {
-        const draft = JSON.parse(raw) as {
-            patient?: Record<string, unknown>;
-            consultation?: Record<string, unknown>;
-            savedAt?: string;
-        };
-        Object.assign(patientForm, draft.patient ?? {});
-        Object.assign(consultationForm, draft.consultation ?? {});
-        offlineDraftSavedAt.value = draft.savedAt ?? null;
+        const raw = localStorage.getItem(offlineDraftKey);
 
-        return draft;
+        return raw ? (JSON.parse(raw) as OfflineDraft) : null;
     } catch {
-        localStorage.removeItem(offlineDraftKey);
+        try {
+            localStorage.removeItem(offlineDraftKey);
+        } catch {
+            // Storage unavailable: nothing to clean up.
+        }
 
         return null;
     }
+};
+
+const writeOfflineDraft = (draft: OfflineDraft | null) => {
+    try {
+        if (draft && (draft.patient || draft.consultation)) {
+            localStorage.setItem(offlineDraftKey, JSON.stringify(draft));
+            offlineDraftSavedAt.value = draft.savedAt ?? null;
+        } else {
+            localStorage.removeItem(offlineDraftKey);
+            offlineDraftSavedAt.value = null;
+        }
+    } catch {
+        // Storage unavailable (private mode, quota): keep working online.
+    }
+};
+
+const saveOfflineDraft = () => {
+    writeOfflineDraft({
+        patient: patientDraft(),
+        consultation: consultationDraft(),
+        savedAt: new Date().toISOString(),
+        patientBasedOn: props.patient.updated_at ?? null,
+        consultationBasedOn: props.consultation.updated_at ?? null,
+    });
+};
+
+/**
+ * A local draft only replaces what the server holds when it is still the
+ * latest version: written over the same server version, or (older drafts
+ * without a version) after the server's last save.
+ */
+const draftIsCurrent = (
+    draft: OfflineDraft,
+    basedOn: string | null | undefined,
+    serverUpdatedAt: string | null | undefined,
+): boolean => {
+    if (basedOn !== undefined) {
+        return (basedOn ?? null) === (serverUpdatedAt ?? null);
+    }
+
+    if (!draft.savedAt) {
+        return false;
+    }
+
+    if (!serverUpdatedAt) {
+        return true;
+    }
+
+    const draftTime = Date.parse(draft.savedAt);
+    const serverTime = Date.parse(serverUpdatedAt);
+
+    return (
+        !Number.isNaN(draftTime) &&
+        (Number.isNaN(serverTime) || draftTime > serverTime)
+    );
+};
+
+const applyOfflineDraft = (): OfflineDraft | null => {
+    const draft = readOfflineDraft();
+
+    if (!draft) {
+        return null;
+    }
+
+    const current: OfflineDraft = {
+        savedAt: draft.savedAt,
+        patientBasedOn: draft.patientBasedOn,
+        consultationBasedOn: draft.consultationBasedOn,
+    };
+
+    if (
+        draft.patient &&
+        draftIsCurrent(draft, draft.patientBasedOn, props.patient.updated_at)
+    ) {
+        Object.assign(patientForm, draft.patient);
+        current.patient = draft.patient;
+    }
+
+    if (
+        draft.consultation &&
+        draftIsCurrent(
+            draft,
+            draft.consultationBasedOn,
+            props.consultation.updated_at,
+        )
+    ) {
+        Object.assign(consultationForm, draft.consultation);
+        current.consultation = draft.consultation;
+    }
+
+    // A stale part (the server was saved since) is dropped for good.
+    writeOfflineDraft(current);
+
+    return current.patient || current.consultation ? current : null;
+};
+
+/** Forget one part of the local draft once the server has it. */
+const clearOfflineDraftPart = (part: 'patient' | 'consultation') => {
+    const draft = readOfflineDraft();
+
+    if (!draft || !draft[part]) {
+        return;
+    }
+
+    delete draft[part];
+    writeOfflineDraft(draft);
 };
 
 const schedulePatientAutosave = () => {
@@ -567,10 +683,8 @@ const schedulePatientAutosave = () => {
 
     patientAutosaveTimer = window.setTimeout(() => {
         patientAutosaveTimer = null;
-
-        if (!patientForm.processing) {
-            savePatient();
-        }
+        // Queued behind a save still in flight, never dropped.
+        savePatient();
     }, 700);
 };
 
@@ -640,33 +754,20 @@ watch(
 const updateOnlineState = () => {
     isOnline.value = navigator.onLine;
 
-    if (isOnline.value && localStorage.getItem(offlineDraftKey)) {
-        const draft = applyOfflineDraft();
-        let synced = 0;
-        const markSynced = () => {
-            synced += 1;
+    if (!isOnline.value) {
+        return;
+    }
 
-            if (synced === 2) {
-                localStorage.removeItem(offlineDraftKey);
-                offlineDraftSavedAt.value = null;
-            }
-        };
+    // Back online: send what was kept on this device. Each part leaves the
+    // local draft once the server has accepted it.
+    const draft = applyOfflineDraft();
 
-        if (draft) {
-            patientForm.put(
-                `/app/consultations/${props.consultation.id}/patient`,
-                {
-                    preserveScroll: true,
-                    onSuccess: markSynced,
-                },
-            );
-            consultationForm
-                .transform((data) => ({ ...data, complete: false }))
-                .put(`/app/consultations/${props.consultation.id}`, {
-                    preserveScroll: true,
-                    onSuccess: markSynced,
-                });
-        }
+    if (draft?.patient) {
+        savePatient();
+    }
+
+    if (draft?.consultation) {
+        saveConsultation(false);
     }
 };
 
@@ -677,6 +778,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+    workspaceUnmounted = true;
     window.removeEventListener('online', updateOnlineState);
     window.removeEventListener('offline', updateOnlineState);
 
@@ -689,6 +791,12 @@ onBeforeUnmount(() => {
     }
 });
 
+/**
+ * Saves the dossier (état civil, antécédents). A change made while a save is
+ * in flight is queued and sent right after it, so nothing typed is lost. The
+ * request is asynchronous: it never interrupts (nor is interrupted by) the
+ * consultation save.
+ */
 const savePatient = () => {
     if (!isOnline.value) {
         saveOfflineDraft();
@@ -696,8 +804,39 @@ const savePatient = () => {
         return;
     }
 
+    if (patientForm.processing) {
+        patientSaveQueued = true;
+
+        return;
+    }
+
+    patientSaveQueued = false;
+
     patientForm.put(`/app/consultations/${props.consultation.id}/patient`, {
         preserveScroll: true,
+        async: true,
+        onSuccess: () => {
+            patientSaveError.value = null;
+            clearOfflineDraftPart('patient');
+        },
+        onError: (errors) => {
+            patientSaveError.value =
+                Object.values(errors)[0] ??
+                'Le dossier patient n’a pas pu être enregistré.';
+        },
+        onNetworkError: () => {
+            saveOfflineDraft();
+            patientSaveError.value =
+                'Connexion au serveur impossible : les modifications sont gardées sur cet appareil.';
+        },
+        onCancel: () => {
+            patientSaveQueued = true;
+        },
+        onFinish: () => {
+            if (patientSaveQueued && !workspaceUnmounted) {
+                savePatient();
+            }
+        },
     });
 };
 const saveConsultation = (complete: boolean) => {
@@ -711,6 +850,7 @@ const saveConsultation = (complete: boolean) => {
         .transform((data) => ({ ...data, complete }))
         .put(`/app/consultations/${props.consultation.id}`, {
             preserveScroll: true,
+            onSuccess: () => clearOfflineDraftPart('consultation'),
         });
 };
 
@@ -924,28 +1064,35 @@ const appendToExamens = (text: string) => {
     active.value = 'dossier';
 };
 
-const dictation = useDictation();
+// In the desktop app the browser recognition has no service behind it: the
+// microphone is recorded and transcribed by the server instead.
+const dictation = useDictation('fr-FR', {
+    transcribe: (audio) => transcribeDictation(props.consultation.id, audio),
+});
 const dictationOpen = ref(false);
 
 const toggleDictation = () => {
     dictationOpen.value = true;
 
     if (dictation.listening.value) {
-        dictation.stop();
+        void dictation.stop();
     } else {
         dictation.start();
     }
 };
 
 const structureDictation = async () => {
-    dictation.stop();
+    visitSuggestionLoading.value = true;
+    // Waits for the last recorded segment to be transcribed.
+    await dictation.stop();
     const transcript = dictation.transcript.value.trim();
 
     if (!transcript) {
+        visitSuggestionLoading.value = false;
+
         return;
     }
 
-    visitSuggestionLoading.value = true;
     visitSuggestionFailure.value = null;
 
     try {
@@ -1005,6 +1152,17 @@ const displayDate = (date: string | null): string => {
     return year && month && day ? day + '/' + month + '/' + year : date;
 };
 
+const optionLabel = (options: Option[], value: string | null): string | null =>
+    value
+        ? (options.find((option) => option.value === value)?.label ?? value)
+        : null;
+
+// Relatives' findings, and the first-degree ones (parents, siblings,
+// children) with a chronic disease or an allergy, shown as a notice.
+const familyAlerts = computed(() =>
+    firstDegreeAlerts(props.familyMedical ?? []),
+);
+
 const patientHistoryFields = computed(() =>
     [
         { label: 'N° patient', value: props.patient.patient_number },
@@ -1026,31 +1184,35 @@ const patientHistoryFields = computed(() =>
         { label: 'Adresse', value: props.patient.address },
         { label: 'Ville', value: props.patient.city },
         { label: 'Groupe sanguin', value: props.patient.blood_group },
-        { label: 'Situation familiale', value: props.patient.marital_status },
+        {
+            label: 'Situation familiale',
+            value: optionLabel(
+                props.options.maritalStatuses,
+                props.patient.marital_status,
+            ),
+        },
         { label: 'Profession', value: props.patient.profession },
-        { label: 'Tabagisme', value: props.patient.smoking_status },
+        {
+            label: 'Tabagisme',
+            value: optionLabel(
+                props.options.smokingStatuses,
+                props.patient.smoking_status,
+            ),
+        },
         { label: 'Orienté par', value: props.patient.referred_by },
-        { label: 'Allergies', value: props.patient.allergies },
-        {
-            label: 'Antécédents médicaux',
-            value: props.patient.antecedents_medical,
-        },
-        {
-            label: 'Antécédents chirurgicaux',
-            value: props.patient.antecedents_surgical,
-        },
-        {
-            label: 'Antécédents familiaux',
-            value: props.patient.antecedents_family,
-        },
-        {
-            label: 'Antécédents gynéco-obstétricaux',
-            value: props.patient.antecedents_gyneco,
-        },
-        {
-            label: 'Autres antécédents',
-            value: props.patient.antecedents_other,
-        },
+        ...(
+            [
+                'allergies',
+                'antecedents_medical',
+                'antecedents_surgical',
+                'antecedents_family',
+                'antecedents_gyneco',
+                'antecedents_other',
+            ] as const
+        ).map((key) => ({
+            label: patientHistoryLabel(key),
+            value: props.patient[key],
+        })),
     ].filter(
         (field): field is { label: string; value: string } =>
             field.value !== null &&
@@ -1175,6 +1337,38 @@ const tabClass = (activeTab: boolean): string =>
                 :can-edit="canEditSafety"
                 :consultation-id="consultation.id"
             />
+            <section
+                v-if="familyAlerts.length"
+                class="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-500/40 dark:bg-amber-500/10"
+                aria-label="Antécédents familiaux détectés"
+                data-testid="family-history-notice"
+            >
+                <p
+                    class="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-200"
+                >
+                    <HeartPulse class="size-4 shrink-0" />
+                    Antécédents familiaux détectés
+                </p>
+                <ul class="mt-1.5 grid gap-1">
+                    <li
+                        v-for="relative in familyAlerts"
+                        :key="relative.patient_id"
+                        class="text-amber-900 dark:text-amber-100"
+                    >
+                        {{ formatRelativeFinding(relative) }}
+                    </li>
+                </ul>
+                <button
+                    type="button"
+                    class="mt-1.5 text-xs font-medium text-amber-800 underline-offset-2 hover:underline dark:text-amber-300"
+                    @click="
+                        active = 'dossier';
+                        dossierTab = 'antecedents';
+                    "
+                >
+                    Voir les antécédents familiaux
+                </button>
+            </section>
             <div
                 :class="[
                     headerCardClass,
@@ -1361,18 +1555,24 @@ const tabClass = (activeTab: boolean): string =>
                             :class="[cardClass, 'flex min-w-0 flex-col gap-3']"
                             data-testid="consultation-important-note"
                         >
-                            <p
+                            <label
+                                for="workspace-allergies"
                                 class="flex items-center gap-1.5 text-sm font-semibold text-red-600 dark:text-red-400"
                             >
-                                <TriangleAlert class="size-4" /> Important à
-                                signaler
-                            </p>
+                                <TriangleAlert class="size-4" />
+                                {{ patientHistoryLabel('allergies') }}
+                            </label>
                             <Textarea
+                                id="workspace-allergies"
                                 v-model="patientForm.allergies"
                                 :disabled="!canEdit"
-                                placeholder="Notes importantes, allergies…"
+                                :maxlength="PATIENT_HISTORY_MAX"
+                                placeholder="Allergies, réactions, points importants à signaler…"
                                 rows="6"
                                 class="h-36 max-h-56 min-h-28 w-full resize-y overflow-y-auto"
+                            />
+                            <InputError
+                                :message="patientForm.errors.allergies"
                             />
                         </div>
                         <div
@@ -1450,6 +1650,15 @@ const tabClass = (activeTab: boolean): string =>
                         </div>
 
                         <div class="min-h-0 flex-1 overflow-y-auto p-4">
+                            <p
+                                v-if="patientSaveError"
+                                class="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                                role="alert"
+                                data-testid="patient-save-error"
+                            >
+                                Dossier patient non enregistré :
+                                {{ patientSaveError }}
+                            </p>
                             <div
                                 v-if="dossierTab === 'etat_civil'"
                                 class="grid gap-3 sm:grid-cols-2"
@@ -1644,48 +1853,117 @@ const tabClass = (activeTab: boolean): string =>
 
                             <div v-else class="grid gap-4 md:grid-cols-2">
                                 <div class="grid gap-1.5">
-                                    <Label>Antécédents médicaux</Label
+                                    <Label
+                                        for="workspace-antecedents-medical"
+                                        >{{
+                                            patientHistoryLabel(
+                                                'antecedents_medical',
+                                            )
+                                        }}</Label
                                     ><Textarea
+                                        id="workspace-antecedents-medical"
                                         v-model="
                                             patientForm.antecedents_medical
                                         "
                                         rows="4"
+                                        :maxlength="PATIENT_HISTORY_MAX"
+                                        placeholder="Ex. diabète type 2, HTA, asthme"
                                         :disabled="!canEdit"
                                     />
-                                </div>
-                                <div class="grid gap-1.5">
-                                    <Label>Antécédents chirurgicaux</Label
-                                    ><Textarea
-                                        v-model="
-                                            patientForm.antecedents_surgical
+                                    <InputError
+                                        :message="
+                                            patientForm.errors
+                                                .antecedents_medical
                                         "
-                                        rows="4"
-                                        :disabled="!canEdit"
-                                    />
-                                </div>
-                                <div class="grid gap-1.5">
-                                    <Label>Antécédents familiaux</Label
-                                    ><Textarea
-                                        v-model="patientForm.antecedents_family"
-                                        rows="4"
-                                        :disabled="!canEdit"
                                     />
                                 </div>
                                 <div class="grid gap-1.5">
                                     <Label
-                                        >Antécédents gynéco-obstétricaux</Label
+                                        for="workspace-antecedents-surgical"
+                                        >{{
+                                            patientHistoryLabel(
+                                                'antecedents_surgical',
+                                            )
+                                        }}</Label
                                     ><Textarea
-                                        v-model="patientForm.antecedents_gyneco"
+                                        id="workspace-antecedents-surgical"
+                                        v-model="
+                                            patientForm.antecedents_surgical
+                                        "
                                         rows="4"
+                                        :maxlength="PATIENT_HISTORY_MAX"
                                         :disabled="!canEdit"
                                     />
+                                    <InputError
+                                        :message="
+                                            patientForm.errors
+                                                .antecedents_surgical
+                                        "
+                                    />
                                 </div>
-                                <div class="grid gap-1.5 md:col-span-2">
-                                    <Label>Autres antécédents</Label
+                                <div
+                                    class="grid content-start gap-1.5 md:col-span-2"
+                                    data-testid="workspace-family-history"
+                                >
+                                    <Label for="workspace-antecedents-family">{{
+                                        patientHistoryLabel(
+                                            'antecedents_family',
+                                        )
+                                    }}</Label
                                     ><Textarea
-                                        v-model="patientForm.antecedents_other"
-                                        rows="3"
+                                        id="workspace-antecedents-family"
+                                        v-model="patientForm.antecedents_family"
+                                        rows="4"
+                                        :maxlength="PATIENT_HISTORY_MAX"
+                                        placeholder="Ex. père diabétique, mère hypertendue"
                                         :disabled="!canEdit"
+                                    />
+                                    <InputError
+                                        :message="
+                                            patientForm.errors
+                                                .antecedents_family
+                                        "
+                                    />
+                                    <FamilyFindings
+                                        :relatives="familyMedical ?? []"
+                                        title="Signalé chez les proches (dossiers liés)"
+                                    />
+                                </div>
+                                <div class="grid gap-1.5">
+                                    <Label for="workspace-antecedents-gyneco">{{
+                                        patientHistoryLabel(
+                                            'antecedents_gyneco',
+                                        )
+                                    }}</Label
+                                    ><Textarea
+                                        id="workspace-antecedents-gyneco"
+                                        v-model="patientForm.antecedents_gyneco"
+                                        rows="4"
+                                        :maxlength="PATIENT_HISTORY_MAX"
+                                        :disabled="!canEdit"
+                                    />
+                                    <InputError
+                                        :message="
+                                            patientForm.errors
+                                                .antecedents_gyneco
+                                        "
+                                    />
+                                </div>
+                                <div class="grid gap-1.5">
+                                    <Label for="workspace-antecedents-other">{{
+                                        patientHistoryLabel('antecedents_other')
+                                    }}</Label
+                                    ><Textarea
+                                        id="workspace-antecedents-other"
+                                        v-model="patientForm.antecedents_other"
+                                        rows="4"
+                                        :maxlength="PATIENT_HISTORY_MAX"
+                                        :disabled="!canEdit"
+                                    />
+                                    <InputError
+                                        :message="
+                                            patientForm.errors.antecedents_other
+                                        "
                                     />
                                 </div>
                             </div>
@@ -1775,12 +2053,22 @@ const tabClass = (activeTab: boolean): string =>
                                         class="text-xs text-muted-foreground hover:text-foreground"
                                         @click="
                                             dictation.stop();
+                                            dictation.stopTest();
                                             dictationOpen = false;
                                         "
                                     >
                                         Fermer
                                     </button>
                                 </div>
+                                <DictationStatus
+                                    :supported="dictation.supported"
+                                    :engine="dictation.engine.value"
+                                    :listening="dictation.listening.value"
+                                    :level="dictation.level.value"
+                                    :testing="dictation.testing.value"
+                                    :test-result="dictation.testResult.value"
+                                    @test="dictation.testMicrophone()"
+                                />
                                 <Textarea
                                     v-model="dictation.transcript.value"
                                     rows="4"
@@ -1799,6 +2087,7 @@ const tabClass = (activeTab: boolean): string =>
                                 <p
                                     v-if="dictation.error.value"
                                     class="text-xs text-destructive"
+                                    data-testid="dictation-error"
                                 >
                                     {{ dictation.error.value }}
                                 </p>
@@ -2320,13 +2609,7 @@ const tabClass = (activeTab: boolean): string =>
                                     type="number"
                                     step="0.01"
                                     min="0"
-                                    :max="
-                                        Math.max(
-                                            0,
-                                            Number(paymentForm.amount || 0) -
-                                                consultation.payment_paid,
-                                        )
-                                    "
+                                    :max="collectableNow"
                                     :disabled="!canCollectPayment"
                                 />
                                 <InputError
@@ -2448,6 +2731,12 @@ const tabClass = (activeTab: boolean): string =>
                                 placeholder="Détail du versement, motif de remise ou accord avec le patient…"
                             />
                             <InputError :message="paymentForm.errors.notes" />
+                            <InputError
+                                :message="paymentForm.errors.settlement"
+                            />
+                            <InputError
+                                :message="paymentForm.errors.client_reference"
+                            />
                         </div>
 
                         <div
@@ -2714,8 +3003,8 @@ const tabClass = (activeTab: boolean): string =>
                                     Antécédents des proches
                                 </h4>
                                 <p class="mt-1 text-xs text-muted-foreground">
-                                    Consultations des patients liés au même
-                                    compte mobile.
+                                    Consultations des proches liés au dossier
+                                    (Famille) ou au même compte mobile.
                                 </p>
                             </div>
                             <HeartPulse class="size-4 text-rose-600" />

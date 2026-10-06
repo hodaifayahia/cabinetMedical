@@ -27,6 +27,8 @@ export type ClinicalDocumentTemplate = {
     title: string;
     description: string | null;
     body?: string | null;
+    /** 'html' for bodies written in the rich editor; absent/'text' = legacy lines. */
+    body_format?: 'text' | 'html';
     default_paper_size: 'A4' | 'A5';
 };
 

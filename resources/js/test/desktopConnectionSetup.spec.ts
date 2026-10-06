@@ -32,6 +32,21 @@ const remoteCapability = JSON.parse(
 
 const remoteCapabilityUrls = remoteCapability.remote?.urls ?? [];
 
+type Capability = {
+    local: boolean;
+    remote?: { urls?: string[] };
+    permissions: string[];
+};
+const readCapability = (name: string) =>
+    JSON.parse(
+        readFileSync(
+            resolve(root, `src-tauri/capabilities/${name}.json`),
+            'utf8',
+        ),
+    ) as Capability;
+const localRuntimeCapability = readCapability('desktop-local-runtime');
+const lanClientCapability = readCapability('desktop-lan-client');
+
 test('the offline shell offers cloud, cabinet hub, and retry', () => {
     const page = new DOMParser().parseFromString(offlinePage, 'text/html');
 
@@ -39,6 +54,10 @@ test('the offline shell offers cloud, cabinet hub, and retry', () => {
     expect(page.querySelector('#hub-form')).not.toBeNull();
     expect(page.querySelector('#hub-url')).not.toBeNull();
     expect(page.querySelector('#retry-btn')).not.toBeNull();
+    expect(page.querySelector('#local-btn')?.textContent).toContain(
+        'Revenir au mode autonome',
+    );
+    expect(page.querySelector('#discover-btn')).not.toBeNull();
     expect(page.body.textContent).toContain('deux ou trois PC sans Internet');
 });
 
@@ -59,12 +78,11 @@ test('server selection is verified and persisted by narrow native commands', () 
     expect(rustConnection).toContain('health.application.name != "Drclick"');
     expect(rustConnection).toContain('persist_server_url');
 
-    // The page drives exactly two native commands. `configure_local_mode` and
-    // `runtime_mode_status` are registered in build.rs and granted by the
-    // connection-setup capability, but nothing here calls them, so local mode
-    // currently cannot be chosen from this screen. Pinned so that re-adding
-    // that affordance is a deliberate change rather than an accident.
-    expect(offlinePage).not.toContain("invoke('configure_local_mode'");
+    // A poste secondaire whose poste principal is down must be able to go
+    // back to its own data (ADR-005), and to look for the host on the LAN.
+    expect(offlinePage).toContain("invoke('configure_local_mode'");
+    expect(offlinePage).toContain("invoke('discover_lan_hosts'");
+    expect(rustShell).toContain('lan::schedule_restart(&app)');
 });
 
 test('every place that names the hosted origin agrees with the compiled default', () => {
@@ -96,7 +114,7 @@ test('every place that names the hosted origin agrees with the compiled default'
     expect(JSON.stringify(remoteCapabilityUrls)).toContain(origin);
 });
 
-test('connection setup is local-only and LAN HTTP remains forbidden', () => {
+test('connection setup is local-only and plain HTTP is limited to the LAN', () => {
     expect(localCapability.local).toBe(true);
     expect(localCapability).not.toHaveProperty('remote');
     // The connection page also owns local-mode selection now. The security
@@ -107,6 +125,7 @@ test('connection setup is local-only and LAN HTTP remains forbidden', () => {
         'allow-configure-server-connection',
         'allow-configure-local-mode',
         'allow-runtime-mode-status',
+        'allow-discover-lan-hosts',
     ]);
     expect(remoteCapability.permissions).not.toContain(
         'allow-configure-local-mode',
@@ -114,12 +133,50 @@ test('connection setup is local-only and LAN HTTP remains forbidden', () => {
     expect(remoteCapability.permissions).not.toContain(
         'allow-configure-server-connection',
     );
-    // Stricter than before: HTTP is no longer tolerated even for a local
-    // test, so the rule is now simply "HTTPS or nothing". The LAN-HTTP
-    // prohibition this test exists for is therefore still enforced, and the
-    // Rust unit tests pin each rejected scheme.
+    // HTTPS stays mandatory for every origin that could be on the Internet.
+    // Plain HTTP is accepted only for a poste principal on the cabinet LAN
+    // (private IPv4, bare computer name, .local); the Rust unit tests pin
+    // each accepted and rejected form.
     expect(rustConnection).toContain('Le serveur doit utiliser HTTPS.');
-    expect(rustConnection).toContain('http://192.168.1.20:8000/');
+    expect(rustConnection).toContain('fn is_private_lan_host');
+    expect(rustConnection).toContain('http://192.168.1.20:47850/');
+    expect(rustConnection).toContain('http://8.8.8.8:47850/');
     expect(rustConnection).toContain('http://localhost:8000/');
     expect(rustConnection).not.toContain('runtime-core');
+});
+
+test('LAN commands are split between the loopback and LAN origins', () => {
+    const lanCommands = [
+        'allow-set-lan-host',
+        'allow-open-lan-firewall',
+        'allow-connect-to-lan-host',
+        'allow-pick-backup-folder',
+    ];
+
+    // Sharing this PC's data, joining another PC and choosing a backup folder
+    // belong to this PC's own runtime only.
+    expect(localRuntimeCapability.local).toBe(false);
+    expect(localRuntimeCapability.remote?.urls).toEqual(['http://127.0.0.1:*']);
+
+    for (const permission of lanCommands) {
+        expect(localRuntimeCapability.permissions).toContain(permission);
+        expect(lanClientCapability.permissions).not.toContain(permission);
+        expect(remoteCapability.permissions).not.toContain(permission);
+    }
+
+    // Pages served by the poste principal may only read the mode, return
+    // this PC to local mode and use the signed updater.
+    expect(lanClientCapability.permissions).toEqual([
+        'allow-runtime-mode-status',
+        'allow-lan-host-status',
+        'allow-use-local-mode',
+        'allow-signed-updater-status',
+        'allow-check-for-signed-update',
+        'allow-install-signed-update',
+    ]);
+
+    for (const pattern of lanClientCapability.remote?.urls ?? []) {
+        expect(pattern.startsWith('http://')).toBe(true);
+        expect(pattern).not.toBe('http://*:*');
+    }
 });

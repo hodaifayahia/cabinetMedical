@@ -1,6 +1,8 @@
 import { isTauri } from '@tauri-apps/api/core';
 
 const DESKTOP_PIN_ENROLLMENT_KEY = 'drclickdz.desktop-pin.enrollment.v1';
+const DESKTOP_PIN_ENROLLMENTS_KEY = 'drclickdz.desktop-pin.enrollments.v2';
+const MAX_ENROLLMENTS = 12;
 const DEVICE_TOKEN_BYTES = 32;
 const DEVICE_TOKEN_PATTERN = /^[a-f0-9]{64}$/u;
 const PIN_PATTERN = /^\d{4}$/u;
@@ -75,32 +77,99 @@ export function defaultDesktopDeviceName(): string {
     return platform ? `Poste Drclick · ${platform}` : 'Poste Drclick';
 }
 
-export function readDesktopPinEnrollment(): DesktopPinEnrollment | null {
-    if (!canUseDesktopStorage()) {
-        return null;
-    }
+function readStoredList(): DesktopPinEnrollment[] {
+    const enrollments: DesktopPinEnrollment[] = [];
 
     try {
         const serialized = window.localStorage.getItem(
-            DESKTOP_PIN_ENROLLMENT_KEY,
+            DESKTOP_PIN_ENROLLMENTS_KEY,
         );
 
-        if (!serialized) {
-            return null;
+        if (serialized) {
+            const parsed: unknown = JSON.parse(serialized);
+
+            if (Array.isArray(parsed)) {
+                for (const candidate of parsed) {
+                    if (
+                        isEnrollment(candidate) &&
+                        !enrollments.some(
+                            (known) => known.userId === candidate.userId,
+                        )
+                    ) {
+                        enrollments.push(candidate);
+                    }
+                }
+            }
         }
 
-        const enrollment: unknown = JSON.parse(serialized);
+        // Installations enrolled before several accounts could share a poste
+        // kept a single record: fold it into the list once.
+        const legacy = window.localStorage.getItem(DESKTOP_PIN_ENROLLMENT_KEY);
 
-        if (!isEnrollment(enrollment)) {
+        if (legacy !== null) {
             window.localStorage.removeItem(DESKTOP_PIN_ENROLLMENT_KEY);
 
-            return null;
+            const enrollment: unknown = JSON.parse(legacy);
+
+            if (
+                isEnrollment(enrollment) &&
+                !enrollments.some((known) => known.userId === enrollment.userId)
+            ) {
+                enrollments.push(enrollment);
+                writeStoredList(enrollments);
+            }
+        }
+    } catch {
+        return enrollments;
+    }
+
+    return enrollments;
+}
+
+function writeStoredList(enrollments: DesktopPinEnrollment[]): boolean {
+    try {
+        if (enrollments.length === 0) {
+            window.localStorage.removeItem(DESKTOP_PIN_ENROLLMENTS_KEY);
+        } else {
+            window.localStorage.setItem(
+                DESKTOP_PIN_ENROLLMENTS_KEY,
+                JSON.stringify(enrollments.slice(0, MAX_ENROLLMENTS)),
+            );
         }
 
-        return enrollment;
+        return true;
     } catch {
-        return null;
+        return false;
     }
+}
+
+/**
+ * Every account enrolled on this installation, most recently used first. A
+ * poste shared by a doctor and an assistant keeps one PIN per person.
+ */
+export function readDesktopPinEnrollments(): DesktopPinEnrollment[] {
+    if (!canUseDesktopStorage()) {
+        return [];
+    }
+
+    return readStoredList();
+}
+
+/**
+ * The enrollment of the given account, or the most recently used one.
+ */
+export function readDesktopPinEnrollment(
+    userId?: number | null,
+): DesktopPinEnrollment | null {
+    const enrollments = readDesktopPinEnrollments();
+
+    if (userId === undefined) {
+        return enrollments[0] ?? null;
+    }
+
+    return (
+        enrollments.find((enrollment) => enrollment.userId === userId) ?? null
+    );
 }
 
 export function isDesktopPinEnrollmentForUser(
@@ -111,8 +180,19 @@ export function isDesktopPinEnrollmentForUser(
 }
 
 /**
+ * Whether this installation already holds a PIN for the account, whichever
+ * other accounts were enrolled on it since.
+ */
+export function hasDesktopPinEnrollmentForUser(
+    userId: number | null | undefined,
+): boolean {
+    return Boolean(userId && readDesktopPinEnrollment(userId));
+}
+
+/**
  * Persists only the opaque device identifier and its display label. The PIN
- * itself is never written to WebView storage.
+ * itself is never written to WebView storage. Enrolling one account never
+ * removes the PIN another account set on the same poste.
  */
 export function saveDesktopPinEnrollment(
     deviceToken: string,
@@ -136,25 +216,51 @@ export function saveDesktopPinEnrollment(
         return false;
     }
 
-    try {
-        window.localStorage.setItem(
-            DESKTOP_PIN_ENROLLMENT_KEY,
-            JSON.stringify(enrollment),
-        );
+    return writeStoredList([
+        enrollment,
+        ...readStoredList().filter((known) => known.userId !== userId),
+    ]);
+}
 
-        return true;
-    } catch {
-        return false;
+/**
+ * Moves an account to the top of the list after it signed in with its PIN.
+ */
+export function touchDesktopPinEnrollment(userId: number): void {
+    if (!canUseDesktopStorage()) {
+        return;
+    }
+
+    const enrollments = readStoredList();
+    const current = enrollments.find((known) => known.userId === userId);
+
+    if (current) {
+        writeStoredList([
+            current,
+            ...enrollments.filter((known) => known.userId !== userId),
+        ]);
     }
 }
 
-export function clearDesktopPinEnrollment(): void {
+/**
+ * Forgets one account's PIN on this poste, or every PIN when no account is
+ * given.
+ */
+export function clearDesktopPinEnrollment(userId?: number): void {
     if (!canUseDesktopStorage()) {
         return;
     }
 
     try {
-        window.localStorage.removeItem(DESKTOP_PIN_ENROLLMENT_KEY);
+        if (userId === undefined) {
+            window.localStorage.removeItem(DESKTOP_PIN_ENROLLMENTS_KEY);
+            window.localStorage.removeItem(DESKTOP_PIN_ENROLLMENT_KEY);
+
+            return;
+        }
+
+        writeStoredList(
+            readStoredList().filter((known) => known.userId !== userId),
+        );
     } catch {
         // A user must always be able to fall back to account credentials.
     }

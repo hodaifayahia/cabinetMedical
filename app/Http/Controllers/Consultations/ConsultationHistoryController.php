@@ -126,6 +126,7 @@ class ConsultationHistoryController extends Controller
                 'antecedents_medical' => $patient->antecedents_medical,
                 'antecedents_surgical' => $patient->antecedents_surgical,
                 'antecedents_family' => $patient->antecedents_family,
+                'antecedents_gyneco' => $patient->antecedents_gyneco,
                 'antecedents_other' => $patient->antecedents_other,
             ],
             'consultation' => [

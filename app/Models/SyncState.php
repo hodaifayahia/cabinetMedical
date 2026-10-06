@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable|null $last_synced_at
  * @property CarbonImmutable|null $last_failed_at
  * @property string|null $last_error
+ * @property bool $last_failure_offline
  */
 #[Fillable([
     'cabinet_id',
@@ -33,6 +34,7 @@ use Illuminate\Database\Eloquent\Model;
     'last_synced_at',
     'last_failed_at',
     'last_error',
+    'last_failure_offline',
 ])]
 class SyncState extends Model
 {
@@ -47,6 +49,7 @@ class SyncState extends Model
             'push_cursor' => 'integer',
             'last_synced_at' => 'immutable_datetime',
             'last_failed_at' => 'immutable_datetime',
+            'last_failure_offline' => 'boolean',
         ];
     }
 
@@ -82,15 +85,22 @@ class SyncState extends Model
             'last_synced_at' => now(),
             'last_failed_at' => null,
             'last_error' => null,
+            'last_failure_offline' => false,
         ])->save();
     }
 
-    public function markFailed(string $error): void
+    /**
+     * @param  bool  $offline  The online service could not be reached at all:
+     *                         the expected state of a local-first poste, which
+     *                         the next scheduled run simply retries.
+     */
+    public function markFailed(string $error, bool $offline = false): void
     {
         $this->forceFill([
             'last_failed_at' => now(),
             // Bounded: a remote error body must not grow this row without limit.
             'last_error' => mb_substr($error, 0, 1000),
+            'last_failure_offline' => $offline,
         ])->save();
     }
 }

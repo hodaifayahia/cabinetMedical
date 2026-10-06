@@ -11,11 +11,19 @@ final class ClinicalHtmlSanitizer
 {
     /** @var list<string> */
     private const ALLOWED_ELEMENTS = [
-        'a', 'b', 'blockquote', 'br', 'code', 'div', 'em', 'font', 'h1', 'h2',
-        'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'li', 'ol', 'p', 'pre', 's',
-        'span', 'strike', 'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'tfoot',
-        'th', 'thead', 'tr', 'u', 'ul',
+        'a', 'b', 'blockquote', 'br', 'caption', 'code', 'col', 'colgroup', 'div',
+        'em', 'font', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'li',
+        'mark', 'ol', 'p', 'pre', 's', 'span', 'strike', 'strong', 'sub', 'sup',
+        'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'u', 'ul',
     ];
+
+    /**
+     * Presentation-only class names the document editor relies on (a manual
+     * page break). Any other class is dropped.
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_CLASSES = ['page-break'];
 
     /** @var list<string> */
     private const DROP_WITH_CONTENT = [
@@ -27,11 +35,15 @@ final class ClinicalHtmlSanitizer
     /** @var list<string> */
     private const ALLOWED_STYLE_PROPERTIES = [
         'background-color', 'border', 'border-bottom', 'border-collapse',
-        'border-left', 'border-right', 'border-top', 'color', 'font-family',
-        'font-size', 'font-style', 'font-weight', 'margin', 'margin-bottom',
-        'margin-left', 'margin-right', 'margin-top', 'padding', 'padding-bottom',
-        'padding-left', 'padding-right', 'padding-top', 'text-align',
-        'text-decoration', 'width',
+        'border-color', 'border-left', 'border-right', 'border-style',
+        'border-top', 'border-width', 'break-after', 'break-before', 'color',
+        'font-family', 'font-size', 'font-style', 'font-weight', 'height',
+        'letter-spacing', 'line-height', 'list-style-type', 'margin',
+        'margin-bottom', 'margin-left', 'margin-right', 'margin-top',
+        'max-width', 'min-width', 'padding', 'padding-bottom', 'padding-left',
+        'padding-right', 'padding-top', 'page-break-after', 'page-break-before',
+        'text-align', 'text-decoration', 'text-indent', 'text-transform',
+        'vertical-align', 'width',
     ];
 
     public function sanitize(?string $html): ?string
@@ -141,6 +153,15 @@ final class ClinicalHtmlSanitizer
             $element->setAttribute('style', $style);
         }
 
+        $classes = array_values(array_intersect(
+            preg_split('/\s+/', strtolower(trim($attributes['class'] ?? ''))) ?: [],
+            self::ALLOWED_CLASSES,
+        ));
+
+        if ($classes !== []) {
+            $element->setAttribute('class', implode(' ', array_unique($classes)));
+        }
+
         if ($tag === 'a') {
             $href = $this->safeLink($attributes['href'] ?? '');
 
@@ -184,6 +205,25 @@ final class ClinicalHtmlSanitizer
         if (in_array($tag, ['td', 'th'], true)) {
             $this->copyBoundedIntegerAttribute($element, $attributes, 'colspan', 1, 20);
             $this->copyBoundedIntegerAttribute($element, $attributes, 'rowspan', 1, 100);
+
+            // Column widths (in px) remembered by the editor's table resizing.
+            $columnWidths = trim($attributes['colwidth'] ?? '');
+
+            if (preg_match('/\A[0-9]{1,4}(?:,[0-9]{1,4}){0,19}\z/D', $columnWidths) === 1) {
+                $element->setAttribute('colwidth', $columnWidths);
+            }
+        }
+
+        if ($tag === 'col') {
+            $this->copyBoundedIntegerAttribute($element, $attributes, 'span', 1, 20);
+        }
+
+        if ($tag === 'mark') {
+            $color = $this->safeColor($attributes['data-color'] ?? '');
+
+            if ($color !== null) {
+                $element->setAttribute('data-color', $color);
+            }
         }
 
         return 'keep';
