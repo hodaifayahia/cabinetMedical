@@ -277,7 +277,8 @@ review_local_changes() {
         found=0
         if [ -e "$APP_DIR/$f" ]; then
             blob="$(git -C "$APP_DIR" hash-object -- "$f")"
-            for commit in $(git -C "$APP_DIR" log --format=%H "origin/$BRANCH" -- "$f"); do
+            # --full-history: a merge that kept the other side still counts.
+            for commit in $(git -C "$APP_DIR" log --full-history --format=%H "origin/$BRANCH" -- "$f"); do
                 if [ "$(git -C "$APP_DIR" rev-parse -q --verify "$commit:$f" 2>/dev/null)" = "$blob" ]; then
                     found=1
                     break

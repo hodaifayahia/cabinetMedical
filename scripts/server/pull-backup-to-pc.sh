@@ -69,6 +69,18 @@ mkdir -p "$DRCLICK_PC_BACKUP_DIR" "$(dirname "$LOCAL_KEY_FILE")"
 # Left by a run that was killed mid-copy; the task never runs twice at once.
 find "$DRCLICK_PC_BACKUP_DIR" -maxdepth 1 -type f -name 'drclick-server-*.part' -delete
 
+# When hPanel cron is unavailable, a scheduled PC can create the encrypted
+# server archive before pulling it. A recent hPanel run is reused, so both
+# schedules may coexist without producing duplicate archives.
+if [ "${DRCLICK_ENSURE_REMOTE_BACKUP:-0}" = 1 ]; then
+  latest_epoch="$(remote "find $REMOTE_BACKUP_DIR -maxdepth 1 -type f -name 'drclick-server-*.gz.enc' -printf '%T@\\n' 2>/dev/null | sort -nr | head -n 1")"
+  latest_epoch="${latest_epoch%%.*}"
+  if ! [[ "$latest_epoch" =~ ^[0-9]+$ ]] || [ "$latest_epoch" -lt "$(($(date +%s) - 18 * 3600))" ]; then
+    log "creating a fresh encrypted server backup before the PC pull"
+    remote "cd $DRCLICK_REMOTE_APP_DIR && bash scripts/server/nightly-backup.sh"
+  fi
+fi
+
 latest="$(remote "ls -1t $REMOTE_BACKUP_DIR/drclick-server-*.gz.enc 2>/dev/null | head -n 1")"
 latest="$(basename "$latest")"
 if ! [[ "$latest" =~ ^drclick-server-[0-9]{8}-[0-9]{6}\.(sqlite|sql)\.gz\.enc$ ]]; then
