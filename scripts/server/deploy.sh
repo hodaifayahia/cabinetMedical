@@ -350,6 +350,27 @@ copy_public_files() {
     done < "$list"
 }
 
+# Files added on the server outside git that the new version also contains:
+# the switch takes them over, and going back would delete them. They are
+# archived first and every rollback puts them back.
+UNTRACKED_ARCHIVE=""
+save_untracked_files() {
+    local target="$1" list
+    list="$STATE_DIR/untracked-taken-over.list"
+    : > "$list"
+    git -C "$APP_DIR" ls-files --others --exclude-standard -z > "$STATE_DIR/untracked.all" || return 1
+    while IFS= read -r -d '' f; do
+        if git -C "$APP_DIR" cat-file -e "$target:$f" 2>/dev/null; then
+            printf '%s\0' "$f" >> "$list"
+        fi
+    done < "$STATE_DIR/untracked.all"
+    if [ -s "$list" ]; then
+        UNTRACKED_ARCHIVE="$STATE_DIR/untracked-$(date '+%Y%m%d-%H%M%S').tar"
+        tar -C "$APP_DIR" --null -T "$list" -cf "$UNTRACKED_ARCHIVE" || return 1
+        ok "$(tr -cd '\0' < "$list" | wc -c) fichier(s) ajouté(s) hors git sauvegardé(s) : $UNTRACKED_ARCHIVE"
+    fi
+}
+
 save_web_root_build() {
     [ -n "$WEB_ROOT" ] || return 0
     rm -rf "$STATE_DIR/webroot-build.previous"
@@ -377,8 +398,17 @@ backup_database() {
 
 composer_install() {
     say "Paquets PHP (composer)"
+    # Shared hosting disables proc_open, which Composer needs to run the
+    # project's scripts (@php artisan ...). Install without them, then run the
+    # same steps (composer.json › post-autoload-dump) in-process.
     (cd "$APP_DIR" && COMPOSER_ALLOW_SUPERUSER=1 "${COMPOSER[@]}" install \
-        --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress) || return 1
+        --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress --no-scripts) || return 1
+    rm -f "$APP_DIR/bootstrap/cache/packages.php" "$APP_DIR/bootstrap/cache/services.php" || return 1
+    artisan package:discover --ansi || return 1
+    # grep without -q reads all the output (pipefail: no early close).
+    if artisan list --raw 2>/dev/null | grep '^filament:upgrade' >/dev/null; then
+        artisan filament:upgrade || return 1
+    fi
     ok "Paquets PHP installés"
 }
 
@@ -386,6 +416,31 @@ refresh_caches() {
     artisan optimize:clear >/dev/null || return 1
     artisan optimize || return 1
     ok "Caches reconstruits"
+}
+
+# Before maintenance: make sure Composer can bring vendor/ to the new
+# composer.lock. Shared hosting disables proc_open, which Composer needs to
+# add or remove packages; when nothing changes, it does not need it.
+check_php_packages() {
+    local target="$1" dry_run
+    say "Paquets PHP"
+    if ! dry_run="$(cd "$APP_DIR" && COMPOSER_ALLOW_SUPERUSER=1 "${COMPOSER[@]}" install --dry-run \
+        --no-dev --no-interaction --no-scripts --no-progress 2>&1)"; then
+        printf '%s\n' "$dry_run" | tail -n 15
+        die "Composer ne peut pas vérifier les paquets PHP installés (voir ci-dessus). Rien n'a été modifié."
+    fi
+    if git -C "$APP_DIR" diff --quiet HEAD "$target" -- composer.lock composer.json \
+        && printf '%s\n' "$dry_run" | grep 'Nothing to install, update or remove' >/dev/null; then
+        ok "Paquets PHP déjà à jour : rien à télécharger"
+        return 0
+    fi
+    if "${COMPOSER[0]}" -r 'exit(function_exists("proc_open") && ! in_array("proc_open", array_map("trim", explode(",", (string) ini_get("disable_functions"))), true) ? 0 : 1);' 2>/dev/null; then
+        ok "Paquets PHP à mettre à jour : Composer peut les installer"
+        return 0
+    fi
+    die "Cette version change les paquets PHP (composer.lock), mais ce serveur interdit à
+Composer de les installer (proc_open est désactivé par l'hébergeur). Rien n'a été
+modifié et le site reste en ligne. Voir docs/DEPLOIEMENT.md, « Paquets PHP »."
 }
 
 IN_MAINTENANCE=0
@@ -430,6 +485,10 @@ restore_previous() {
         # Files that had been edited by hand on the server come back too.
         git -C "$APP_DIR" apply --whitespace=nowarn "$LOCAL_PATCH" || return 1
         ok "Modifications locales du serveur remises ($LOCAL_PATCH)"
+    fi
+    if [ -n "$UNTRACKED_ARCHIVE" ] && [ -s "$UNTRACKED_ARCHIVE" ]; then
+        tar -C "$APP_DIR" -xf "$UNTRACKED_ARCHIVE" || return 1
+        ok "Fichiers ajoutés hors git remis ($UNTRACKED_ARCHIVE)"
     fi
     composer_install || return 1
     if [ -d "$STATE_DIR/build.previous" ]; then
@@ -520,6 +579,7 @@ fi
 if [ "$MODE" = "rollback" ]; then
     PREVIOUS="$(cat "$STATE_DIR/previous-commit" 2>/dev/null || true)"
     LOCAL_PATCH="$(cat "$STATE_DIR/previous-local-patch" 2>/dev/null || true)"
+    UNTRACKED_ARCHIVE="$(cat "$STATE_DIR/previous-untracked-archive" 2>/dev/null || true)"
     [ -n "$PREVIOUS" ] || die "Aucune version précédente enregistrée (aucun déploiement fait avec ce script)."
     say "Retour à la version ${PREVIOUS:0:7}"
     maintenance_on
@@ -542,12 +602,15 @@ ok "${CURRENT:0:7} → ${TARGET:0:7} : $(git log -1 --format=%s "$TARGET")"
 review_local_changes
 
 prepare_assets "$TARGET"
+check_php_packages "$TARGET"
 backup_database
 
 say "Mise à jour"
 PREVIOUS="$CURRENT"
 printf '%s\n' "$PREVIOUS" > "$STATE_DIR/previous-commit"
 printf '%s\n' "$LOCAL_PATCH" > "$STATE_DIR/previous-local-patch"
+save_untracked_files "$TARGET"
+printf '%s\n' "$UNTRACKED_ARCHIVE" > "$STATE_DIR/previous-untracked-archive"
 rm -rf "$STATE_DIR/build.previous"
 [ -d "$APP_DIR/public/build" ] && cp -R "$APP_DIR/public/build" "$STATE_DIR/build.previous"
 save_web_root_build
