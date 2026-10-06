@@ -117,7 +117,9 @@ find_composer() {
     if path="$(command -v composer 2>/dev/null)"; then
         # Run a composer phar with the PHP chosen above, not the default one;
         # a shell wrapper is run as it is.
-        if head -n 1 "$path" | grep -qE '^#!.*[/ ]php[0-9.]*$'; then
+        local first_line
+        IFS= read -r first_line < "$path" || true
+        if [[ "$first_line" =~ ^\#!.*[/\ ]php[0-9.]*$ ]]; then
             COMPOSER=("$PHP_BIN" "$path")
         else
             COMPOSER=("$path")
@@ -489,7 +491,13 @@ if [ "$MODE" = "check" ]; then
         ok "Déjà à jour (${current:0:7})"
     else
         ok "Nouvelle version disponible : ${target:0:7} ($(git log -1 --format=%s "$target"))"
-        git log --oneline "$current..$target" | head -20 | sed 's/^/      /'
+        # -n rather than `| head`: with pipefail, head closing the pipe early
+        # would end the script.
+        git log --oneline -n 20 "$current..$target" | sed 's/^/      /'
+        total="$(git rev-list --count "$current..$target")"
+        if [ "$total" -gt 20 ]; then
+            printf '      … et %s autres\n' "$((total - 20))"
+        fi
     fi
     review_local_changes
     if [ "$ASSETS_MODE" = "node" ]; then
