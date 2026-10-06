@@ -185,6 +185,28 @@ defineOptions({
             <span>Rester connecté sur ce poste</span>
         </Label>
 
+        <Label
+            for="import_records"
+            class="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 text-sm text-slate-600 dark:text-slate-300"
+            data-test="desktop-cabinet-import-records"
+        >
+            <Checkbox
+                id="import_records"
+                name="import_records"
+                value="1"
+                :default-value="true"
+                class="mt-0.5"
+            />
+            <span>
+                <span class="font-semibold text-slate-800 dark:text-white"
+                    >Récupérer les dossiers enregistrés en ligne</span
+                ><br />
+                Pour le propriétaire d’un cabinet qui utilisait le service en
+                ligne : patients, consultations et documents sont copiés sur ce
+                PC, vérifiés, puis vous pourrez supprimer la copie du serveur.
+            </span>
+        </Label>
+
         <Button
             type="submit"
             size="lg"

@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import {
     CheckCircle2,
+    CloudOff,
     Download,
     HardDrive,
     KeyRound,
@@ -9,7 +10,8 @@ import {
     ShieldCheck,
     UserCog,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { invoke, isTauri } from '@tauri-apps/api/core';
+import { computed, onMounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 
@@ -38,6 +40,30 @@ defineOptions({
         breadcrumbs: [{ title: 'Espace cabinet', href: '/espace-cabinet' }],
     },
 });
+
+// Inside the Windows app still opening this site: offer to move the
+// cabinet to the PC. The app asks for confirmation itself.
+const insideDesktopApp = ref(false);
+const switching = ref(false);
+const switchError = ref<string | null>(null);
+
+onMounted(() => {
+    insideDesktopApp.value = isTauri();
+});
+
+const useThisPcOffline = async (): Promise<void> => {
+    switching.value = true;
+    switchError.value = null;
+
+    try {
+        await invoke<boolean>('request_offline_mode');
+    } catch {
+        switchError.value =
+            'Cette version de Drclick ne peut pas encore passer hors ligne d’ici. Installez la dernière version de l’application.';
+    } finally {
+        switching.value = false;
+    }
+};
 
 const recordsLeft = computed(() => {
     const records = props.recordsOnline;
@@ -104,7 +130,11 @@ const transferredLabel = computed(() =>
                 </p>
                 <p>Pour les récupérer sur le PC du cabinet :</p>
                 <ol class="list-decimal space-y-1 pl-5">
-                    <li>
+                    <li v-if="insideDesktopApp">
+                        Cliquez sur « Utiliser ce PC hors ligne » ci-dessous :
+                        Drclick redémarre sur ce PC.
+                    </li>
+                    <li v-else>
                         Installez l’application Drclick sur le PC (bouton
                         ci-dessous).
                     </li>
@@ -126,18 +156,35 @@ const transferredLabel = computed(() =>
             </div>
 
             <div class="mt-5 flex flex-wrap gap-3">
-                <Button v-if="download.available && download.url" as-child>
+                <Button
+                    v-if="insideDesktopApp && !cabinet?.transferred_at"
+                    type="button"
+                    :disabled="switching"
+                    data-test="online-space-use-offline"
+                    @click="useThisPcOffline"
+                >
+                    <CloudOff class="size-4" />
+                    Utiliser ce PC hors ligne
+                </Button>
+                <Button v-else-if="download.available && download.url" as-child>
                     <a :href="download.url">
                         <Download class="size-4" />
                         Télécharger l’application Drclick
                     </a>
                 </Button>
-                <p v-else class="text-sm text-muted-foreground">
+                <p
+                    v-else-if="!insideDesktopApp"
+                    class="text-sm text-muted-foreground"
+                >
                     Le téléchargement de l’application sera bientôt disponible
                     ici. Contactez l’administration Drclick.
                 </p>
             </div>
         </section>
+
+        <p v-if="switchError" class="text-sm text-destructive" role="alert">
+            {{ switchError }}
+        </p>
 
         <section class="grid gap-4 md:grid-cols-3">
             <Link

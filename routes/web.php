@@ -14,6 +14,7 @@ use App\Http\Controllers\Appointments\WaitingRoomController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AccountRecoveryController;
 use App\Http\Controllers\Auth\DesktopCabinetLoginController;
+use App\Http\Controllers\Auth\DesktopCabinetTransferController;
 use App\Http\Controllers\Auth\DesktopPinEnrollmentController;
 use App\Http\Controllers\Auth\DesktopPinLoginController;
 use App\Http\Controllers\Auth\DesktopRestoreBackupController;
@@ -163,6 +164,18 @@ Route::middleware('guest')->group(function (): void {
     Route::post('desktop/cabinet-login', [DesktopCabinetLoginController::class, 'store'])
         ->middleware('throttle:desktop-cabinet-login')
         ->name('desktop.cabinet-login.store');
+});
+
+// Moving an online cabinet's records to this PC: progress, retry, and the
+// removal of the copy left online. Only while a transfer exists on this PC.
+Route::prefix('desktop/transfer')->name('desktop.transfer.')->group(function (): void {
+    Route::get('/', [DesktopCabinetTransferController::class, 'show'])->name('show');
+    Route::get('status', [DesktopCabinetTransferController::class, 'status'])->name('status');
+    Route::post('retry', [DesktopCabinetTransferController::class, 'retry'])
+        ->middleware('throttle:6,1')->name('retry');
+    Route::post('cancel', [DesktopCabinetTransferController::class, 'cancel'])->name('cancel');
+    Route::post('purge', [DesktopCabinetTransferController::class, 'purge'])
+        ->middleware('throttle:6,1')->name('purge');
 });
 
 // Forgotten password and PIN without e-mail: recovery codes, the poste
@@ -569,6 +582,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->middleware('throttle:6,1')
                     ->name('online-service.store');
                 Route::delete('online-service', [OnlineServiceController::class, 'destroy'])->name('online-service.destroy');
+                Route::put('online-service/ai', [OnlineServiceController::class, 'updateAi'])->name('online-service.ai');
             });
 
             Route::middleware('permission:configuration.backups.manage')->group(function (): void {

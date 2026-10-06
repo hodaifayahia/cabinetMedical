@@ -22,6 +22,7 @@ class DesktopCabinetLoginRequest extends FormRequest
             'email' => ['required', 'email', 'max:190'],
             'password' => ['required', 'string'],
             'remember' => ['sometimes', 'boolean'],
+            'import_records' => ['sometimes', 'boolean'],
         ];
     }
 

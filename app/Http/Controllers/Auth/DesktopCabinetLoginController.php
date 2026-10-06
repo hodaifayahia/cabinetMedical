@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\CabinetTransfer\TransferState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DesktopCabinetLoginRequest;
+use App\Jobs\ImportCabinetFromOnlineService;
 use App\Licensing\DesktopLicenseActivator;
 use App\Models\Cabinet;
 use App\Models\User;
@@ -45,6 +47,29 @@ class DesktopCabinetLoginController extends Controller
         // the cabinet (identity only) is recreated on this poste, activated
         // with a signed licence and linked for mobile appointments. Needs
         // Internet this once; the poste then works offline.
+        // The same owner may also bring the records the cabinet kept online:
+        // only into an empty PC, copied in the background (progress page),
+        // then removed online once verified here.
+        if ($request->boolean('import_records')
+            && $credentials['email'] === $request->string('owner_email')->toString()
+            && $activator->canActivateOnline()
+            && ! Cabinet::query()->exists()
+            && ! User::query()->exists()) {
+            $activation = $activator->activateForTransfer($credentials['email'], $credentials['password']);
+
+            TransferState::begin(
+                $activation->endpoint,
+                (string) $activation->token,
+                $activation->envelope,
+                $activation->cabinet,
+                $activation->accountEmail ?? $activation->entitlement->ownerEmail,
+                $activation->accountCabinetName,
+            );
+            ImportCabinetFromOnlineService::dispatch();
+
+            return redirect()->route('desktop.transfer.show');
+        }
+
         if ($matchingUsers->isEmpty()
             && $credentials['email'] === $request->string('owner_email')->toString()
             && $activator->canActivateOnline()) {
