@@ -43,6 +43,11 @@ use url::Url;
 /// giving up. Generous: a cold first run also applies pending migrations.
 const READY_TIMEOUT: Duration = Duration::from_secs(180);
 
+/// How long the queue worker and the scheduler must stay up after starting
+/// before they count as started. Must stay within the runtime's bounds,
+/// otherwise local mode refuses to start (see the test below).
+const BACKGROUND_STARTUP_STABILITY: Duration = Duration::from_secs(20);
+
 /// Laravel's built-in-server router, shipped inside the framework itself.
 /// The storage tree Laravel requires to exist before it will boot. The
 /// packaged application is read-only, so the launcher creates these under the
@@ -916,7 +921,7 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
                 installation_id: Some(identity.installation_id.to_string()),
                 application_version: application_version.clone(),
                 production,
-                startup_stability_timeout: Duration::from_secs(20),
+                startup_stability_timeout: BACKGROUND_STARTUP_STABILITY,
                 shutdown_timeout: Duration::from_secs(10),
                 retry_limit: 2,
                 retry_delay: Duration::from_secs(3),
@@ -945,7 +950,7 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
                 installation_id: Some(identity.installation_id.to_string()),
                 application_version: application_version.clone(),
                 production,
-                startup_stability_timeout: Duration::from_secs(20),
+                startup_stability_timeout: BACKGROUND_STARTUP_STABILITY,
                 shutdown_timeout: Duration::from_secs(10),
                 retry_limit: 2,
                 retry_delay: Duration::from_secs(3),
@@ -1057,6 +1062,16 @@ mod tests {
     use super::*;
 
     use std::env;
+
+    #[test]
+    fn background_services_start_within_the_runtime_bounds() {
+        // A value above these bounds made every local start fail with
+        // "queue worker bounds are invalid".
+        assert!(
+            BACKGROUND_STARTUP_STABILITY <= drclick_runtime::MAX_QUEUE_WORKER_STARTUP_STABILITY
+        );
+        assert!(BACKGROUND_STARTUP_STABILITY <= drclick_runtime::MAX_SCHEDULER_STARTUP_STABILITY);
+    }
 
     fn scratch(name: &str) -> PathBuf {
         let directory = env::temp_dir().join(format!("drclick-local-runtime-{name}"));

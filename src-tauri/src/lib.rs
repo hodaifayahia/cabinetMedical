@@ -183,7 +183,8 @@ async fn request_offline_mode(app: AppHandle) -> Result<bool, String> {
     use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
     let directory = configuration_directory(&app)?;
-    let Ok(RuntimeMode::Cloud { .. }) = resolve_runtime_mode(&directory, &cloud_server_url()) else {
+    let Ok(RuntimeMode::Cloud { .. }) = resolve_runtime_mode(&directory, &cloud_server_url())
+    else {
         return Ok(false);
     };
 

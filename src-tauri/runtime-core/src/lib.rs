@@ -49,10 +49,13 @@ pub use protected_secret::{read_protected_secret, write_new_protected_secret, Pr
 #[cfg(feature = "supervisor")]
 pub use queue_worker::{
     QueueWorkerConfig, QueueWorkerError, QueueWorkerStatus, QueueWorkerSupervisor,
-    SUPERVISED_QUEUE_NAMES,
+    MAX_QUEUE_WORKER_STARTUP_STABILITY, SUPERVISED_QUEUE_NAMES,
 };
 #[cfg(feature = "supervisor")]
-pub use scheduler::{SchedulerConfig, SchedulerError, SchedulerStatus, SchedulerSupervisor};
+pub use scheduler::{
+    SchedulerConfig, SchedulerError, SchedulerStatus, SchedulerSupervisor,
+    MAX_SCHEDULER_STARTUP_STABILITY,
+};
 #[cfg(feature = "supervisor")]
 pub use startup_migration::{
     run_startup_migration_gate, verify_packaged_migration_resources,
