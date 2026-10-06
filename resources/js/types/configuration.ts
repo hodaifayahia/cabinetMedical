@@ -188,6 +188,8 @@ export type ConnectivityBackupCapabilities = {
     automatic_backups: ConfigurationCapability;
     encrypted_backups: ConfigurationCapability;
     offline_restore: ConfigurationCapability;
+    /** Restore a backup over this PC's data from the settings page. */
+    in_app_restore: ConfigurationCapability;
     google_drive: ConfigurationCapability;
     drive_upload: ConfigurationCapability;
     updates: ConfigurationCapability;
@@ -199,6 +201,8 @@ export type BackupDriveStatus = {
     google_drive_configured: boolean;
     google_drive_email: string | null;
     google_drive_connected: boolean;
+    /** Google refused the stored grant: the account must be connected again. */
+    google_drive_reconnect_required?: boolean;
     google_drive_folder: string;
     last_backup_at: string | null;
     last_backup_name: string | null;
@@ -211,6 +215,59 @@ export type BackupDriveStatus = {
 export type DriveAutomationStatus = {
     enabled: boolean;
     scheduler_active: boolean;
+    /** Why the latest backup did not reach Drive, until an upload succeeds. */
+    last_issue?: {
+        reason: string;
+        message: string;
+        at: string | null;
+    } | null;
+};
+
+/** Where the backups are kept, and the doctor's optional copy folder. */
+export type BackupDestinationStatus = {
+    internal_location: string | null;
+    copy_directory: string | null;
+    copy_keep: number;
+    last_copy: {
+        status: 'success' | 'failed';
+        filename: string | null;
+        path: string | null;
+        message: string | null;
+        at: string;
+    } | null;
+};
+
+/** One archive present on this PC ("Dernières sauvegardes"). */
+export type LocalBackupEntry = {
+    /** Path relative to the managed folder; the only handle the server accepts. */
+    key: string;
+    record_id: string | null;
+    filename: string;
+    created_at: string | null;
+    size_bytes: number;
+    kind: 'manual' | 'scheduled' | 'safety' | 'drive_download' | 'unknown';
+    verified: boolean;
+    encrypted: boolean;
+    in_copy_folder: boolean;
+    drive_status: BackupHistoryEntry['drive_upload_status'];
+};
+
+export type InAppRestoreSummary = {
+    cabinet: string | null;
+    patients: number;
+    users: number;
+    consultations: number | null;
+    created_at: string | null;
+    application_version: string | null;
+    file_count: number;
+    encrypted: boolean;
+};
+
+export type InAppRestorePreparation = {
+    operation_id: string;
+    source: string;
+    summary: InAppRestoreSummary;
+    confirmation: string;
 };
 
 /**
@@ -251,6 +308,8 @@ export type BackupHistoryEntry = {
     drive_upload_progress_percent: number | null;
     drive_upload_attempts: number;
     drive_cancel_available: boolean;
+    /** Why a failed Drive upload failed, in French. */
+    drive_failure_message?: string | null;
 };
 
 export type OfflineRestoreAuthorization = {
@@ -341,6 +400,8 @@ export type ConnectivityBackupPermissions = {
     manage_settings: boolean;
     manage_backups: boolean;
     manage_restore: boolean;
+    /** Restore a backup over this PC's data (desktop doctor or maintainer). */
+    restore_backups?: boolean;
     manage_drive: boolean;
     /** Connect, change or disconnect the Google account; doctor only. */
     control_drive: boolean;
@@ -403,6 +464,8 @@ export type ConnectivityBackupPageProps = {
     backup: BackupDriveStatus;
     driveAutomation: DriveAutomationStatus;
     backupSchedule: BackupScheduleStatus;
+    backupDestination?: BackupDestinationStatus;
+    latestBackups?: LocalBackupEntry[];
     backupHistory?: BackupHistoryEntry[];
     permissions: ConnectivityBackupPermissions;
     license: LicenseRuntimeStatus;

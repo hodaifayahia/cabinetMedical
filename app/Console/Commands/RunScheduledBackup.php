@@ -57,6 +57,12 @@ final class RunScheduledBackup extends Command
             $this->components->warn('La sauvegarde est valide, mais la rétention locale a été ignorée par sécurité.');
         }
 
+        if ($result['copy']['status'] === 'failed') {
+            $this->components->warn(
+                'La sauvegarde est valide, mais sa copie vers le dossier choisi a échoué : '.$result['copy']['message'],
+            );
+        }
+
         if ($result['drive'] === 'queued') {
             $this->components->info('Copie chiffrée ajoutée à la file d’envoi Google Drive.');
         } elseif ($result['drive'] === 'failed') {

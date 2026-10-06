@@ -34,4 +34,22 @@ final class LocalBackupAuthority
     {
         abort_unless($this->mayManage($user), 403, InstallationMaintenanceAccessService::DENIAL_MESSAGE);
     }
+
+    /**
+     * Restore a backup over this installation's data from Configuration: the
+     * same boundary, with the restore permission. Whether the runtime can
+     * restore in place at all is InAppBackupRestorer::available().
+     */
+    public function mayRestore(?User $user): bool
+    {
+        return $user instanceof User
+            && $user->can(PermissionName::CONFIGURATION_RESTORE_MANAGE->value)
+            && ($this->installationMaintenance->allows($user)
+                || $this->driveAuthority->isDesktopClinicDoctor($user));
+    }
+
+    public function authorizeRestore(?User $user): void
+    {
+        abort_unless($this->mayRestore($user), 403, InstallationMaintenanceAccessService::DENIAL_MESSAGE);
+    }
 }

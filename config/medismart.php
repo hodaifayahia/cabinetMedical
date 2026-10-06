@@ -102,6 +102,18 @@ return [
         'remote_download_max_bytes' => (int) env('MEDISMART_BACKUP_REMOTE_MAX_BYTES', 25 * 1024 * 1024 * 1024),
         'restore_upload_max_bytes' => (int) env('MEDISMART_BACKUP_RESTORE_UPLOAD_MAX_BYTES', 25 * 1024 * 1024 * 1024),
         'prepared_restore_retention_hours' => (int) env('MEDISMART_PREPARED_RESTORE_RETENTION_HOURS', 168),
+        // Archives above this size go to Google Drive with the resumable
+        // protocol, in chunks (a multiple of 256 KiB), instead of a single
+        // multipart request.
+        'drive_resumable_threshold_bytes' => (int) env('MEDISMART_DRIVE_RESUMABLE_THRESHOLD_BYTES', 5 * 1024 * 1024),
+        'drive_upload_chunk_bytes' => (int) env('MEDISMART_DRIVE_UPLOAD_CHUNK_BYTES', 8 * 1024 * 1024),
+    ],
+
+    'http' => [
+        // CA bundle (PEM) for outgoing HTTPS calls such as Google Drive. The
+        // bundled PHP for Windows has no certificate store of its own, so the
+        // desktop shell points this at the bundle it ships. Null: PHP default.
+        'ca_bundle' => env('MEDISMART_CA_BUNDLE'),
     ],
 
     'uploads' => [

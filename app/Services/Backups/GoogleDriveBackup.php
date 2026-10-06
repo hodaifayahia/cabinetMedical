@@ -8,9 +8,13 @@ use App\Models\CloudConnection;
 use App\Models\DriveBackupConnection;
 use App\Services\GoogleOAuthLoopbackOrigin;
 use Closure;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -24,6 +28,20 @@ final class GoogleDriveBackup
     private const ENCRYPTED_ARCHIVE_MAGIC = "MEDISMART-MSBAK\x02";
 
     private const RETENTION_MAXIMUM_FILES = 10_000;
+
+    private const FOLDER_MIME = 'application/vnd.google-apps.folder';
+
+    /** Google requires resumable chunks in multiples of 256 KiB. */
+    private const RESUMABLE_CHUNK_UNIT = 256 * 1024;
+
+    /** Consecutive failed chunk requests tolerated before the attempt fails. */
+    private const RESUMABLE_MAXIMUM_RETRIES = 5;
+
+    /** Refresh the access token this long before Google says it expires. */
+    private const TOKEN_EXPIRY_MARGIN_SECONDS = 120;
+
+    /** OAuth errors after which only a new consent helps. */
+    private const DEAD_GRANT_ERRORS = ['invalid_grant', 'unauthorized_client', 'invalid_client'];
 
     public function __construct(private readonly GoogleOAuthLoopbackOrigin $origin) {}
 
@@ -45,6 +63,7 @@ final class GoogleDriveBackup
      *     google_drive_configured: bool,
      *     google_drive_email: string|null,
      *     google_drive_connected: bool,
+     *     google_drive_reconnect_required: bool,
      *     google_drive_folder: string,
      *     last_backup_at: string|null,
      *     last_backup_name: string|null
@@ -60,6 +79,9 @@ final class GoogleDriveBackup
             'google_drive_configured' => $this->isConfigured(),
             'google_drive_email' => $connection?->email,
             'google_drive_connected' => $connection?->refresh_token !== null,
+            // The grant was refused by Google: the account is still known
+            // but must be connected again before anything can be sent.
+            'google_drive_reconnect_required' => $connection !== null && $connection->refresh_token === null,
             'google_drive_folder' => $connection?->folder_name ?: 'Drclick Backups',
             'last_backup_at' => $lastBackupAt?->format('d/m/Y H:i'),
             'last_backup_name' => $connection?->last_backup_name,
@@ -113,7 +135,7 @@ final class GoogleDriveBackup
         ];
         $payload = $this->withOptionalClientSecret($payload);
 
-        $response = Http::asForm()
+        $response = $this->http()->asForm()
             ->connectTimeout(5)
             ->timeout(15)
             ->post('https://oauth2.googleapis.com/token', $payload);
@@ -134,7 +156,7 @@ final class GoogleDriveBackup
             throw new RuntimeException('Google did not return a durable Drive grant.');
         }
 
-        $profileResponse = Http::withToken($accessToken)
+        $profileResponse = $this->http()->withToken($accessToken)
             ->connectTimeout(5)
             ->timeout(15)
             ->get('https://www.googleapis.com/drive/v3/about', [
@@ -184,7 +206,7 @@ final class GoogleDriveBackup
 
         try {
             $token = $this->accessToken($connection);
-            $response = Http::withToken($token)
+            $response = $this->http()->withToken($token)
                 ->connectTimeout(5)
                 ->timeout(15)
                 ->get('https://www.googleapis.com/drive/v3/about', [
@@ -235,7 +257,7 @@ final class GoogleDriveBackup
 
         if (is_string($token) && $token !== '') {
             try {
-                $response = Http::asForm()
+                $response = $this->http()->asForm()
                     ->connectTimeout(5)
                     ->timeout(10)
                     ->post('https://oauth2.googleapis.com/revoke', ['token' => $token]);
@@ -297,7 +319,7 @@ final class GoogleDriveBackup
         }
 
         $token = $this->accessToken($connection);
-        $response = Http::withToken($token)->get(
+        $response = $this->http()->withToken($token)->get(
             'https://www.googleapis.com/drive/v3/files',
             [
                 'q' => "trashed = false and '{$folderId}' in parents and mimeType = '".self::ENCRYPTED_BACKUP_MIME."'",
@@ -378,7 +400,7 @@ final class GoogleDriveBackup
                 $query['pageToken'] = $pageToken;
             }
 
-            $response = Http::withToken($token)->get(
+            $response = $this->http()->withToken($token)->get(
                 'https://www.googleapis.com/drive/v3/files',
                 $query,
             );
@@ -468,7 +490,8 @@ final class GoogleDriveBackup
         }
 
         try {
-            $response = Http::withToken($token)
+            $response = $this->http($this->transferTimeout($metadata['size_bytes']))
+                ->withToken($token)
                 ->withOptions(['stream' => true])
                 ->get(
                     'https://www.googleapis.com/drive/v3/files/'.$metadata['id'],
@@ -595,7 +618,7 @@ final class GoogleDriveBackup
             );
         }
 
-        $response = Http::withToken($token)->delete(
+        $response = $this->http()->withToken($token)->delete(
             'https://www.googleapis.com/drive/v3/files/'.$metadata['id'],
         );
 
@@ -679,43 +702,13 @@ final class GoogleDriveBackup
                     'medismart_size_bytes' => (string) $artifact['size'],
                 ],
             ];
-            $request = Http::withToken($token);
-
-            if ($progress !== null) {
-                $artifactSize = $artifact['size'];
-                $request = $request->withOptions([
-                    'progress' => static function (
-                        int $downloadTotal,
-                        int $downloadedBytes,
-                        int $uploadTotal,
-                        int $uploadedBytes,
-                    ) use ($artifactSize, $progress): void {
-                        unset($downloadTotal, $downloadedBytes);
-                        $uploaded = $uploadTotal > 0
-                            ? (int) floor(
-                                min(1, max(0, $uploadedBytes) / $uploadTotal) * $artifactSize,
-                            )
-                            : min($artifactSize, max(0, $uploadedBytes));
-                        $progress($uploaded, $artifactSize);
-                    },
-                ]);
-            }
-
-            $response = $request
-                ->attach(
-                    'metadata',
-                    json_encode($metadata, JSON_THROW_ON_ERROR),
-                    'metadata.json',
-                    ['Content-Type' => 'application/json; charset=UTF-8'],
-                )
-                ->attach(
-                    'file',
-                    $stream,
-                    $artifact['filename'],
-                    ['Content-Type' => self::ENCRYPTED_BACKUP_MIME],
-                )
-                ->post('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name');
-
+            // Small archives go in one request; a clinic's archive of
+            // hundreds of megabytes goes in resumable chunks, so a slow or
+            // interrupted connection does not restart (or time out) the
+            // whole transfer.
+            $response = $artifact['size'] > $this->resumableThreshold()
+                ? $this->resumableUpload($token, $stream, $artifact['size'], $metadata, $progress)
+                : $this->multipartUpload($token, $stream, $artifact, $metadata, $progress);
             $remoteId = $response->json('id');
 
             if (! $response->successful()
@@ -733,6 +726,8 @@ final class GoogleDriveBackup
                     ? $remoteName
                     : $artifact['filename'],
             ];
+        } catch (DriveReconnectRequired $exception) {
+            throw $exception;
         } catch (DriveUploadCancelled $exception) {
             try {
                 $this->syncConnectionStatus($connection, 'connected');
@@ -771,8 +766,13 @@ final class GoogleDriveBackup
         /** @var Carbon|null $tokenExpiresAt */
         $tokenExpiresAt = $connection->token_expires_at;
 
-        if ($connection->access_token && $tokenExpiresAt?->isFuture()) {
+        if ($connection->access_token
+            && $tokenExpiresAt?->isAfter(now()->addSeconds(self::TOKEN_EXPIRY_MARGIN_SECONDS))) {
             return $connection->access_token;
+        }
+
+        if ($connection->refresh_token === null) {
+            throw new DriveReconnectRequired;
         }
 
         $payload = $this->withOptionalClientSecret([
@@ -780,18 +780,283 @@ final class GoogleDriveBackup
             'refresh_token' => $connection->refresh_token,
             'grant_type' => 'refresh_token',
         ]);
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', $payload);
+        $response = $this->http()->asForm()->post('https://oauth2.googleapis.com/token', $payload);
+        $accessToken = $this->providerToken($response->json('access_token'));
 
-        if (! $response->successful() || ! $response->json('access_token')) {
+        if (! $response->successful() || $accessToken === null) {
+            if (in_array($response->status(), [400, 401], true)
+                && in_array($response->json('error'), self::DEAD_GRANT_ERRORS, true)) {
+                $this->forgetRefusedGrant($connection);
+
+                throw new DriveReconnectRequired;
+            }
+
             throw new RuntimeException('The Google Drive connection has expired. Connect Gmail again.');
         }
 
+        $expiresIn = $response->json('expires_in', 3600);
+        $expiresIn = is_int($expiresIn) && $expiresIn > 0 && $expiresIn <= 604800 ? $expiresIn : 3600;
         $connection->update([
-            'access_token' => $response->json('access_token'),
-            'token_expires_at' => now()->addSeconds((int) $response->json('expires_in', 3600)),
+            'access_token' => $accessToken,
+            'token_expires_at' => now()->addSeconds($expiresIn),
         ]);
 
-        return (string) $response->json('access_token');
+        return $accessToken;
+    }
+
+    /**
+     * Google no longer honours the stored grant. Keeping it would only make
+     * every scheduled copy fail the same way while the page says
+     * "Connecté": the tokens go, the account stays named, and the page asks
+     * the doctor to reconnect it.
+     */
+    private function forgetRefusedGrant(DriveBackupConnection $connection): void
+    {
+        try {
+            $connection->update([
+                'access_token' => null,
+                'refresh_token' => null,
+                'token_expires_at' => null,
+            ]);
+            $this->syncConnectionStatus($connection, 'error', 'reconnect_required');
+        } catch (Throwable) {
+            // The refusal itself is reported to the caller.
+        }
+    }
+
+    /**
+     * Every Google request: bounded connect and transfer times, and the
+     * CA bundle shipped with the desktop when one is configured (the bundled
+     * PHP for Windows has no system certificate store of its own).
+     */
+    private function http(int $timeoutSeconds = 30): PendingRequest
+    {
+        $request = Http::connectTimeout(15)->timeout(max(1, $timeoutSeconds));
+        $bundle = config('medismart.http.ca_bundle');
+
+        if (is_string($bundle) && $bundle !== '' && is_file($bundle)) {
+            $request = $request->withOptions(['verify' => $bundle]);
+        }
+
+        return $request;
+    }
+
+    /** Enough time to move $bytes on a slow (32 KiB/s) clinic connection. */
+    private function transferTimeout(int $bytes): int
+    {
+        return (int) min(6 * 3600, 120 + intdiv(max(0, $bytes), 32 * 1024));
+    }
+
+    private function resumableThreshold(): int
+    {
+        return max(0, (int) config('medismart.backups.drive_resumable_threshold_bytes', 5 * 1024 * 1024));
+    }
+
+    private function resumableChunkBytes(): int
+    {
+        $configured = max(1, (int) config('medismart.backups.drive_upload_chunk_bytes', 8 * 1024 * 1024));
+
+        return $configured >= self::RESUMABLE_CHUNK_UNIT
+            ? intdiv($configured, self::RESUMABLE_CHUNK_UNIT) * self::RESUMABLE_CHUNK_UNIT
+            : $configured;
+    }
+
+    /**
+     * @param  resource  $stream
+     * @param  array{filename: string, size: int}  $artifact
+     * @param  array<string, mixed>  $metadata
+     * @param  (Closure(int, int): void)|null  $progress
+     */
+    private function multipartUpload(
+        string $token,
+        $stream,
+        array $artifact,
+        array $metadata,
+        ?Closure $progress,
+    ): Response {
+        $request = $this->http($this->transferTimeout($artifact['size']))->withToken($token);
+
+        if ($progress !== null) {
+            $artifactSize = $artifact['size'];
+            $request = $request->withOptions([
+                'progress' => static function (
+                    int $downloadTotal,
+                    int $downloadedBytes,
+                    int $uploadTotal,
+                    int $uploadedBytes,
+                ) use ($artifactSize, $progress): void {
+                    unset($downloadTotal, $downloadedBytes);
+                    $uploaded = $uploadTotal > 0
+                        ? (int) floor(
+                            min(1, max(0, $uploadedBytes) / $uploadTotal) * $artifactSize,
+                        )
+                        : min($artifactSize, max(0, $uploadedBytes));
+                    $progress($uploaded, $artifactSize);
+                },
+            ]);
+        }
+
+        return $request
+            ->attach(
+                'metadata',
+                json_encode($metadata, JSON_THROW_ON_ERROR),
+                'metadata.json',
+                ['Content-Type' => 'application/json; charset=UTF-8'],
+            )
+            ->attach(
+                'file',
+                $stream,
+                $artifact['filename'],
+                ['Content-Type' => self::ENCRYPTED_BACKUP_MIME],
+            )
+            ->post('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name');
+    }
+
+    /**
+     * Google's resumable protocol: open a session, then PUT chunks with
+     * Content-Range. A 308 answer tells how much Google holds; after a
+     * network error or a 5xx the session is asked where it stands and the
+     * upload carries on from there.
+     *
+     * @param  resource  $stream
+     * @param  array<string, mixed>  $metadata
+     * @param  (Closure(int, int): void)|null  $progress
+     */
+    private function resumableUpload(
+        string $token,
+        $stream,
+        int $size,
+        array $metadata,
+        ?Closure $progress,
+    ): Response {
+        $session = $this->http()
+            ->withToken($token)
+            ->withHeaders([
+                'X-Upload-Content-Type' => self::ENCRYPTED_BACKUP_MIME,
+                'X-Upload-Content-Length' => (string) $size,
+            ])
+            ->post('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name', $metadata);
+        $sessionUrl = $session->header('Location');
+
+        if (! $session->successful() || ! $this->isGoogleUploadSession($sessionUrl)) {
+            throw new RuntimeException('Google Drive did not open a resumable upload session.');
+        }
+
+        $chunkBytes = $this->resumableChunkBytes();
+        $offset = 0;
+        $failures = 0;
+
+        while (true) {
+            if (fseek($stream, $offset) !== 0) {
+                throw new RuntimeException('The verified backup stream could not be read.');
+            }
+
+            $remaining = $size - $offset;
+            $chunk = '';
+
+            if ($remaining > 0) {
+                $chunk = fread($stream, max(1, min($chunkBytes, $remaining)));
+
+                if (! is_string($chunk) || $chunk === '') {
+                    throw new RuntimeException('The verified backup stream ended early.');
+                }
+            }
+
+            $range = $chunk === ''
+                ? 'bytes */'.$size
+                : 'bytes '.$offset.'-'.($offset + strlen($chunk) - 1).'/'.$size;
+
+            try {
+                $response = $this->http(max(300, $this->transferTimeout(strlen($chunk))))
+                    ->withOptions(['allow_redirects' => false])
+                    ->withHeaders(['Content-Range' => $range])
+                    ->withBody($chunk, self::ENCRYPTED_BACKUP_MIME)
+                    ->put($sessionUrl);
+            } catch (ConnectionException) {
+                $response = null;
+            }
+
+            if ($response !== null && $response->successful()) {
+                $progress?->__invoke($size, $size);
+
+                return $response;
+            }
+
+            if ($response !== null && $response->status() === 308) {
+                $confirmed = $this->confirmedOffset($response, $size);
+
+                // Google kept nothing of what was just sent: count it as a
+                // failure rather than sending the same chunk forever.
+                if ($confirmed <= $offset && ++$failures > self::RESUMABLE_MAXIMUM_RETRIES) {
+                    throw new RuntimeException('Google Drive stopped accepting the encrypted backup.');
+                }
+
+                if ($confirmed > $offset) {
+                    $failures = 0;
+                }
+
+                $offset = $confirmed;
+                $progress?->__invoke($offset, $size);
+
+                continue;
+            }
+
+            if ($response !== null && in_array($response->status(), [404, 410], true)) {
+                throw new RuntimeException('The Google Drive upload session expired.');
+            }
+
+            if (($response !== null && $response->status() < 500 && $response->status() !== 429)
+                || ++$failures > self::RESUMABLE_MAXIMUM_RETRIES) {
+                throw new RuntimeException('Google Drive rejected a chunk of the encrypted backup.');
+            }
+
+            Sleep::for(min(30, 2 ** $failures))->seconds();
+            $offset = $this->sessionOffset($sessionUrl, $size, $offset);
+        }
+    }
+
+    /** How many bytes Google holds, from a 308 answer's Range header. */
+    private function confirmedOffset(Response $response, int $size): int
+    {
+        $range = $response->header('Range');
+
+        if ($range === '') {
+            return 0;
+        }
+
+        if (preg_match('/\Abytes=0-([0-9]{1,15})\z/', $range, $matches) !== 1
+            || (int) $matches[1] >= $size) {
+            throw new RuntimeException('Google Drive returned an invalid upload range.');
+        }
+
+        return (int) $matches[1] + 1;
+    }
+
+    /** Ask an interrupted session where it stands; keep $fallback when it cannot say. */
+    private function sessionOffset(string $sessionUrl, int $size, int $fallback): int
+    {
+        try {
+            $response = $this->http()
+                ->withOptions(['allow_redirects' => false])
+                ->withHeaders(['Content-Range' => 'bytes */'.$size])
+                ->withBody('', self::ENCRYPTED_BACKUP_MIME)
+                ->put($sessionUrl);
+        } catch (ConnectionException) {
+            return $fallback;
+        }
+
+        return $response->status() === 308 ? $this->confirmedOffset($response, $size) : $fallback;
+    }
+
+    private function isGoogleUploadSession(string $url): bool
+    {
+        $parts = parse_url($url);
+
+        return is_array($parts)
+            && ($parts['scheme'] ?? null) === 'https'
+            && ($parts['host'] ?? null) === 'www.googleapis.com'
+            && str_starts_with((string) ($parts['path'] ?? ''), '/upload/drive/v3/files')
+            && str_contains((string) ($parts['query'] ?? ''), 'upload_id=');
     }
 
     /**
@@ -917,7 +1182,7 @@ final class GoogleDriveBackup
             throw new RuntimeException('The Google Drive backup identifier is invalid.');
         }
 
-        $response = Http::withToken($token)->get(
+        $response = $this->http()->withToken($token)->get(
             'https://www.googleapis.com/drive/v3/files/'.$fileId,
             ['fields' => 'id,name,size,createdTime,mimeType,parents,appProperties'],
         );
@@ -960,7 +1225,7 @@ final class GoogleDriveBackup
         string $folderId,
         array $target,
     ): array {
-        $response = Http::withToken($token)->get(
+        $response = $this->http()->withToken($token)->get(
             'https://www.googleapis.com/drive/v3/files',
             [
                 'q' => "trashed = false and '{$folderId}' in parents and mimeType = '".self::ENCRYPTED_BACKUP_MIME."'",
@@ -1058,24 +1323,46 @@ final class GoogleDriveBackup
         }
     }
 
+    /**
+     * The managed folder, created when missing. A folder the doctor deleted
+     * or put in the bin is replaced instead of failing every upload.
+     */
     private function ensureFolder(DriveBackupConnection $connection, string $token): string
     {
         if ($connection->folder_id !== null) {
-            return $connection->folder_id;
+            $response = $this->http()->withToken($token)->get(
+                'https://www.googleapis.com/drive/v3/files/'.rawurlencode($connection->folder_id),
+                ['fields' => 'id,mimeType,trashed'],
+            );
+
+            if ($response->successful()
+                && $response->json('trashed') !== true
+                && in_array($response->json('mimeType'), [null, self::FOLDER_MIME], true)) {
+                return $connection->folder_id;
+            }
+
+            if (! $response->successful() && $response->status() !== 404) {
+                throw new RuntimeException('The Google Drive backup folder could not be checked.');
+            }
+
+            $connection->update(['folder_id' => null]);
         }
 
-        $response = Http::withToken($token)->post('https://www.googleapis.com/drive/v3/files', [
+        $response = $this->http()->withToken($token)->post('https://www.googleapis.com/drive/v3/files', [
             'name' => $connection->folder_name ?: 'Drclick Backups',
-            'mimeType' => 'application/vnd.google-apps.folder',
+            'mimeType' => self::FOLDER_MIME,
         ]);
+        $folderId = $response->json('id');
 
-        if (! $response->successful() || ! $response->json('id')) {
+        if (! $response->successful()
+            || ! is_string($folderId)
+            || preg_match('/\A[A-Za-z0-9_-]{1,200}\z/', $folderId) !== 1) {
             throw new RuntimeException('The Google Drive backup folder could not be created.');
         }
 
-        $connection->update(['folder_id' => $response->json('id')]);
+        $connection->update(['folder_id' => $folderId]);
 
-        return (string) $response->json('id');
+        return $folderId;
     }
 
     /**
@@ -1094,7 +1381,7 @@ final class GoogleDriveBackup
         string $folderId,
         array $artifact,
     ): ?array {
-        $response = Http::withToken($token)->get(
+        $response = $this->http()->withToken($token)->get(
             'https://www.googleapis.com/drive/v3/files',
             [
                 'q' => "trashed = false and '{$folderId}' in parents and mimeType = '".self::ENCRYPTED_BACKUP_MIME."' and appProperties has { key='medismart_backup_record_id' and value='{$artifact['backup_record_id']}' }",

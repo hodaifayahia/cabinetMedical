@@ -46,6 +46,12 @@ final class ApplicationSettingRegistry
 
     public const BACKUP_DRIVE_AUTO_UPLOAD_PASSPHRASE = 'backups.drive_auto_upload_passphrase';
 
+    public const BACKUP_COPY_DIRECTORY = 'backups.copy_directory';
+
+    public const BACKUP_COPY_KEEP = 'backups.copy_keep';
+
+    public const BACKUP_COPY_LAST_RESULT = 'backups.copy_last_result';
+
     public const UPDATE_AUTO_CHECK = 'updates.auto_check';
 
     public const UPDATE_CHANNEL = 'updates.channel';
@@ -321,6 +327,49 @@ final class ApplicationSettingRegistry
                 sensitive: true,
                 redaction: 'full',
                 requiresRecentConfirmation: true,
+                backupPolicy: 'machine_bound',
+                editable: false,
+            ),
+            // A second folder chosen by the doctor (another disk, a USB key,
+            // a synchronised folder): every verified backup is also copied
+            // there. The archives themselves stay in the managed directory.
+            new ApplicationSettingDefinition(
+                key: self::BACKUP_COPY_DIRECTORY,
+                group: 'backups',
+                permission: 'configuration.backups.manage',
+                label: 'Dossier de copie des sauvegardes',
+                helpText: 'Dossier facultatif (autre disque, clé USB) qui reçoit une copie vérifiée de chaque sauvegarde de ce PC.',
+                type: ApplicationSettingType::STRING,
+                defaultValue: null,
+                nullable: true,
+                maximumLength: 1024,
+                scope: 'installation',
+                backupPolicy: 'machine_bound',
+            ),
+            new ApplicationSettingDefinition(
+                key: self::BACKUP_COPY_KEEP,
+                group: 'backups',
+                permission: 'configuration.backups.manage',
+                label: 'Copies conservées',
+                helpText: 'Nombre de copies les plus récentes gardées dans le dossier de copie; les plus anciennes copies Drclick y sont supprimées.',
+                type: ApplicationSettingType::INTEGER,
+                defaultValue: 10,
+                minimum: 1,
+                maximum: 365,
+                scope: 'installation',
+                backupPolicy: 'machine_bound',
+            ),
+            new ApplicationSettingDefinition(
+                key: self::BACKUP_COPY_LAST_RESULT,
+                group: 'backups',
+                permission: 'configuration.backups.manage',
+                label: 'Résultat de la dernière copie',
+                helpText: 'État de la dernière copie d\'une sauvegarde vers le dossier choisi.',
+                type: ApplicationSettingType::JSON,
+                defaultValue: null,
+                nullable: true,
+                scope: 'installation',
+                audited: false,
                 backupPolicy: 'machine_bound',
                 editable: false,
             ),

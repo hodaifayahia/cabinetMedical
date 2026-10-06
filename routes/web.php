@@ -27,6 +27,7 @@ use App\Http\Controllers\Configuration\ClinicIdentityController;
 use App\Http\Controllers\Configuration\ConnectivityAndBackupController;
 use App\Http\Controllers\Configuration\DocumentTemplateController;
 use App\Http\Controllers\Configuration\LicenseController;
+use App\Http\Controllers\Configuration\LocalBackupArchiveController;
 use App\Http\Controllers\Configuration\MedicationController;
 use App\Http\Controllers\Configuration\OnlineServiceController;
 use App\Http\Controllers\Configuration\PrepareOfflineRestoreController;
@@ -563,6 +564,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('backup/local/encrypted', [BackupController::class, 'encryptedLocal'])
                     ->middleware('password.confirm')
                     ->name('backup.local.encrypted');
+                Route::put('backup/destination', [LocalBackupArchiveController::class, 'updateDestination'])
+                    ->name('backup.destination.update');
+                Route::post('backup/destination/test', [LocalBackupArchiveController::class, 'testDestination'])
+                    ->middleware('throttle:20,1')
+                    ->name('backup.destination.test');
+                Route::get('backup/archives/download', [LocalBackupArchiveController::class, 'download'])
+                    ->middleware('password.confirm')
+                    ->name('backup.archives.download');
             });
 
             Route::middleware('permission:configuration.restore.manage')->group(function (): void {
@@ -572,6 +581,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('backup/restore/prepare', PrepareOfflineRestoreController::class)
                     ->middleware(['password.confirm', 'throttle:offline-restore-prepare'])
                     ->name('backup.restore.prepare');
+                Route::post('backup/archives/restore/prepare', [LocalBackupArchiveController::class, 'prepareRestore'])
+                    ->middleware(['password.confirm', 'throttle:10,1'])
+                    ->name('backup.archives.restore.prepare');
+                Route::post('backup/archives/restore/apply', [LocalBackupArchiveController::class, 'applyRestore'])
+                    ->middleware(['password.confirm', 'throttle:5,1'])
+                    ->name('backup.archives.restore.apply');
+                Route::delete('backup/archives/restore', [LocalBackupArchiveController::class, 'cancelRestore'])
+                    ->name('backup.archives.restore.cancel');
             });
 
             Route::middleware('permission:configuration.drive.manage')->group(function (): void {

@@ -96,7 +96,9 @@ class UploadBackupToGoogleDriveTest extends TestCase
             'severity' => 'info',
         ]);
 
-        Http::assertSentCount(2);
+        // The managed folder is checked, the existing archive looked up, then
+        // the small archive is sent in one multipart request.
+        Http::assertSentCount(3);
         Http::assertSent(function (Request $request): bool {
             if ($request->method() !== 'POST'
                 || ! str_contains($request->url(), '/upload/drive/v3/files?uploadType=multipart')) {

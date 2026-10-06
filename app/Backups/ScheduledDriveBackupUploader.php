@@ -10,6 +10,7 @@ use App\Models\CabinetSetting;
 use App\Models\DriveBackupConnection;
 use App\Services\Backups\DriveBackupAuthority;
 use App\Services\Backups\DriveBackupEntitlement;
+use SensitiveParameter;
 use Throwable;
 
 /**
@@ -40,11 +41,18 @@ final class ScheduledDriveBackupUploader
     ) {}
 
     /**
+     * $passphrase is the doctor's one-off choice for a manual backup; without
+     * it the automatic-copy passphrase is used, when that copy is on.
+     *
      * @return array{status: 'queued'|'skipped'|'failed', reason: string|null, backup_record_id: string|null}
      */
-    public function queueCopyOf(BackupRecord $scheduledBackup): array
-    {
-        $passphrase = $this->policy->passphrase();
+    public function queueCopyOf(
+        BackupRecord $scheduledBackup,
+        #[SensitiveParameter] ?string $passphrase = null,
+    ): array {
+        $passphrase = $passphrase !== null && strlen($passphrase) >= AutomaticDriveUploadPolicy::MINIMUM_PASSPHRASE_LENGTH
+            ? $passphrase
+            : $this->policy->passphrase();
 
         if ($passphrase === null) {
             return ['status' => 'skipped', 'reason' => 'automatic_upload_disabled', 'backup_record_id' => null];

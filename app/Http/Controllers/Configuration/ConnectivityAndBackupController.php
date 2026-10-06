@@ -3,11 +3,16 @@
 namespace App\Http\Controllers\Configuration;
 
 use App\Backups\AutomaticDriveUploadPolicy;
+use App\Backups\BackupCopyDestination;
 use App\Backups\BackupSchedule;
+use App\Backups\DriveCopyIssue;
+use App\Backups\InAppBackupRestorer;
+use App\Backups\LocalBackupCatalog;
 use App\Backups\LocalRestorePointRunner;
 use App\Configuration\ApplicationSettingRegistry as Setting;
 use App\Enums\PermissionName;
 use App\Http\Controllers\Controller;
+use App\Models\ApplicationEvent;
 use App\Models\AuditLog;
 use App\Models\BackupRecord;
 use App\Models\CabinetSetting;
@@ -29,6 +34,7 @@ use App\Services\LicenseService;
 use App\Services\NetworkService;
 use App\Services\QrUploadService;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -62,6 +68,9 @@ final class ConnectivityAndBackupController extends Controller
         AutomaticDriveUploadPolicy $automaticDriveUpload,
         DriveBackupEntitlement $driveEntitlement,
         LocalRestorePointRunner $restorePoints,
+        BackupCopyDestination $copyDestination,
+        LocalBackupCatalog $catalog,
+        InAppBackupRestorer $restorer,
     ): Response {
         /** @var User|null $actor */
         $actor = $request->user();
@@ -72,6 +81,9 @@ final class ConnectivityAndBackupController extends Controller
         $canManageBackups = $this->localBackups->mayManage($actor);
         $canManageRestore = $maintenanceAllowed
             && ($actor?->can(PermissionName::CONFIGURATION_RESTORE_MANAGE->value) ?? false);
+        // Restoring a backup over this PC's data, from this page: the
+        // installation maintainer or the desktop's own doctor.
+        $canRestoreBackups = $this->localBackups->mayRestore($actor);
         // A supervised desktop's own doctor manages its Drive backup even
         // though the other installation-wide tools stay out of reach.
         $canManageDrive = $this->driveAuthority->mayManage($actor);
@@ -145,6 +157,7 @@ final class ConnectivityAndBackupController extends Controller
                     'drive_upload_bytes',
                     'drive_upload_attempts',
                     'drive_upload_cancel_requested_at',
+                    'drive_upload_failure_code',
                 ])
                 ->map(function (BackupRecord $record) use ($canManageDrive): array {
                     $driveStatus = $this->driveUploadStatus($record);
@@ -178,6 +191,9 @@ final class ConnectivityAndBackupController extends Controller
                         'drive_upload_attempts' => $driveStatus === null
                             ? 0
                             : min(3, max(0, (int) $record->drive_upload_attempts)),
+                        'drive_failure_message' => $driveStatus === BackupRecord::DRIVE_UPLOAD_FAILED
+                            ? DriveCopyIssue::describe($record->drive_upload_failure_code)
+                            : null,
                         'drive_cancel_available' => $canManageDrive
                             && blank($record->remote_file_id)
                             && $record->drive_upload_cancel_requested_at === null
@@ -355,6 +371,12 @@ final class ConnectivityAndBackupController extends Controller
                     $encryptedBackupsReady,
                     'L’extension cryptographique Sodium requise n’est pas disponible.',
                 ),
+                'in_app_restore' => $this->capability(
+                    $driveFoundationReady && $canRestoreBackups && $restorer->available(),
+                    ! $canRestoreBackups
+                        ? 'Seul le médecin du cabinet peut restaurer une sauvegarde sur ce PC.'
+                        : 'La restauration est possible uniquement dans l’application Drclick installée sur ce PC (base de données locale).',
+                ),
                 'offline_restore' => $this->capability(
                     $foundationReady
                         && $encryptedBackupsReady
@@ -411,7 +433,15 @@ final class ConnectivityAndBackupController extends Controller
             'driveAutomation' => [
                 'enabled' => $canManageDrive && $driveFoundationReady && $automaticDriveUpload->enabled(),
                 'scheduler_active' => $canManageDrive && $driveSchedulerActive,
+                'last_issue' => $canManageDrive && $driveFoundationReady ? $this->lastDriveIssue() : null,
             ],
+            'backupDestination' => $this->backupDestinationPayload(
+                $copyDestination,
+                $canManageBackups && $driveFoundationReady,
+            ),
+            'latestBackups' => $canManageBackups && $driveFoundationReady
+                ? $this->latestBackups($catalog)
+                : [],
             'backupSchedule' => $this->backupSchedulePayload(
                 $settings,
                 $restorePoints,
@@ -422,6 +452,7 @@ final class ConnectivityAndBackupController extends Controller
                 'manage_settings' => $canManageConnectivity,
                 'manage_backups' => $canManageBackups,
                 'manage_restore' => $canManageRestore,
+                'restore_backups' => $canRestoreBackups,
                 'manage_drive' => $canManageDrive,
                 // Connect, change or disconnect the account and set the
                 // automatic-copy passphrase: the clinic's doctor only.
@@ -429,7 +460,7 @@ final class ConnectivityAndBackupController extends Controller
                 'manage_license' => $canManageLicense,
                 'view_diagnostics' => $canViewDiagnostics,
                 'manage_upload_sessions' => $canManageUploadSessions,
-                'sensitive_actions_confirmed' => ($maintenanceAllowed || $canManageDrive)
+                'sensitive_actions_confirmed' => ($maintenanceAllowed || $canManageDrive || $canManageBackups || $canRestoreBackups)
                     && $this->recentPasswordConfirmation($request),
             ],
             // Raw SQLite replacement remains deliberately hidden until the
@@ -719,6 +750,78 @@ final class ConnectivityAndBackupController extends Controller
     }
 
     /**
+     * The managed folder (read-only) and the doctor's copy folder.
+     *
+     * @return array{internal_location: string|null, copy_directory: string|null, copy_keep: int, last_copy: array<string, mixed>|null}
+     */
+    private function backupDestinationPayload(BackupCopyDestination $destination, bool $visible): array
+    {
+        if (! $visible) {
+            return ['internal_location' => null, 'copy_directory' => null, 'copy_keep' => 10, 'last_copy' => null];
+        }
+
+        $location = config('medismart.backups.managed_directory');
+
+        return [
+            'internal_location' => is_string($location) && $location !== '' ? $location : null,
+            'copy_directory' => $destination->directory(),
+            'copy_keep' => $destination->keep(),
+            'last_copy' => $destination->directory() === null ? null : $destination->lastResult(),
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function latestBackups(LocalBackupCatalog $catalog): array
+    {
+        try {
+            return $catalog->entries(30);
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * The latest reason a backup did not reach Drive, unless a later upload
+     * succeeded: shown in the Drive block instead of failing silently.
+     *
+     * @return array{reason: string, message: string, at: string|null}|null
+     */
+    private function lastDriveIssue(): ?array
+    {
+        try {
+            $issue = ApplicationEvent::query()
+                ->whereIn('event', ['ScheduledDriveBackupSkipped', 'ScheduledDriveBackupFailed', 'BackupDriveUploadFailed'])
+                ->latest('occurred_at')
+                ->first();
+            $issueAt = $issue?->getAttribute('occurred_at');
+
+            if (! $issue instanceof ApplicationEvent || ! $issueAt instanceof CarbonInterface) {
+                return null;
+            }
+
+            $resolved = ApplicationEvent::query()
+                ->where('event', 'BackupDriveUploadCompleted')
+                ->where('occurred_at', '>=', $issueAt)
+                ->exists();
+            $reason = is_array($issue->context) && is_string($issue->context['reason'] ?? null)
+                ? $issue->context['reason']
+                : 'drive_copy_failed';
+
+            if ($resolved || $reason === 'automatic_upload_disabled') {
+                return null;
+            }
+
+            return [
+                'reason' => $reason,
+                'message' => DriveCopyIssue::describe($reason),
+                'at' => $issueAt->toIso8601String(),
+            ];
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * Do not disclose the connected account or remote backup metadata to a
      * user who can open another section of this shared page but cannot manage
      * the Drive integration.
@@ -731,6 +834,7 @@ final class ConnectivityAndBackupController extends Controller
             'google_drive_configured' => false,
             'google_drive_email' => null,
             'google_drive_connected' => false,
+            'google_drive_reconnect_required' => false,
             'google_drive_folder' => 'Drclick Backups',
             'last_backup_at' => null,
             'last_backup_name' => null,
