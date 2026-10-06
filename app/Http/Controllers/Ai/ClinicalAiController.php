@@ -12,8 +12,10 @@ use App\Services\Ai\AiException;
 use App\Services\Ai\AiGateway;
 use App\Services\Ai\ClinicalAiAssistant;
 use App\Services\Ai\CopilotService;
+use App\Services\Ai\DictationAudio;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 
 /**
  * JSON endpoints behind the "✨ IA" buttons of the consultation workspace and
@@ -42,6 +44,27 @@ class ClinicalAiController extends Controller
             $this->draft($request),
             $data['transcript'] ?? null,
         ));
+    }
+
+    /**
+     * One recorded segment of the doctor's dictation, as text. The audio is
+     * forwarded to the speech model and never stored.
+     */
+    public function transcribeDictation(Request $request, Consultation $consultation): JsonResponse
+    {
+        $request->validate(['audio' => DictationAudio::rules()], DictationAudio::messages());
+        $audio = $request->file('audio');
+        abort_unless($audio instanceof UploadedFile, 422);
+
+        return $this->run(function () use ($request, $audio): array {
+            $completion = $this->gateway->transcribe(
+                $this->user($request),
+                (string) $audio->getRealPath(),
+                DictationAudio::mimeOf($audio),
+            );
+
+            return ['text' => $completion->content, 'balance' => $completion->balance];
+        });
     }
 
     public function copilotHistory(Consultation $consultation, CopilotService $copilot): JsonResponse

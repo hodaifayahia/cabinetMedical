@@ -24,6 +24,23 @@ return [
     'ecg_model' => (string) env('AI_ECG_MODEL', env('AI_VISION_MODEL', env('AI_MODEL', 'qwen3.8-flash'))),
     'timeout' => (int) env('AI_TIMEOUT', 60),
 
+    // Voice dictation recorded by the desktop app (whose web view has no
+    // working browser speech recognition). Each audio segment is turned into
+    // text here, then structured into the visit like typed notes.
+    // - `chat_input_audio`: an `input_audio` part sent to chat completions,
+    //   which is how Alibaba Model Studio's compatible mode serves Qwen3-ASR.
+    // - `openai_transcriptions`: OpenAI-style multipart /audio/transcriptions
+    //   (Whisper and compatible servers).
+    'transcription_driver' => (string) env('AI_TRANSCRIPTION_DRIVER', 'chat_input_audio'),
+    'transcription_model' => (string) env('AI_TRANSCRIPTION_MODEL', 'qwen3-asr-flash'),
+    // Speech models are sometimes served from another endpoint or plan than
+    // the chat models; left empty, the chat base_url and api_key are used.
+    'transcription_base_url' => rtrim((string) env('AI_TRANSCRIPTION_BASE_URL', ''), '/'),
+    'transcription_api_key' => (string) env('AI_TRANSCRIPTION_API_KEY', ''),
+    'transcription_language' => (string) env('AI_TRANSCRIPTION_LANGUAGE', 'fr'),
+    // Largest audio segment (bytes) accepted for transcription.
+    'max_audio_bytes' => 10 * 1024 * 1024,
+
     // Wallet every new cabinet starts with. Recharges are made by support
     // from the admin panel.
     'initial_credits' => (int) env('AI_INITIAL_CREDITS', 500),
@@ -38,6 +55,10 @@ return [
         'ecg_analysis' => 4,
         'ecg_chat' => 1,
         'copilot_chat' => 1,
+        // Free: a dictation is cut into many short segments, and the doctor
+        // already pays for the action that uses the text ("Ranger dans la
+        // visite", consultation_text). Every segment is still logged.
+        'dictation_transcription' => 0,
     ],
 
     // Largest upload (bytes) sent to the vision model.

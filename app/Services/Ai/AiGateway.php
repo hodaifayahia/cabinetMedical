@@ -70,6 +70,29 @@ final class AiGateway
     }
 
     /**
+     * One recorded segment of a voice dictation, as text. Used where the
+     * screen cannot recognise speech itself (the desktop app's web view).
+     */
+    public function transcribe(User $user, string $path, string $mime): AiCompletion
+    {
+        $feature = AiFeature::DICTATION_TRANSCRIPTION;
+
+        return match ($this->mode($user)) {
+            'direct' => $this->ledger->spend(
+                $this->cabinetOf($user),
+                $user,
+                $feature,
+                fn (): AiCompletion => $this->provider->transcribe($path, $mime, $feature->model(false)),
+            ),
+            'relay' => $this->relayTranscribe($path, $mime),
+            default => throw new AiException(
+                'La dictée vocale passe par le service en ligne, qui n’est pas encore relié sur ce poste (Configuration › Service en ligne). En attendant, cliquez dans le champ texte puis appuyez sur Windows + H pour la dictée de Windows.',
+                AiException::UNAVAILABLE,
+            ),
+        };
+    }
+
+    /**
      * What the doctor's screens show next to each AI button.
      *
      * @return array{available: bool, enabled: bool, balance: int|null, costs: array<string, int>, support: array{phone: string|null, email: string|null}, message: string|null}
@@ -180,20 +203,54 @@ final class AiGateway
         );
     }
 
+    private function relayTranscribe(string $path, string $mime): AiCompletion
+    {
+        $audio = @file_get_contents($path);
+
+        if (! is_string($audio) || $audio === '') {
+            throw new AiException('L’enregistrement audio est vide ou illisible.', AiException::UNSUPPORTED);
+        }
+
+        $body = $this->send(
+            fn (PendingRequest $request) => $request
+                ->timeout((int) config('ai.timeout', 60) + 15)
+                ->attach('audio', $audio, 'dictee.'.AiProviderClient::audioExtension($mime), ['Content-Type' => $mime])
+                ->post('/api/v1/ai/transcribe'),
+            json: false,
+            offlineMessage: 'La transcription de la dictée a besoin d’Internet. Sans connexion, cliquez dans le champ texte puis appuyez sur Windows + H pour utiliser la dictée de Windows.',
+        );
+
+        $text = $body['text'] ?? null;
+
+        if (! is_string($text)) {
+            throw new AiException('Le service en ligne a renvoyé une réponse illisible.', AiException::PROVIDER);
+        }
+
+        return new AiCompletion(
+            content: $text,
+            model: (string) ($body['model'] ?? ''),
+            balance: isset($body['balance']) ? (int) $body['balance'] : null,
+        );
+    }
+
     /**
      * @param  callable(PendingRequest): Response  $call
      * @param  bool  $charges  whether the hosted service charges the wallet for this call
+     * @param  bool  $json  false for a multipart upload, whose content type the attachments set
      * @return array<string, mixed>
      */
-    private function send(callable $call, bool $charges = false): array
+    private function send(callable $call, bool $charges = false, bool $json = true, ?string $offlineMessage = null): array
     {
         $request = $this->http
             ->baseUrl((string) $this->syncSettings->endpoint())
             ->withToken((string) $this->syncSettings->token())
             ->acceptJson()
-            ->asJson()
             ->connectTimeout(8)
             ->timeout(20);
+
+        if ($json) {
+            $request->asJson();
+        }
 
         try {
             $response = $call($request);
@@ -207,7 +264,7 @@ final class AiGateway
                 );
             }
 
-            throw new AiException('L’assistant IA a besoin d’Internet. Vérifiez la connexion puis réessayez.', AiException::UNAVAILABLE);
+            throw new AiException($offlineMessage ?? 'L’assistant IA a besoin d’Internet. Vérifiez la connexion puis réessayez.', AiException::UNAVAILABLE);
         }
 
         $body = $response->json();

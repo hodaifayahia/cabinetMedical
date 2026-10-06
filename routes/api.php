@@ -69,4 +69,6 @@ Route::prefix('v1')->group(function (): void {
     });
 
     require __DIR__.'/api_mobile.php';
+            Route::post('ai/transcribe', [AiRelayController::class, 'transcribe'])
+                ->middleware('throttle:60,1');
 });

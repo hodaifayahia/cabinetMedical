@@ -24,6 +24,7 @@ class AiFeatureTest extends TestCase
             'ecg_analysis',
             'ecg_chat',
             'copilot_chat',
+            'dictation_transcription',
         ], array_map(static fn (AiFeature $feature): string => $feature->value, AiFeature::cases()));
     }
 
@@ -38,6 +39,7 @@ class AiFeatureTest extends TestCase
             'ecg_analysis' => 4,
             'ecg_chat' => 1,
             'copilot_chat' => 1,
+            'dictation_transcription' => 0,
         ], AiFeature::costs());
     }
 
@@ -101,6 +103,7 @@ class AiFeatureTest extends TestCase
             'ecg analysis' => [AiFeature::ECG_ANALYSIS, true],
             'ecg chat' => [AiFeature::ECG_CHAT, true],
             'copilot' => [AiFeature::COPILOT_CHAT, false],
+            'dictation' => [AiFeature::DICTATION_TRANSCRIPTION, false],
         ];
     }
 
@@ -128,6 +131,17 @@ class AiFeatureTest extends TestCase
         $this->assertSame('text', AiFeature::DOCUMENT_ANALYSIS->model(false));
         $this->assertSame('text', AiFeature::COPILOT_CHAT->model(false));
         $this->assertSame('text', AiFeature::PATIENT_ANALYSIS->model(false));
+    }
+
+    public function test_only_dictation_transcribes_audio_with_the_transcription_model(): void
+    {
+        config(['ai.model' => 'text', 'ai.vision_model' => 'vision', 'ai.transcription_model' => 'asr']);
+
+        foreach (AiFeature::cases() as $feature) {
+            $this->assertSame($feature === AiFeature::DICTATION_TRANSCRIPTION, $feature->transcribesAudio(), $feature->value);
+        }
+
+        $this->assertSame('asr', AiFeature::DICTATION_TRANSCRIPTION->model(false));
     }
 
     public function test_ledger_labels_cover_every_feature_and_admin_adjustments(): void

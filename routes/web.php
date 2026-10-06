@@ -402,6 +402,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::delete('consultations/{consultation}/copilot', [ClinicalAiController::class, 'copilotReset'])
                     ->name('consultations.copilot.reset');
 
+            // Voice dictation recorded in segments (desktop app): audio → text.
+            Route::post('consultations/{consultation}/dictation/transcribe', [ClinicalAiController::class, 'transcribeDictation'])
+                ->middleware(['permission:consultations.update', 'throttle:60,1'])
+                ->name('consultations.dictation.transcribe');
+
                 Route::post('ecgs/{ecg}/analysis', [EcgController::class, 'analyze'])
                     ->middleware('throttle:20,1')
                     ->name('ecgs.analysis');
