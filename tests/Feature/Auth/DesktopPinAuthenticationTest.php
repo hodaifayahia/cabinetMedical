@@ -161,7 +161,7 @@ class DesktopPinAuthenticationTest extends TestCase
                 ->post(route('desktop.pin.login'), $this->loginPayload(deviceToken: $deviceToken))
                 ->assertRedirect(route('login'))
                 ->assertSessionHasErrors([
-                    'pin' => DesktopPinService::INVALID_CREDENTIAL_MESSAGE,
+                    'device_token' => DesktopPinService::REVOKED_DEVICE_MESSAGE,
                 ]);
 
             $this->assertGuest();
@@ -212,7 +212,7 @@ class DesktopPinAuthenticationTest extends TestCase
         for ($attempt = 1; $attempt <= 10; $attempt++) {
             $this->from(route('login'))
                 ->post(route('desktop.pin.login'), $this->loginPayload(deviceToken: self::OTHER_DEVICE_TOKEN))
-                ->assertSessionHasErrors('pin');
+                ->assertSessionHasErrors('device_token');
         }
 
         $this->withHeader('Accept', 'application/json')
@@ -300,7 +300,7 @@ class DesktopPinAuthenticationTest extends TestCase
                 ]);
                 $this->post(route('desktop.pin.login'), $this->loginPayload(deviceToken: $deviceToken))
                     ->assertSessionHasErrors([
-                        'pin' => DesktopPinService::INVALID_CREDENTIAL_MESSAGE,
+                        'device_token' => DesktopPinService::REVOKED_DEVICE_MESSAGE,
                     ]);
                 $this->assertGuest();
                 $this->assertDatabaseHas('audit_logs', [
@@ -357,7 +357,7 @@ class DesktopPinAuthenticationTest extends TestCase
         $this->from(route('login'))
             ->post(route('desktop.pin.login'), $this->loginPayload())
             ->assertSessionHasErrors([
-                'pin' => DesktopPinService::INVALID_CREDENTIAL_MESSAGE,
+                'device_token' => DesktopPinService::REVOKED_DEVICE_MESSAGE,
             ]);
         $this->assertGuest();
     }

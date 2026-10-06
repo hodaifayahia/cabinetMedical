@@ -31,12 +31,12 @@ import {
     clearDesktopPinEnrollment,
     isValidDesktopPin,
     normalizeDesktopPin,
-    readDesktopPinEnrollment,
+    readDesktopPinEnrollments,
+    touchDesktopPinEnrollment,
 } from '@/lib/desktopPin';
 import type { DesktopPinEnrollment } from '@/lib/desktopPin';
 import { home, register } from '@/routes';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 
 defineOptions({
     layout: {
@@ -55,10 +55,13 @@ defineProps<{
 const desktopRuntime = ref(false);
 const runtimeResolved = ref(false);
 const desktopOnboardingComplete = ref(false);
+const pinEnrollments = ref<DesktopPinEnrollment[]>([]);
 const pinEnrollment = ref<DesktopPinEnrollment | null>(null);
+const showPasswordForm = ref(false);
+const pinNotice = ref('');
 const pinInput = ref<HTMLInputElement | null>(null);
 const pinForm = useForm({
-    device_token: pinEnrollment.value?.deviceToken ?? '',
+    device_token: '',
     pin: '',
 });
 const loginPin = computed({
@@ -68,43 +71,129 @@ const loginPin = computed({
         pinForm.clearErrors('pin');
     },
 });
+const showPinLogin = computed(
+    () => pinEnrollment.value !== null && !showPasswordForm.value,
+);
 const showRegistrationOptions = computed(
     () => !desktopRuntime.value || !desktopOnboardingComplete.value,
 );
 let stopPlatformLocationListener: () => void = () => undefined;
 
+function initials(name: string): string {
+    return (
+        name
+            .split(/\s+/u)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase() ?? '')
+            .join('') || '?'
+    );
+}
+
+async function focusPin(): Promise<void> {
+    await nextTick();
+    pinInput.value?.focus();
+}
+
+function refreshEnrollments(): void {
+    pinEnrollments.value = readDesktopPinEnrollments();
+
+    if (
+        pinEnrollment.value === null ||
+        !pinEnrollments.value.some(
+            (enrollment) => enrollment.userId === pinEnrollment.value?.userId,
+        )
+    ) {
+        pinEnrollment.value = pinEnrollments.value[0] ?? null;
+    }
+
+    pinForm.device_token = pinEnrollment.value?.deviceToken ?? '';
+}
+
+function selectEnrollment(enrollment: DesktopPinEnrollment): void {
+    pinEnrollment.value = enrollment;
+    pinForm.device_token = enrollment.deviceToken;
+    pinForm.pin = '';
+    pinForm.clearErrors();
+    pinNotice.value = '';
+    showPasswordForm.value = false;
+    void focusPin();
+}
+
 function loginWithPin(): void {
-    if (!pinEnrollment.value) {
+    const enrollment = pinEnrollment.value;
+
+    if (!enrollment) {
         return;
     }
 
     if (!isValidDesktopPin(pinForm.pin)) {
         pinForm.setError('pin', 'Saisissez exactement 4 chiffres.');
-        void nextTick(() => pinInput.value?.focus());
+        void focusPin();
 
         return;
     }
 
-    pinForm.device_token = pinEnrollment.value.deviceToken;
+    pinForm.device_token = enrollment.deviceToken;
     pinForm.post('/desktop/pin/login', {
         preserveScroll: true,
-        onSuccess: markDesktopOnboardingComplete,
-        onError: async () => {
+        onSuccess: () => {
+            touchDesktopPinEnrollment(enrollment.userId);
+            markDesktopOnboardingComplete();
+        },
+        onError: async (errors) => {
             pinForm.reset('pin');
-            await nextTick();
-            pinInput.value?.focus();
+
+            if (errors.device_token) {
+                // The server no longer knows this PIN (password changed or
+                // access revoked): forget it here and offer the password.
+                clearDesktopPinEnrollment(enrollment.userId);
+                pinNotice.value = errors.device_token;
+                pinEnrollment.value = null;
+                refreshEnrollments();
+                pinForm.clearErrors();
+
+                if (!pinEnrollment.value) {
+                    showPasswordForm.value = true;
+                }
+            }
+
+            await focusPin();
         },
     });
 }
 
 async function useAnotherAccount(): Promise<void> {
-    clearDesktopPinEnrollment();
-    pinEnrollment.value = null;
+    // Other accounts keep their PIN on this poste: only the password form is
+    // shown, nothing is forgotten.
+    showPasswordForm.value = true;
     pinForm.pin = '';
-    pinForm.device_token = '';
     pinForm.clearErrors();
     await nextTick();
     document.getElementById('email')?.focus();
+}
+
+function forgetSelectedAccount(): void {
+    const enrollment = pinEnrollment.value;
+
+    if (!enrollment) {
+        return;
+    }
+
+    clearDesktopPinEnrollment(enrollment.userId);
+    pinEnrollment.value = null;
+    refreshEnrollments();
+
+    if (!pinEnrollment.value) {
+        showPasswordForm.value = true;
+    }
+}
+
+function backToPin(): void {
+    showPasswordForm.value = false;
+    pinNotice.value = '';
+    refreshEnrollments();
+    void focusPin();
 }
 
 onMounted(async () => {
@@ -112,16 +201,14 @@ onMounted(async () => {
 
     if (desktopRuntime.value) {
         desktopOnboardingComplete.value = hasCompletedDesktopOnboarding();
-        pinEnrollment.value = readDesktopPinEnrollment();
-        pinForm.device_token = pinEnrollment.value?.deviceToken ?? '';
+        refreshEnrollments();
     }
 
     stopPlatformLocationListener = listenForPlatformOnboardingLocation();
     runtimeResolved.value = true;
 
     if (pinEnrollment.value) {
-        await nextTick();
-        pinInput.value?.focus();
+        await focusPin();
     }
 });
 
@@ -163,7 +250,7 @@ onBeforeUnmount(() => {
         <span class="leading-6">{{ status }}</span>
     </div>
 
-    <template v-if="runtimeResolved && pinEnrollment">
+    <template v-if="runtimeResolved && pinEnrollment && showPinLogin">
         <section
             class="rounded-3xl border border-brand/15 bg-brand-soft/45 p-5 shadow-inner shadow-brand-deep/5 dark:border-brand/25 dark:bg-brand-soft/20"
             aria-labelledby="desktop-pin-login-title"
@@ -188,6 +275,38 @@ onBeforeUnmount(() => {
                         Bonjour {{ pinEnrollment.userName }}
                     </h3>
                 </div>
+            </div>
+
+            <div
+                v-if="pinEnrollments.length > 1"
+                class="mt-5 flex flex-wrap gap-2"
+                role="radiogroup"
+                aria-label="Choisir le compte"
+                data-test="desktop-pin-accounts"
+            >
+                <button
+                    v-for="enrollment in pinEnrollments"
+                    :key="enrollment.userId"
+                    type="button"
+                    role="radio"
+                    :aria-checked="enrollment.userId === pinEnrollment.userId"
+                    class="inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+                    :class="
+                        enrollment.userId === pinEnrollment.userId
+                            ? 'border-brand bg-brand text-white'
+                            : 'border-slate-300 bg-white text-slate-700 hover:border-brand dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
+                    "
+                    data-test="desktop-pin-account"
+                    @click="selectEnrollment(enrollment)"
+                >
+                    <span
+                        class="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-[11px] font-extrabold"
+                        aria-hidden="true"
+                    >
+                        {{ initials(enrollment.userName) }}
+                    </span>
+                    <span class="truncate">{{ enrollment.userName }}</span>
+                </button>
             </div>
 
             <form class="mt-6" @submit.prevent="loginWithPin">
@@ -269,17 +388,52 @@ onBeforeUnmount(() => {
             </div>
         </section>
 
-        <button
-            type="button"
-            class="mx-auto mt-5 block rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-            data-test="desktop-pin-use-another-account"
-            @click="useAnotherAccount"
-        >
-            Utiliser un autre compte
-        </button>
+        <div class="mt-5 flex flex-wrap items-center justify-center gap-1">
+            <button
+                type="button"
+                class="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                data-test="desktop-pin-use-another-account"
+                @click="useAnotherAccount"
+            >
+                Utiliser un autre compte
+            </button>
+            <TextLink
+                href="/account-recovery"
+                class="rounded-lg px-3 py-2 text-xs font-semibold text-brand no-underline hover:bg-brand-soft/60"
+                data-test="desktop-pin-forgot"
+            >
+                PIN ou mot de passe oublié ?
+            </TextLink>
+            <button
+                type="button"
+                class="rounded-lg px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-slate-100 hover:text-rose-700 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none dark:hover:bg-slate-800"
+                data-test="desktop-pin-forget-account"
+                @click="forgetSelectedAccount"
+            >
+                Retirer ce compte du poste
+            </button>
+        </div>
     </template>
 
     <template v-else-if="runtimeResolved">
+        <div
+            v-if="pinNotice"
+            class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+            role="alert"
+            data-test="desktop-pin-revoked"
+        >
+            {{ pinNotice }}
+        </div>
+        <button
+            v-if="pinEnrollments.length > 0"
+            type="button"
+            class="mb-5 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand transition hover:bg-brand-soft/60 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+            data-test="desktop-pin-back"
+            @click="backToPin"
+        >
+            <KeyRound class="size-4" aria-hidden="true" />
+            Se connecter avec un code PIN
+        </button>
         <Form
             v-bind="store.form()"
             :reset-on-success="['password']"
@@ -323,10 +477,10 @@ onBeforeUnmount(() => {
                             Mot de passe
                         </Label>
                         <TextLink
-                            v-if="canResetPassword"
-                            :href="request()"
+                            href="/account-recovery"
                             class="text-sm font-semibold text-brand no-underline hover:underline"
                             :tabindex="5"
+                            data-test="forgot-password-link"
                         >
                             Mot de passe oublié ?
                         </TextLink>
@@ -384,7 +538,7 @@ onBeforeUnmount(() => {
             runtimeResolved &&
             canRegister &&
             showRegistrationOptions &&
-            !pinEnrollment
+            !showPinLogin
         "
         class="mt-6 grid gap-3 sm:grid-cols-2"
     >
