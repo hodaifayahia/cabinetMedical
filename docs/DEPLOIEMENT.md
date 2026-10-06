@@ -156,6 +156,24 @@ git branch --set-upstream-to=origin/main main
 DRCLICK_FORCE=1 bash scripts/server/deploy.sh
 ```
 
+## Paquets PHP (Composer) sur Hostinger
+
+L'hébergement désactive `proc_open` pour PHP. Composer en a besoin pour
+lancer les scripts du projet et pour ajouter ou retirer des paquets. Le
+script en tient compte :
+
+- il installe avec `--no-scripts` puis lance lui-même `package:discover` et
+  `filament:upgrade` avec `php artisan` (qui n'en a pas besoin) ;
+- **avant** la maintenance, il vérifie que les paquets n'ont pas à changer
+  (`composer.lock` identique, « Nothing to install »). Si une version change
+  les paquets, il s'arrête sans rien toucher : le site reste en ligne.
+
+Dans ce cas (rare : mise à jour de Laravel ou d'un paquet), préparez
+`vendor/` sur un PC avec PHP 8.3 (`composer install --no-dev
+--optimize-autoloader` dans une copie du projet à la nouvelle version),
+envoyez-le sur le serveur à la place de `backend-laravel/vendor`, puis
+relancez le script.
+
 ## En cas de problème
 
 - **« Des fichiers du code ont été modifiés directement sur le serveur »** :
@@ -163,6 +181,7 @@ DRCLICK_FORCE=1 bash scripts/server/deploy.sh
   changements ne sont pas importants, relancez avec `DRCLICK_FORCE=1`.
 - **« GitHub n'a pas (encore) compilé l'interface »** : ouvrez l'onglet
   *Actions* › *web-build* ; s'il est en rouge, relancez-le (*Re-run*).
-- **Le site reste en maintenance** (rare) : `php artisan up` dans le dossier
-  du site, puis `deploy.sh --rollback`.
+- **Le site reste en maintenance** (rare) : relancez d'abord le script
+  (`bash ~/drclick-deploy.sh`) ; il reprend là où il s'est arrêté. Sinon
+  `deploy.sh --rollback`, et en dernier recours `php artisan up`.
 - **Restaurer la base** : voir `docs/server-backups.md` › *Restore*.
