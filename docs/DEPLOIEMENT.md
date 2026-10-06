@@ -18,6 +18,20 @@ message clair si quelque chose ne va pas.
    l'hébergement Hostinger n'a pas Node.js. Si vous lancez le script trop
    tôt, il attend tout seul jusqu'à 15 minutes.
 
+## À faire une seule fois sur GitHub : l'action « web-build »
+
+L'action qui compile l'interface doit être ajoutée à la main (pour des
+raisons de sécurité, GitHub ne laisse pas un outil automatique créer une
+action) :
+
+1. Sur GitHub, dans le dépôt, choisissez la branche **main**, puis
+   **Add file › Create new file**.
+2. Nom du fichier : `.github/workflows/web-build.yml`
+3. Collez tout le contenu de `scripts/server/web-build.workflow.yml`
+   (ouvrez-le sur GitHub, bouton « Copy raw file »).
+4. **Commit changes**. L'action se lance aussitôt (onglet *Actions*) et
+   crée la branche `web-build-main` en 3 à 5 minutes.
+
 ## Se connecter en SSH
 
 hPanel › Avancé › **Accès SSH** donne l'utilisateur, l'adresse et le port
