@@ -348,6 +348,10 @@ impl SchedulerSupervisor {
             )
         })?;
         let process_id = child.id();
+        if let Err(reason) = crate::child_lifetime::end_with_app(&child) {
+            self.logger
+                .warn(&format!("scheduler may outlive the app: {reason}"));
+        }
         if let Some(stdout) = child.stdout.take() {
             pump_child_output(stdout, "SCHEDULER-OUT", Arc::clone(&self.logger));
         }

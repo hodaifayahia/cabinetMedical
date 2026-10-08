@@ -1390,6 +1390,10 @@ impl TunnelSupervisor {
         let mut command = build_cloudflared_command(configuration, origin, metrics_port);
         let mut child = command.spawn().map_err(|_| "tunnel_spawn_failed")?;
         let process_id = child.id();
+        if let Err(reason) = crate::child_lifetime::end_with_app(&child) {
+            self.logger
+                .warn(&format!("tunnel may outlive the app: {reason}"));
+        }
         if let Some(stdout) = child.stdout.take() {
             pump_child_output(stdout, "TUNNEL-OUT", Arc::clone(&self.logger));
         }

@@ -437,6 +437,10 @@ impl Supervisor {
             )
         })?;
         let process_id = child.id();
+        if let Err(reason) = crate::child_lifetime::end_with_app(&child) {
+            self.logger
+                .warn(&format!("Laravel may outlive the app: {reason}"));
+        }
 
         if let Some(stdout) = child.stdout.take() {
             pump_child_output(stdout, "PHP-OUT", Arc::clone(&self.logger));
