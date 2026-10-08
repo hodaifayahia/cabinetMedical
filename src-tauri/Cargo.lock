@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "drclick-desktop"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "drclick-runtime",
  "dunce",

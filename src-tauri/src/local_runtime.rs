@@ -774,6 +774,24 @@ impl SupervisorBlueprint {
 
 type ReadySignal = mpsc::Receiver<Result<String, &'static str>>;
 
+/// Run a long-lived supervision loop (queue worker, scheduler) on its own
+/// named thread, so starting it never holds up the rest of the startup.
+fn spawn_background_service(
+    name: &str,
+    service: impl FnOnce() + Send + 'static,
+) -> Result<(), LocalRuntimeError> {
+    thread::Builder::new()
+        .name(name.to_owned())
+        .spawn(service)
+        .map(|_| ())
+        .map_err(|error| {
+            LocalRuntimeError::new(
+                "local_runtime_thread_failed",
+                format!("Impossible de démarrer un service de l’application : {error}"),
+            )
+        })
+}
+
 /// Run `supervisor` on its own thread and hand back a channel that receives
 /// the first `Ready` URL or `Failed` code.
 fn run_supervisor(
@@ -1019,8 +1037,17 @@ pub(crate) fn start(app: &AppHandle) -> Result<LocalRuntime, LocalRuntimeError> 
     })?;
     let supervisor = Arc::new(supervisor);
 
-    Arc::clone(&queue_worker).run();
-    Arc::clone(&scheduler).run();
+    // Both `run` calls supervise their process for the life of the app: on
+    // the startup thread, a healthy queue worker blocked here forever and
+    // Laravel itself never started. Each gets its own thread.
+    spawn_background_service("drclick-queue-worker", {
+        let queue_worker = Arc::clone(&queue_worker);
+        move || queue_worker.run()
+    })?;
+    spawn_background_service("drclick-scheduler", {
+        let scheduler = Arc::clone(&scheduler);
+        move || scheduler.run()
+    })?;
 
     let receiver = run_supervisor(Arc::clone(&supervisor), "drclick-laravel-supervisor", None)?;
 
@@ -1092,6 +1119,25 @@ mod tests {
     fn ordinary_paths_reach_php_unchanged() {
         let path = Path::new("/opt/drclick/laravel");
         assert_eq!(php_safe_path(path), path.to_path_buf());
+    }
+
+    #[test]
+    fn a_background_service_runs_without_holding_up_startup() {
+        let (sender, receiver) = mpsc::channel();
+        let (release, wait) = mpsc::channel::<()>();
+
+        // A service that never returns on its own, like the queue worker.
+        spawn_background_service("drclick-test-service", move || {
+            sender.send(()).unwrap();
+            let _ = wait.recv();
+        })
+        .unwrap();
+
+        // Reaching this line at all is the point: the caller was not blocked.
+        receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("the service runs on its own thread");
+        drop(release);
     }
 
     #[test]
