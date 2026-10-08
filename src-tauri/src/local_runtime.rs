@@ -407,6 +407,12 @@ pub(crate) fn resolve_packaged_runtime(
         )
     })?;
 
+    // Windows may hand back a verbatim path (\\?\C:\...). PHP builds paths
+    // with "/" (`$publicPath.'/index.php'`, `__DIR__.'/../vendor'`), which a
+    // verbatim path rejects, so every request failed. Give PHP the ordinary
+    // form of the same folder.
+    let resource_root = php_safe_path(&resource_root);
+
     let php_binary = resource_root.join("php").join(php_executable_name());
     let app_root = resource_root.join("laravel");
     let database_template = resource_root.join("initial").join("database.sqlite");
@@ -421,6 +427,12 @@ pub(crate) fn resolve_packaged_runtime(
     verify_packaged_runtime(&runtime)?;
 
     Ok(runtime)
+}
+
+/// The ordinary form of a Windows path (`C:\...`, `\\server\share\...`)
+/// when it was given in verbatim form (`\\?\...`); unchanged elsewhere.
+pub(crate) fn php_safe_path(path: &Path) -> PathBuf {
+    dunce::simplified(path).to_path_buf()
 }
 
 #[cfg(debug_assertions)]
@@ -1062,6 +1074,25 @@ mod tests {
     use super::*;
 
     use std::env;
+
+    #[cfg(windows)]
+    #[test]
+    fn php_never_receives_a_verbatim_windows_path() {
+        assert_eq!(
+            php_safe_path(Path::new(r"\\?\C:\Users\Dr\AppData\Local\Drclick")),
+            PathBuf::from(r"C:\Users\Dr\AppData\Local\Drclick"),
+        );
+        assert_eq!(
+            php_safe_path(Path::new(r"\\?\UNC\server\share\Drclick")),
+            PathBuf::from(r"\\server\share\Drclick"),
+        );
+    }
+
+    #[test]
+    fn ordinary_paths_reach_php_unchanged() {
+        let path = Path::new("/opt/drclick/laravel");
+        assert_eq!(php_safe_path(path), path.to_path_buf());
+    }
 
     #[test]
     fn background_services_start_within_the_runtime_bounds() {
