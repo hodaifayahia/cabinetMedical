@@ -37,7 +37,30 @@ if (result.signal) {
     process.exit(1);
 }
 
-process.exit(result.status ?? 1);
+if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+}
+
+// On GitHub's Windows runner, prove the installer actually starts offline
+// before it is published (scripts/desktop/smoke-installed-app.mjs).
+if (
+    process.platform === 'win32' &&
+    process.env.GITHUB_ACTIONS === 'true' &&
+    process.env.DRCLICK_SKIP_INSTALLED_SMOKE !== '1'
+) {
+    const smoke = spawnSync(
+        process.execPath,
+        ['scripts/desktop/smoke-installed-app.mjs'],
+        {
+            env: process.env,
+            stdio: 'inherit',
+        },
+    );
+
+    process.exit(smoke.status ?? 1);
+}
+
+process.exit(0);
 
 function requiredEnvironment(name) {
     const value = process.env[name]?.trim();
