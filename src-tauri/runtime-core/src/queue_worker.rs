@@ -349,6 +349,10 @@ impl QueueWorkerSupervisor {
             )
         })?;
         let process_id = child.id();
+        if let Err(reason) = crate::child_lifetime::end_with_app(&child) {
+            self.logger
+                .warn(&format!("queue worker may outlive the app: {reason}"));
+        }
         if let Some(stdout) = child.stdout.take() {
             pump_child_output(stdout, "QUEUE-OUT", Arc::clone(&self.logger));
         }

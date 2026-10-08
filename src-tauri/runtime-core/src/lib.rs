@@ -1,3 +1,5 @@
+#[cfg(feature = "supervisor")]
+mod child_lifetime;
 mod diagnostics;
 mod installation;
 mod lan_host;

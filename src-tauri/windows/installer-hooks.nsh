@@ -32,8 +32,28 @@
   DeleteRegKey HKCU "Software\click\${PRODUCT_NAME}"
 !macroend
 
+; Before Drclick 0.4.4 the bundled PHP server, queue worker, scheduler and
+; cloudflared could outlive a force-closed app and keep the bundled PHP DLLs
+; locked, so copying the new php folder failed ("Erreur lors de l'ouverture du
+; fichier en écriture"). Close Drclick first (so it cannot restart them), then
+; stop only those helpers running from this installation folder. Any other PHP
+; on the computer is left alone. The folder reaches PowerShell through the
+; environment so no path character can break the command. If PowerShell is
+; unavailable this does nothing and NSIS shows its usual Retry dialog.
+!macro DRCLICK_STOP_LEFTOVER_HELPERS
+  !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
+  Push $0
+  System::Call 'Kernel32::SetEnvironmentVariable(t "DRCLICK_INSTDIR", t "$INSTDIR\")'
+  nsExec::Exec `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Get-Process -Name php,php-cgi,cloudflared -ErrorAction SilentlyContinue | Where-Object { $$_.Path -and $$_.Path.StartsWith($$env:DRCLICK_INSTDIR, [StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force -ErrorAction SilentlyContinue"`
+  Pop $0 ; nsExec's exit code, not needed
+  Pop $0
+  ; Windows releases the DLL locks shortly after the processes end.
+  Sleep 1000
+!macroend
+
 !macro NSIS_HOOK_PREINSTALL
   SetShellVarContext current
+  !insertmacro DRCLICK_STOP_LEFTOVER_HELPERS
   !insertmacro DRCLICK_REMOVE_LEGACY_INSTALL "MediSmart" "medismart-desktop"
   !insertmacro DRCLICK_REMOVE_LEGACY_INSTALL "DrClickDz" "DrClickDz"
 !macroend
