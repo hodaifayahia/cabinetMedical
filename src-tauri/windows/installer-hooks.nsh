@@ -38,13 +38,15 @@
 ; fichier en écriture"). Close Drclick first (so it cannot restart them), then
 ; stop only those helpers running from this installation folder. Any other PHP
 ; on the computer is left alone. The folder reaches PowerShell through the
-; environment so no path character can break the command. If PowerShell is
+; environment so no path character can break the command. The installer is a
+; 32-bit program, so the PowerShell it starts is too, and Get-Process cannot
+; read a 64-bit process's path from there; Win32_Process can. If PowerShell is
 ; unavailable this does nothing and NSIS shows its usual Retry dialog.
 !macro DRCLICK_STOP_LEFTOVER_HELPERS
   !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
   Push $0
   System::Call 'Kernel32::SetEnvironmentVariable(t "DRCLICK_INSTDIR", t "$INSTDIR\")'
-  nsExec::Exec `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Get-Process -Name php,php-cgi,cloudflared -ErrorAction SilentlyContinue | Where-Object { $$_.Path -and $$_.Path.StartsWith($$env:DRCLICK_INSTDIR, [StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force -ErrorAction SilentlyContinue"`
+  nsExec::Exec `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process | Where-Object { @('php.exe','php-cgi.exe','cloudflared.exe') -contains $$_.Name -and $$_.ExecutablePath -and $$_.ExecutablePath.StartsWith($$env:DRCLICK_INSTDIR, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { Stop-Process -Id $$_.ProcessId -Force -ErrorAction SilentlyContinue }"`
   Pop $0 ; nsExec's exit code, not needed
   Pop $0
   ; Windows releases the DLL locks shortly after the processes end.
