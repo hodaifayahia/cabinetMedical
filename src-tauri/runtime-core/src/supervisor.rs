@@ -518,6 +518,9 @@ impl Supervisor {
             })?;
         let deadline = Instant::now() + self.config.health_timeout;
         let health_url = format!("{local_url}/health");
+        // Why Laravel is not ready yet, logged each time it changes, so a
+        // start that never becomes ready names its cause in the log.
+        let mut last_answer = String::from("no answer");
 
         while Instant::now() < deadline {
             if self.stopping.load(Ordering::SeqCst) {
@@ -550,6 +553,20 @@ impl Supervisor {
                 .send();
 
             if let Ok(mut response) = response {
+                if response.status() != StatusCode::OK {
+                    let status = response.status();
+                    let mut body = Vec::with_capacity(2048);
+                    let _ = response
+                        .by_ref()
+                        .take(MAX_HEALTH_RESPONSE_BYTES)
+                        .read_to_end(&mut body);
+                    let answer = describe_health_answer(status, &body);
+                    if answer != last_answer {
+                        self.logger
+                            .info(&format!("Laravel not ready yet: {answer}"));
+                        last_answer = answer;
+                    }
+                }
                 if response.status() == StatusCode::OK {
                     let mut body = Vec::with_capacity(2048);
                     if response
@@ -592,6 +609,12 @@ impl Supervisor {
                                 return Ok((verified_remote_boundary, verified_lan_boundary));
                             }
                         }
+                        let answer = describe_health_answer(StatusCode::OK, &body);
+                        if answer != last_answer {
+                            self.logger
+                                .info(&format!("Laravel not ready yet: {answer}"));
+                            last_answer = answer;
+                        }
                     }
                 }
             }
@@ -601,7 +624,10 @@ impl Supervisor {
 
         Err(RuntimeError::new(
             "health_timeout",
-            "Laravel did not return an authenticated healthy response before the deadline",
+            format!(
+                "Laravel did not return an authenticated healthy response before the deadline \
+                 (last answer: {last_answer})"
+            ),
         ))
     }
 
@@ -1009,6 +1035,42 @@ where
             logger.child_output(stream, &String::from_utf8_lossy(&line));
         }
     });
+}
+
+/// A one-line, secret-free summary of a /health answer: the HTTP status and
+/// only the readiness flags, never paths, addresses or identifiers.
+fn describe_health_answer(status: StatusCode, body: &[u8]) -> String {
+    let mut summary = format!("HTTP {}", status.as_u16());
+    let Ok(payload) = serde_json::from_slice::<serde_json::Value>(body) else {
+        summary.push_str(", body is not JSON");
+        return summary;
+    };
+    if payload.get("database").is_none() {
+        summary.push_str(", details withheld (health key or local origin refused)");
+    }
+    for (path, label) in [
+        ("/status", "status"),
+        ("/database/connected", "database.connected"),
+        ("/database/foundation_ready", "database.foundation_ready"),
+        (
+            "/database/migrations_current",
+            "database.migrations_current",
+        ),
+        (
+            "/database/pending_migrations",
+            "database.pending_migrations",
+        ),
+        ("/database/error", "database.error"),
+        ("/storage/writable", "storage.writable"),
+        ("/queue/available", "queue.available"),
+        ("/queue/worker_status", "queue.worker_status"),
+        ("/queue/operational", "queue.operational"),
+    ] {
+        if let Some(value) = payload.pointer(path).filter(|value| !value.is_null()) {
+            summary.push_str(&format!(", {label}={value}"));
+        }
+    }
+    summary
 }
 
 #[derive(Debug, Deserialize)]
@@ -1539,6 +1601,27 @@ mod tests {
             "http://127.0.0.1:43123",
         )
         .is_none());
+    }
+
+    #[test]
+    fn a_health_answer_is_summarised_by_its_readiness_flags_only() {
+        let body = br#"{"status":"degraded","database":{"connected":true,"foundation_ready":true,"migrations_current":false,"pending_migrations":2,"error":null,"latest_migration":"x"},"storage":{"writable":true,"path":"storage/app/private"},"queue":{"available":true,"worker_status":"stopped","operational":false}}"#;
+
+        assert_eq!(
+            describe_health_answer(StatusCode::SERVICE_UNAVAILABLE, body),
+            "HTTP 503, status=\"degraded\", database.connected=true, \
+             database.foundation_ready=true, database.migrations_current=false, \
+             database.pending_migrations=2, storage.writable=true, queue.available=true, \
+             queue.worker_status=\"stopped\", queue.operational=false"
+        );
+        assert_eq!(
+            describe_health_answer(StatusCode::OK, br#"{"status":"healthy","hub":null}"#),
+            "HTTP 200, details withheld (health key or local origin refused), status=\"healthy\""
+        );
+        assert_eq!(
+            describe_health_answer(StatusCode::INTERNAL_SERVER_ERROR, b"<html>"),
+            "HTTP 500, body is not JSON"
+        );
     }
 
     #[test]
