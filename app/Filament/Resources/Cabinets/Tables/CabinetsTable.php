@@ -333,7 +333,7 @@ class CabinetsTable
             ->translatedFormat('d/m/Y H:i');
     }
 
-    private static function canIssueLicenseCode(Cabinet $cabinet): bool
+    public static function canIssueLicenseCode(Cabinet $cabinet): bool
     {
         if ($cabinet->isPending()) {
             return $cabinet->license_id === null;
