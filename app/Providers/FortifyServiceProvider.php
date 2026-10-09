@@ -8,6 +8,7 @@ use App\Http\Responses\LoginResponse;
 use App\Http\Responses\LogoutResponse;
 use App\Http\Responses\PasskeyLoginResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
+use App\Models\User;
 use App\Support\MedicalSpecialtyCatalog;
 use App\Support\Wilayas;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -71,6 +72,10 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
             'canResetPassword' => $this->passwordResetDeliveryAvailable(),
             'canRegister' => true,
+            // A desktop whose database holds no account yet must offer setup
+            // (« Cabinet existant ») whatever its WebView remembers, or an
+            // online cabinet cannot be brought onto this PC at all.
+            'hasLocalAccounts' => User::query()->exists(),
             'status' => $request->session()->get('status'),
         ]));
 
