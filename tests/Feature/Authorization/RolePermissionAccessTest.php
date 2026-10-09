@@ -12,6 +12,9 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\ActivatesSignedLicense;
 use Tests\TestCase;
 
@@ -314,6 +317,39 @@ class RolePermissionAccessTest extends TestCase
     }
 
     /** @param array<string, mixed> $attributes */
+    public function test_super_administrator_holds_every_permission_even_when_its_role_rows_lack_them(): void
+    {
+        // A desktop database seeded by an older release left the role bare:
+        // the cabinet owner saw a dashboard and nothing else.
+        Role::findByName(RoleName::SUPER_ADMINISTRATOR->value, 'web')->syncPermissions([]);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $owner = $this->cabinetUser();
+        $owner->assignRole(RoleName::SUPER_ADMINISTRATOR->value);
+        $owner = $owner->fresh();
+
+        $this->assertTrue($owner->can(PermissionName::PATIENTS_VIEW->value));
+        $this->assertTrue($owner->can(PermissionName::APPOINTMENTS_VIEW->value));
+        $this->assertEqualsCanonicalizing(
+            PermissionName::values(),
+            $owner->getAllPermissions()->pluck('name')->all(),
+        );
+    }
+
+    public function test_the_permission_repair_migration_gives_the_super_administrator_every_permission(): void
+    {
+        Role::findByName(RoleName::SUPER_ADMINISTRATOR->value, 'web')->syncPermissions([]);
+        Permission::query()->where('name', PermissionName::PATIENTS_VIEW->value)->delete();
+
+        (require database_path('migrations/2026_10_09_120000_grant_super_administrator_every_permission.php'))->up();
+
+        $this->assertEqualsCanonicalizing(
+            PermissionName::values(),
+            Role::findByName(RoleName::SUPER_ADMINISTRATOR->value, 'web')
+                ->permissions()->pluck('name')->all(),
+        );
+    }
+
     private function cabinetUser(array $attributes = []): User
     {
         return User::factory()->create([

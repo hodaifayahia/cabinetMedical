@@ -2,6 +2,7 @@
 
 namespace App\Services\Authorization;
 
+use App\Enums\PermissionName;
 use App\Enums\RoleName;
 use App\Models\CabinetRolePermissionSet;
 use App\Models\User;
@@ -20,6 +21,11 @@ class CabinetRolePermissionService
 
         /** @var Collection<int, Role> $roles */
         $roles = $user->loadMissing('roles', 'roles.permissions')->roles;
+
+        if ($this->holdsSuperAdministratorRole($roles)
+            && in_array((string) $permission->name, PermissionName::values(), true)) {
+            return true;
+        }
 
         if ($user->cabinet_id === null || $roles->isEmpty()) {
             return $roles->contains(
@@ -73,6 +79,10 @@ class CabinetRolePermissionService
         $sets = $this->setsFor($user, $this->roleNames($roles));
         $names = $directPermissions->pluck('name');
 
+        if ($this->holdsSuperAdministratorRole($roles)) {
+            $names = $names->merge(PermissionName::values());
+        }
+
         foreach ($roles as $role) {
             /** @var CabinetRolePermissionSet|null $set */
             $set = $sets->get((string) $role->name);
@@ -120,6 +130,21 @@ class CabinetRolePermissionService
             ->whereIn('role_name', $roleNames)
             ->get()
             ->keyBy('role_name');
+    }
+
+    /**
+     * The super administrator is locked in the role matrix and always holds
+     * every permission, whatever its stored role rows say: a database seeded
+     * by an older release must not leave a cabinet owner with a bare
+     * dashboard.
+     *
+     * @param  Collection<int, Role>  $roles
+     */
+    private function holdsSuperAdministratorRole(Collection $roles): bool
+    {
+        return $roles->contains(
+            static fn (Role $role): bool => (string) $role->name === RoleName::SUPER_ADMINISTRATOR->value,
+        );
     }
 
     /**
