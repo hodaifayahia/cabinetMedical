@@ -229,7 +229,11 @@ impl Supervisor {
                         "{} during Laravel startup; refreshing the runtime contract",
                         error.code()
                     ));
-                    self.stop_current_child();
+                    // Not ready yet, so no request of the clinic's is in
+                    // flight. A graceful stop costs the whole grace period on
+                    // Windows, where PHP's built-in server ignores Ctrl+Break,
+                    // and this refresh happens on almost every start.
+                    self.kill_current_child();
                     // Preserve retry_count: only the Laravel child contract is
                     // being replaced; both native services keep running.
                     continue;
@@ -693,6 +697,14 @@ impl Supervisor {
             .warn("Laravel process exceeded its shutdown grace period; forcing termination");
         let _ = child.kill();
         let _ = child.wait();
+    }
+
+    fn kill_current_child(&self) {
+        let child = self.child.lock().ok().and_then(|mut child| child.take());
+        if let Some(mut child) = child {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
     }
 
     fn write_snapshot(&self, snapshot: &RuntimeSnapshot) {

@@ -66,6 +66,12 @@
                 font: inherit;
             }
 
+            /* Classes below set display, which would otherwise win over the
+               hidden attribute and show options meant to be hidden. */
+            [hidden] {
+                display: none !important;
+            }
+
             .spinner-wrap {
                 display: none;
                 flex-direction: column;
@@ -353,7 +359,7 @@
                     <p class="eyebrow">Drclick · Connexion du cabinet</p>
                     <h1>Choisissez où se trouve votre cabinet</h1>
                 </div>
-                <p class="intro">
+                <p class="intro" id="intro">
                     Le serveur mémorisé ne répond pas. Si ce poste travaille
                     avec le poste principal du cabinet, vérifiez que ce PC est
                     allumé et que Drclick y est ouvert, puis réessayez. Vous
@@ -365,7 +371,9 @@
             <section class="content">
                 <div class="status">
                     <div class="status-copy">
-                        <strong>Serveur actuellement mémorisé</strong>
+                        <strong id="current-server-label"
+                            >Serveur actuellement mémorisé</strong
+                        >
                         <span id="current-server"></span>
                     </div>
                     <button
@@ -652,11 +660,59 @@
                     }
                 }
 
+                // In local mode there is no server to probe: the database is
+                // on this PC, and trying again means restarting Drclick.
+                const isLocal = runtimeMode === 'local';
+                if (isLocal) {
+                    document.getElementById('intro').textContent =
+                        'Drclick n’a pas pu démarrer la base de données de ce PC. Réessayez : Drclick redémarre. Vous pouvez aussi utiliser le Cloud quand Internet est disponible, ou travailler avec le poste principal du cabinet.';
+                    document.getElementById(
+                        'current-server-label',
+                    ).textContent = 'Données du cabinet';
+                    currentServer.textContent = 'Sur ce PC (mode autonome)';
+                }
+
                 retryBtn.addEventListener('click', function () {
                     clearTimeout(retryTimer);
                     retryDelay = INITIAL_DELAY_MS;
-                    attemptCurrent();
+                    if (isLocal) {
+                        restartInLocalMode();
+                    } else {
+                        attemptCurrent();
+                    }
                 });
+
+                // The local runtime starts in the background after this page
+                // opens; the cabinet opens as soon as it is ready.
+                function waitForLocalRuntime() {
+                    spinnerLabel.textContent = 'Démarrage de Drclick…';
+                    showSpinner();
+                    const startedAt = Date.now();
+
+                    async function poll() {
+                        let status = null;
+                        try {
+                            status = await invoke('runtime_mode_status');
+                        } catch (error) {
+                            status = null;
+                        }
+                        if (status && status.url) {
+                            window.location.replace(status.url);
+                            return;
+                        }
+                        if (status && status.local_error) {
+                            showSetup(status.local_error);
+                            return;
+                        }
+                        if (Date.now() - startedAt > 20_000) {
+                            spinnerLabel.textContent =
+                                'Démarrage de Drclick… Après une mise à jour, cela peut prendre une ou deux minutes.';
+                        }
+                        setTimeout(poll, 1_000);
+                    }
+
+                    poll();
+                }
 
                 if (!cloudServerUrl) {
                     // No hosted origin was compiled in, so there is nothing to
@@ -680,7 +736,9 @@
                     // Already this PC's own data; the failure is shown above.
                     localOption.hidden = true;
                 }
-                localBtn.addEventListener('click', async function () {
+                localBtn.addEventListener('click', restartInLocalMode);
+
+                async function restartInLocalMode() {
                     if (busy) {
                         return;
                     }
@@ -700,7 +758,7 @@
                         showSetup(readableError(error));
                         setBusy(false);
                     }
-                });
+                }
                 discoverBtn.addEventListener('click', async function () {
                     if (busy) {
                         return;
@@ -748,6 +806,8 @@
                 // show why rather than probing an origin that does not exist.
                 if (window.__DRCLICK_LOCAL_ERROR) {
                     showSetup(window.__DRCLICK_LOCAL_ERROR);
+                } else if (isLocal) {
+                    waitForLocalRuntime();
                 } else {
                     attemptCurrent();
                 }

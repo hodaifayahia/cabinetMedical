@@ -528,6 +528,95 @@ describe('desktop connection-setup page', () => {
         expect(element('local-option').hidden).toBe(true);
     });
 
+    it('keeps hidden options hidden despite their display style', () => {
+        expect(offlinePage).toMatch(
+            /\[hidden\]\s*\{\s*display:\s*none\s*!important;\s*\}/,
+        );
+    });
+
+    it('shows that Drclick is starting and opens the cabinet once the local runtime is ready', async () => {
+        let ready = false;
+        const fakeWindow = createWindow({
+            __DRCLICK_RUNTIME_MODE: 'local',
+            __TAURI_INTERNALS__: nativeBridge({
+                runtime_mode_status: () =>
+                    Promise.resolve({
+                        mode: 'local',
+                        url: ready ? 'http://127.0.0.1:50660/desktop' : null,
+                        local_error: null,
+                    }),
+            }),
+        });
+
+        runPage(fakeWindow);
+        await flush();
+
+        expect(element('spinner').classList.contains('visible')).toBe(true);
+        expect(element('spinner-label').textContent).toBe(
+            'Démarrage de Drclick…',
+        );
+        expect(fakeWindow.location.replace).not.toHaveBeenCalled();
+
+        ready = true;
+        await vi.advanceTimersByTimeAsync(1_000);
+
+        expect(fakeWindow.location.replace).toHaveBeenCalledWith(
+            'http://127.0.0.1:50660/desktop',
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('shows a local start failure reported while the page waits', async () => {
+        runPage(
+            createWindow({
+                __DRCLICK_RUNTIME_MODE: 'local',
+                __TAURI_INTERNALS__: nativeBridge({
+                    runtime_mode_status: () =>
+                        Promise.resolve({
+                            mode: 'local',
+                            url: null,
+                            local_error:
+                                'L’application locale n’a pas répondu à temps au démarrage.',
+                        }),
+                }),
+            }),
+        );
+        await flush();
+
+        expect(element('offline-card').classList.contains('visible')).toBe(
+            true,
+        );
+        expect(element('connection-error').textContent).toBe(
+            'L’application locale n’a pas répondu à temps au démarrage.',
+        );
+        expect(element('current-server').textContent).toBe(
+            'Sur ce PC (mode autonome)',
+        );
+    });
+
+    it('retries a local start failure by restarting Drclick', async () => {
+        const fakeWindow = createWindow({
+            __DRCLICK_LOCAL_ERROR: 'stop',
+            __DRCLICK_RUNTIME_MODE: 'local',
+            __TAURI_INTERNALS__: nativeBridge({
+                configure_local_mode: () => Promise.resolve(true),
+            }),
+        });
+
+        runPage(fakeWindow);
+        element<HTMLButtonElement>('retry-btn').click();
+        await flush();
+
+        expect(fakeWindow.__TAURI_INTERNALS__!.invoke).toHaveBeenCalledWith(
+            'configure_local_mode',
+            undefined,
+        );
+        expect(element('spinner-label').textContent).toBe(
+            'Redémarrage de Drclick…',
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it('waits for the restart after choosing a poste principal over LAN HTTP', async () => {
         const fakeWindow = createWindow({
             __DRCLICK_LOCAL_ERROR: 'stop',
