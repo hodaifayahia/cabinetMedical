@@ -375,20 +375,33 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Rename an existing act (prestation) from the booking dialog.
+     * Rename an existing act (prestation), or change its price, from the booking dialog.
      */
     public function updatePrestation(Request $request, string $source, int $id): JsonResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:200'],
+            'price' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999'],
         ]);
+
+        // The price changes only when the dialog sends one: an older client
+        // that only renames an act leaves its price alone.
+        $price = array_key_exists('price', $validated)
+            ? ['minor' => $validated['price'] !== null ? (int) round(((float) $validated['price']) * 100) : null]
+            : null;
 
         if ($source === 'consultation_fee') {
             $record = ConsultationFee::query()->findOrFail($id);
-            $record->update(['label' => $validated['name']]);
+            $record->update([
+                'label' => $validated['name'],
+                ...($price === null ? [] : ['amount_minor' => $price['minor']]),
+            ]);
         } elseif ($source === 'act') {
             $record = Act::query()->findOrFail($id);
-            $record->update(['name' => $validated['name']]);
+            $record->update([
+                'name' => $validated['name'],
+                ...($price === null ? [] : ['price_minor' => $price['minor']]),
+            ]);
         } else {
             throw ValidationException::withMessages([
                 'name' => 'Unknown prestation type.',

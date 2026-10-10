@@ -419,33 +419,19 @@ pub fn run() {
                 }
             };
 
-            // Resolve the origin that will own this session's data.
-            let resolved = match &mode {
-                RuntimeMode::Local => match local_runtime::start(&handle) {
-                    Ok(runtime) => {
-                        let url = runtime.url().clone();
-                        let state = handle.state::<LocalRuntimeState>();
-                        if let Ok(mut running) = state.running.lock() {
-                            *running = Some(Arc::new(runtime));
-                        }
-                        // Re-open the cabinet LAN listener in the background
-                        // when this PC is the poste principal.
-                        lan::resume_sharing_if_enabled(&handle);
-                        Some(url)
-                    }
-                    Err(error) => {
-                        // Never silently fall back to the hosted service: that
-                        // would move a clinic's data off the machine without
-                        // consent. Show the failure and let them choose.
-                        let state = handle.state::<LocalRuntimeState>();
-                        if let Ok(mut failure) = state.failure.lock() {
-                            *failure = Some(error);
-                        }
-                        None
-                    }
-                },
-                other => other.remote_url().cloned(),
-            };
+            // Local mode opens the window at once on the bundled page, which
+            // shows that Drclick is starting and moves to the cabinet as soon
+            // as the local runtime is ready (or shows why it is not). Starting
+            // it can take a while; until then no window at all appeared, so a
+            // restart looked like Drclick had closed for good.
+            if mode.is_local() {
+                build_main_window(app, None, &mode)?;
+                start_local_runtime_in_background(handle, navigation_policy.clone());
+
+                return Ok(());
+            }
+
+            let resolved = mode.remote_url().cloned();
 
             match resolved {
                 Some(url) => {
@@ -481,6 +467,49 @@ pub fn run() {
             app.state::<LocalRuntimeState>().shutdown();
         }
     });
+}
+
+/// Start the bundled Laravel runtime off the main thread. The connection page
+/// polls `runtime_mode_status`: the loopback URL appears there once the
+/// navigation policy allows it, a failure as `local_error`.
+fn start_local_runtime_in_background(handle: AppHandle, navigation_policy: NavigationPolicy) {
+    let spawned = std::thread::Builder::new()
+        .name("drclick-local-startup".to_owned())
+        .spawn({
+            let handle = handle.clone();
+            move || {
+                let state = handle.state::<LocalRuntimeState>();
+                match local_runtime::start(&handle) {
+                    Ok(runtime) => {
+                        navigation_policy.set_server_url(runtime.url().clone());
+                        if let Ok(mut running) = state.running.lock() {
+                            *running = Some(Arc::new(runtime));
+                        }
+                        // Re-open the cabinet LAN listener in the background
+                        // when this PC is the poste principal.
+                        lan::resume_sharing_if_enabled(&handle);
+                    }
+                    Err(error) => {
+                        // Never silently fall back to the hosted service: that
+                        // would move a clinic's data off the machine without
+                        // consent. Show the failure and let them choose.
+                        if let Ok(mut failure) = state.failure.lock() {
+                            *failure = Some(error);
+                        }
+                    }
+                }
+            }
+        });
+
+    if spawned.is_err() {
+        let state = handle.state::<LocalRuntimeState>();
+        if let Ok(mut failure) = state.failure.lock() {
+            *failure = Some(LocalRuntimeError::new(
+                "local_runtime_start_failed",
+                "Drclick n’a pas pu lancer l’application locale.",
+            ));
+        };
+    }
 }
 
 /// Build the single main application window.

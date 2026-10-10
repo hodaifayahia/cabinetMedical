@@ -40,6 +40,17 @@ class AuthenticationTest extends TestCase
                 ->where('canResetPassword', true));
     }
 
+    public function test_login_says_whether_this_installation_holds_any_account(): void
+    {
+        $this->get(route('login'))
+            ->assertInertia(fn (Assert $page) => $page->where('hasLocalAccounts', false));
+
+        User::factory()->create();
+
+        $this->get(route('login'))
+            ->assertInertia(fn (Assert $page) => $page->where('hasLocalAccounts', true));
+    }
+
     public function test_users_can_authenticate_using_the_login_screen()
     {
         $user = User::factory()->create();

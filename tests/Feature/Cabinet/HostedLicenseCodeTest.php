@@ -292,6 +292,65 @@ class HostedLicenseCodeTest extends TestCase
         Mail::assertSent(CabinetLicenseCodeIssuedMail::class);
     }
 
+    public function test_platform_admin_creates_a_cabinet_with_its_owner_email_and_activation_code(): void
+    {
+        Mail::fake();
+        $this->actingAs(User::factory()->create(['is_platform_admin' => true]));
+
+        Livewire::test(ListCabinets::class)
+            ->callAction('createCabinet', [
+                'name' => 'Dr Hamid',
+                'email' => 'Hamid@Example.com',
+                'phone' => '0555 12 34 56',
+                'cabinet_name' => 'Cabinet Hamid',
+                'specialization' => 'Médecine générale',
+                'plan' => LicensePlan::TRIAL->value,
+                'seat_limit' => 2,
+            ])
+            ->assertHasNoActionErrors();
+
+        $cabinet = Cabinet::query()->where('name', 'Cabinet Hamid')->sole();
+        $this->assertSame(CabinetStatus::PENDING, $cabinet->status);
+        $this->assertNull($cabinet->owner_user_id);
+        $this->assertDatabaseHas('desktop_download_leads', [
+            'cabinet_id' => $cabinet->getKey(),
+            'email' => 'hamid@example.com',
+        ]);
+        $this->assertDatabaseHas('hosted_license_grants', [
+            'cabinet_id' => $cabinet->getKey(),
+            'plan' => LicensePlan::TRIAL->value,
+            'revoked_at' => null,
+        ]);
+        Mail::assertSent(
+            CabinetLicenseCodeIssuedMail::class,
+            fn (CabinetLicenseCodeIssuedMail $mail): bool => $mail->hasTo('hamid@example.com'),
+        );
+    }
+
+    public function test_creating_a_cabinet_for_an_owner_who_already_has_a_licensed_one_issues_no_code(): void
+    {
+        Mail::fake();
+        [, $cabinet] = $this->pendingCabinet('licensed@example.com');
+        app(CabinetFulfillmentService::class)->activate($cabinet);
+        Mail::fake();
+        $this->actingAs(User::factory()->create(['is_platform_admin' => true]));
+
+        Livewire::test(ListCabinets::class)
+            ->callAction('createCabinet', [
+                'name' => 'Dr Licensed',
+                'email' => 'licensed@example.com',
+                'phone' => '0555 12 34 56',
+                'cabinet_name' => 'Second cabinet',
+                'specialization' => 'Cardiologie',
+                'plan' => LicensePlan::TRIAL->value,
+                'seat_limit' => 2,
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(1, Cabinet::query()->count());
+        Mail::assertNotSent(CabinetLicenseCodeIssuedMail::class);
+    }
+
     /** @return array{User, Cabinet} */
     private function pendingCabinet(string $email): array
     {

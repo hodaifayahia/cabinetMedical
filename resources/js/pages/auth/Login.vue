@@ -47,10 +47,11 @@ defineOptions({
     },
 });
 
-defineProps<{
+const props = defineProps<{
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    hasLocalAccounts?: boolean;
 }>();
 
 const desktopRuntime = ref(false);
@@ -76,7 +77,10 @@ const showPinLogin = computed(
     () => pinEnrollment.value !== null && !showPasswordForm.value,
 );
 const showRegistrationOptions = computed(
-    () => !desktopRuntime.value || !desktopOnboardingComplete.value,
+    () =>
+        !desktopRuntime.value ||
+        !desktopOnboardingComplete.value ||
+        props.hasLocalAccounts === false,
 );
 let stopPlatformLocationListener: () => void = () => undefined;
 
@@ -561,6 +565,22 @@ onBeforeUnmount(() => {
             {{ desktopRuntime ? 'Cabinet existant' : 'Rejoindre un cabinet' }}
         </TextLink>
     </div>
+
+    <p
+        v-if="
+            runtimeResolved &&
+            desktopRuntime &&
+            canRegister &&
+            !showRegistrationOptions &&
+            !showPinLogin
+        "
+        class="mt-6 text-center text-sm text-muted-foreground"
+    >
+        Votre compte existe en ligne mais pas encore sur ce PC ?
+        <TextLink href="/desktop/cabinet-login" :tabindex="6">
+            Cabinet existant
+        </TextLink>
+    </p>
 
     <LanJoinCard v-if="runtimeResolved && desktopRuntime" />
 </template>

@@ -37,6 +37,9 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      */
+    /** The largest file the back office accepts: a Windows installer. */
+    public const BACK_OFFICE_UPLOAD_MAX_KILOBYTES = 256 * 1024;
+
     public function register(): void
     {
         $this->app->bind(BackupArchiveVerifier::class, MsBackupArchiveVerifier::class);
@@ -115,6 +118,15 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        // Livewire's own default refuses any back-office upload over 12 MB
+        // and five minutes, and the Windows installer published from
+        // « Version & mises à jour » weighs about 50 MB. Each field still
+        // sets its own, smaller limit.
+        config([
+            'livewire.temporary_file_upload.rules' => ['required', 'file', 'max:'.self::BACK_OFFICE_UPLOAD_MAX_KILOBYTES],
+            'livewire.temporary_file_upload.max_upload_time' => 30,
+        ]);
 
         RateLimiter::for('public-uploads', static function (Request $request): Limit {
             $routeName = (string) $request->route()?->getName();

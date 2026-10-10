@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\PermissionName;
+use App\Http\Controllers\Configuration\DemoDataController;
 use App\Models\CabinetSetting;
 use App\Models\User;
 use App\Services\Auth\DesktopPinService;
@@ -115,7 +116,7 @@ class HandleInertiaRequests extends Middleware
      *     updated_at: string|null,
      *     roles: list<string>,
      *     permissions: list<string>,
-     *     can: array{accessAdminPanel: bool, enrollDesktopPin: bool, manageStaff: bool, manageRolePermissions: bool, linkOnlineService: bool}
+     *     can: array{accessAdminPanel: bool, enrollDesktopPin: bool, manageStaff: bool, manageRolePermissions: bool, linkOnlineService: bool, manageDemoData: bool}
      * }|null
      */
     protected function resolveAuthenticatedUser(mixed $user): ?array
@@ -155,6 +156,8 @@ class HandleInertiaRequests extends Middleware
                 // Only an installed desktop has a service to link to.
                 'linkOnlineService' => $user->can(PermissionName::CONFIGURATION_CONNECTIVITY_MANAGE->value)
                     && app(OnlineServiceLink::class)->isAvailable(),
+                // The desktop super administrator's « Données de démonstration ».
+                'manageDemoData' => DemoDataController::allows($user),
             ],
         ];
     }

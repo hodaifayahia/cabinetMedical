@@ -791,17 +791,20 @@ const handlePatientSaved = (patient?: AppointmentPatientOption) => {
 const startPrestationCreate = () => {
     prestationEditorMode.value = 'create';
     prestationEditingOption.value = null;
-    prestationEditorValue.value = '';
+    prestationEditorValue.value = prestationSearch.value.trim();
     prestationEditorPrice.value = '';
     prestationEditorError.value = '';
+    prestationOpen.value = false;
 };
 
 const startPrestationEdit = (prestation: AppointmentPrestationOption) => {
     prestationEditorMode.value = 'edit';
     prestationEditingOption.value = prestation;
     prestationEditorValue.value = prestation.label;
-    prestationEditorPrice.value = '';
+    prestationEditorPrice.value =
+        prestation.amount === null ? '' : String(prestation.amount);
     prestationEditorError.value = '';
+    prestationOpen.value = false;
 };
 
 const cancelPrestationEditor = () => {
@@ -811,6 +814,15 @@ const cancelPrestationEditor = () => {
     prestationEditorPrice.value = '';
     prestationEditorError.value = '';
 };
+
+const prestationEditorOpen = computed({
+    get: () => prestationEditorMode.value !== null,
+    set: (open: boolean) => {
+        if (!open) {
+            cancelPrestationEditor();
+        }
+    },
+});
 
 const selectPrestation = (prestation: AppointmentPrestationOption) => {
     form.prestation = prestation.label;
@@ -872,7 +884,7 @@ const savePrestation = async () => {
                       prestationEditingOption.value.source +
                       '/' +
                       prestationEditingOption.value.id,
-                  { name },
+                  { name, price },
               )
             : await postJson<{ prestation: AppointmentPrestationOption }>(
                   '/app/appointments/prestations',
@@ -894,14 +906,16 @@ const savePrestation = async () => {
 
         form.prestation = saved.label;
         prestationSearch.value = '';
-        cancelPrestationEditor();
         toast.success(
             prestationEditingOption.value ? 'Acte mis à jour.' : 'Acte ajouté.',
         );
+        cancelPrestationEditor();
     } catch (error) {
         if (isValidationError(error)) {
             prestationEditorError.value =
-                error.errors.name?.[0] ?? 'Saisissez un nom d’acte valide.';
+                error.errors.name?.[0] ??
+                error.errors.price?.[0] ??
+                'Saisissez un nom d’acte valide.';
         } else {
             toast.error(
                 'Impossible d’enregistrer cet acte. Veuillez réessayer.',
@@ -2163,7 +2177,7 @@ const printAppointments = () => {
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 class="mr-1 shrink-0 opacity-0 transition group-hover:opacity-100"
-                                                title="Renommer l’acte"
+                                                title="Modifier l’acte"
                                                 @click="
                                                     startPrestationEdit(
                                                         prestation,
@@ -2178,79 +2192,7 @@ const printAppointments = () => {
                                         v-if="permissions.manageActs"
                                         class="border-t border-sidebar-border/70 p-2 dark:border-sidebar-border"
                                     >
-                                        <template v-if="prestationEditorMode">
-                                            <Label
-                                                class="text-xs text-muted-foreground"
-                                            >
-                                                {{
-                                                    prestationEditorMode ===
-                                                    'edit'
-                                                        ? 'Renommer l’acte'
-                                                        : 'Nouvel acte'
-                                                }}
-                                            </Label>
-                                            <div
-                                                class="mt-1 flex items-center gap-2"
-                                            >
-                                                <Input
-                                                    v-model="
-                                                        prestationEditorValue
-                                                    "
-                                                    class="h-8"
-                                                    placeholder="Nom de l’acte"
-                                                    autocomplete="off"
-                                                    @keydown.enter.prevent="
-                                                        savePrestation
-                                                    "
-                                                />
-                                                <Input
-                                                    v-if="
-                                                        prestationEditorMode ===
-                                                        'create'
-                                                    "
-                                                    v-model="
-                                                        prestationEditorPrice
-                                                    "
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    class="h-8 w-28"
-                                                    placeholder="Prix (DA)"
-                                                    autocomplete="off"
-                                                    @keydown.enter.prevent="
-                                                        savePrestation
-                                                    "
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    :disabled="
-                                                        prestationProcessing
-                                                    "
-                                                    @click="savePrestation"
-                                                >
-                                                    Enregistrer
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    @click="
-                                                        cancelPrestationEditor
-                                                    "
-                                                >
-                                                    Annuler
-                                                </Button>
-                                            </div>
-                                            <p
-                                                v-if="prestationEditorError"
-                                                class="mt-1 text-xs text-destructive"
-                                            >
-                                                {{ prestationEditorError }}
-                                            </p>
-                                        </template>
                                         <Button
-                                            v-else
                                             type="button"
                                             variant="ghost"
                                             size="sm"
@@ -2456,6 +2398,77 @@ const printAppointments = () => {
                     >
                 </DialogFooter>
             </DialogScrollContent>
+        </Dialog>
+
+        <!-- Act (prestation) create / edit dialog -->
+        <Dialog
+            v-if="permissions.manageActs"
+            v-model:open="prestationEditorOpen"
+        >
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>
+                        {{
+                            prestationEditorMode === 'edit'
+                                ? 'Modifier l’acte'
+                                : 'Nouvel acte'
+                        }}
+                    </DialogTitle>
+                    <DialogDescription>
+                        Le prix est proposé à l’encaissement de la consultation.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form class="grid gap-4" @submit.prevent="savePrestation">
+                    <div class="grid gap-2">
+                        <Label for="prestation-name">Nom de l’acte</Label>
+                        <Input
+                            id="prestation-name"
+                            v-model="prestationEditorValue"
+                            placeholder="Consultation, ECG, certificat…"
+                            maxlength="150"
+                            autocomplete="off"
+                            autofocus
+                        />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="prestation-price">Prix (DA)</Label>
+                        <Input
+                            id="prestation-price"
+                            v-model="prestationEditorPrice"
+                            type="number"
+                            inputmode="decimal"
+                            min="0"
+                            step="0.01"
+                            placeholder="Laisser vide si variable"
+                            autocomplete="off"
+                        />
+                    </div>
+                    <p
+                        v-if="prestationEditorError"
+                        class="text-sm text-destructive"
+                        role="alert"
+                    >
+                        {{ prestationEditorError }}
+                    </p>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="cancelPrestationEditor"
+                        >
+                            Annuler
+                        </Button>
+                        <Button type="submit" :disabled="prestationProcessing">
+                            {{
+                                prestationEditorMode === 'edit'
+                                    ? 'Enregistrer'
+                                    : 'Ajouter l’acte'
+                            }}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
         </Dialog>
 
         <!-- Patient create / edit dialog -->

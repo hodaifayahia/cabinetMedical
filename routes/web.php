@@ -27,6 +27,7 @@ use App\Http\Controllers\Configuration\AccountingController;
 use App\Http\Controllers\Configuration\BackupController;
 use App\Http\Controllers\Configuration\ClinicIdentityController;
 use App\Http\Controllers\Configuration\ConnectivityAndBackupController;
+use App\Http\Controllers\Configuration\DemoDataController;
 use App\Http\Controllers\Configuration\DocumentTemplateController;
 use App\Http\Controllers\Configuration\LicenseController;
 use App\Http\Controllers\Configuration\LocalBackupArchiveController;
@@ -577,6 +578,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::middleware('permission:configuration.connectivity.manage')->group(function (): void {
                 Route::get('local-network', LocalNetworkController::class)->name('local-network.edit');
+                // Desktop super administrator only; the controller enforces it.
+                Route::get('demo-data', [DemoDataController::class, 'show'])->name('demo-data.show');
+                Route::post('demo-data', [DemoDataController::class, 'store'])->name('demo-data.store');
+                Route::delete('demo-data', [DemoDataController::class, 'destroy'])->name('demo-data.destroy');
                 Route::get('online-service', [OnlineServiceController::class, 'edit'])->name('online-service.edit');
                 Route::post('online-service', [OnlineServiceController::class, 'store'])
                     ->middleware('throttle:6,1')

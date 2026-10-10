@@ -206,7 +206,8 @@ final class AccountRecoveryService
 
         if (! $user instanceof User) {
             throw ValidationException::withMessages([
-                'email' => 'Aucun compte de ce poste ne correspond à cette adresse e-mail.',
+                'email' => 'Aucun compte de ce poste ne correspond à cette adresse e-mail. '
+                    .'Si ce compte existe en ligne, revenez à la connexion et choisissez « Cabinet existant ».',
             ]);
         }
 
