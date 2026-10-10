@@ -1,0 +1,1 @@
+import{$ as e,On as t,X as n,ct as r,j as i,pr as a,qt as o}from"./createLucideIcon-DT0adpl0.js";var s={role:`alert`,"aria-live":`polite`},c={class:`text-sm text-red-600 dark:text-red-500`},l=r({__name:`InputError`,props:{message:{}},setup(r){return(l,u)=>t((o(),e(`div`,s,[n(`p`,c,a(r.message),1)],512)),[[i,r.message]])}});export{l as t};
