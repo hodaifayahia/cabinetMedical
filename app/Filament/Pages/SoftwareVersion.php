@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Enums\PermissionName;
 use App\Models\ApplicationEvent;
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use App\Services\DesktopReleaseService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -70,7 +71,9 @@ class SoftwareVersion extends Page
                         ->required()
                         ->disk('local')
                         ->directory('desktop/incoming')
-                        ->helperText('Le fichier produit par la compilation, par exemple Drclick_1.2.0_x64-setup.nsis.zip.'),
+                        ->storeFileNamesIn('installer_name')
+                        ->maxSize(AppServiceProvider::BACK_OFFICE_UPLOAD_MAX_KILOBYTES)
+                        ->helperText('Le fichier Drclick_X.Y.Z_x64-setup.exe produit par la compilation (256 Mo au plus).'),
                     Textarea::make('signature')
                         ->label('Signature')
                         ->required()
@@ -80,17 +83,34 @@ class SoftwareVersion extends Page
                         ->label('Notes de version')
                         ->rows(5),
                 ])
-                ->action(function (array $data, DesktopReleaseService $releases): void {
+                ->action(function (array $data, DesktopReleaseService $releases, Action $action): void {
                     $actor = auth()->user();
 
                     if (! $actor instanceof User) {
                         return;
                     }
 
+                    // A build's file name carries its version. Publishing it
+                    // under another number makes every PC see an update it
+                    // can never reach, and reinstall the same build forever.
+                    $builtVersion = self::versionInInstallerName((string) ($data['installer_name'] ?? ''));
+
+                    if ($builtVersion !== null && $builtVersion !== (string) $data['version']) {
+                        Notification::make()
+                            ->title('Numéro de version différent de l’installateur')
+                            ->body("Ce fichier est la version {$builtVersion}. Saisissez {$builtVersion} comme numéro de version.")
+                            ->danger()
+                            ->send();
+
+                        $action->halt();
+                    }
+
                     $stored = Storage::disk('local')->path($data['installer']);
 
                     $release = $releases->publish(
-                        new UploadedFile($stored, basename($stored), null, null, true),
+                        // Keep the build's own name: it is the file a new
+                        // cabinet downloads from the website.
+                        new UploadedFile($stored, (string) ($data['installer_name'] ?? basename($stored)), null, null, true),
                         (string) $data['signature'],
                         (string) $data['version'],
                         $data['notes'] ?? null,
@@ -115,6 +135,14 @@ class SoftwareVersion extends Page
                         ->send();
                 }),
         ];
+    }
+
+    /** The version in a Tauri build's name, such as Drclick_0.4.7_x64-setup.exe. */
+    public static function versionInInstallerName(string $name): ?string
+    {
+        return preg_match('/_(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)_x64/', $name, $matches) === 1
+            ? $matches[1]
+            : null;
     }
 
     /**
