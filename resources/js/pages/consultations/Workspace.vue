@@ -49,6 +49,14 @@ import FamilyFindings from '@/components/patients/FamilyFindings.vue';
 import PatientSafetyBanner from '@/components/patients/PatientSafetyBanner.vue';
 import type { PatientSafetySummary } from '@/components/patients/PatientSafetyBanner.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -2521,7 +2529,6 @@ const tabClass = (activeTab: boolean): string =>
                                 />
                                 <div v-if="canManageActs" class="mt-1">
                                     <Button
-                                        v-if="!prestationCreating"
                                         type="button"
                                         variant="ghost"
                                         size="sm"
@@ -2531,58 +2538,6 @@ const tabClass = (activeTab: boolean): string =>
                                         <Plus class="size-4" />
                                         Nouvelle prestation
                                     </Button>
-                                    <div
-                                        v-else
-                                        class="space-y-2 rounded-lg border border-sidebar-border/70 p-2 dark:border-sidebar-border"
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            <Input
-                                                v-model="newPrestationName"
-                                                class="h-8"
-                                                placeholder="Nom de la prestation"
-                                                autocomplete="off"
-                                                @keydown.enter.prevent="
-                                                    createPrestation
-                                                "
-                                            />
-                                            <Input
-                                                v-model="newPrestationPrice"
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                class="h-8 w-28"
-                                                placeholder="Prix (DA)"
-                                                autocomplete="off"
-                                                @keydown.enter.prevent="
-                                                    createPrestation
-                                                "
-                                            />
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                :disabled="prestationSaving"
-                                                @click="createPrestation"
-                                            >
-                                                Enregistrer
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="ghost"
-                                                @click="cancelPrestationCreator"
-                                            >
-                                                Annuler
-                                            </Button>
-                                        </div>
-                                        <p
-                                            v-if="prestationError"
-                                            class="text-xs text-destructive"
-                                        >
-                                            {{ prestationError }}
-                                        </p>
-                                    </div>
                                 </div>
                             </div>
                             <div class="grid gap-1.5">
@@ -3203,5 +3158,68 @@ const tabClass = (activeTab: boolean): string =>
                 <Plus v-else class="size-7" />
             </button>
         </div>
+
+        <Dialog
+            v-if="canManageActs"
+            :open="prestationCreating"
+            @update:open="(open) => !open && cancelPrestationCreator()"
+        >
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Nouvelle prestation</DialogTitle>
+                    <DialogDescription>
+                        Elle est ajoutée à la liste et choisie pour cette
+                        consultation, avec son prix.
+                    </DialogDescription>
+                </DialogHeader>
+                <form class="grid gap-4" @submit.prevent="createPrestation">
+                    <div class="grid gap-2">
+                        <Label for="new-prestation-name"
+                            >Nom de la prestation</Label
+                        >
+                        <Input
+                            id="new-prestation-name"
+                            v-model="newPrestationName"
+                            placeholder="Consultation, ECG, certificat…"
+                            maxlength="150"
+                            autocomplete="off"
+                            autofocus
+                        />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="new-prestation-price">Prix (DA)</Label>
+                        <Input
+                            id="new-prestation-price"
+                            v-model="newPrestationPrice"
+                            type="number"
+                            inputmode="decimal"
+                            min="0"
+                            step="0.01"
+                            placeholder="Laisser vide si variable"
+                            autocomplete="off"
+                        />
+                    </div>
+                    <p
+                        v-if="prestationError"
+                        class="text-sm text-destructive"
+                        role="alert"
+                    >
+                        {{ prestationError }}
+                    </p>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="cancelPrestationCreator"
+                        >
+                            Annuler
+                        </Button>
+                        <Button type="submit" :disabled="prestationSaving">
+                            Ajouter la prestation
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

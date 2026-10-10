@@ -3,6 +3,7 @@
 namespace Tests\Feature\Consultations;
 
 use App\Enums\RoleName;
+use App\Models\ConsultationFee;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -112,6 +113,59 @@ class PrestationCreationTest extends TestCase
             'label' => 'Pansement',
             'amount_minor' => 80000,
         ]);
+    }
+
+    public function test_doctor_changes_an_act_s_name_and_price_from_the_booking_dialog(): void
+    {
+        $doctor = $this->userWithRole(RoleName::DOCTOR);
+        $this->actingAs($doctor);
+        $fee = ConsultationFee::query()->create([
+            'label' => 'CONSULATION',
+            'amount_minor' => 150000,
+            'is_active' => true,
+        ]);
+
+        $this->putJson(route('app.appointments.prestations.update', ['source' => 'consultation_fee', 'id' => $fee->getKey()]), [
+            'name' => 'Consultation',
+            'price' => 2000,
+        ])
+            ->assertOk()
+            ->assertJsonPath('prestation.label', 'Consultation')
+            ->assertJsonPath('prestation.amount', fn ($value): bool => (float) $value === 2000.0);
+
+        $this->assertSame(200000, $fee->fresh()->amount_minor);
+    }
+
+    public function test_renaming_an_act_without_a_price_keeps_its_price(): void
+    {
+        $doctor = $this->userWithRole(RoleName::DOCTOR);
+        $this->actingAs($doctor);
+        $fee = ConsultationFee::query()->create([
+            'label' => 'ECG',
+            'amount_minor' => 120000,
+            'is_active' => true,
+        ]);
+
+        $this->putJson(route('app.appointments.prestations.update', ['source' => 'consultation_fee', 'id' => $fee->getKey()]), [
+            'name' => 'ECG 12 dérivations',
+        ])->assertOk();
+
+        $this->assertSame('ECG 12 dérivations', $fee->fresh()->label);
+        $this->assertSame(120000, $fee->fresh()->amount_minor);
+    }
+
+    public function test_assistant_cannot_change_an_act(): void
+    {
+        $fee = ConsultationFee::query()->create(['label' => 'ECG', 'amount_minor' => 120000, 'is_active' => true]);
+
+        $this->actingAs($this->userWithRole(RoleName::ASSISTANT))
+            ->putJson(route('app.appointments.prestations.update', ['source' => 'consultation_fee', 'id' => $fee->getKey()]), [
+                'name' => 'ECG',
+                'price' => 1,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(120000, $fee->fresh()->amount_minor);
     }
 
     public function test_assistant_cannot_add_an_appointment_prestation(): void
