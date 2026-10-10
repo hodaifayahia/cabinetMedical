@@ -97,6 +97,7 @@ const visibleConfigurationNav = computed(() =>
         auth.value.user?.permissions ?? [],
         auth.value.user?.can.manageRolePermissions ?? false,
         auth.value.user?.can.linkOnlineService ?? false,
+        auth.value.user?.can.manageDemoData ?? false,
     ),
 );
 const canManageConfiguration = computed(

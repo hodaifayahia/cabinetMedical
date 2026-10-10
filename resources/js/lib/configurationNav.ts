@@ -2,7 +2,8 @@ export type ConfigLink = {
     title: string;
     href: string;
     permissions: string[];
-    capability?: 'manageRolePermissions' | 'linkOnlineService';
+    capability?:
+        'manageRolePermissions' | 'linkOnlineService' | 'manageDemoData';
 };
 export type ConfigGroup = { label: string; links: ConfigLink[] };
 
@@ -56,6 +57,13 @@ export const configurationNav: ConfigGroup[] = [
                 href: '/app/configuration/roles-permissions',
                 permissions: ['staff.manage'],
                 capability: 'manageRolePermissions',
+            },
+            {
+                // Desktop super administrator only (decided by the server).
+                title: 'Données de démonstration',
+                href: '/app/configuration/demo-data',
+                permissions: [],
+                capability: 'manageDemoData',
             },
         ],
     },
@@ -125,6 +133,7 @@ export const configurationNavForPermissions = (
     grantedPermissions: readonly string[],
     manageRolePermissions = false,
     linkOnlineService = false,
+    manageDemoData = false,
 ): ConfigGroup[] => {
     const granted = new Set(grantedPermissions);
 
@@ -139,7 +148,8 @@ export const configurationNavForPermissions = (
                     (link.capability === 'manageRolePermissions' &&
                         manageRolePermissions) ||
                     (link.capability === 'linkOnlineService' &&
-                        linkOnlineService),
+                        linkOnlineService) ||
+                    (link.capability === 'manageDemoData' && manageDemoData),
             ),
         }))
         .filter((group) => group.links.length > 0);

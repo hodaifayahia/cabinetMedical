@@ -53,19 +53,36 @@ describe('configuration navigation (extended)', () => {
         expect(links.map((link) => link.href)).not.toContain(
             '/app/configuration/online-service',
         );
+        expect(links.map((link) => link.href)).not.toContain(
+            '/app/configuration/demo-data',
+        );
         expect(links).toHaveLength(
-            configurationNav.flatMap((group) => group.links).length - 1,
+            configurationNav.flatMap((group) => group.links).length - 2,
         );
     });
 
-    it('shows everything when both server capabilities are also granted', () => {
+    it('shows everything when every server capability is also granted', () => {
         const groups = configurationNavForPermissions(
             allPermissions,
+            true,
             true,
             true,
         );
 
         expect(groups).toEqual(configurationNav);
+    });
+
+    it('offers demo data only when the server grants it', () => {
+        const hrefs = (manageDemoData: boolean) =>
+            configurationNavForPermissions(
+                allPermissions,
+                true,
+                true,
+                manageDemoData,
+            ).flatMap((group) => group.links.map((link) => link.href));
+
+        expect(hrefs(false)).not.toContain('/app/configuration/demo-data');
+        expect(hrefs(true)).toContain('/app/configuration/demo-data');
     });
 
     it('gives the catalogue permission both catalogue and finance groups', () => {

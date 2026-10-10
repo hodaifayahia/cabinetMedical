@@ -14,6 +14,7 @@ export type User = {
         enrollDesktopPin: boolean;
         manageStaff: boolean;
         linkOnlineService: boolean;
+        manageDemoData: boolean;
         [key: string]: boolean;
     };
     [key: string]: unknown;

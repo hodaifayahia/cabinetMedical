@@ -11,6 +11,7 @@ const visibleConfigurationNav = computed(() =>
         page.props.auth.user?.permissions ?? [],
         page.props.auth.user?.can.manageRolePermissions ?? false,
         page.props.auth.user?.can.linkOnlineService ?? false,
+        page.props.auth.user?.can.manageDemoData ?? false,
     ),
 );
 
